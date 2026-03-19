@@ -1,0 +1,30 @@
+# Dependências (Pastas gigantescas que o GitHub não deve guardar)
+node_modules/
+jspm_packages/
+
+# Segurança (NUNCA suba suas chaves de API)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# Build e Saída (Arquivos gerados automaticamente pelo Next.js)
+.next/
+out/
+build/
+
+# Logs e Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Sistema Operacional (Lixo de sistema que polui o repo)
+.DS_Store
+Thumbs.db
+.cache/
+
+# Vercel (Configurações locais da Vercel)
+.vercel
