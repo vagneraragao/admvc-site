@@ -111,7 +111,7 @@ export default function MinisteriosPage() {
             </Link>
           </div>
           <div className="pt-2 text-xs text-muted2">
-            </div>
+          </div>
         </div>
       </section>
 
@@ -230,7 +230,7 @@ function MinisterioDetail({ m }: { m: Ministerio }) {
       <div className="mt-6 grid gap-6 md:grid-cols-12">
         {/* Encontros */}
         <div className="md:col-span-7">
-          <div className="text-sm font-semibold text-fg">Encontros (placeholder)</div>
+          <div className="text-sm font-semibold text-fg">Encontros</div>
           <div className="mt-3 overflow-hidden rounded-xl border border-soft">
             <table className="w-full text-sm">
               <thead className="bg-bg">
@@ -259,12 +259,12 @@ function MinisterioDetail({ m }: { m: Ministerio }) {
         {/* Responsável / Contacto */}
         <div className="md:col-span-5 space-y-4">
           <div className="rounded-xl border border-soft bg-bg p-4">
-            <div className="text-sm font-semibold text-fg">Responsável (placeholder)</div>
+            <div className="text-sm font-semibold text-fg">Responsável</div>
             <div className="mt-2 text-sm text-muted">{m.responsavel || "A definir"}</div>
           </div>
 
           <div className="rounded-xl border border-soft bg-bg p-4">
-            <div className="text-sm font-semibold text-fg">Contacto (placeholder)</div>
+            <div className="text-sm font-semibold text-fg">Contacto</div>
             <div className="mt-2 text-sm text-muted">{m.contato || "A definir"}</div>
           </div>
 

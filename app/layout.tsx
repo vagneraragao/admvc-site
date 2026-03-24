@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
   // ✅ Favicons + Apple icon + PWA
   manifest: "/site.webmanifest",
-  themeColor: "#3f6b4f",
+  // themeColor: "#3f6b4f",
   icons: {
     icon: [
       { url: "/images/favicon.ico" },
@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
   }
+};
+
+export const viewport = {
+  themeColor: '#000000', // ou a cor figueira
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

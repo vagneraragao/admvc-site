@@ -8,4 +8,4 @@ export const CONTACT_PHONE = ""; // opcional
 
 // Link provisório do app (Vercel) — trocar depois por domínio oficial do app, se houver.
 //export const MEMBERS_AREA_URL = "https://lt-church.vercel.app"; // TODO: atualizar
-export const MEMBERS_AREA_URL = "/membros"; // TODO: atualizar
+export const MEMBERS_AREA_URL = "/membros/dashboard"; // TODO: atualizar
