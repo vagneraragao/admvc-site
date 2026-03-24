@@ -96,12 +96,12 @@ export default async function MuralPage() {
     )
 }
 
-export async function apagarAviso(avisoId: string) {
+async function apagarAviso(id: string) {
     try {
         const session = await getSessionData();
         if (!session) return { error: 'Não autorizado' };
 
-        const aviso = await prisma.avisoMural.findUnique({ where: { id: avisoId } });
+        const aviso = await prisma.avisoMural.findUnique({ where: { id } });
         if (!aviso) return { error: 'Aviso não encontrado.' };
 
         // Verifica se é o autor da mensagem ou um Administrador
@@ -109,7 +109,7 @@ export async function apagarAviso(avisoId: string) {
             return { error: 'Não tens permissão para apagar esta mensagem.' };
         }
 
-        await prisma.avisoMural.delete({ where: { id: avisoId } });
+        await prisma.avisoMural.delete({ where: { id } });
 
         revalidatePath('/membros/mural');
         revalidatePath('/membros/dashboard'); // Para atualizar o widget

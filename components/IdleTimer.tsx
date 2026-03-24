@@ -1,6 +1,6 @@
 "use client"
 import { useEffect } from 'react'
-import { logoutAdmin } from '@/actions/login-action'
+import { logoutAdmin } from '@/actions/auth-actions'
 
 export default function IdleTimer() {
     const TEMPO_LIMITE = 30 * 60 * 1000; // 30 Minutos
