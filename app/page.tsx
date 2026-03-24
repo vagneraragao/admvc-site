@@ -1,44 +1,52 @@
 // app/page.tsx
+import prisma from '@/lib/prisma'
 import Link from "next/link";
-import { MEMBERS_AREA_URL, SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
 
-// --- CONFIGURAÇÃO DINÂMICA ---
-// Substitua este link pelo link "RAW" do seu arquivo .json no GitHub
-// const JSON_URL = "https://raw.githubusercontent.com/TEU_USUARIO/TEU_REPO/main/obra-admvc.json";
-const JSON_URL = "https://raw.githubusercontent.com/vagneraragao/admvc-site/refs/heads/main/components/obra-admvc.json";
-
+// --- FUNÇÃO DE BUSCA NA BASE DE DADOS (COM PROTEÇÃO CONTRA ERROS) ---
 async function getDadosObra() {
   try {
-    const res = await fetch(JSON_URL, {
-      next: { revalidate: 3600 } // Atualiza o cache a cada 1 hora
+    // Tenta procurar a campanha de construção no Prisma
+    const projeto = await prisma.projetoObra.findFirst({
+      include: {
+        etapas: { orderBy: { ordem: 'asc' } }
+      }
     });
-    if (!res.ok) throw new Error();
-    return await res.json();
+
+    // Se encontrar o projeto, retorna-o
+    if (projeto) return projeto;
   } catch (error) {
-    // Dados de segurança (Fallback) caso o link do GitHub falhe ou o arquivo seja deletado
-    return {
-      titulo: "Campanha de Construção: Nossa Sede",
-      descricao: "Acompanhe os passos de fé para a nossa sede na Figueira da Foz.",
-      objetivoFinal: 750000,
-      videoUrl: "https://youtu.be/rHNERaeiZPs?si=cGNKB0rgjgZMaTUR",
-      etapas: [
-        { nome: "1. Terreno", atual: 0, alvo: 150000 },
-        { nome: "2. Estrutura", atual: 0, alvo: 300000 },
-        { nome: "3. Acabamentos", atual: 0, alvo: 300000 }
-      ]
-    };
+    console.error("Aviso: Tabela ProjetoObra ainda não foi criada no Prisma ou erro na BD.");
   }
+
+  // FALLBACK DE SEGURANÇA: Se a BD falhar ou o projeto não existir, mostra isto
+  return {
+    titulo: "Campanha de Construção: Nossa Sede",
+    descricao: "Acompanhe os passos de fé para a nossa sede na Figueira da Foz.",
+    objetivoFinal: 750000,
+    videoUrl: "https://youtu.be/rHNERaeiZPs?si=cGNKB0rgjgZMaTUR",
+    etapas: [
+      { nome: "1. Terreno", atual: 0, alvo: 150000 },
+      { nome: "2. Estrutura", atual: 0, alvo: 300000 },
+      { nome: "3. Acabamentos", atual: 0, alvo: 300000 }
+    ]
+  };
 }
 
 export default async function HomePage() {
   const DADOS_CONSTRUCAO = await getDadosObra();
 
-  // Cálculos de Progresso
-  const totalArrecadadoGeral = DADOS_CONSTRUCAO.etapas?.reduce((sum: number, etapa: any) => sum + (etapa.atual || 0), 0) || 0;
-  const porcentagemGeral = Math.min(100, Math.round((totalArrecadadoGeral / DADOS_CONSTRUCAO.objetivoFinal) * 100));
+  // Cálculos de Progresso (Valores usados apenas para a matemática, não são exibidos)
+  const etapas: any[] = DADOS_CONSTRUCAO.etapas || [];
+  const totalArrecadadoGeral = etapas.reduce((sum: number, etapa: any) => sum + (Number(etapa.atual) || 0), 0);
+  const objetivoFinal = Number(DADOS_CONSTRUCAO.objetivoFinal) || 0;
+  
+  const porcentagemGeral = objetivoFinal > 0
+    ? Math.min(100, Math.round((totalArrecadadoGeral / objetivoFinal) * 100))
+    : 0;
 
   return (
-    <main className="space-y-16">
+    <main className="space-y-16 pb-16 animate-in fade-in duration-700">
 
       {/* 1. HERO */}
       <section className="relative overflow-hidden rounded-2xl border border-soft bg-bg2">
@@ -75,10 +83,12 @@ export default async function HomePage() {
 
             <div className="flex flex-wrap gap-3 pt-2">
               <Link href="/congregacoes" className="btn btn-primary">Visite-nos</Link>
-              <a href={MEMBERS_AREA_URL} className="btn btn-ghost bg-black/35 text-white border-white/25 hover:bg-black/55" target="_blank" rel="noopener noreferrer">
+              <Link href="/membros/dashboard" className="btn btn-ghost bg-black/35 text-white border-white/25 hover:bg-black/55">
                 🔒 Área de Membros
-              </a>
-              <Link href="/permanecer" className="btn btn-ghost bg-black/35 text-white border-white/25 hover:bg-black/55">Permanecer</Link>
+              </Link>
+              <Link href="/permanecer" className="btn btn-ghost bg-black/35 text-white border-white/25 hover:bg-black/55">
+                Permanecer
+              </Link>
             </div>
           </div>
         </div>
@@ -97,65 +107,61 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 3. CONSTRUÇÃO DINÂMICA (DESTAQUE ESPECIAL) */}
-      <section className="relative overflow-hidden rounded-3xl border-2 border-figueira/30 bg-bg p-6 md:p-10 space-y-8 shadow-xl shadow-figueira/5">
-
-        {/* Detalhe visual de fundo para dar profundidade */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-figueira/5 rounded-full blur-3xl" />
+      {/* 3. CONSTRUÇÃO DINÂMICA (PÚBLICA - APENAS PERCENTUAL) */}
+      <section className="relative overflow-hidden rounded-[3rem] border-2 border-figueira/30 bg-bg2 p-8 md:p-12 space-y-10 shadow-xl shadow-figueira/5">
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-figueira/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-figueira text-white text-[10px] font-black uppercase tracking-widest mb-2">
-              Campanha Ativa
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-figueira text-white text-[10px] font-black uppercase tracking-widest mb-2 shadow-lg shadow-figueira/20">
+              Passos de Fé • Campanha Ativa
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-fg tracking-tight">{DADOS_CONSTRUCAO.titulo}</h2>
-            <p className="text-base text-muted max-w-xl leading-relaxed">{DADOS_CONSTRUCAO.descricao}</p>
+            <h2 className="text-3xl md:text-4xl font-black italic text-fg tracking-tighter uppercase leading-none">{DADOS_CONSTRUCAO.titulo}</h2>
+            <p className="text-sm text-muted font-bold tracking-widest uppercase max-w-xl leading-relaxed">{DADOS_CONSTRUCAO.descricao}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
             {DADOS_CONSTRUCAO.videoUrl && (
-              <a
-                href={DADOS_CONSTRUCAO.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-2xl bg-fg text-bg px-6 py-3 text-xs font-bold hover:scale-105 transition-all shadow-lg"
-              >
+              <a href={DADOS_CONSTRUCAO.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-2xl bg-fg text-bg px-8 py-4 text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 Assista ao Projeto
               </a>
             )}
 
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-figueira/20 bg-figueira/5 px-6 py-3 min-w-[120px]">
-              <span className="text-[10px] text-figueira font-black uppercase tracking-[0.2em]">Total</span>
-              <span className="text-3xl font-black text-figueira">{porcentagemGeral}%</span>
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-figueira/20 bg-figueira/5 px-8 py-4 min-w-[140px]">
+              <span className="text-[10px] text-figueira font-black uppercase tracking-[0.2em] opacity-80">Progresso Geral</span>
+              <span className="text-4xl font-black italic text-figueira leading-none">{porcentagemGeral}%</span>
             </div>
           </div>
         </div>
 
-        {/* Grid de Etapas com Cards Internos mais Claros */}
-        <div className="relative z-10 grid gap-4 md:grid-cols-3">
+        {/* Grid de Etapas Ocultando Valores Financeiros */}
+        <div className="relative z-10 grid gap-6 md:grid-cols-3">
           {DADOS_CONSTRUCAO.etapas?.map((etapa: any, index: number) => {
-            const porcentagemEtapa = Math.min(100, Math.round(((etapa.atual || 0) / (etapa.alvo || 1)) * 100));
+            const alvoSeguro = etapa.alvo > 0 ? etapa.alvo : 1;
+            const porcentagemEtapa = Math.min(100, Math.round(((etapa.atual || 0) / alvoSeguro) * 100));
+            const concluido = porcentagemEtapa >= 100;
+
             return (
-              <div key={index} className="space-y-4 rounded-2xl border border-soft bg-bg2 p-5 transition-transform hover:scale-[1.02]">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-fg text-sm uppercase tracking-tight">{etapa.nome}</h3>
-                  <span className="text-xs font-black text-figueira">
+              <div key={index} className={`space-y-5 rounded-[2rem] border p-6 transition-all duration-300 ${concluido ? 'bg-green-500/5 border-green-500/20' : 'bg-bg border-soft hover:border-figueira/30 hover:shadow-lg'}`}>
+                <div className="flex justify-between items-start">
+                  <h3 className={`font-black text-sm uppercase tracking-tight w-2/3 leading-tight ${concluido ? 'text-green-600' : 'text-fg'}`}>{etapa.nome}</h3>
+                  <span className={`text-2xl font-black italic ${concluido ? 'text-green-500' : 'text-figueira'}`}>
                     {porcentagemEtapa}%
                   </span>
                 </div>
 
-                <div className="relative h-3 w-full rounded-full bg-soft overflow-hidden shadow-inner">
+                <div className="relative h-2 w-full rounded-full bg-soft overflow-hidden shadow-inner">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(63,107,79,0.4)]"
-                    style={{ width: `${porcentagemEtapa}%`, backgroundColor: "var(--g-figueira)" }}
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out ${concluido ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-figueira shadow-[0_0_10px_rgba(63,107,79,0.4)]'}`}
+                    style={{ width: `${porcentagemEtapa}%` }}
                   />
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full animate-pulse ${porcentagemEtapa === 100 ? 'bg-green-500' : 'bg-figueira'}`} />
-                  <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
-                    {porcentagemEtapa === 100 ? "Meta Alcançada" : "Contribua com este passo"}
+                  <span className={`h-2.5 w-2.5 rounded-full ${concluido ? 'bg-green-500' : 'bg-figueira animate-pulse'}`} />
+                  <p className={`text-[9px] font-black uppercase tracking-wider ${concluido ? 'text-green-600' : 'text-muted'}`}>
+                    {concluido ? "Fase Concluída" : "Fase em Andamento"}
                   </p>
                 </div>
               </div>
@@ -164,7 +170,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* QUEM SOMOS (ajustado) */}
+      {/* 4. QUEM SOMOS */}
       <section className="grid gap-8 md:grid-cols-12 md:items-start">
         <div className="md:col-span-5 space-y-3">
           <h2 className="text-xl md:text-2xl font-semibold text-figueira">Quem somos</h2>
@@ -196,7 +202,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CONGREGAÇÕES */}
+      {/* 5. CONGREGAÇÕES */}
       <section className="space-y-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -211,28 +217,13 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <PlaceCard
-            badge="Sede"
-            title="Figueira da Foz"
-            desc="Cultos e encontros semanais"
-            accent="figueira"
-          />
-          <PlaceCard
-            badge="Congregação"
-            title="Leiria"
-            desc="Uma comunidade em crescimento"
-            accent="soft"
-          />
-          <PlaceCard
-            badge="Congregação"
-            title="Barcelos"
-            desc="Caminhando juntos em fé"
-            accent="deep"
-          />
+          <PlaceCard badge="Sede" title="Figueira da Foz" desc="Cultos e encontros semanais" accent="figueira" />
+          <PlaceCard badge="Congregação" title="Leiria" desc="Uma comunidade em crescimento" accent="soft" />
+          <PlaceCard badge="Congregação" title="Barcelos" desc="Caminhando juntos em fé" accent="deep" />
         </div>
       </section>
 
-      {/* VIDA NA IGREJA / MINISTÉRIOS */}
+      {/* 6. VIDA NA IGREJA / MINISTÉRIOS */}
       <section className="space-y-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -265,18 +256,14 @@ export default async function HomePage() {
       {/* 8. CALLOUTS FINAIS */}
       <section className="grid gap-4 md:grid-cols-2">
         <Callout title="Quer tornar-se membro?" desc="O Permanecer é o caminho para se integrar à nossa família." ctaLabel="Saber mais" ctaHref="/permanecer" variant="soft" />
-        {/*  <Callout title="Área de Membros" desc="Acesso exclusivo para acompanhamento interno." ctaLabel="Entrar" ctaHref={MEMBERS_AREA_URL} external variant="figueira" lock />*/}
-
         <Callout
           title="Área de Membros"
-          desc="Acesso exclusivo para membros da ADMVC. Entre para acompanhar os seus cupons, escalas e comunicados internos."
+          desc="Acesso exclusivo para membros da ADMVC. Entre para acompanhar as suas escalas e comunicados."
           ctaLabel="Entrar"
-          ctaHref="/membros" // MUDE ISTO: Deixe de usar MEMBERS_AREA_URL e use /membros
-          // external // MUDE ISTO: Remova a propriedade external
+          ctaHref="/membros/dashboard"
           variant="figueira"
           lock
         />
-
       </section>
 
     </main>
@@ -325,11 +312,7 @@ function Callout({ title, desc, ctaLabel, ctaHref, external, variant, lock }: { 
       <div className="relative z-10 space-y-4">
         <h3 className="text-xl font-bold text-fg">{lock ? "🔒 " : ""}{title}</h3>
         <p className="text-sm text-muted max-w-xs">{desc}</p>
-        {external ? (
-          <a href={ctaHref} className="btn btn-primary inline-flex" target="_blank" rel="noopener noreferrer">{ctaLabel}</a>
-        ) : (
-          <Link href={ctaHref} className="btn btn-primary inline-flex">{ctaLabel}</Link>
-        )}
+        <Link href={ctaHref} className="btn btn-primary inline-flex">{ctaLabel}</Link>
       </div>
     </div>
   );
@@ -340,14 +323,9 @@ function MiniCard({ title }: { title: string }) {
     <div className="rounded-2xl border border-soft bg-bg2 p-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-fg">{title}</h3>
-        <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: "var(--g-figueira)" }}
-        />
+        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--g-figueira)" }} />
       </div>
-      <p className="mt-2 text-sm text-muted">
-        Conteúdo e atividades voltadas para edificação e comunhão.
-      </p>
+      <p className="mt-2 text-sm text-muted">Conteúdo e atividades voltadas para edificação e comunhão.</p>
     </div>
   );
 }

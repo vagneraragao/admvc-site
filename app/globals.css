@@ -3,6 +3,62 @@
 @tailwind components;
 @tailwind utilities;
 
+@media print {
+
+  /* Esconde menus, headers, botões e rodapés */
+  nav,
+  button,
+  form,
+  header,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ajusta o container principal para ocupar a folha toda */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Força que o bloco financeiro seja visível e bem formatado */
+  #meu-financeiro,
+  #secao-extrato {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Adiciona um título de documento que só aparece no PDF */
+  body::before {
+    content: "RELATÓRIO FINANCEIRO DE MEMBRO - ADMVC";
+    display: block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 30px;
+  }
+
+  /* Garante que as cores apareçam no PDF */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Esconde os botões de navegação na hora de imprimir */
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Garante que o fundo do cabeçalho apareça na impressão */
+  header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 /* Tokens (dark + figueira predominante + verdes complementares) */
 :root {
   --bg: #0b0d0c;
@@ -27,18 +83,23 @@ body {
   .bg-bg {
     background-color: var(--bg);
   }
+
   .bg-bg2 {
     background-color: var(--bg2);
   }
+
   .text-fg {
     color: var(--fg);
   }
+
   .text-muted {
     color: var(--muted);
   }
+
   .text-muted2 {
     color: var(--muted2);
   }
+
   .border-soft {
     border-color: var(--border);
   }
@@ -58,6 +119,7 @@ body {
   background: var(--g-figueira);
   color: #f4fff9;
 }
+
 .btn-primary:hover {
   background: var(--g-deep);
 }
@@ -67,6 +129,7 @@ body {
   border-color: var(--border);
   color: var(--fg);
 }
+
 .btn-ghost:hover {
   background: rgba(63, 107, 79, 0.12);
 }

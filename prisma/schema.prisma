@@ -1,0 +1,384 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  LEADER
+  ADMIN
+  FINANCE
+}
+
+model Membro {
+  id Int @id @default(autoincrement())
+
+  // 1. Identificação Pessoal
+  first_name     String
+  last_name      String
+  email          String    @unique
+  password       String?
+  avatar_file    String?
+  birthdate      DateTime?
+  gender         String?
+  marital_status String?
+  nationality    String?
+  tax_id         String? // NIF ou CPF
+  id_card_number String? // Cartão de Cidadão / RG
+  profession     String?
+  lang           String?   @default("pt")
+
+  // 2. Filiação
+  father_name String?
+  mother_name String?
+
+  // 3. Contacto e Morada
+  phone_1        String
+  phone_2        String?
+  address_1      String? // Rua
+  address_2      String? // Complemento
+  address_number String?
+  postal_code    String?
+  id_city        String?
+  state          String?
+  country        String? @default("Portugal")
+
+  // 4. Dados Eclesiásticos (Campos de Gestão)
+  baptism_status  String?   @default("Não Batizado")
+  baptism_date    DateTime?
+  church_role     String?   @default("Membro") // Diácono, Presbítero, etc
+  ministry        String?   @default("Geral") // Louvor, Infantil, etc
+  entry_date      DateTime? @default(now())
+  is_active       Boolean   @default(true)
+  notes           String?   @db.Text
+  previous_church String?
+
+  companhamentos_visitantes AcompanhamentoVisitante[]
+
+  // 5. Sistema e Status
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  status        String    @default("PENDENTE") // PENDENTE, ATIVO, ARQUIVADO
+  data_admissao DateTime?
+  aprovado_por  String? // Nome do Admin que aprovou
+
+  // 6. Dados Matrimoniais e Filhos
+  spouse_name      String? // Nome do Cônjuge
+  spouse_christian Boolean?      @default(false)
+  wedding_date     DateTime? // Data do Casamento
+  has_children     Boolean?      @default(false)
+  children_number  Int?          @default(0)
+  escolaridade_id  Int?
+  escolaridade     Escolaridade? @relation(fields: [escolaridade_id], references: [id])
+
+  conversion_date DateTime?
+  // 7. Conexão com a Família
+  familia_id      Int?
+  familia         Familia?  @relation(fields: [familia_id], references: [id])
+  parentesco      String? // Ex: "Pai", "Mãe", "Filho(a)", "Cônjuge"
+  is_family_admin Boolean   @default(false) // Se 'true', edita os outros da família
+
+  // 8. RELAÇÕES (Corrigidas)
+  cargos                  Cargo[]
+  departamentos_liderados Departamento[]           @relation("LiderDepartamento")
+  ministerios             IntegranteDepartamento[] // Substitui a antiga relação direta
+  grupos                  Grupo[]                  @relation("MembrosGrupo")
+  lider_de_grupo          Grupo[]                  @relation("LideresGrupo")
+  escalas                 Escala[]
+  //cargos                  IntegranteDepartamento[]
+  ip_assinatura           String?
+  data_aceite             DateTime?
+  termo_aceite            Boolean                  @default(false)
+  role                    Role                     @default(USER)
+
+  objetivos_financeiros ObjetivoFinanceiro[]
+  loyverse_id           String?              @unique
+  rifa_numeros          RifaNumero[]
+  pedidoSaldoCantinas   PedidoSaldoCantina[]
+  contribuicoes         Contribuicao[] // <-- Adicione esta linha
+  avisoMurals           AvisoMural[]
+
+  @@map("membros")
+}
+
+model Familia {
+  id         Int      @id @default(autoincrement())
+  surname    String // Ex: "Família Silva"
+  members    Membro[] // Ligação com os membros
+  created_at DateTime @default(now())
+}
+
+model Escolaridade {
+  id      Int      @id @default(autoincrement())
+  nome    String   @unique
+  membros Membro[]
+
+  @@map("escolaridades")
+}
+
+model Departamento {
+  id        Int     @id @default(autoincrement())
+  nome      String  @unique
+  descricao String?
+
+  // Liderança
+  lider_id Int?
+  lider    Membro? @relation("LiderDepartamento", fields: [lider_id], references: [id])
+
+  // Relações Corrigidas
+  integrantes IntegranteDepartamento[] // Membros e suas funções
+  grupos      Grupo[] // Grupos que nasceram deste departamento
+  escalas     Escala[]
+  funcoes     FuncaoDepartamento[]
+  avisoMurals AvisoMural[]
+}
+
+model IntegranteDepartamento {
+  id Int @id @default(autoincrement())
+
+  membro_id Int
+  membro    Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+
+  departamento_id Int
+  departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
+
+  funcao String // Ex: "Baixista", "Recepção", "Vocal principal"
+
+  data_entrada DateTime @default(now())
+
+  // Garante que a pessoa não é cadastrada duas vezes no mesmo departamento
+  // Caso tenha várias funções, a principal/última fica salva aqui.
+  //@@unique([membro_id, departamento_id])
+}
+
+model Grupo {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  data_abertura DateTime @default(now())
+  dia_semana    String // Ex: Segunda-feira
+  horario       String // Ex: 20:00
+  perfil        String? // Ex: Jovens, Casais
+  categoria     String? // Ex: Célula, Estudo Bíblico
+  descricao     String?
+
+  // Localização
+  endereco String
+  numero   String?
+  bairro   String
+  cidade   String
+  estado   String
+  pais     String  @default("Portugal")
+
+  // Relações
+  departamento_id Int?
+  departamento    Departamento? @relation(fields: [departamento_id], references: [id])
+
+  lideres     Membro[]     @relation("LideresGrupo")
+  membros     Membro[]     @relation("MembrosGrupo")
+  avisoMurals AvisoMural[]
+}
+
+model Cargo {
+  id      Int      @id @default(autoincrement())
+  nome    String   @unique
+  membros Membro[] // Pessoas que possuem este cargo
+}
+
+model Evento {
+  id        Int      @id @default(autoincrement())
+  nome      String // Ex: Culto de Domingo, Conferência de Jovens
+  data      DateTime // Dia e hora do evento
+  descricao String?
+
+  escalas Escala[] // Relação com as escalas desse evento
+
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+}
+
+model Escala {
+  id         Int      @id @default(autoincrement())
+  funcao     String // Ex: "Bateria", "Recepção Porta Principal", "Câmera 1"
+  confirmado Boolean  @default(false) // Para o membro aceitar/recusar depois
+  horario    String?
+  criado_em  DateTime @default(now())
+
+  // Relações
+  evento_id Int
+  evento    Evento @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+
+  departamento_id Int
+  departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
+
+  membro_id Int
+  membro    Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+
+  // 🛡️ BLOQUEIO DE DUPLICAÇÃO: 
+  // Garante que o mesmo membro NÃO pode ser adicionado duas vezes ao mesmo evento.
+  @@unique([evento_id, membro_id])
+}
+
+model FuncaoDepartamento {
+  id              Int          @id @default(autoincrement())
+  nome            String // Ex: "Vocalista", "Sonoplasta"
+  departamento_id Int
+  departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
+
+  @@unique([nome, departamento_id]) // Evita duplicar a mesma função no mesmo depto
+}
+
+model ObjetivoFinanceiro {
+  id             Int    @id @default(autoincrement())
+  nome           String // Ex: "Desafio da Construção"
+  valor_mensal   Float
+  parcelas_total Int
+  parcelas_pagas Int    @default(0)
+  data_pagamento Int // Dia do mês (ex: 10)
+
+  membro_id Int
+  membro    Membro @relation(fields: [membro_id], references: [id])
+
+  status      String                 @default("ATIVO") // ATIVO, CONCLUIDO, PAUSADO
+  createdAt   DateTime               @default(now())
+  lancamentos LancamentoFinanceiro[]
+}
+
+model LancamentoFinanceiro {
+  id          Int                @id @default(autoincrement())
+  objetivo_id Int
+  objetivo    ObjetivoFinanceiro @relation(fields: [objetivo_id], references: [id])
+
+  valor_pago       Float
+  data_recebimento DateTime @default(now())
+  forma_pagamento  String // Ex: "PIX", "Cartão", "Dinheiro"
+  comprovante_url  String? // Link para a foto do comprovante
+
+  registrado_por_id Int // ID do administrador FINANCE que lançou
+}
+
+model Rifa {
+  id               Int          @id @default(autoincrement())
+  nome             String // Ex: "Rifa de Páscoa"
+  premio           String // Ex: "Cabaz com 5kg de Chocolate"
+  valor_numero     Float // Ex: 5.00 (Preço de cada bilhete)
+  total_numeros    Int // Ex: 100 (Para gerar a grelha de 1 a 100)
+  data_sorteio     DateTime?
+  status           String       @default("ATIVA") // ATIVA, FINALIZADA
+  createdAt        DateTime     @default(now())
+  numero_sorteado  Int? // O número vencedor (fica nulo até ao sorteio)
+  numeros_vendidos RifaNumero[]
+}
+
+model RifaNumero {
+  id     Int @id @default(autoincrement())
+  numero Int // O número escolhido (ex: 42)
+
+  rifa_id Int
+  rifa    Rifa @relation(fields: [rifa_id], references: [id], onDelete: Cascade)
+
+  membro_id Int? // Quem comprou (se for membro da igreja)
+  membro    Membro? @relation(fields: [membro_id], references: [id])
+
+  nome_externo String? // Se o membro vendeu a um vizinho/amigo de fora da igreja
+  pago         Boolean @default(true) // Regista se já pagou ou só reservou
+
+  createdAt DateTime @default(now())
+
+  // Esta linha garante que o banco de dados nunca deixe vender o mesmo número 2 vezes na mesma rifa
+  @@unique([rifa_id, numero])
+}
+
+model PedidoSaldoCantina {
+  id              Int      @id @default(autoincrement())
+  membro_id       Int
+  membro          Membro   @relation(fields: [membro_id], references: [id])
+  valor           Float
+  forma_pagamento String // Ex: MBWAY, Transferencia, Dinheiro
+  status          String   @default("PENDENTE") // PENDENTE, APROVADO, REJEITADO
+  createdAt       DateTime @default(now())
+}
+
+model Contribuicao {
+  id        Int    @id @default(autoincrement())
+  membro_id Int
+  membro    Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+
+  tipo       String // "DIZIMO" ou "OFERTA"
+  valor      Float
+  data       DateTime @default(now())
+  metodo     String? // "NUMERARIO", "MBWAY", "TRANSFERENCIA", etc.
+  observacao String? // Ex: "Oferta de Missões", "Dízimo de Março"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Visitante {
+  id                   Int      @id @default(autoincrement())
+  nome                 String
+  telefone             String
+  pedido_oracao        String?  @db.Text
+  data_primeira_visita DateTime @default(now())
+  data_ultima_visita   DateTime @default(now())
+  quantidade_visitas   Int      @default(1)
+  status               String   @default("NOVO") // NOVO, EM_CONTACTO, CONSOLIDADO
+
+  acompanhamentos AcompanhamentoVisitante[]
+
+  @@map("visitantes")
+}
+
+model AcompanhamentoVisitante {
+  id            Int      @id @default(autoincrement())
+  visitante_id  Int
+  membro_id     Int // O líder/voluntário que fez a chamada
+  tipo_contacto String // LIGACAO, WHATSAPP, ORACAO
+  observacoes   String?  @db.Text
+  data_contacto DateTime @default(now())
+
+  visitante Visitante @relation(fields: [visitante_id], references: [id], onDelete: Cascade)
+  membro    Membro    @relation(fields: [membro_id], references: [id])
+
+  @@map("acompanhamento_visitantes")
+}
+
+model ProjetoObra {
+  id            String      @id @default(cuid())
+  titulo        String
+  descricao     String
+  objetivoFinal Float
+  videoUrl      String?
+  etapas        EtapaObra[]
+}
+
+model EtapaObra {
+  id              String      @id @default(cuid())
+  projeto_obra_id String
+  projeto         ProjetoObra @relation(fields: [projeto_obra_id], references: [id], onDelete: Cascade)
+  nome            String
+  alvo            Float // Valor que precisam alcançar
+  atual           Float       @default(0) // Valor que a tesouraria vai preencher
+  ordem           Int         @default(0)
+}
+
+model AvisoMural {
+  id        String   @id @default(cuid())
+  texto     String   @db.Text
+  createdAt DateTime @default(now())
+
+  autor_id Int
+  autor    Membro @relation(fields: [autor_id], references: [id], onDelete: Cascade)
+
+  // Nota: Se os IDs dos seus Departamentos/Grupos forem String (cuid/uuid), mude Int? para String?
+  departamento_id Int?
+  departamento    Departamento? @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
+
+  grupo_id Int?
+  grupo    Grupo? @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
+}

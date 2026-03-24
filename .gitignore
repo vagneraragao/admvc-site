@@ -28,3 +28,4 @@ Thumbs.db
 
 # Vercel (Configurações locais da Vercel)
 .vercel
+/generated/prisma
