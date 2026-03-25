@@ -83,8 +83,8 @@ export async function atualizarStockLoyverseAction(variantId: string, novoStock:
         }
 
         // 3. Limpar a cache
-        revalidatePath('/cantina/despensa');
-        revalidatePath('/cantina/dashboard');
+        revalidatePath('/departamentos/cantina/despensa');
+        revalidatePath('/departamentos/cantina/dashboard');
 
         return { ok: true };
     } catch (error: any) {
@@ -152,8 +152,8 @@ export async function atualizarPropriedadesItemLoyverse(
             throw new Error(`Erro API Loyverse: ${err}`);
         }
 
-        revalidatePath('/cantina/dashboard');
-        revalidatePath('/cantina/despensa');
+        revalidatePath('/departamentos/cantina/dashboard');
+        revalidatePath('/departamentos/cantina/despensa');
         return { ok: true };
     } catch (error: any) {
         console.error("Erro ao atualizar item:", error);
@@ -246,7 +246,7 @@ export async function salvarItemLoyverseAction(formData: FormData) {
         }
 
         console.log(`✨ SUCESSO! Finalizado em ${Date.now() - inicio}ms`);
-        revalidatePath('/cantina/dashboard');
+        revalidatePath('/departamentos/cantina/dashboard');
         return { ok: true };
 
     } catch (error: any) {

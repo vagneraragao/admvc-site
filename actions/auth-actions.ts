@@ -95,7 +95,7 @@ export async function loginUnificado(formData: FormData) {
 
     // Redirecionamento Inteligente
     if (usuario.role === 'ADMIN') redirect('/admin/dashboard');
-    if (usuario.role === 'FINANCE') redirect('/financeiro/dashboard');
+    if (usuario.role === 'FINANCE') redirect('/departamentos/financeiro/dashboard');
     redirect('/membros/dashboard'); // USER ou LEADER
 }
 

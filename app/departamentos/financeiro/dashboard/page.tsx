@@ -135,10 +135,10 @@ export default async function DashboardFinanceiro() {
                                 <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                     <ShieldCheck size={14} className="text-muted group-hover/link:text-figueira" /> Painel ADMIN
                                 </Link>
-                                <Link href="/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                <Link href="/departamentos/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                     <Coffee size={14} className="text-muted group-hover/link:text-figueira" /> POS Cantina
                                 </Link>
-                                <Link href="/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                <Link href="/departamentos/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                     <Heart size={14} className="text-muted group-hover/link:text-figueira" /> Ação Social
                                 </Link>
                             </div>

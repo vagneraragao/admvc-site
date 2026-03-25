@@ -30,7 +30,7 @@ export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: 
             data: dadosParaInserir
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao criar campanha:", error);
@@ -65,7 +65,7 @@ export async function registrarPagamentoCampanhaAction(formData: FormData) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao registar pagamento:", error);
@@ -102,7 +102,7 @@ export async function venderNumeroRifaAction(formData: FormData) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao vender número:", error);
@@ -128,7 +128,7 @@ export async function criarRifaAction(formData: FormData) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao criar rifa:", error);
@@ -152,7 +152,7 @@ export async function atualizarCompradorRifaAction(formData: FormData) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao atualizar comprador:", error);
@@ -199,7 +199,7 @@ export async function venderNumerosRifaLoteAction(formData: FormData) {
             data: dadosParaInserir
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao vender números em lote:", error);
@@ -214,7 +214,7 @@ export async function finalizarRifaAction(rifaId: number) {
             data: { status: 'FINALIZADA' }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao finalizar rifa:", error);
@@ -250,7 +250,7 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
 
         // 3. O SEGREDO DO CACHE: Mandar o Next.js atualizar as DUAS dashboards!
         revalidatePath('/membros/dashboard');
-        revalidatePath('/financeiro/dashboard'); // Faltava limpar o cache do tesoureiro!
+        revalidatePath('/departamentos/financeiro/dashboard'); // Faltava limpar o cache do tesoureiro!
 
         return { ok: true };
     } catch (error: any) {
@@ -396,7 +396,7 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
             data: { status: 'APROVADO' }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         revalidatePath('/membros/dashboard');
 
         return { ok: true };
@@ -460,7 +460,7 @@ export async function confirmarMBWayCarneAction(lancamentoId: number) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error: any) {
         console.error("Erro ao validar MBWay:", error);
@@ -490,7 +490,7 @@ export async function setVencedoresRifaAction(formData: FormData) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error: any) {
         console.error("Erro ao declarar vencedores:", error);
@@ -562,7 +562,7 @@ export async function lancarPagamentoCarne(carneId: number, qtdParcelas: number)
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (error: any) {
         return { ok: false, error: error.message };
@@ -603,7 +603,7 @@ export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
             }
         });
 
-        revalidatePath('/financeiro/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
         return { ok: true };
     } catch (e: any) {
         return { ok: false, error: e.message };
