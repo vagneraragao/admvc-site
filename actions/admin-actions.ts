@@ -369,13 +369,23 @@ export async function gerarLinkWhatsapp(escalaId: number) {
 
 export async function salvarGrupo(formData: FormData) {
     try {
-        const id = formData.get("id") ? Number(formData.get("id")) : null;
+        const idRaw = formData.get("id");
+        const id = idRaw ? Number(idRaw) : null;
 
-        // Captura arrays de IDs dos checkboxes
-        const lideresIds = formData.getAll("lideres_ids").map(Number);
-        const membrosIds = formData.getAll("membros_ids").map(Number);
+        // 1. Captura e limpeza de IDs (evita enviar IDs inválidos como NaN ou 0)
+        const lideresIds = formData.getAll("lideres_ids")
+            .map(Number)
+            .filter(id => id > 0);
 
-        const data: any = {
+        const membrosIds = formData.getAll("membros_ids")
+            .map(Number)
+            .filter(id => id > 0);
+
+        const deptoIdRaw = formData.get("departamento_id");
+        const deptoId = deptoIdRaw ? Number(deptoIdRaw) : null;
+
+        // 2. Construção do objeto de dados base (campos simples)
+        const baseData = {
             nome: formData.get("nome") as string,
             categoria: formData.get("categoria") as string,
             dia_semana: formData.get("dia_semana") as string,
@@ -386,44 +396,52 @@ export async function salvarGrupo(formData: FormData) {
             bairro: formData.get("bairro") as string,
             cidade: formData.get("cidade") as string,
             estado: formData.get("estado") as string,
-            pais: formData.get("pais") as string,
+            pais: formData.get("pais") as string || "Portugal",
             descricao: formData.get("descricao") as string,
-            departamento_id: formData.get("departamento_id") ? Number(formData.get("departamento_id")) : null,
-
-            // Gestão de Relações N-N (Líderes e Membros)
-            // O 'set' limpa os antigos e adiciona os novos IDs enviados para o UPDATE
-            lideres: {
-                set: lideresIds.map(id => ({ id }))
-            },
-            membros: {
-                set: membrosIds.map(id => ({ id }))
-            }
+            departamento_id: deptoId,
         };
 
         if (id) {
-            // ATUALIZAR
+            // --- ATUALIZAR ---
             await prisma.grupo.update({
                 where: { id },
-                data: data
+                data: {
+                    ...baseData,
+                    // 'set' limpa as relações antigas e coloca as novas
+                    lideres: {
+                        set: lideresIds.map(id => ({ id }))
+                    },
+                    membros: {
+                        set: membrosIds.map(id => ({ id }))
+                    }
+                }
             });
         } else {
-            // CRIAR NOVO (Não podemos usar 'set' no create)
-            const createData = {
-                ...data,
-                lideres: { connect: lideresIds.map(id => ({ id })) },
-                membros: { connect: membrosIds.map(id => ({ id })) }
-            };
-
+            // --- CRIAR NOVO ---
             await prisma.grupo.create({
-                data: createData
+                data: {
+                    ...baseData,
+                    // No 'create', usamos 'connect' para vincular os membros existentes
+                    lideres: {
+                        connect: lideresIds.map(id => ({ id }))
+                    },
+                    membros: {
+                        connect: membrosIds.map(id => ({ id }))
+                    }
+                }
             });
         }
 
         revalidatePath('/admin/configuracoes');
         return { sucesso: true };
+
     } catch (error: any) {
-        console.error("Erro ao salvar grupo:", error);
-        return { sucesso: false, erro: error.message };
+        console.error("ERRO AO SALVAR GRUPO:", error);
+        // Retornamos 'erro' (em português) para bater com o teu alert no frontend
+        return {
+            sucesso: false,
+            erro: error.message || "Erro interno ao processar os dados."
+        };
     }
 }
 

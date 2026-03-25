@@ -4,7 +4,7 @@ import { criarCargo, excluirCargo, criarDepartamento, excluirDepartamento } from
 import ConfigForm from '@/components/ConfigForm'
 import DeptoItem from '@/components/DeptoItem'
 import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
-import GerenciadorGrupos from '@/components/GerenciadorGrupos'
+import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import { Plus, Briefcase, LayoutGrid, Users, ArrowLeft, ChevronRight, Settings2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'

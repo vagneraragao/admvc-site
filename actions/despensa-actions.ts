@@ -1,4 +1,4 @@
-// app/admin/despensa/actions.ts
+// app/cantina/despensa/actions.ts
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -39,7 +39,7 @@ export async function cadastrarItemLoyverse(formData: FormData) {
             return { error: "Falha ao criar o item no Loyverse." };
         }
 
-        revalidatePath('/admin/despensa');
+        revalidatePath('/cantina/despensa');
         return { ok: true };
     } catch (error) {
         console.error(error);
@@ -83,8 +83,8 @@ export async function atualizarStockLoyverseAction(variantId: string, novoStock:
         }
 
         // 3. Limpar a cache
-        revalidatePath('/admin/despensa');
-        revalidatePath('/admin/cantina');
+        revalidatePath('/cantina/despensa');
+        revalidatePath('/cantina/dashboard');
 
         return { ok: true };
     } catch (error: any) {
@@ -152,8 +152,8 @@ export async function atualizarPropriedadesItemLoyverse(
             throw new Error(`Erro API Loyverse: ${err}`);
         }
 
-        revalidatePath('/admin/cantina');
-        revalidatePath('/admin/despensa');
+        revalidatePath('/cantina/dashboard');
+        revalidatePath('/cantina/despensa');
         return { ok: true };
     } catch (error: any) {
         console.error("Erro ao atualizar item:", error);
@@ -246,7 +246,7 @@ export async function salvarItemLoyverseAction(formData: FormData) {
         }
 
         console.log(`✨ SUCESSO! Finalizado em ${Date.now() - inicio}ms`);
-        revalidatePath('/admin/cantina');
+        revalidatePath('/cantina/dashboard');
         return { ok: true };
 
     } catch (error: any) {

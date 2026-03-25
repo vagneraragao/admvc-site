@@ -57,7 +57,7 @@ export async function registarAcompanhamento(formData: FormData) {
             }
         });
 
-        revalidatePath('/admin/acolhimento');
+        revalidatePath('/acolhimento/dashboard');
         return { ok: true };
     } catch (error) {
         console.error("Erro ao registar acompanhamento:", error);
