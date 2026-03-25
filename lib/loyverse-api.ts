@@ -10,8 +10,11 @@ export async function getLoyverseItems() {
             headers: { 'Authorization': `Bearer ${LOYVERSE_TOKEN}` },
             next: { revalidate: 60 } // Atualiza a cada 60 segundos
         });
-        if (!res.ok) throw new Error('Falha ao buscar itens');
-        const data = await res.json();
+        if (!res.ok) {
+            const erroReal = await res.text();
+            console.error(`🚨 ERRO LOYVERSE (Status: ${res.status}):`, erroReal);
+            throw new Error('Falha ao buscar itens');
+        } const data = await res.json();
         return data.items || [];
     } catch (error) {
         console.error(error);
