@@ -49,7 +49,7 @@ export default async function GestaoObraWidget() {
         }
 
         revalidatePath('/'); // Atualiza o site público
-        revalidatePath('/financeiro/dashboard'); // Atualiza a dashboard atual
+        revalidatePath('/departamentos/financeiro/dashboard'); // Atualiza a dashboard atual
     }
 
     const euro = (valor: number) =>

@@ -240,22 +240,22 @@ export default async function DashboardMembro() {
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || role === 'FINANCE') && (
-                                        <Link href="/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/departamentos/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <PieChart size={14} className="text-muted group-hover/link:text-figueira" /> Financeiro
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || role === 'FINANCE' || isEquipaCantina) && (
-                                        <Link href="/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/departamentos/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <Store size={14} className="text-muted group-hover/link:text-figueira" /> Cantina POS
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || role === 'FINANCE' || isEquipaSocial) && (
-                                        <Link href="/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/departamentos/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <Heart size={14} className="text-muted group-hover/link:text-figueira" /> Ação Social
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || isEquipaAcolhimento) && (
-                                        <Link href="/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/departamentos/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <HeartHandshake size={14} className="text-muted group-hover/link:text-figueira" /> Acolhimento
                                         </Link>
                                     )}
