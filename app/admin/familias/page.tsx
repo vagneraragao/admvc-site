@@ -17,17 +17,13 @@ export default async function AdminFamiliasPage() {
         orderBy: { surname: 'asc' }
     });
 
-    // 2. Buscamos membros sem família e já formatamos o Nome Completo
-    const membrosData = await prisma.membro.findMany({
-        where: { familia_id: null },
-        select: { id: true, first_name: true, last_name: true },
-        orderBy: { first_name: 'asc' }
-    });
+    // Mapeia os nomes existentes para bloquear duplicados no Modal de Nova Família
+    const nomesFamiliasExistentes = familias.map(f => f.surname);
 
-    const membrosDisponiveis = membrosData.map(m => ({
-        id: m.id,
-        fullName: `${m.first_name} ${m.last_name}`.trim()
-    }));
+    // 2. NOVA ABORDAGEM: Em vez de carregar todos os membros (pesado), apenas contamos quantos estão sem vínculo!
+    const qtdMembrosSemVinculo = await prisma.membro.count({
+        where: { familia_id: null }
+    });
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700">
@@ -56,14 +52,14 @@ export default async function AdminFamiliasPage() {
                             <Home size={12} /> {familias.length} Famílias Registadas
                         </p>
                         <p className="flex items-center gap-2 text-[9px] text-orange-600 font-black uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-xl border border-orange-100">
-                            <Users size={12} /> {membrosDisponiveis.length} Membros Sem Vínculo
+                            <Users size={12} /> {qtdMembrosSemVinculo} Membros Sem Vínculo
                         </p>
                     </div>
                 </div>
 
-                {/* BOTÃO QUE ABRE O MODAL */}
+                {/* BOTÃO QUE ABRE O MODAL ANTI-DUPLICAÇÃO */}
                 <div className="w-full md:w-auto shrink-0">
-                    <NovaFamiliaModal />
+                    <NovaFamiliaModal familiasExistentes={nomesFamiliasExistentes} />
                 </div>
             </header>
 
@@ -73,7 +69,7 @@ export default async function AdminFamiliasPage() {
                     <GestaoFamiliaCard
                         key={familia.id}
                         familia={familia}
-                        membrosDisponiveis={membrosDisponiveis}
+                    // Já não precisamos passar os membrosDisponiveis por aqui!
                     />
                 ))}
             </section>

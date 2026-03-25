@@ -1,19 +1,14 @@
 "use client"
 import { useState } from 'react'
 import { ChevronDown, Clock, CheckCircle2, XCircle, HelpCircle, MessageCircle } from 'lucide-react'
+import ModalEditarEvento from '@/components/escalas/ModalEditarEvento'
 
-// --- COMPONENTE DE STATUS (REVISADO COM TOOLTIP) ---
+// --- COMPONENTE DE STATUS (Mantido igual) ---
 function StatusIcon({ confirmado }: { confirmado: boolean | null }) {
-    // Classe base para os ícones e a tooltip
     const baseClass = "w-7 h-7 flex items-center justify-center rounded-lg border flex-shrink-0 relative group/tooltip cursor-help";
-
-    // Classe base para o texto da Tooltip
     const tooltipTextClass = "absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-fg text-bg text-[9px] font-black uppercase tracking-widest opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap shadow-xl z-20 pointer-events-none";
-
-    // Classe base para a seta da Tooltip
     const tooltipArrowClass = "absolute -bottom-1 top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-fg rotate-45 opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-10 pointer-events-none";
 
-    // 1. CONFIRMADO (Verde)
     if (confirmado === true) {
         return (
             <div className={`${baseClass} bg-green-500/10 border-green-500/20 text-green-500`}>
@@ -23,8 +18,6 @@ function StatusIcon({ confirmado }: { confirmado: boolean | null }) {
             </div>
         );
     }
-
-    // 2. RECUSADO (Vermelho)
     if (confirmado === false) {
         return (
             <div className={`${baseClass} bg-red-500/10 border-red-500/20 text-red-500`}>
@@ -34,8 +27,6 @@ function StatusIcon({ confirmado }: { confirmado: boolean | null }) {
             </div>
         );
     }
-
-    // 3. PENDENTE (Neutro/Cinza)
     return (
         <div className={`${baseClass} bg-soft border-soft/80 text-muted`}>
             <HelpCircle size={14} />
@@ -73,12 +64,14 @@ export default function ListaEscalados({ eventos }: any) {
                     return (
                         <div key={evento.id} className={`group border transition-all duration-500 rounded-[2.5rem] overflow-hidden ${isAberto ? 'bg-bg border-figueira/30 shadow-2xl' : 'bg-bg2 border-soft hover:border-muted'}`}>
 
-                            {/* TRIGGER DO EVENTO */}
-                            <button
-                                onClick={() => toggleEvento(evento.id)}
-                                className="w-full flex items-center justify-between p-7 text-left outline-none"
-                            >
-                                <div className="flex items-center gap-6">
+                            {/* TRIGGER DO EVENTO (Mudámos de <button> para <div> para não causar erro de nesting) */}
+                            <div className="w-full flex items-center justify-between p-7">
+
+                                {/* ÁREA CLICÁVEL (Expande o acordeão) */}
+                                <div
+                                    onClick={() => toggleEvento(evento.id)}
+                                    className="flex items-center gap-6 cursor-pointer flex-1"
+                                >
                                     <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center transition-all shadow-sm ${isAberto ? 'bg-figueira text-white' : 'bg-bg text-muted border border-soft'}`}>
                                         <span className="text-xs font-black leading-none uppercase">
                                             {new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit' })}
@@ -99,18 +92,29 @@ export default function ListaEscalados({ eventos }: any) {
                                     </div>
                                 </div>
 
+                                {/* ÁREA DE AÇÕES E INFORMAÇÕES */}
                                 <div className="flex items-center gap-5">
                                     <div className="hidden sm:flex flex-col items-end">
                                         <span className="text-[11px] font-black text-fg uppercase tracking-widest leading-none">{evento.escalas.length}</span>
                                         <span className="text-[8px] font-bold text-muted uppercase mt-1">Membros</span>
                                     </div>
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${isAberto ? 'rotate-180 bg-figueira text-white' : 'bg-soft text-muted'}`}>
-                                        <ChevronDown size={18} strokeWidth={3} />
+
+                                    <div className="flex items-center gap-2">
+                                        {/* 👇 AQUI ESTÁ O BOTÃO DE EDITAR EVENTO! */}
+                                        <ModalEditarEvento evento={evento} />
+
+                                        {/* BOTÃO DE EXPANDIR (A seta para baixo) */}
+                                        <button
+                                            onClick={() => toggleEvento(evento.id)}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${isAberto ? 'rotate-180 bg-figueira text-white' : 'bg-soft text-muted hover:bg-fg hover:text-bg'}`}
+                                        >
+                                            <ChevronDown size={18} strokeWidth={3} />
+                                        </button>
                                     </div>
                                 </div>
-                            </button>
+                            </div>
 
-                            {/* CONTEÚDO REVELADO */}
+                            {/* CONTEÚDO REVELADO (Mantido igual) */}
                             <div className={`grid transition-all duration-500 ease-in-out ${isAberto ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                                 <div className="overflow-hidden">
                                     <div className="p-8 pt-0 border-t border-soft/50 space-y-8 mt-4">
@@ -126,25 +130,25 @@ export default function ListaEscalados({ eventos }: any) {
                                                             <div className="flex items-center gap-2 px-3 py-1 bg-soft/50 rounded-lg border border-soft">
                                                                 <Clock size={10} className="text-muted" />
                                                                 <span className="text-[10px] font-black text-fg uppercase italic tracking-widest">
-                                                                    {escalasNoDepto[0]?.horario || '19:30'}
+                                                                    {/* Assume-se que o horário pode estar na escala, ou usa o horário do evento formatado */}
+                                                                    {escalasNoDepto[0]?.horario || new Date(evento.data).toTimeString().substring(0, 5)}
                                                                 </span>
                                                             </div>
                                                         </div>
                                                         <div className="h-[1px] flex-1 bg-gradient-to-r from-figueira/20 to-transparent" />
                                                     </div>
 
-                                                    {/* GRID DE MEMBROS */}
+                                                    {/* GRID DE MEMBROS (Mantido igual) */}
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                                         {escalasNoDepto.map((escala: any) => {
                                                             const tel = escala.membro.phone_1?.replace(/\D/g, '') || '';
                                                             const msg = `Olá ${escala.membro.first_name}, confirmando sua escala de *${escala.funcao}* no evento *${evento.nome}* (${new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}). Confirma sua presença?`;
                                                             const linkWpp = `https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`;
 
-                                                            // Lógica para o WhatsApp Pulsante
                                                             const isPendente = escala.confirmado === null;
                                                             const whatsappClasses = isPendente
-                                                                ? "p-2 rounded-lg transition-all animate-pulse bg-green-500 text-white shadow-lg shadow-green-500/30 hover:animate-none hover:scale-105 active:scale-95" // Pulsa e brilha no pendente
-                                                                : "p-2 rounded-lg transition-all bg-green-500/10 text-green-600 hover:bg-green-600 hover:text-white border border-green-500/10"; // Botão normal no confirmado/recusado
+                                                                ? "p-2 rounded-lg transition-all animate-pulse bg-green-500 text-white shadow-lg shadow-green-500/30 hover:animate-none hover:scale-105 active:scale-95"
+                                                                : "p-2 rounded-lg transition-all bg-green-500/10 text-green-600 hover:bg-green-600 hover:text-white border border-green-500/10";
 
                                                             return (
                                                                 <div key={escala.id} className="flex items-center justify-between p-4 bg-bg border border-soft rounded-2xl hover:border-figueira/30 transition-all group/item">
@@ -169,10 +173,8 @@ export default function ListaEscalados({ eventos }: any) {
                                                                     </div>
 
                                                                     <div className="flex items-center gap-2">
-                                                                        {/* ÍCONE DE STATUS COM TOOLTIP */}
                                                                         <StatusIcon confirmado={escala.confirmado} />
 
-                                                                        {/* BOTÃO WHATSAPP (DINÂMICO) */}
                                                                         {escala.membro.phone_1 && (
                                                                             <a
                                                                                 href={linkWpp}
@@ -194,7 +196,7 @@ export default function ListaEscalados({ eventos }: any) {
                                         ) : (
                                             <div className="py-12 text-center border-2 border-dashed border-soft rounded-[2rem]">
                                                 <p className="text-[10px] font-bold uppercase text-muted tracking-[0.2em]">
-                                                    Nenhum voluntário escalado para este dia.
+                                                    Nenhum voluntário escalado para este evento.
                                                 </p>
                                             </div>
                                         )}

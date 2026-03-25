@@ -103,6 +103,14 @@ model Membro {
   pedidoSaldoCantinas   PedidoSaldoCantina[]
   contribuicoes         Contribuicao[] // <-- Adicione esta linha
   avisoMurals           AvisoMural[]
+  // --- Documentação Legal e Interna ---
+  gdpr_aceite           Boolean              @default(false)
+  gdpr_data_assinatura  DateTime?
+  gdpr_validade         DateTime?
+
+  permanecer_aceite          Boolean   @default(false)
+  permanecer_data_assinatura DateTime?
+  permanecer_validade        DateTime?
 
   @@map("membros")
 }
@@ -263,16 +271,18 @@ model LancamentoFinanceiro {
 }
 
 model Rifa {
-  id               Int          @id @default(autoincrement())
-  nome             String // Ex: "Rifa de Páscoa"
-  premio           String // Ex: "Cabaz com 5kg de Chocolate"
-  valor_numero     Float // Ex: 5.00 (Preço de cada bilhete)
-  total_numeros    Int // Ex: 100 (Para gerar a grelha de 1 a 100)
-  data_sorteio     DateTime?
-  status           String       @default("ATIVA") // ATIVA, FINALIZADA
-  createdAt        DateTime     @default(now())
-  numero_sorteado  Int? // O número vencedor (fica nulo até ao sorteio)
-  numeros_vendidos RifaNumero[]
+  id                Int          @id @default(autoincrement())
+  nome              String // Ex: "Rifa de Páscoa"
+  premio            String // Ex: "Cabaz com 5kg de Chocolate"
+  valor_numero      Float // Ex: 5.00 (Preço de cada bilhete)
+  total_numeros     Int // Ex: 100 (Para gerar a grelha de 1 a 100)
+  data_sorteio      DateTime?
+  status            String       @default("ATIVA") // ATIVA, FINALIZADA
+  createdAt         DateTime     @default(now())
+  numero_sorteado   Int? // O número vencedor (fica nulo até ao sorteio)
+  numeros_vendidos  RifaNumero[]
+  numero_sorteado_2 Int?
+  numero_sorteado_3 Int?
 }
 
 model RifaNumero {

@@ -29,3 +29,7 @@ Thumbs.db
 # Vercel (Configurações locais da Vercel)
 .vercel
 /generated/prisma
+
+# Arquivos de desenvolvimento
+todo.md
+.gitignore

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, Coffee, Receipt, BellRing, FileSignature,
-    HeartHandshake, Store, Heart, MessageSquare
+    HeartHandshake, Store, Heart, MessageSquare, Menu, ArrowLeft
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import { redirect } from 'next/navigation'
@@ -13,11 +13,12 @@ import { getSessionData } from '@/lib/auth-utils'
 import CardWalletCantina from '@/components/membros/CardWalletCantina'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import PainelFinanceiroMembro from '@/components/membros/PainelFinanceiroMembro'
-import ModalCarregarCantina from '@/components/membros/ModalCarregarCantina'
+import ModalCarregarCantina from '@/components/cantina/ModalCarregarCantina'
 import BotaoVoltar from '@/components/membros/BotaoVoltar'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
 import WidgetMural from '@/components/membros/WidgetMural'
+import WidgetAgendaIgreja from '@/components/membros/WidgetAgendaIgreja'
 
 export default async function DashboardMembro() {
     const session = await getSessionData();
@@ -31,7 +32,7 @@ export default async function DashboardMembro() {
         where: { id: membroId },
         include: {
             ministerios: { include: { departamento: true } },
-            grupos: true, // Necessário para o Mural
+            grupos: true,
             familia: true,
             escalas: {
                 where: { evento: { data: { gte: new Date() } } },
@@ -48,20 +49,13 @@ export default async function DashboardMembro() {
         return redirect('/membros/login?error=Sessão expirada ou utilizador inexistente');
     }
 
-    const isEquipaAcolhimento = membro.ministerios.some(vinculo => {
-        const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
-        return nomeDepto.includes('acolhimento') || nomeDepto.includes('integração');
-    });
+    // VERIFICAÇÕES DE PERMISSÃO
+    const isEquipaAcolhimento = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('acolhimento') || v.departamento?.nome.toLowerCase().includes('integração'));
+    const isEquipaCantina = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('cantina'));
+    const isEquipaSocial = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('social') || v.departamento?.nome.toLowerCase().includes('despensa') || v.departamento?.nome.toLowerCase().includes('assistência'));
 
-    const isEquipaCantina = membro.ministerios.some(vinculo => {
-        const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
-        return nomeDepto.includes('cantina');
-    });
-
-    const isEquipaSocial = membro.ministerios.some(vinculo => {
-        const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
-        return nomeDepto.includes('social') || nomeDepto.includes('despensa') || nomeDepto.includes('assistência');
-    });
+    // Mostra o dropdown se o utilizador for admin ou participar numa equipa especial
+    const mostraFerramentasExtra = role === 'ADMIN' || role === 'FINANCE' || isEquipaAcolhimento || isEquipaCantina || isEquipaSocial;
 
     const visitantesPendentesCount = (role === 'ADMIN' || isEquipaAcolhimento)
         ? await prisma.visitante.count({ where: { status: 'NOVO' } })
@@ -77,73 +71,39 @@ export default async function DashboardMembro() {
                 { grupo_id: { in: grupoIds.length > 0 ? grupoIds : [-1] } }
             ]
         },
-        include: {
-            autor: { select: { first_name: true, last_name: true, avatar_file: true } },
-            departamento: { select: { nome: true } },
-            grupo: { select: { nome: true } }
-        },
+        include: { autor: { select: { first_name: true, last_name: true, avatar_file: true } }, departamento: { select: { nome: true } }, grupo: { select: { nome: true } } },
         orderBy: { createdAt: 'desc' },
         take: 5
     });
 
-    // 2. BUSCAS ADICIONAIS
-    const minhasRifas = await prisma.rifaNumero.findMany({
-        where: { membro_id: membroId },
-        include: { rifa: true },
-        orderBy: { createdAt: 'desc' }
-    });
+    const minhasRifas = await prisma.rifaNumero.findMany({ where: { membro_id: membroId }, include: { rifa: true }, orderBy: { createdAt: 'desc' } });
+    const minhasContribuicoes = await prisma.contribuicao.findMany({ where: { membro_id: membroId }, orderBy: { data: 'desc' } });
+    const carregamentosHistorico = await prisma.pedidoSaldoCantina.findMany({ where: { membro_id: membroId }, orderBy: { createdAt: 'desc' } });
 
-    const minhasContribuicoes = await prisma.contribuicao.findMany({
-        where: { membro_id: membroId },
-        orderBy: { data: 'desc' }
-    });
-
-    const carregamentosHistorico = await prisma.pedidoSaldoCantina.findMany({
-        where: { membro_id: membroId },
-        orderBy: { createdAt: 'desc' }
-    });
-
-    // 3. BUSCA O SALDO DO LOYVERSE
     let saldoCantina = 0;
     if (membro?.loyverse_id) {
         try {
             const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
-            const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, {
-                headers: { 'Authorization': `Bearer ${loyverseToken}` },
-                next: { revalidate: 60 }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                saldoCantina = data.total_points || 0;
-            }
-        } catch (error) {
-            console.error("Erro ao buscar saldo Loyverse:", error);
-        }
+            const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, { headers: { 'Authorization': `Bearer ${loyverseToken}` }, next: { revalidate: 60 } });
+            if (res.ok) { const data = await res.json(); saldoCantina = data.total_points || 0; }
+        } catch (error) { console.error("Erro ao buscar saldo Loyverse:", error); }
     }
 
     const escalasPendentes = membro?.escalas.filter((esc: any) => !esc.confirmado) || [];
     const iniciais = `${membro?.first_name?.[0] || 'M'}${membro?.last_name?.[0] || 'V'}`;
 
-    // --- LÓGICA 1: AGRUPAR DEPARTAMENTOS ---
     const departamentosAgrupados = new Map();
     membro?.ministerios?.forEach((vinculo: any) => {
         const depto = vinculo.departamento;
         if (!depto) return;
-
         if (departamentosAgrupados.has(depto.id)) {
             const existente = departamentosAgrupados.get(depto.id);
             if (!existente.funcoes.includes(vinculo.funcao)) existente.funcoes.push(vinculo.funcao);
         } else {
-            departamentosAgrupados.set(depto.id, {
-                id: depto.id,
-                nome: depto.nome,
-                lider_id: depto.lider_id,
-                funcoes: [vinculo.funcao]
-            });
+            departamentosAgrupados.set(depto.id, { id: depto.id, nome: depto.nome, lider_id: depto.lider_id, funcoes: [vinculo.funcao] });
         }
     });
 
-    // --- LÓGICA 2: AGRUPAR ESCALAS ---
     const escalasAgrupadas = new Map();
     membro?.escalas.forEach((esc: any) => {
         const key = `${esc.evento.id}-${esc.departamento.id}`;
@@ -158,90 +118,22 @@ export default async function DashboardMembro() {
     });
     const listaEscalas = Array.from(escalasAgrupadas.values()).slice(0, 4);
 
+    const hoje = new Date();
+    const gdprPendente = !membro.gdpr_aceite || (membro.gdpr_validade && membro.gdpr_validade < hoje);
+    const permanecerPendente = !membro.permanecer_aceite || (membro.permanecer_validade && membro.permanecer_validade < hoje);
+
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-12 animate-in fade-in duration-700 relative">
 
             {/* ========================================================= */}
-            {/* NAVEGAÇÃO DE TOPO                                         */}
+            {/* CABEÇALHO DO PERFIL & NAVEGAÇÃO COMPACTA                  */}
             {/* ========================================================= */}
-            <nav className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-soft">
-                <div className="flex flex-wrap items-center gap-3">
-                    <BotaoVoltar />
+            <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[3rem] shadow-xl relative overflow-visible">
+                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
 
-                    <div className="px-5 py-3 bg-figueira text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg cursor-default">
-                        <UserCircle size={16} /> Área de Membro
-                    </div>
-
-                    {/* Divisor vertical */}
-                    <div className="hidden md:block w-[1px] h-6 bg-soft mx-2"></div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-
-                        {/* 👇 NOVO BOTÃO: MURAL (Aparece para todos, logo após a Área de Membro) */}
-                        <Link href="/membros/mural" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-figueira hover:border-figueira rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 group">
-                            <MessageSquare size={14} className="text-figueira group-hover:scale-110 transition-transform" />
-                            Mural
-                        </Link>
-
-                        {/* BOTÃO AÇÃO SOCIAL / DESPENSA */}
-                        {(role === 'ADMIN' || role === 'FINANCE' || isEquipaSocial) && (
-                            <Link href="/admin/despensa" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-blue-500 hover:border-blue-500 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 group">
-                                <Heart size={14} className="text-blue-500 group-hover:scale-110 transition-transform" />
-                                Social
-                            </Link>
-                        )}
-
-                        {/* BOTÃO CANTINA */}
-                        {(role === 'ADMIN' || role === 'FINANCE' || isEquipaCantina) && (
-                            <Link href="/admin/cantina" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-amber-500 hover:border-amber-500 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 group">
-                                <Store size={14} className="text-amber-500 group-hover:scale-110 transition-transform" />
-                                Cantina
-                            </Link>
-                        )}
-
-                        {/* BOTÃO ACOLHIMENTO */}
-                        {(role === 'ADMIN' || isEquipaAcolhimento) && (
-                            <Link href="/admin/acolhimento" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-figueira hover:border-figueira rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 group">
-                                <HeartHandshake size={14} className="text-figueira group-hover:scale-110 transition-transform" />
-                                Acolhimento
-                            </Link>
-                        )}
-
-                        {role === 'ADMIN' && (
-                            <>
-                                <Link href="/financeiro/dashboard" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-green-600 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
-                                    <PieChart size={14} className="text-green-500" /> Financeiro
-                                </Link>
-                                <Link href="/admin/dashboard" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-fg rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
-                                    <ShieldCheck size={14} className="text-figueira" /> ADMIN
-                                </Link>
-                            </>
-                        )}
-
-                        {/* BOTÃO FINANCEIRO */}
-                        {role === 'FINANCE' && (
-                            <>
-                                <Link href="/financeiro/dashboard" className="px-4 py-3 bg-bg2 border border-soft text-muted hover:text-fg rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
-                                    <PieChart size={14} className="text-green-500" /> Financeiro
-                                </Link>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                <div className="hidden lg:flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.3em] text-muted/40 italic">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    Acesso: {role}
-                </div>
-            </nav>
-
-            {/* ========================================================= */}
-            {/* HEADER DO PERFIL COM LOGOUT                               */}
-            {/* ========================================================= */}
-            <header className="bg-bg2 border border-soft p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+                    {/* INFO DO MEMBRO */}
                     <div className="flex items-center gap-6">
-                        <div className="relative w-24 h-24 shrink-0">
+                        <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0">
                             {membro?.avatar_file ? (
                                 <Image src={membro.avatar_file} alt="Perfil" fill className="rounded-3xl object-cover border-4 border-white shadow-lg" />
                             ) : (
@@ -251,15 +143,18 @@ export default async function DashboardMembro() {
                             )}
                         </div>
                         <div className="space-y-1">
-                            <h1 className="text-3xl md:text-4xl font-black text-fg italic tracking-tighter uppercase leading-none">
-                                {membro?.first_name} <span className="text-muted">{membro?.last_name}</span>
-                            </h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl md:text-4xl font-black text-fg italic tracking-tighter uppercase leading-none">
+                                    {membro?.first_name} <span className="text-muted">{membro?.last_name}</span>
+                                </h1>
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse hidden sm:block"></div>
+                            </div>
                             <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-[9px] font-black text-figueira bg-figueira/10 px-3 py-1 rounded-full uppercase tracking-widest">
-                                    Membro {role}
+                                <span className="text-[9px] font-black text-figueira bg-figueira/10 px-3 py-1 rounded-full uppercase tracking-widest border border-figueira/20">
+                                    {role === 'ADMIN' ? 'Administrador' : role === 'FINANCE' ? 'Tesouraria' : 'Membro'}
                                 </span>
                                 {membro?.familia && (
-                                    <span className="text-[9px] font-black text-muted bg-soft px-3 py-1 rounded-full uppercase tracking-widest italic">
+                                    <span className="text-[9px] font-black text-muted bg-soft px-3 py-1 rounded-full uppercase tracking-widest italic border border-soft/50">
                                         Família {membro.familia.surname}
                                     </span>
                                 )}
@@ -267,15 +162,66 @@ export default async function DashboardMembro() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <Link href={`/membros/perfil/editar/${membro?.id}`} className="flex-1 md:flex-none flex items-center justify-center gap-2 p-4 bg-bg border border-soft text-muted hover:text-figueira rounded-2xl group transition-all">
-                            <UserCircle size={20} className="group-hover:scale-110 transition-transform" />
-                            <span className="md:hidden text-[10px] font-black uppercase tracking-widest">Editar Perfil</span>
+                    {/* AÇÕES (MURAL, FERRAMENTAS, LOGOUT) */}
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto pt-4 lg:pt-0 border-t border-soft lg:border-0">
+
+                        <Link href="/membros/mural" className="flex-1 lg:flex-none flex items-center justify-center gap-2 h-12 px-6 bg-bg border border-soft text-muted hover:text-figueira hover:border-figueira rounded-2xl group transition-all shadow-sm">
+                            <MessageSquare size={16} className="group-hover:scale-110 transition-transform text-figueira" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Mural</span>
                         </Link>
-                        <form action={logoutMembro} className="flex-1 md:flex-none">
-                            <button type="submit" className="w-full flex items-center justify-center gap-3 p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all group">
-                                <LogOut size={16} strokeWidth={3} className="group-hover:-translate-x-1 transition-transform" />
-                                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Terminar Sessão</span>
+
+                        <Link href={`/membros/perfil/editar/${membro?.id}`} className="flex-1 lg:flex-none flex items-center justify-center gap-2 h-12 px-4 bg-bg border border-soft text-muted hover:text-fg hover:border-fg rounded-2xl group transition-all shadow-sm" title="Editar Perfil">
+                            <UserCircle size={18} className="group-hover:scale-110 transition-transform" />
+                            <span className="lg:hidden text-[10px] font-black uppercase tracking-widest">Perfil</span>
+                        </Link>
+
+                        {/* DROPDOWN DE FERRAMENTAS EXTRA (APARECE SE TIVER PERMISSÕES) */}
+                        {mostraFerramentasExtra && (
+                            <details className="group relative z-50 flex-1 lg:flex-none">
+                                <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
+                                    <div className="h-12 w-full lg:w-12 bg-figueira text-white rounded-2xl flex items-center justify-center gap-2 hover:bg-figueira/90 transition-all shadow-sm active:scale-95">
+                                        <Menu size={18} />
+                                        <span className="lg:hidden text-[10px] font-black uppercase tracking-widest">Ferramentas</span>
+                                    </div>
+                                </summary>
+
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-bg border border-soft p-2 rounded-[1.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-1 z-50">
+                                    <p className="text-[9px] font-black uppercase text-figueira tracking-widest border-b border-soft/50 pb-2 mb-1 px-3 mt-1">
+                                        Área de Serviço
+                                    </p>
+
+                                    {role === 'ADMIN' && (
+                                        <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                            <ShieldCheck size={14} className="text-muted group-hover/link:text-figueira" /> Painel ADMIN
+                                        </Link>
+                                    )}
+                                    {(role === 'ADMIN' || role === 'FINANCE') && (
+                                        <Link href="/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                            <PieChart size={14} className="text-muted group-hover/link:text-figueira" /> Financeiro
+                                        </Link>
+                                    )}
+                                    {(role === 'ADMIN' || role === 'FINANCE' || isEquipaCantina) && (
+                                        <Link href="/admin/cantina" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                            <Store size={14} className="text-muted group-hover/link:text-figueira" /> Cantina POS
+                                        </Link>
+                                    )}
+                                    {(role === 'ADMIN' || role === 'FINANCE' || isEquipaSocial) && (
+                                        <Link href="/admin/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                            <Heart size={14} className="text-muted group-hover/link:text-figueira" /> Ação Social
+                                        </Link>
+                                    )}
+                                    {(role === 'ADMIN' || isEquipaAcolhimento) && (
+                                        <Link href="/admin/acolhimento" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                            <HeartHandshake size={14} className="text-muted group-hover/link:text-figueira" /> Acolhimento
+                                        </Link>
+                                    )}
+                                </div>
+                            </details>
+                        )}
+
+                        <form action={logoutMembro} className="shrink-0">
+                            <button type="submit" className="h-12 w-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Terminar Sessão">
+                                <LogOut size={16} strokeWidth={3} />
                             </button>
                         </form>
                     </div>
@@ -283,98 +229,113 @@ export default async function DashboardMembro() {
             </header>
 
             {/* ========================================================= */}
-            {/* AVISOS E WIDGETS DE GESTÃO                                */}
+            {/* AVISOS CRÍTICOS (MANTIDOS IGUAIS PORQUE SÃO IMPORTANTES)  */}
             {/* ========================================================= */}
             <div className="space-y-4">
-
-                {/* WIDGET: ALERTAS DE ACOLHIMENTO (Apenas Equipa/Admin) */}
-                {(visitantesPendentesCount > 0) && (
-                    <section className="bg-emerald-50 border-2 border-emerald-500/20 p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in slide-in-from-top-4 duration-500">
+                {(visitantesPendentesCount > 0 && (role === 'ADMIN' || isEquipaAcolhimento)) && (
+                    <section className="bg-emerald-50 border-2 border-emerald-500/20 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in slide-in-from-top-4 duration-500">
                         <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
                         <div className="flex items-center gap-5">
                             <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-2xl shrink-0">
-                                <HeartHandshake size={28} />
+                                <HeartHandshake size={24} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">Novos Visitantes</h3>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">Novos Visitantes</h3>
                                 <p className="text-xs font-medium text-muted mt-1 max-w-xl">
-                                    Existem <span className="font-black text-emerald-600">{visitantesPendentesCount} pessoas</span> que visitaram a igreja e aguardam um contacto de boas-vindas.
+                                    Existem <span className="font-black text-emerald-600">{visitantesPendentesCount} pessoas</span> a aguardar contacto de boas-vindas.
                                 </p>
                             </div>
                         </div>
-                        <Link href="/admin/acolhimento" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-lg shadow-emerald-600/20">
-                            Fazer Acompanhamento
+                        <Link href="/admin/acolhimento" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-sm">
+                            Acompanhar
                         </Link>
                     </section>
                 )}
 
-                {/* AVISO GDPR */}
-                {membro && !membro.termo_aceite && (
-                    <section className="bg-bg2 border-2 border-orange-500/20 p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in fade-in duration-500">
+                {(gdprPendente || permanecerPendente) && (
+                    <section className="bg-bg2 border-2 border-orange-500/20 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in fade-in duration-500">
                         <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
                         <div className="flex items-center gap-5">
                             <div className="bg-orange-500/10 text-orange-500 p-4 rounded-2xl shrink-0">
-                                <FileSignature size={28} />
+                                <FileSignature size={24} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">Assinatura Pendente</h3>
-                                <p className="text-xs font-medium text-muted mt-1 max-w-xl">Ainda não assinaste os documentos <strong>Permanecer</strong> e <strong>GDPR</strong>. É obrigatório para servires ativamente na igreja.</p>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">Assinaturas Pendentes</h3>
+                                <p className="text-xs font-medium text-muted mt-1 max-w-xl">
+                                    Renova ou assina os teus termos obrigatórios:
+                                    {gdprPendente && <span className="font-black text-orange-500 ml-1">GDPR</span>}
+                                    {gdprPendente && permanecerPendente && " e "}
+                                    {permanecerPendente && <span className="font-black text-orange-500 ml-1">Permanecer</span>}.
+                                </p>
                             </div>
                         </div>
-                        <Link href="/membros/termos" className="w-full md:w-auto flex items-center justify-center bg-orange-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all active:scale-95 shrink-0 shadow-lg">
+                        <Link href="/membros/termos" className="w-full md:w-auto flex items-center justify-center bg-orange-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all active:scale-95 shrink-0 shadow-sm">
                             Ler e Assinar
                         </Link>
                     </section>
                 )}
 
-                {/* AVISO ESCALAS */}
                 {escalasPendentes.length > 0 && (
-                    <section className="bg-figueira text-white p-6 md:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border-4 border-figueira/20 animate-in fade-in duration-500">
+                    <section className="bg-figueira text-white p-6 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border-4 border-figueira/20 animate-in fade-in duration-500">
                         <div className="flex items-center gap-5">
-                            <div className="bg-white/20 p-4 rounded-2xl relative">
-                                <BellRing size={28} className="animate-pulse" />
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                            <div className="bg-white/20 p-4 rounded-2xl relative shrink-0">
+                                <BellRing size={24} className="animate-pulse" />
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-figueira"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-figueira"></span>
                                 </span>
                             </div>
                             <div>
-                                <h3 className="text-lg font-black uppercase italic tracking-tighter leading-none">Ação Necessária</h3>
-                                <p className="text-xs font-medium text-white/80 mt-1 max-w-md">Foste escalado para <span className="font-black text-white">{escalasPendentes.length} novo(s) serviço(s)</span>. Por favor, confirma a tua presença.</p>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter leading-none">Ação Necessária</h3>
+                                <p className="text-xs font-medium text-white/80 mt-1 max-w-md">Foste escalado para <span className="font-black text-white">{escalasPendentes.length} novo(s) serviço(s)</span>. Confirma a tua presença.</p>
                             </div>
                         </div>
-                        <a href="#agenda-servico" className="w-full md:w-auto text-center bg-white text-figueira px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-bg hover:text-fg transition-all active:scale-95 shadow-lg">
-                            Ver Agenda
+                        <a href="#agenda-servico" className="w-full md:w-auto text-center bg-white text-figueira px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-bg hover:text-fg transition-all active:scale-95 shadow-sm">
+                            Ver Escalas
                         </a>
                     </section>
                 )}
             </div>
 
+            {/* O RESTO DA PÁGINA MANTÉM-SE INALTERADO A PARTIR DAQUI (Departamentos, Escalas, Financeiro, Cantina) */}
             {/* ========================================================= */}
-            {/* DEPARTAMENTOS DO MEMBRO                                   */}
+            {/* DEPARTAMENTOS DO MEMBRO & AGENDA DA IGREJA                */}
             {/* ========================================================= */}
-            {departamentosAgrupados.size > 0 && (
-                <section className="space-y-6">
+            {/* ... o código que já tens continua aqui por baixo ... */}
+
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* COLUNA ESQUERDA (Ocupa 2/3 do ecrã): Departamentos */}
+                <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center gap-4">
                         <Users size={20} className="text-figueira" />
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">Meus Departamentos</h2>
                         <div className="h-[1px] flex-1 bg-soft"></div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {Array.from(departamentosAgrupados.values()).map((depto: any) => (
-                            <CardDepartamentoMembro key={depto.id} depto={depto} membroId={membro?.id} role={role} />
-                        ))}
-                    </div>
-                </section>
-            )}
 
-            {/* ========================================================= */}
-            {/* AGENDA E ESCALAS                                          */}
-            {/* ========================================================= */}
-            <section id="agenda-servico" className="space-y-6 scroll-mt-10">
+                    {departamentosAgrupados.size > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {Array.from(departamentosAgrupados.values()).map((depto: any) => (
+                                <CardDepartamentoMembro key={depto.id} depto={depto} membroId={membro?.id} role={role} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-8 border-2 border-dashed border-soft rounded-[2.5rem] bg-bg2/50 text-center">
+                            <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">Ainda não fazes parte de nenhum departamento.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* COLUNA DIREITA (Ocupa 1/3 do ecrã): Agenda Global */}
+                <div className="lg:col-span-1 h-full">
+                    <WidgetAgendaIgreja isAdmin={role === 'ADMIN'} />
+                </div>
+            </section>
+
+            {/* AGENDA DE SERVIÇO (ESCALAS PESSOAIS) */}
+            <section id="agenda-servico" className="space-y-6 scroll-mt-10 pt-6">
                 <div className="flex items-center gap-4">
                     <LayoutDashboard size={20} className="text-figueira" />
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">Agenda de Serviço</h2>
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">As Minhas Escalas</h2>
                     <div className="h-[1px] flex-1 bg-soft"></div>
                 </div>
 
@@ -413,9 +374,7 @@ export default async function DashboardMembro() {
                 </div>
             </section>
 
-            {/* ========================================================= */}
-            {/* PAINEL FINANCEIRO (RIFAS E CARNÊS)                        */}
-            {/* ========================================================= */}
+            {/* PAINEL FINANCEIRO */}
             {membro && (
                 <PainelFinanceiroMembro
                     objetivos={membro.objetivos_financeiros || []}
@@ -424,9 +383,7 @@ export default async function DashboardMembro() {
                 />
             )}
 
-            {/* ========================================================= */}
-            {/* CANTINA E LOYVERSE                                        */}
-            {/* ========================================================= */}
+            {/* CANTINA E LOYVERSE */}
             <section className="space-y-6 pt-6 border-t border-soft">
                 <div className="flex items-center gap-4 mb-8">
                     <Coffee size={20} className="text-figueira" />
@@ -472,7 +429,7 @@ export default async function DashboardMembro() {
                 </div>
             </section>
 
-            {/* 👇 WIDGET FLUTUANTE DE MENSAGENS (NO CANTO INFERIOR) */}
+            {/* WIDGET FLUTUANTE DE MENSAGENS */}
             <WidgetMural avisos={ultimosAvisos} />
 
         </main>
