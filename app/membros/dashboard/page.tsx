@@ -21,6 +21,16 @@ import WidgetMural from '@/components/membros/WidgetMural'
 import WidgetAgendaIgreja from '@/components/membros/WidgetAgendaIgreja'
 
 export default async function DashboardMembro() {
+    const proximosEventos = await prisma.evento.findMany({
+        where: {
+            data: { gte: new Date() } // Apenas eventos de hoje em diante
+        },
+        orderBy: {
+            data: 'asc' // O mais próximo primeiro
+        },
+        take: 10 // Limitar para não sobrecarregar
+    });
+
     const session = await getSessionData();
 
     if (!session) redirect('/membros/login');
@@ -33,6 +43,7 @@ export default async function DashboardMembro() {
         include: {
             ministerios: { include: { departamento: true } },
             grupos: true,
+            lider_de_grupo: true,
             familia: true,
             escalas: {
                 where: { evento: { data: { gte: new Date() } } },
@@ -93,15 +104,48 @@ export default async function DashboardMembro() {
     const iniciais = `${membro?.first_name?.[0] || 'M'}${membro?.last_name?.[0] || 'V'}`;
 
     const departamentosAgrupados = new Map();
+
+    // Adiciona Departamentos
     membro?.ministerios?.forEach((vinculo: any) => {
         const depto = vinculo.departamento;
         if (!depto) return;
-        if (departamentosAgrupados.has(depto.id)) {
-            const existente = departamentosAgrupados.get(depto.id);
+        const key = `depto-${depto.id}`; // 👈 Chave única
+        if (departamentosAgrupados.has(key)) {
+            const existente = departamentosAgrupados.get(key);
             if (!existente.funcoes.includes(vinculo.funcao)) existente.funcoes.push(vinculo.funcao);
         } else {
-            departamentosAgrupados.set(depto.id, { id: depto.id, nome: depto.nome, lider_id: depto.lider_id, funcoes: [vinculo.funcao] });
+            departamentosAgrupados.set(key, {
+                id: depto.id,
+                nome: depto.nome,
+                tipo: 'DEPARTAMENTO',
+                lider_id: depto.lider_id,
+                funcoes: [vinculo.funcao]
+            });
         }
+    });
+
+    // Adiciona Grupos Participantes
+    membro?.grupos?.forEach((grupo: any) => {
+        const key = `grupo-${grupo.id}`; // 👈 Chave única
+        if (!departamentosAgrupados.has(key)) {
+            departamentosAgrupados.set(key, {
+                id: grupo.id,
+                nome: grupo.nome,
+                tipo: 'GRUPO',
+                funcoes: ['Membro']
+            });
+        }
+    });
+
+    // Adiciona/Sobrescreve com Grupos onde é LÍDER
+    membro?.lider_de_grupo?.forEach((grupo: any) => {
+        const key = `grupo-${grupo.id}`;
+        departamentosAgrupados.set(key, {
+            id: grupo.id,
+            nome: grupo.nome,
+            tipo: 'GRUPO',
+            funcoes: ['Líder do Grupo'] // Dá prioridade visual à liderança
+        });
     });
 
     const escalasAgrupadas = new Map();
@@ -201,17 +245,17 @@ export default async function DashboardMembro() {
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || role === 'FINANCE' || isEquipaCantina) && (
-                                        <Link href="/admin/cantina" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <Store size={14} className="text-muted group-hover/link:text-figueira" /> Cantina POS
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || role === 'FINANCE' || isEquipaSocial) && (
-                                        <Link href="/admin/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <Heart size={14} className="text-muted group-hover/link:text-figueira" /> Ação Social
                                         </Link>
                                     )}
                                     {(role === 'ADMIN' || isEquipaAcolhimento) && (
-                                        <Link href="/admin/acolhimento" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                                        <Link href="/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <HeartHandshake size={14} className="text-muted group-hover/link:text-figueira" /> Acolhimento
                                         </Link>
                                     )}
@@ -246,7 +290,7 @@ export default async function DashboardMembro() {
                                 </p>
                             </div>
                         </div>
-                        <Link href="/admin/acolhimento" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-sm">
+                        <Link href="/acolhimento/dashboard" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-sm">
                             Acompanhar
                         </Link>
                     </section>
@@ -327,7 +371,7 @@ export default async function DashboardMembro() {
 
                 {/* COLUNA DIREITA (Ocupa 1/3 do ecrã): Agenda Global */}
                 <div className="lg:col-span-1 h-full">
-                    <WidgetAgendaIgreja isAdmin={role === 'ADMIN'} />
+                    <WidgetAgendaIgreja eventos={proximosEventos} isAdmin={role === 'ADMIN'} />
                 </div>
             </section>
 

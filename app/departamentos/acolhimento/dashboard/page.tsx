@@ -1,4 +1,4 @@
-// app/admin/acolhimento/page.tsx
+// app/acolhimento/dashboard/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
