@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 // Importando os SEUS componentes originais do painel Admin
 import MontadorEscalas from '@/components/MontadorEscalas'
-import ListaEscalados from '@/components/ListaEscalados'
+import ListaEscalados from '@/components/escalas/ListaEscalados'
 
 export default async function GestaoEscalaLider({ params }: { params: { id: string } }) {
     const { id } = await params;

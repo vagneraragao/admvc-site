@@ -1,31 +1,20 @@
-// app/admin/cantina/page.tsx
 import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink } from 'lucide-react'
-import { getLoyverseItems, getLoyverseInventory } from '@/lib/loyverse-api'
+import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
 import CantinaManager from '@/components/cantina/CantinaManager'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminCantinaPage() {
-    // ========================================================================
-    // 1. SEGURANÇA E VERIFICAÇÃO DE ACESSO
-    // ========================================================================
     const session = await getSessionData();
-    if (!session) {
-        redirect('/membros/login?error=Sessão expirada');
-    }
+    if (!session) redirect('/membros/login?error=Sessão expirada');
 
-    // Busca os departamentos a que o membro logado pertence
     const membroLogado = await prisma.membro.findUnique({
         where: { id: session.membroId },
-        include: {
-            ministerios: {
-                include: { departamento: true }
-            }
-        }
+        include: { ministerios: { include: { departamento: true } } }
     });
 
     if (!membroLogado) redirect('/membros/login');
@@ -33,30 +22,23 @@ export default async function AdminCantinaPage() {
     const isAdmin = session.role === 'ADMIN';
     const isFinance = session.role === 'FINANCE';
 
-    // Verifica se faz parte da equipa da Cantina
     const isEquipaCantina = membroLogado.ministerios.some(vinculo => {
         const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
         return nomeDepto.includes('cantina');
     });
 
-    // Bloqueia se não for Admin, Financeiro nem da Cantina
     if (!isAdmin && !isFinance && !isEquipaCantina) {
         redirect('/membros/dashboard?error=Acesso restrito à equipa da Cantina.');
     }
 
-    // ========================================================================
-    // 2. BUSCA DADOS DO LOYVERSE
-    // ========================================================================
-    const [items, inventory] = await Promise.all([
+    const [items, inventory, categories] = await Promise.all([
         getLoyverseItems(),
-        getLoyverseInventory()
+        getLoyverseInventory(),
+        getLoyverseCategories()
     ]);
 
-    // ========================================================================
-    // 3. PROCESSA OS DADOS (Junta o stock e verifica destaques)
-    // ========================================================================
     const produtosProcessados = items.map((item: any) => {
-        const variantePrincipal = item.variants[0];
+        const variantePrincipal = item.variants?.[0] || {};
         const stockInfo = inventory.find((inv: any) => inv.variant_id === variantePrincipal?.variant_id);
         const stock = stockInfo?.in_stock || 0;
 
@@ -64,23 +46,39 @@ export default async function AdminCantinaPage() {
         let isDestaque = nomeOriginal.startsWith('-');
         let nomeLimpo = isDestaque ? nomeOriginal.replace(/^-+/, '').trim() : nomeOriginal;
 
+        const categoriaObj = categories.find((c: any) => c.id === item.category_id);
+        const categoriaNome = categoriaObj?.name || 'Outra';
+
+        // CÁLCULOS DE PREÇO E DISPONIBILIDADE
+        const precoReal = variantePrincipal?.default_price ?? variantePrincipal?.stores?.[0]?.price ?? 0;
+        const isAvailable = variantePrincipal?.stores?.[0]?.available_for_sale ?? true;
+
         return {
             id: item.id,
             nome: nomeLimpo,
             nomeOriginal: nomeOriginal,
             isDestaque: isDestaque,
-            preco: variantePrincipal?.price || 0,
+            categoria: categoriaNome,
+
+            // 👇 CAMPOS MAPEADOS PARA O MODAL (Nomes exatos que o Modal usa)
+            preco: precoReal,
+            categoriaId: item.category_id,
             imagem: item.image_url || null,
+
+            // 👇 OUTROS CAMPOS DE CONTROLO
             cor: item.color || '#4b5563',
             stock: stock,
             varianteId: variantePrincipal?.variant_id,
+            isHidden: item.is_hidden || false,
+            trackStock: item.track_stock || false,
+            isAvailable: isAvailable
         };
     });
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* NAVEGAÇÃO / BREADCRUMBS */}
+            {/* BREADCRUMBS */}
             <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                 <Link href={isAdmin || isFinance ? "/admin/dashboard" : "/membros/dashboard"} className="hover:text-figueira transition-colors flex items-center gap-2">
                     <ArrowLeft size={12} strokeWidth={3} /> {(isAdmin || isFinance) ? "Painel Admin" : "Voltar à Dashboard"}
@@ -101,14 +99,20 @@ export default async function AdminCantinaPage() {
                 </div>
 
                 <div className="shrink-0 flex gap-3">
-                    <a href="https://r.loyverse.com/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-bg2 border border-soft text-fg px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-figueira hover:text-figueira transition-all shadow-sm">
+                    <a
+                        href="https://r.loyverse.com/dashboard"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 bg-bg2 border border-soft text-fg px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-figueira hover:text-figueira transition-all shadow-sm"
+                    >
                         <Settings size={14} /> Backoffice Loyverse <ExternalLink size={10} className="ml-1 opacity-50" />
                     </a>
                 </div>
             </header>
 
-            {/* PAINEL INTERATIVO CLIENT-SIDE */}
-            <CantinaManager produtos={produtosProcessados} />
+            {/* MANAGER INTERATIVO */}
+            {/* Passamos 'categories' aqui para que o CantinaManager possa usá-las no Modal de Novo Item */}
+            <CantinaManager produtos={produtosProcessados} categorias={categories} />
 
         </main>
     )

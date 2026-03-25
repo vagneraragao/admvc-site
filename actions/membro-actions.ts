@@ -241,3 +241,38 @@ export async function alternarConfirmacaoEscala(escalaIds: number[], statusConfi
         return { ok: false, error: 'Erro ao atualizar a confirmação.' };
     }
 }
+
+export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'PERMANECER') {
+    try {
+        const hoje = new Date();
+
+        // Define a validade (Ex: 12 meses a partir de hoje)
+        const validade = new Date();
+        validade.setMonth(validade.getMonth() + 12);
+
+        if (tipo === 'GDPR') {
+            await prisma.membro.update({
+                where: { id: membroId },
+                data: {
+                    gdpr_aceite: true,
+                    gdpr_data_assinatura: hoje,
+                    gdpr_validade: validade
+                }
+            });
+        } else {
+            await prisma.membro.update({
+                where: { id: membroId },
+                data: {
+                    permanecer_aceite: true,
+                    permanecer_data_assinatura: hoje,
+                    permanecer_validade: validade
+                }
+            });
+        }
+
+        revalidatePath('/membros/dashboard');
+        return { ok: true };
+    } catch (error: any) {
+        return { ok: false, error: "Erro ao registar assinatura." };
+    }
+}

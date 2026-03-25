@@ -1,20 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Wallet, Eye, EyeOff, Receipt, Coffee } from 'lucide-react'
+import { Wallet, Eye, EyeOff, Coffee } from 'lucide-react'
 import ModalHistoricoCantina from '@/components/financeiro/ModalHistoricoCantina'
 
 export default function CardWalletCantina({ membro, saldoLoyverse }: { membro: any, saldoLoyverse?: number }) {
-    // 1. O ESTADO INICIAL É FALSE (Saldo entra sempre oculto por segurança)
     const [showBalance, setShowBalance] = useState(false)
-
-    // O Saldo vem diretamente do Loyverse
     const saldo = saldoLoyverse ?? 0
 
     return (
         <div className="bg-fg text-bg p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group transition-all hover:shadow-figueira/10 hover:-translate-y-1 duration-300">
 
-            {/* Elemento Decorativo de Fundo (Mais subtil e elegante) */}
+            {/* Elemento Decorativo de Fundo */}
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-figueira opacity-10 rounded-full blur-3xl group-hover:opacity-20 group-hover:scale-110 transition-all duration-700"></div>
             <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
 
@@ -31,7 +28,7 @@ export default function CardWalletCantina({ membro, saldoLoyverse }: { membro: a
                         </span>
                     </div>
 
-                    {/* BOTÃO DO OLHO (Esconder/Mostrar Saldo) */}
+                    {/* BOTÃO DO OLHO */}
                     <button
                         onClick={() => setShowBalance(!showBalance)}
                         title={showBalance ? "Ocultar Saldo" : "Mostrar Saldo"}
@@ -57,22 +54,13 @@ export default function CardWalletCantina({ membro, saldoLoyverse }: { membro: a
                     </p>
                 </div>
 
-                {/* RODAPÉ DO CARTÃO - Versão Limpa */}
-                <div className="pt-6 border-t border-white/10 flex justify-between items-end relative">
-
-                    {/* 1. Único responsável pelo histórico. 
-           Certifique-se que NÃO há nenhum <button> em volta deste componente. */}
-                    <ModalHistoricoCantina loyverseId={membro?.loyverse_id} />
-
-                    <div className="text-right pointer-events-none">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-white/30 block mb-1">
-                            Conta ID
-                        </span>
-                        <span className="text-[9px] font-bold text-white/50 italic font-mono">
-                            {membro?.loyverse_id ? `${membro.loyverse_id.split('-')[0]}...` : 'Pendente'}
-                        </span>
+                {/* RODAPÉ DO CARTÃO - Limpo e Focado no Histórico */}
+                <div className="pt-6 border-t border-white/10 flex justify-center w-full">
+                    <div className="w-full">
+                        <ModalHistoricoCantina loyverseId={membro?.loyverse_id} />
                     </div>
                 </div>
+
             </div>
         </div>
     )

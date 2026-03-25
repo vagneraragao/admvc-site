@@ -1,165 +1,124 @@
-// components/cantina/CantinaManager.tsx
 'use client'
 
 import { useState } from 'react'
-import { Search, Package, Star, AlertTriangle, Coffee, Filter, Settings } from 'lucide-react'
+import { Search, Loader2, Check, X, Minus, Plus, Package, AlertCircle, Star, HeartHandshake, Eye, EyeOff } from 'lucide-react'
+import { atualizarStockLoyverseAction, atualizarPropriedadesItemLoyverse } from '@/actions/despensa-actions'
+import ModalEditarItem from './ModalEditarItem'
 
-export default function CantinaManager({ produtos }: { produtos: any[] }) {
+export default function CantinaManager({ produtos, categorias }: { produtos: any[], categorias: any[] }) {
     const [busca, setBusca] = useState('');
-    const [filtro, setFiltro] = useState('TODOS'); // TODOS, DESTAQUES, ESGOTADOS
+    const [filtroAtivo, setFiltroAtivo] = useState<'TODOS' | 'DESTAQUES' | 'ESGOTADOS' | 'DESPENSA' | 'ASSISTENCIA' | 'OCULTOS'>('TODOS');
 
-    const euro = (valor: number) =>
-        new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(valor);
-
-    // Filtragem de Dados
     const produtosFiltrados = produtos.filter(p => {
         const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase());
+        let matchFiltro = true;
+        if (filtroAtivo === 'ESGOTADOS') matchFiltro = p.stock <= 0;
+        if (filtroAtivo === 'DESTAQUES') matchFiltro = p.isDestaque;
+        if (filtroAtivo === 'DESPENSA') matchFiltro = p.categoria.toLowerCase().includes('despensa');
+        if (filtroAtivo === 'ASSISTENCIA') matchFiltro = p.categoria.toLowerCase().includes('assistência') || p.categoria.toLowerCase().includes('assistencia');
+        if (filtroAtivo === 'OCULTOS') matchFiltro = !p.isAvailable; // AGORA VERIFICA SE NÃO ESTÁ DISPONÍVEL
+        return matchBusca && matchFiltro;
+    });
 
-        if (filtro === 'DESTAQUES') return matchBusca && p.isDestaque;
-        if (filtro === 'ESGOTADOS') return matchBusca && p.stock <= 0;
-        return matchBusca;
-    }).sort((a, b) => a.nome.localeCompare(b.nome));
-
-    // KPIs (Estatísticas rápidas)
-    const totalProdutos = produtos.length;
-    const totalDestaques = produtos.filter(p => p.isDestaque).length;
-    const totalEsgotados = produtos.filter(p => p.stock <= 0).length;
+    const esgotadosCount = produtos.filter(p => p.stock <= 0).length;
 
     return (
         <div className="space-y-8">
-
-            {/* CARDS DE RESUMO (KPIs) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-bg2 border border-soft p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm">
-                    <div className="p-4 bg-fg text-bg rounded-2xl"><Package size={24} /></div>
+                    <div className="p-4 bg-figueira/10 text-figueira rounded-2xl"><Package size={24} /></div>
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total de Produtos</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-fg">{totalProdutos}</p>
+                        <p className="text-3xl font-black italic tracking-tighter text-fg">{produtos.length}</p>
                     </div>
                 </div>
 
-                <div className="bg-bg2 border border-figueira/30 p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm relative overflow-hidden">
-                    <div className="absolute -right-4 -top-4 opacity-5"><Star size={100} /></div>
-                    <div className="p-4 bg-figueira/10 text-figueira rounded-2xl relative z-10"><Star size={24} /></div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Em Destaque (TV)</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-fg">{totalDestaques}</p>
-                    </div>
-                </div>
-
-                <div className={`bg-bg2 border ${totalEsgotados > 0 ? 'border-red-500/30' : 'border-soft'} p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm`}>
-                    <div className={`p-4 rounded-2xl ${totalEsgotados > 0 ? 'bg-red-500/10 text-red-500' : 'bg-soft text-muted'}`}>
-                        <AlertTriangle size={24} />
+                <div className={`border p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm transition-colors ${esgotadosCount > 0 ? 'bg-red-50 border-red-100' : 'bg-bg2 border-soft'}`}>
+                    <div className={`p-4 rounded-2xl ${esgotadosCount > 0 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                        {esgotadosCount > 0 ? <AlertCircle size={24} /> : <Check size={24} />}
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Stock Esgotado</p>
-                        <p className={`text-3xl font-black italic tracking-tighter ${totalEsgotados > 0 ? 'text-red-500' : 'text-fg'}`}>{totalEsgotados}</p>
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${esgotadosCount > 0 ? 'text-red-500' : 'text-muted'}`}>Ruptura de Stock</p>
+                        <p className={`text-3xl font-black italic tracking-tighter ${esgotadosCount > 0 ? 'text-red-600' : 'text-fg'}`}>{esgotadosCount}</p>
                     </div>
                 </div>
             </div>
 
-            {/* BARRA DE PESQUISA E FILTROS */}
-            <div className="flex flex-col md:flex-row justify-between gap-4 items-center bg-bg2 border border-soft p-4 rounded-3xl shadow-sm">
-                <div className="relative w-full md:max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Pesquisar produto pelo nome..."
-                        value={busca}
-                        onChange={(e) => setBusca(e.target.value)}
-                        className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
-                    />
+            <div className="space-y-4">
+                <div className="flex items-center bg-bg2 border border-soft p-4 rounded-3xl shadow-sm relative">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted" size={18} />
+                    <input type="text" placeholder="Pesquisar produto na cantina..." value={busca} onChange={(e) => setBusca(e.target.value)} className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors" />
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto custom-scrollbar pb-2 md:pb-0">
-                    <Filter size={14} className="text-muted ml-2 shrink-0" />
-                    {['TODOS', 'DESTAQUES', 'ESGOTADOS'].map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFiltro(f)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shrink-0 ${filtro === f ? 'bg-figueira text-white shadow-md' : 'bg-bg text-muted border border-soft hover:bg-soft'}`}
-                        >
-                            {f}
-                        </button>
-                    ))}
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setFiltroAtivo('TODOS')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filtroAtivo === 'TODOS' ? 'bg-fg text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-fg'}`}>Todos</button>
+                    <button onClick={() => setFiltroAtivo('DESTAQUES')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'DESTAQUES' ? 'bg-yellow-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-yellow-500'}`}><Star size={12} /> Destaques</button>
+                    <button onClick={() => setFiltroAtivo('ESGOTADOS')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'ESGOTADOS' ? 'bg-red-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-red-500'}`}><AlertCircle size={12} /> Esgotados</button>
+                    <button onClick={() => setFiltroAtivo('DESPENSA')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'DESPENSA' ? 'bg-blue-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-blue-500'}`}><Package size={12} /> Despensa</button>
+                    <button onClick={() => setFiltroAtivo('ASSISTENCIA')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'ASSISTENCIA' ? 'bg-orange-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-orange-500'}`}><HeartHandshake size={12} /> Assistência</button>
+                    <button onClick={() => setFiltroAtivo('OCULTOS')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'OCULTOS' ? 'bg-gray-700 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-gray-500'}`}><EyeOff size={12} /> Fora de Venda</button>
                 </div>
             </div>
 
-            {/* TABELA DE PRODUTOS */}
             <div className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                             <tr className="bg-soft/30 border-b border-soft text-[9px] font-black uppercase tracking-widest text-muted">
                                 <th className="p-5 pl-8">Produto</th>
-                                <th className="p-5">Preço</th>
-                                <th className="p-5">Em Stock</th>
-                                <th className="p-5">Status (TV)</th>
+                                <th className="p-5">Categoria & Preço</th>
+                                <th className="p-5 text-center">Configurações</th>
+                                <th className="p-5 text-right pr-8 w-48">Gestão de Stock</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-soft">
                             {produtosFiltrados.length > 0 ? (
                                 produtosFiltrados.map(p => (
-                                    <tr key={p.id} className="hover:bg-soft/20 transition-colors group">
-                                        <td className="p-5 pl-8 flex items-center gap-4">
-                                            {/* Foto ou Cor Placeholder */}
-                                            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-soft bg-bg flex items-center justify-center relative">
+                                    <tr key={p.id} className={`transition-colors group ${!p.isAvailable ? 'bg-soft/30 opacity-70 hover:opacity-100' : 'hover:bg-soft/20'}`}>
+                                        <td className="p-5 pl-8">
+                                            <div className="flex items-center gap-4">
+                                                {/* IMAGEM MANTIDA! */}
                                                 {p.imagem ? (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img src={p.imagem} alt={p.nome} className="w-full h-full object-cover" />
+                                                    <img src={p.imagem} alt={p.nome} className="w-12 h-12 rounded-xl object-cover border border-soft shadow-sm shrink-0" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center opacity-50" style={{ backgroundColor: p.cor }}>
-                                                        <Coffee size={20} className="text-white mix-blend-overlay" />
+                                                    <div className="w-12 h-12 rounded-xl bg-soft flex items-center justify-center text-muted shrink-0">
+                                                        <Package size={20} />
                                                     </div>
                                                 )}
-                                                {p.isDestaque && (
-                                                    <div className="absolute top-0 right-0 bg-figueira text-white p-0.5 rounded-bl-lg">
-                                                        <Star size={10} fill="currentColor" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-black uppercase text-fg group-hover:text-figueira transition-colors">{p.nome}</h4>
-                                                <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5 opacity-50">ID: {p.id.split('-')[0]}...</p>
-                                            </div>
-                                        </td>
-
-                                        <td className="p-5">
-                                            <span className="text-sm font-black italic text-fg">{euro(p.preco)}</span>
-                                        </td>
-
-                                        <td className="p-5">
-                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${p.stock > 10 ? 'bg-green-500/10 text-green-600 border-green-500/20' :
-                                                p.stock > 0 ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                    'bg-red-500/10 text-red-500 border-red-500/20'
-                                                }`}>
-                                                {p.stock > 0 ? `${Math.floor(p.stock)} UN` : 'Esgotado'}
-                                            </span>
-                                        </td>
-
-                                        <td className="p-5">
-                                            <div className="flex flex-col gap-1">
-                                                {p.isDestaque ? (
-                                                    <span className="text-[9px] font-black text-figueira flex items-center gap-1 uppercase tracking-widest">
-                                                        <Star size={12} fill="currentColor" /> Destaque
+                                                <div className="flex flex-col">
+                                                    <span className="font-black uppercase text-sm text-fg flex items-center gap-2">
+                                                        {p.nome}
                                                     </span>
-                                                ) : (
-                                                    <span className="text-[9px] font-black text-muted flex items-center gap-1 uppercase tracking-widest">
-                                                        Comum
-                                                    </span>
-                                                )}
-
-                                                {!p.isDestaque && (
-                                                    <p className="text-[8px] text-muted italic font-medium">Adicione um hífen (-) no início do nome no Loyverse para destacar.</p>
-                                                )}
+                                                    {!p.isAvailable && <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest mt-0.5">Oculto na Venda</span>}
+                                                </div>
                                             </div>
+                                        </td>
+                                        <td className="p-5 space-y-1">
+                                            <div className="bg-soft text-muted px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest inline-block">
+                                                {p.categoria}
+                                            </div>
+                                            <div className="font-black text-xs text-fg">
+                                                {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(p.preco)}
+                                            </div>
+                                        </td>
+
+                                        <td className="p-5 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <ModalEditarItem item={p} categorias={categorias} />
+                                                <BotaoToggleDestaque itemId={p.id} isDestaque={p.isDestaque} nomeLimpo={p.nome} nomeOriginal={p.nomeOriginal} />
+                                                <BotaoToggleVisivel itemId={p.id} isAvailable={p.isAvailable} />
+                                            </div>
+                                        </td>
+
+                                        <td className="p-5 pr-8">
+                                            <AjustadorStock itemId={p.id} variantId={p.varianteId} stockAtual={p.stock} trackStock={p.trackStock} />
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="p-10 text-center">
-                                        <p className="text-xs font-black uppercase tracking-widest text-muted">Nenhum produto encontrado.</p>
+                                    <td colSpan={4} className="p-10 text-center text-muted text-xs font-black uppercase tracking-widest">
+                                        Nenhum produto encontrado.
                                     </td>
                                 </tr>
                             )}
@@ -167,18 +126,106 @@ export default function CantinaManager({ produtos }: { produtos: any[] }) {
                     </table>
                 </div>
             </div>
+        </div>
+    )
+}
 
-            {/* DICA DE UTILIZAÇÃO */}
-            <div className="bg-figueira/5 border border-figueira/20 p-6 rounded-[2rem] flex gap-4 items-start">
-                <Settings size={20} className="text-figueira shrink-0 mt-1" />
-                <div>
-                    <h4 className="text-[11px] font-black uppercase tracking-widest text-figueira mb-1">Sincronização com o Loyverse</h4>
-                    <p className="text-xs font-medium text-muted leading-relaxed">
-                        Este painel é um espelho do seu <strong>Loyverse POS</strong>. Para alterar o preço de um produto, adicionar stock ou alterar a fotografia, utilize a aplicação do telemóvel ou o Backoffice web do Loyverse. O site e a TV da Cantina atualizarão os dados automaticamente num prazo máximo de 60 segundos.
-                    </p>
-                </div>
+// ============================================================================
+// COMPONENTES MINI PARA OS BOTÕES INDIVIDUAIS
+// ============================================================================
+function BotaoToggleDestaque({ itemId, isDestaque, nomeLimpo, nomeOriginal }: any) {
+    const [loading, setLoading] = useState(false);
+    const handleToggle = async () => {
+        setLoading(true);
+        const novoNome = isDestaque ? nomeLimpo : `-${nomeLimpo}`;
+        // Enviamos o nome novo, os outros undefined não alteram o que já está!
+        const res = await atualizarPropriedadesItemLoyverse(itemId, novoNome, undefined, undefined);
+        if (res.error) alert(res.error);
+        setLoading(false);
+    }
+    return (
+        <button onClick={handleToggle} disabled={loading} className={`p-2.5 rounded-xl border transition-all ${isDestaque ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 shadow-sm' : 'bg-bg text-muted border-soft hover:text-yellow-500 hover:border-yellow-500/50'}`} title={isDestaque ? 'Remover dos Destaques' : 'Adicionar aos Destaques'}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Star size={16} className={isDestaque ? "fill-yellow-600" : ""} />}
+        </button>
+    )
+}
+
+function BotaoToggleVisivel({ itemId, isAvailable }: any) {
+    const [loading, setLoading] = useState(false);
+    const handleToggle = async () => {
+        setLoading(true);
+        // O nome não vai ser mexido na nossa Action nova, por isso vai undefined
+        const res = await atualizarPropriedadesItemLoyverse(itemId, undefined, !isAvailable, undefined);
+        if (res.error) alert(res.error);
+        setLoading(false);
+    }
+    return (
+        <button onClick={handleToggle} disabled={loading} className={`p-2.5 rounded-xl border transition-all ${isAvailable ? 'bg-green-500/10 text-green-600 border-green-500/20 shadow-sm' : 'bg-red-500/10 text-red-500 border-red-500/20 shadow-sm'}`} title={isAvailable ? 'À Venda na Cantina (Ocultar)' : 'Fora de Venda (Ativar)'}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : (isAvailable ? <Eye size={16} /> : <EyeOff size={16} />)}
+        </button>
+    )
+}
+
+// ============================================================================
+// COMPONENTE DE AJUSTE DE STOCK INLINE
+// ============================================================================
+function AjustadorStock({ itemId, variantId, stockAtual, trackStock }: any) {
+    const [valor, setValor] = useState(Math.floor(stockAtual));
+    const [isSaving, setIsSaving] = useState(false);
+
+    const foiAlterado = valor !== Math.floor(stockAtual);
+
+    const handleAtivarControlo = async () => {
+        setIsSaving(true);
+        const res = await atualizarPropriedadesItemLoyverse(itemId, undefined, undefined, true);
+        if (res.error) alert(res.error);
+        setIsSaving(false);
+    }
+
+    if (!trackStock) {
+        return (
+            <div className="flex justify-end">
+                <button onClick={handleAtivarControlo} disabled={isSaving} className="text-[9px] font-black uppercase tracking-widest bg-orange-50 text-orange-500 p-2.5 rounded-xl flex items-center gap-1.5 hover:bg-orange-500 hover:text-white transition-all shadow-sm border border-orange-100">
+                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <AlertCircle size={14} />} Ativar Controlo
+                </button>
+            </div>
+        )
+    }
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const res = await atualizarStockLoyverseAction(variantId, valor);
+        if (res.error) {
+            alert(res.error);
+            setValor(Math.floor(stockAtual));
+        }
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center bg-bg border border-soft rounded-xl overflow-hidden shadow-sm">
+                <button type="button" onClick={() => setValor(v => Math.max(0, v - 1))} className="p-2.5 text-muted hover:text-fg hover:bg-soft transition-colors active:bg-soft/50" disabled={isSaving}>
+                    <Minus size={14} />
+                </button>
+                <input type="number" value={valor} onChange={(e) => setValor(Math.max(0, parseInt(e.target.value) || 0))} className="w-12 text-center text-xs font-black text-fg outline-none bg-transparent appearance-none" disabled={isSaving} />
+                <button type="button" onClick={() => setValor(v => v + 1)} className="p-2.5 text-muted hover:text-fg hover:bg-soft transition-colors active:bg-soft/50" disabled={isSaving}>
+                    <Plus size={14} />
+                </button>
             </div>
 
+            {foiAlterado && !isSaving && (
+                <div className="flex animate-in fade-in slide-in-from-right-2">
+                    <button onClick={handleSave} className="p-2.5 text-green-500 hover:bg-green-50 rounded-xl transition-colors" title="Guardar no Loyverse"><Check size={16} strokeWidth={3} /></button>
+                    <button onClick={() => setValor(Math.floor(stockAtual))} className="p-2.5 text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Cancelar"><X size={16} strokeWidth={3} /></button>
+                </div>
+            )}
+
+            {isSaving && (
+                <div className="p-2.5">
+                    <Loader2 size={16} className="animate-spin text-figueira" />
+                </div>
+            )}
         </div>
     )
 }

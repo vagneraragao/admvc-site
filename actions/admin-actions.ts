@@ -879,3 +879,52 @@ export async function atualizarMembroAdmin(id: number, formData: FormData) {
         return { ok: false, error: "Ocorreu um erro ao guardar. Verifique os dados e tente novamente." };
     }
 }
+
+export async function associarMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
+    try {
+        await prisma.membro.update({
+            where: { id: membroId },
+            data: {
+                familia_id: familiaId,
+                parentesco: parentesco
+            }
+        });
+        revalidatePath('/admin/familias');
+        return { sucesso: true };
+    } catch (e) {
+        return { erro: "Falha ao associar membro." };
+    }
+}
+
+export async function editarEventoAction(formData: FormData) {
+    try {
+        const id = formData.get('id') as string;
+        const nome = formData.get('nome') as string;
+        const dataStr = formData.get('data') as string; // YYYY-MM-DD
+        const horaStr = formData.get('horario') as string; // HH:MM
+
+        if (!id || !nome || !dataStr || !horaStr) {
+            return { ok: false, error: "Preencha todos os campos obrigatórios." };
+        }
+
+        // Fundir a data e a hora no formato ISO que o Prisma exige
+        const dataCompleta = new Date(`${dataStr}T${horaStr}:00`);
+
+        await prisma.evento.update({
+            where: { id: Number(id) },
+            data: {
+                nome,
+                data: dataCompleta,
+            }
+        });
+
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/admin/escalas');
+        revalidatePath('/membros/dashboard');
+
+        return { ok: true };
+    } catch (error: any) {
+        console.error("Erro ao editar evento:", error);
+        return { ok: false, error: "Erro ao atualizar o evento na base de dados." };
+    }
+}

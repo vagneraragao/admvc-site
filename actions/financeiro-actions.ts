@@ -406,37 +406,6 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
     }
 }
 
-
-// NOVO TRECHO
-// app/membros/actions-loyverse.ts
-
-export async function getHistoricoComprasLoyverse(loyverseId: string) {
-    if (!loyverseId) return { error: "ID não encontrado" };
-    const token = process.env.LOYVERSE_ACCESS_TOKEN;
-
-    try {
-        // Adicionamos o parâmetro de limite e ordem explícita
-        const res = await fetch(`https://api.loyverse.com/v1.0/receipts?customer_id=${loyverseId}&limit=50`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            cache: 'no-store' // Forçamos a busca fresca para testes
-        });
-
-        if (!res.ok) return { error: "Erro na API" };
-        const data = await res.json();
-
-        // Log para debug no terminal (pode apagar depois)
-        console.log("Recibos encontrados:", data.receipts?.length || 0);
-
-        return { receipts: data.receipts || [] };
-    } catch (e) {
-        return { error: "Erro de conexão" };
-    }
-}
-
 export async function lancarContribuicaoAction(formData: FormData) {
     try {
         const membroId = Number(formData.get('membroId'));
@@ -477,5 +446,166 @@ export async function setVencedorRifaAction(rifaId: number, numero: number) {
         return { ok: true };
     } catch (error: any) {
         return { ok: false, error: error.message };
+    }
+}
+
+export async function confirmarMBWayCarneAction(lancamentoId: number) {
+    try {
+        // Ao mudar a forma de pagamento, ele sai da lista de "pendentes" 
+        // e entra no histórico e no cálculo final do carnê.
+        await prisma.lancamentoFinanceiro.update({
+            where: { id: lancamentoId },
+            data: {
+                forma_pagamento: 'MBWAY (Validado)' // Pode colocar 'Transferência' se preferir
+            }
+        });
+
+        revalidatePath('/financeiro/dashboard');
+        return { ok: true };
+    } catch (error: any) {
+        console.error("Erro ao validar MBWay:", error);
+        return { error: "Falha ao validar o pagamento." };
+    }
+}
+
+export async function setVencedoresRifaAction(formData: FormData) {
+    try {
+        const rifa_id = parseInt(formData.get('rifa_id') as string);
+        const num1 = parseInt(formData.get('num1') as string);
+
+        // O 2º e 3º lugar são opcionais, por isso verificamos se existem
+        const num2Str = formData.get('num2') as string;
+        const num3Str = formData.get('num3') as string;
+
+        const num2 = num2Str ? parseInt(num2Str) : null;
+        const num3 = num3Str ? parseInt(num3Str) : null;
+
+        await prisma.rifa.update({
+            where: { id: rifa_id },
+            data: {
+                numero_sorteado: num1,
+                numero_sorteado_2: num2,
+                numero_sorteado_3: num3,
+                status: "FINALIZADA"
+            }
+        });
+
+        revalidatePath('/financeiro/dashboard');
+        return { ok: true };
+    } catch (error: any) {
+        console.error("Erro ao declarar vencedores:", error);
+        return { ok: false, error: "Erro ao registar os vencedores da Rifa." };
+    }
+}
+
+
+export async function getHistoricoComprasLoyverse(loyverseId: string) {
+    if (!loyverseId) return { error: "ID não encontrado" };
+    const token = process.env.LOYVERSE_ACCESS_TOKEN;
+
+    try {
+        const res = await fetch(`https://api.loyverse.com/v1.0/receipts?limit=250`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            cache: 'no-store'
+        });
+
+        if (!res.ok) return { error: "Erro na API do Loyverse" };
+        const data = await res.json();
+
+        const todosOsRecibos = data.receipts || [];
+
+        const recibosExclusivosDoMembro = todosOsRecibos.filter(
+            (recibo: any) => recibo.customer_id === loyverseId
+        );
+
+        return { receipts: recibosExclusivosDoMembro };
+    } catch (e) {
+        console.error("Erro no fetch do Loyverse:", e);
+        return { error: "Erro de conexão" };
+    }
+}
+
+export async function lancarPagamentoCarne(carneId: number, qtdParcelas: number) {
+    try {
+        const carne = await prisma.objetivoFinanceiro.findUnique({
+            where: { id: carneId }
+        });
+
+        if (!carne) throw new Error("Carnê não encontrado.");
+
+        const session = await getSessionData();
+        if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+        const valorTotal = carne.valor_mensal * qtdParcelas;
+
+        // 1. Atualiza o Carnê (Soma as parcelas pagas e o status)
+        await prisma.objetivoFinanceiro.update({
+            where: { id: carneId },
+            data: {
+                parcelas_pagas: { increment: qtdParcelas },
+                status: (carne.parcelas_pagas + qtdParcelas) >= carne.parcelas_total ? 'CONCLUIDO' : 'ATIVO'
+            }
+        });
+
+        // 2. Lança a Transação
+        await prisma.lancamentoFinanceiro.create({
+            data: {
+                objetivo_id: carneId,
+                valor_pago: valorTotal,
+                data_recebimento: new Date(),
+                forma_pagamento: 'DINHEIRO',
+                registrado_por_id: session.membroId
+            }
+        });
+
+        revalidatePath('/financeiro/dashboard');
+        return { ok: true };
+    } catch (error: any) {
+        return { ok: false, error: error.message };
+    }
+}
+
+export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
+    try {
+        const carne = await prisma.objetivoFinanceiro.findUnique({
+            where: { id: carneId },
+            include: { lancamentos: true }
+        });
+
+        if (!carne) throw new Error("Carnê não encontrado");
+
+        const session = await getSessionData();
+        if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+        const valorTotal = carne.valor_mensal * qtd;
+
+        // Criar o lançamento financeiro
+        await prisma.lancamentoFinanceiro.create({
+            data: {
+                objetivo_id: carneId,
+                valor_pago: valorTotal,
+                data_recebimento: new Date(),
+                forma_pagamento: 'DINHEIRO', // Pode ser dinâmico
+                registrado_por_id: session.membroId
+            }
+        });
+
+        // Atualizar o contador de parcelas pagas no objetivo
+        await prisma.objetivoFinanceiro.update({
+            where: { id: carneId },
+            data: {
+                parcelas_pagas: { increment: qtd },
+                status: (carne.parcelas_pagas + qtd) >= carne.parcelas_total ? 'CONCLUIDO' : 'ATIVO'
+            }
+        });
+
+        revalidatePath('/financeiro/dashboard');
+        return { ok: true };
+    } catch (e: any) {
+        return { ok: false, error: e.message };
     }
 }

@@ -1,29 +1,30 @@
-// components/despensa/DespensaManager.tsx
 'use client'
 
 import { useState } from 'react'
-import { Search, PackageOpen, Package, Plus, X, HeartHandshake, Loader2, Save } from 'lucide-react'
-import { cadastrarItemLoyverse } from '@/app/admin/despensa/actions'
+import { Search, Loader2, Check, X, Minus, Plus, Package, AlertCircle, Filter, Star, HeartHandshake } from 'lucide-react'
+// Reutilizamos a mesma action mágica que criámos para a despensa!
+import { atualizarStockLoyverseAction } from '@/actions/despensa-actions'
 
-export default function DespensaManager({ produtos, categorias }: { produtos: any[], categorias: any[] }) {
+export default function DespensaManager({ produtos, categorias }: { produtos: any[], categorias?: any[] }) {
     const [busca, setBusca] = useState('');
-    const [modalAberto, setModalAberto] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [filtroAtivo, setFiltroAtivo] = useState<'TODOS' | 'DESTAQUES' | 'ESGOTADOS' | 'DESPENSA' | 'ASSISTENCIA'>('TODOS');
 
-    const produtosFiltrados = produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()));
-    const totalItens = produtos.reduce((acc, curr) => acc + curr.stock, 0);
+    // ========================================================================
+    // LÓGICA DE FILTRAGEM (Pesquisa + Botões de Filtro)
+    // ========================================================================
+    const produtosFiltrados = produtos.filter(p => {
+        const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase());
 
-    async function handleCadastrar(formData: FormData) {
-        setLoading(true);
-        const res = await cadastrarItemLoyverse(formData);
-        setLoading(false);
+        let matchFiltro = true;
+        if (filtroAtivo === 'ESGOTADOS') matchFiltro = p.stock <= 0;
+        if (filtroAtivo === 'DESTAQUES') matchFiltro = p.isDestaque;
+        if (filtroAtivo === 'DESPENSA') matchFiltro = p.categoria.toLowerCase().includes('despensa');
+        if (filtroAtivo === 'ASSISTENCIA') matchFiltro = p.categoria.toLowerCase().includes('assistência') || p.categoria.toLowerCase().includes('assistencia');
 
-        if (res.error) {
-            alert(res.error);
-        } else {
-            setModalAberto(false);
-        }
-    }
+        return matchBusca && matchFiltro;
+    });
+
+    const esgotadosCount = produtos.filter(p => p.stock <= 0).length;
 
     return (
         <div className="space-y-8">
@@ -31,80 +32,114 @@ export default function DespensaManager({ produtos, categorias }: { produtos: an
             {/* CARDS DE RESUMO */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-bg2 border border-soft p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm">
-                    <div className="p-4 bg-blue-500/10 text-blue-500 rounded-2xl"><Package size={24} /></div>
+                    <div className="p-4 bg-figueira/10 text-figueira rounded-2xl"><Package size={24} /></div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Variedade de Produtos</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total de Produtos</p>
                         <p className="text-3xl font-black italic tracking-tighter text-fg">{produtos.length}</p>
                     </div>
                 </div>
 
-                <div className="bg-bg2 border border-soft p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm">
-                    <div className="p-4 bg-emerald-500/10 text-emerald-500 rounded-2xl"><HeartHandshake size={24} /></div>
+                <div className={`border p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm transition-colors ${esgotadosCount > 0 ? 'bg-red-50 border-red-100' : 'bg-bg2 border-soft'}`}>
+                    <div className={`p-4 rounded-2xl ${esgotadosCount > 0 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                        {esgotadosCount > 0 ? <AlertCircle size={24} /> : <Check size={24} />}
+                    </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total de Unidades em Stock</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-fg">{Math.floor(totalItens)}</p>
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${esgotadosCount > 0 ? 'text-red-500' : 'text-muted'}`}>Ruptura de Stock</p>
+                        <p className={`text-3xl font-black italic tracking-tighter ${esgotadosCount > 0 ? 'text-red-600' : 'text-fg'}`}>{esgotadosCount}</p>
                     </div>
                 </div>
             </div>
 
-            {/* BARRA DE PESQUISA E BOTÃO DE CADASTRO */}
-            <div className="flex flex-col md:flex-row justify-between gap-4 items-center bg-bg2 border border-soft p-4 rounded-3xl shadow-sm">
-                <div className="relative w-full md:max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
+            {/* BARRA DE PESQUISA E FILTROS */}
+            <div className="space-y-4">
+                <div className="flex items-center bg-bg2 border border-soft p-4 rounded-3xl shadow-sm relative">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted" size={18} />
                     <input
                         type="text"
-                        placeholder="Pesquisar donativo / insumo..."
+                        placeholder="Pesquisar produto na despensa..."
                         value={busca}
                         onChange={(e) => setBusca(e.target.value)}
-                        className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-fg outline-none focus:border-blue-500 transition-colors"
+                        className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-4 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
                     />
                 </div>
 
-                <button
-                    onClick={() => setModalAberto(true)}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 shrink-0"
-                >
-                    <Plus size={16} /> Cadastrar Novo Item
-                </button>
+                {/* BOTÕES DE FILTRO (AGORA COM DESPENSA E ASSISTÊNCIA) */}
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={() => setFiltroAtivo('TODOS')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filtroAtivo === 'TODOS' ? 'bg-fg text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-fg'}`}
+                    >
+                        Todos
+                    </button>
+                    <button
+                        onClick={() => setFiltroAtivo('DESTAQUES')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'DESTAQUES' ? 'bg-yellow-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-yellow-500'}`}
+                    >
+                        <Star size={12} /> Destaques
+                    </button>
+                    <button
+                        onClick={() => setFiltroAtivo('ESGOTADOS')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'ESGOTADOS' ? 'bg-red-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-red-500'}`}
+                    >
+                        <AlertCircle size={12} /> Esgotados
+                    </button>
+                    <button
+                        onClick={() => setFiltroAtivo('DESPENSA')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'DESPENSA' ? 'bg-blue-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-blue-500'}`}
+                    >
+                        <Package size={12} /> Despensa
+                    </button>
+                    <button
+                        onClick={() => setFiltroAtivo('ASSISTENCIA')}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${filtroAtivo === 'ASSISTENCIA' ? 'bg-orange-500 text-white shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-orange-500'}`}
+                    >
+                        <HeartHandshake size={12} /> Assistência
+                    </button>
+                </div>
             </div>
 
-            {/* TABELA DE INVENTÁRIO */}
+            {/* TABELA DE PRODUTOS E STOCK */}
             <div className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
                             <tr className="bg-soft/30 border-b border-soft text-[9px] font-black uppercase tracking-widest text-muted">
-                                <th className="p-5 pl-8">Nome do Item</th>
+                                <th className="p-5 pl-8">Produto</th>
+                                <th className="p-5">Preço</th>
                                 <th className="p-5">Categoria</th>
-                                <th className="p-5 text-right pr-8">Em Stock</th>
+                                <th className="p-5 text-right pr-8 w-48">Gestão de Stock</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-soft">
                             {produtosFiltrados.length > 0 ? (
                                 produtosFiltrados.map(p => (
                                     <tr key={p.id} className="hover:bg-soft/20 transition-colors group">
-                                        <td className="p-5 pl-8 font-black uppercase text-sm text-fg">
-                                            {p.nome}
+                                        <td className="p-5 pl-8">
+                                            <div className="flex items-center gap-3">
+                                                {p.isDestaque && <Star size={14} className="text-yellow-500 shrink-0" />}
+                                                <span className="font-black uppercase text-sm text-fg">{p.nome}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-5">
+                                            <span className="font-bold text-xs text-muted">
+                                                {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(p.preco)}
+                                            </span>
                                         </td>
                                         <td className="p-5">
                                             <span className="bg-soft text-muted px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest">
                                                 {p.categoria}
                                             </span>
                                         </td>
-                                        <td className="p-5 text-right pr-8">
-                                            <span className={`inline-flex px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest border ${p.stock > 5 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                                                p.stock > 0 ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                    'bg-red-500/10 text-red-500 border-red-500/20'
-                                                }`}>
-                                                {Math.floor(p.stock)} UN
-                                            </span>
+                                        <td className="p-5 pr-8">
+                                            {/* O COMPONENTE MÁGICO DE AJUSTE DE STOCK */}
+                                            <AjustadorStock variantId={p.varianteId} stockAtual={p.stock} />
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={3} className="p-10 text-center text-muted text-xs font-black uppercase tracking-widest">
-                                        Nenhum item encontrado.
+                                    <td colSpan={4} className="p-10 text-center text-muted text-xs font-black uppercase tracking-widest">
+                                        Nenhum produto encontrado com este filtro.
                                     </td>
                                 </tr>
                             )}
@@ -112,62 +147,80 @@ export default function DespensaManager({ produtos, categorias }: { produtos: an
                     </table>
                 </div>
             </div>
+        </div>
+    )
+}
 
-            {/* MODAL DE CADASTRO */}
-            {modalAberto && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-bg2 w-full max-w-lg border border-soft p-8 rounded-[3rem] shadow-2xl relative animate-in zoom-in-95 duration-200">
+// ============================================================================
+// COMPONENTE DE AJUSTE DE STOCK INLINE
+// ============================================================================
+function AjustadorStock({ variantId, stockAtual }: { variantId: string, stockAtual: number }) {
+    const [valor, setValor] = useState(Math.floor(stockAtual));
+    const [isSaving, setIsSaving] = useState(false);
 
-                        <button onClick={() => setModalAberto(false)} className="absolute top-6 right-6 p-2 bg-soft text-muted rounded-full hover:bg-red-500 hover:text-white transition-colors">
-                            <X size={16} />
-                        </button>
+    // Se o valor for alterado, mostramos os botões de Guardar/Cancelar
+    const foiAlterado = valor !== Math.floor(stockAtual);
 
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
-                                <PackageOpen size={24} className="text-blue-500" /> Cadastrar Item
-                            </h2>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">
-                                Registe um novo mantimento na base de dados.
-                            </p>
-                        </div>
+    const handleSave = async () => {
+        setIsSaving(true);
+        // Usamos a mesma action da Despensa, pois faz exatamente a mesma coisa na API do Loyverse!
+        const res = await atualizarStockLoyverseAction(variantId, valor);
+        if (res.error) {
+            alert(res.error);
+            setValor(Math.floor(stockAtual)); // Reverte em caso de erro
+        }
+        setIsSaving(false);
+    };
 
-                        <form action={handleCadastrar} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-4">Nome do Produto</label>
-                                <input
-                                    name="nome"
-                                    required
-                                    placeholder="Ex: Arroz Agulha 1Kg"
-                                    className="w-full bg-bg border border-soft rounded-2xl p-4 text-xs font-bold text-fg focus:border-blue-500 outline-none shadow-sm transition-all"
-                                />
-                            </div>
+    return (
+        <div className="flex items-center justify-end gap-2">
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-muted tracking-widest ml-4">Selecione a Categoria</label>
-                                <select
-                                    name="categoria_id"
-                                    required
-                                    className="w-full bg-bg border border-soft rounded-2xl p-4 text-xs font-bold text-fg focus:border-blue-500 outline-none shadow-sm transition-all appearance-none cursor-pointer"
-                                >
-                                    {categorias.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+            {/* Controlos de Ajuste */}
+            <div className="flex items-center bg-bg border border-soft rounded-xl overflow-hidden shadow-sm">
+                <button
+                    type="button"
+                    onClick={() => setValor(v => Math.max(0, v - 1))}
+                    className="p-2 text-muted hover:text-fg hover:bg-soft transition-colors active:bg-soft/50"
+                    disabled={isSaving}
+                >
+                    <Minus size={14} />
+                </button>
 
-                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl text-[10px] text-blue-700 font-bold uppercase tracking-widest leading-relaxed">
-                                ℹ️ Nota: Para adicionar unidades (ex: Recebemos 50kg de Arroz), utilize a secção "Inventário" no Backoffice do Loyverse após cadastrar o item aqui.
-                            </div>
+                <input
+                    type="number"
+                    value={valor}
+                    onChange={(e) => setValor(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-12 text-center text-xs font-black text-fg outline-none bg-transparent appearance-none"
+                    disabled={isSaving}
+                />
 
-                            <button disabled={loading} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl active:scale-95 disabled:opacity-50">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                {loading ? 'A Gravar...' : 'Salvar no Loyverse'}
-                            </button>
-                        </form>
-                    </div>
+                <button
+                    type="button"
+                    onClick={() => setValor(v => v + 1)}
+                    className="p-2 text-muted hover:text-fg hover:bg-soft transition-colors active:bg-soft/50"
+                    disabled={isSaving}
+                >
+                    <Plus size={14} />
+                </button>
+            </div>
+
+            {/* Ações de Guardar ou Cancelar */}
+            {foiAlterado && !isSaving && (
+                <div className="flex animate-in fade-in slide-in-from-right-2">
+                    <button onClick={handleSave} className="p-2 text-green-500 hover:bg-green-50 rounded-xl transition-colors" title="Guardar">
+                        <Check size={16} strokeWidth={3} />
+                    </button>
+                    <button onClick={() => setValor(Math.floor(stockAtual))} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="Cancelar">
+                        <X size={16} strokeWidth={3} />
+                    </button>
                 </div>
             )}
 
+            {isSaving && (
+                <div className="p-2">
+                    <Loader2 size={16} className="animate-spin text-figueira" />
+                </div>
+            )}
         </div>
     )
 }

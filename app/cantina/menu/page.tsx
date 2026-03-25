@@ -1,4 +1,3 @@
-// app/cantina/menu/page.tsx
 import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
 import MenuClient from '@/components/cantina/MenuClient'
 import { Coffee } from 'lucide-react'
@@ -11,10 +10,10 @@ export default async function CantinaMenuPublico() {
     const [items, inventory, categories] = await Promise.all([
         getLoyverseItems(),
         getLoyverseInventory(),
-        getLoyverseCategories() // <- Adicionámos isto
+        getLoyverseCategories()
     ]);
 
-    // 2. Descobre os IDs proibidos
+    // 2. Descobre os IDs proibidos (Despensa e Assistência)
     const categoriasOcultasIds = categories
         .filter((c: any) => {
             const nomeCat = c.name.toLowerCase();
@@ -22,37 +21,38 @@ export default async function CantinaMenuPublico() {
         })
         .map((c: any) => c.id);
 
-    // Filtra os Itens
-    const itensPublicos = items.filter((item: any) => !categoriasOcultasIds.includes(item.category_id));
+    // 3. Processamento dos Itens
+    const produtosProcessados = items
+        .filter((item: any) => !categoriasOcultasIds.includes(item.category_id))
+        .map((item: any) => {
+            const variantePrincipal = item.variants?.[0] || {};
+            const stockInfo = inventory.find((inv: any) => inv.variant_id === variantePrincipal?.variant_id);
+            const stock = stockInfo?.in_stock || 0;
+            const isAvailable = variantePrincipal?.stores?.[0]?.available_for_sale ?? true;
+            // BUSCAR O PREÇO REAL (Igual ao que corrigimos nos outros ficheiros)
+            const precoReal = variantePrincipal?.default_price ?? variantePrincipal?.stores?.[0]?.price ?? 0;
 
-    const definirCategoria = (nome: string) => {
-        const n = nome.toLowerCase();
-        if (n.includes('doce') || n.includes('sobremesa') || n.includes('bolo') || n.includes('brownie') || n.includes('brigadeiro')) return 'Doces & Sobremesas';
-        if (n.includes('salgado') || n.includes('lanche') || n.includes('torta') || n.includes('coxinha') || n.includes('pastel') || n.includes('pão') || n.includes('sanduiche') || n.includes('bife')) return 'Salgados & Lanches';
-        if (n.includes('bebida') || n.includes('suco') || n.includes('refrigerante') || n.includes('água') || n.includes('cafe') || n.includes('café') || n.includes('sumo')) return 'Bebidas';
-        if (n.includes('combo') || n.includes('promo')) return 'Combos Especiais';
-        return 'Diversos';
-    };
+            // BUSCAR A CATEGORIA REAL DO LOYVERSE
+            const categoriaObj = categories.find((c: any) => c.id === item.category_id);
+            const nomeCategoria = categoriaObj?.name || 'Diversos';
 
-    // 3. Processamento dos Itens (Usando a lista itensPublicos)
-    const produtosProcessados = itensPublicos.map((item: any) => {
-        const variantePrincipal = item.variants[0];
-        const stockInfo = inventory.find((inv: any) => inv.variant_id === variantePrincipal?.variant_id);
-        const stock = stockInfo?.in_stock || 0;
+            let nomeOriginal = item.item_name.trim();
+            let nomeLimpo = nomeOriginal.replace(/^-+/, '').trim();
 
-        let nomeOriginal = item.item_name.trim();
-        let nomeLimpo = nomeOriginal.replace(/^-+/, '').trim();
-
-        return {
-            id: item.id,
-            nome: nomeLimpo,
-            categoria: definirCategoria(nomeLimpo),
-            preco: variantePrincipal?.price || 0,
-            imagem: item.image_url || null,
-            cor: item.color || '#4b5563',
-            stock: stock,
-        };
-    }).filter((p: any) => p.stock > 0);
+            return {
+                id: item.id,
+                nome: nomeLimpo,
+                // Usamos a categoria real vinda do Loyverse para os filtros do MenuClient
+                categoria: nomeCategoria,
+                preco: precoReal,
+                imagem: item.image_url || null,
+                cor: item.color || '#4b5563',
+                stock: stock,
+                isAvailable: isAvailable,
+            };
+        })
+        // Removemos itens sem stock e itens marcados como "Não disponível para venda"
+        .filter((p: any) => p.stock > 0 && p.isAvailable);
 
     return (
         <main className="min-h-screen bg-bg pb-24">
@@ -78,11 +78,19 @@ export default async function CantinaMenuPublico() {
 
             {/* COMPONENTE INTERATIVO (Filtros e Grelha) */}
             <div className="max-w-5xl mx-auto px-6 mt-8">
+                {/* O MenuClient agora recebe os produtos com os nomes de categoria reais do Loyverse */}
                 <MenuClient produtos={produtosProcessados} />
             </div>
 
-            {/* BOTÃO VOLTAR (Opcional, caso venham de um QR Code na mesa) */}
-            <div className="text-center mt-16">
+            {/* FOOTER QR CODE INFO */}
+            <footer className="text-center mt-12 mb-8 px-6">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted/40">
+                    ADMVC • Menu Digital Sincronizado
+                </p>
+            </footer>
+
+            {/* BOTÃO VOLTAR */}
+            <div className="text-center mt-4">
                 <Link href="/" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
                     &larr; Voltar à página principal
                 </Link>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Coffee, Euro, Loader2, CheckCircle2, X, Check } from 'lucide-react'
-import { solicitarSaldoCantinaAction } from '@/app/financeiro/actions'
+import { solicitarSaldoCantinaAction } from '@/actions/financeiro-actions'
 
 export default function ModalCarregarCantina({ membroId }: { membroId: number }) {
     const [aberto, setAberto] = useState(false);
