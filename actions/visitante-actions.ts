@@ -85,3 +85,42 @@ export async function salvarRelatoRapido(formData: FormData) {
         return { ok: false, error: "Falha técnica ao gravar o relato." };
     }
 }
+
+export async function registarAcompanhamento(formData: FormData) {
+    try {
+        const session = await getSessionData();
+        if (!session) return { error: "Sessão expirada." };
+
+        const visitanteId = Number(formData.get('visitante_id'));
+        const tipoContacto = formData.get('tipo_contacto') as string;
+        const observacoes = formData.get('observacoes') as string;
+        const novoStatus = formData.get('status') as string;
+        const quantidadeVisitas = Number(formData.get('quantidade_visitas')) || 1;
+
+        // 1. Grava o histórico
+        await prisma.acompanhamentoVisitante.create({
+            data: {
+                visitante_id: visitanteId,
+                membro_id: session.membroId,
+                tipo_contacto: tipoContacto,
+                observacoes: observacoes
+            }
+        });
+
+        // 2. Atualiza o visitante
+        await prisma.visitante.update({
+            where: { id: visitanteId },
+            data: {
+                status: novoStatus,
+                quantidade_visitas: quantidadeVisitas,
+                data_ultima_visita: new Date()
+            }
+        });
+
+        revalidatePath('/departamentos/acolhimento/dashboard');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao registar acompanhamento:", error);
+        return { error: "Falha ao gravar os dados." };
+    }
+}
