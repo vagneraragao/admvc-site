@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { CalendarDays, Clock, ShieldCheck, User, CheckCircle2, Trash2, Edit3, X, Save, Loader2, LayoutGrid } from 'lucide-react'
 import { removerEscalaAction, atualizarEscalaAction } from '@/actions/admin-actions'
+import ModalEditarEscala from '@/components/admin/ModalEditarEscala'
+import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
+import BotaoApagarEvento from '@/components/admin/BotaoApagarEvento'
+
 
 export default function ListaEscalados({ eventos }: { eventos: any[] }) {
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -59,17 +63,28 @@ export default function ListaEscalados({ eventos }: { eventos: any[] }) {
                 return (
                     <div key={evento.id} className="bg-bg border border-soft rounded-[2.5rem] overflow-hidden shadow-sm">
 
-                        {/* CABEÇALHO DO EVENTO */}
+{/* CABEÇALHO DO EVENTO */}
                         <div className="bg-bg2 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">
-                                    {evento.nome}
-                                </h3>
-                                <p className="text-[10px] font-black uppercase text-muted tracking-widest mt-1.5 flex items-center gap-1.5">
-                                    <CalendarDays size={12} className="text-figueira" /> {dataFormatada}
-                                </p>
+                            
+                            {/* AGRUPAMOS O TÍTULO E O BOTÃO DE EDITAR */}
+                            <div className="flex items-start sm:items-center gap-4">
+                                <div>
+                                    <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">
+                                        {evento.nome}
+                                    </h3>
+                                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mt-1.5 flex items-center gap-1.5">
+                                        <CalendarDays size={12} className="text-figueira" /> {dataFormatada}
+                                    </p>
+                                </div>
+                                
+                                {/* O TEU MODAL DE EDITAR EVENTO ENTRA AQUI! */}
+                                <div className="mt-1 sm:mt-0">
+                                    <ModalEditarEvento evento={evento} />
+                                    <BotaoApagarEvento id={evento.id} nome={evento.nome} />
+                                </div>
                             </div>
-                            <span className="bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-fg px-3 py-1.5 rounded-lg shadow-sm">
+
+                            <span className="bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-fg px-3 py-1.5 rounded-lg shadow-sm whitespace-nowrap">
                                 {evento.escalas.length} Voluntários no total
                             </span>
                         </div>
@@ -135,13 +150,7 @@ export default function ListaEscalados({ eventos }: { eventos: any[] }) {
 
                                                             {/* BOTÕES DE AÇÃO */}
                                                             <div className="flex items-center gap-2 self-end sm:self-auto">
-                                                                <button
-                                                                    onClick={() => setEditingId(escala.id)}
-                                                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg border border-soft text-muted hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
-                                                                    title="Editar Escala"
-                                                                >
-                                                                    <Edit3 size={14} />
-                                                                </button>
+                                                                <ModalEditarEscala escala={escala} />
                                                                 <button
                                                                     onClick={() => handleRemover(escala.id)}
                                                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg border border-soft text-muted hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"

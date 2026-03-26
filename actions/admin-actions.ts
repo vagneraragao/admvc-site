@@ -575,25 +575,6 @@ export async function criarEventoUnificadoAction(formData: FormData) {
     }
 }
 
-export async function apagarEventoAction(eventoId: number) {
-    try {
-        // 1. Limpa todas as escalas (voluntários) associadas a este evento primeiro
-        await prisma.escala.deleteMany({
-            where: { evento_id: eventoId }
-        });
-
-        // 2. Apaga o evento
-        await prisma.evento.delete({
-            where: { id: eventoId }
-        });
-
-        revalidatePath('/admin/escalas');
-        return { ok: true };
-    } catch (error: any) {
-        return { ok: false, error: "Erro ao apagar evento. Tente novamente." };
-    }
-}
-
 export async function criarEscala(formData: FormData) {
     try {
         const evento_id = Number(formData.get('evento_id'));
@@ -786,39 +767,6 @@ export async function associarMembroAFamilia(membroId: number, familiaId: number
     }
 }
 
-export async function editarEventoAction(formData: FormData) {
-    try {
-        const id = formData.get('id') as string;
-        const nome = formData.get('nome') as string;
-        const dataStr = formData.get('data') as string; // YYYY-MM-DD
-        const horaStr = formData.get('horario') as string; // HH:MM
-
-        if (!id || !nome || !dataStr || !horaStr) {
-            return { ok: false, error: "Preencha todos os campos obrigatórios." };
-        }
-
-        // Fundir a data e a hora no formato ISO que o Prisma exige
-        const dataCompleta = new Date(`${dataStr}T${horaStr}:00`);
-
-        await prisma.evento.update({
-            where: { id: Number(id) },
-            data: {
-                nome,
-                data: dataCompleta,
-            }
-        });
-
-        const { revalidatePath } = await import('next/cache');
-        revalidatePath('/admin/escalas');
-        revalidatePath('/membros/dashboard');
-
-        return { ok: true };
-    } catch (error: any) {
-        console.error("Erro ao editar evento:", error);
-        return { ok: false, error: "Erro ao atualizar o evento na base de dados." };
-    }
-}
-
 export async function removerEscalaAction(id: number) {
     try {
         await prisma.escala.delete({ where: { id } });
@@ -847,17 +795,6 @@ export async function atualizarEscalaAction(formData: FormData) {
     }
 }
 
-// ============================================================================
-// 1. GESTÃO DE DEPARTAMENTOS (CONSOLIDADA)
-// ============================================================================
-
-/**
- * SUBSTITUI: atualizarDepartamento e criarDepartamento
- * Faz o "Upsert": Se tiver ID, atualiza. Se não tiver, cria. 
- * Gere automaticamente o cargo de "Líder" na tabela de integrantes.
- */
-
-
 export async function excluirDepartamento(id: number) {
     try {
         await prisma.departamento.delete({ where: { id } });
@@ -869,10 +806,6 @@ export async function excluirDepartamento(id: number) {
         return { ok: false, error: "Erro ao excluir o departamento." };
     }
 }
-
-// ============================================================================
-// 2. GESTÃO DE EQUIPAS E VÍNCULOS
-// ============================================================================
 
 export async function vincularMembroDepartamento(formData: FormData) {
     try {
@@ -949,10 +882,6 @@ export async function buscarMembrosPorDepartamento(deptoId: number) {
     }
 }
 
-// ============================================================================
-// 3. GESTÃO DE MEMBROS (CADASTRO)
-// ============================================================================
-
 export async function criarNovoMembroAction(formData: FormData) {
     const email = (formData.get("email") as string).toLowerCase().trim();
     const password = formData.get("password") as string;
@@ -1014,8 +943,6 @@ export async function criarNovoMembroAction(formData: FormData) {
     revalidatePath("/admin/membros");
     redirect("/admin/membros");
 }
-
-
 
 export async function salvarDepartamento(formData: FormData) {
     try {
@@ -1113,7 +1040,6 @@ export async function salvarDepartamento(formData: FormData) {
     }
 }
 
-
 export async function salvarGrupoAction(formData: FormData) {
     try {
         const idRaw = formData.get("id");
@@ -1194,5 +1120,87 @@ export async function salvarGrupoAction(formData: FormData) {
     } catch (error) {
         console.error("Erro ao salvar grupo:", error);
         return { ok: false, error: "Ocorreu um erro ao gravar o grupo." };
+    }
+}
+
+export async function editarEscalaAction(formData: FormData) {
+    try {
+        const id = Number(formData.get('id'));
+        const funcao = formData.get('funcao') as string;
+        const horario = formData.get('horario') as string;
+
+        if (!id || !funcao) {
+            return { ok: false, error: "Dados inválidos." };
+        }
+
+        await prisma.escala.update({
+            where: { id: id },
+            data: {
+                funcao: funcao,
+                horario: horario || null, // Se vier vazio, guarda null
+            }
+        });
+
+        // Atualiza a página onde as escalas estão a ser mostradas
+        revalidatePath('/admin/escalas'); 
+        
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao editar escala:", error);
+        return { ok: false, error: "Ocorreu um erro ao guardar as alterações." };
+    }
+}
+
+
+
+
+// ATUALIZAR A AÇÃO DE EDITAR
+export async function editarEventoAction(formData: FormData) {
+    try {
+        const id = formData.get('id') as string;
+        const nome = formData.get('nome') as string;
+        const dataStr = formData.get('data') as string; 
+        const horaStr = formData.get('horario') as string; 
+        const descricao = formData.get('descricao') as string; // <-- NOVO
+
+        if (!id || !nome || !dataStr || !horaStr) {
+            return { ok: false, error: "Preencha todos os campos obrigatórios." };
+        }
+
+        const dataCompleta = new Date(`${dataStr}T${horaStr}:00`);
+
+        await prisma.evento.update({
+            where: { id: Number(id) },
+            data: {
+                nome,
+                data: dataCompleta,
+                descricao: descricao || null, // <-- NOVO
+            }
+        });
+
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/admin/escalas');
+        revalidatePath('/membros/dashboard');
+
+        return { ok: true };
+    } catch (error: any) {
+        console.error("Erro ao editar evento:", error);
+        return { ok: false, error: "Erro ao atualizar o evento na base de dados." };
+    }
+}
+
+// ADICIONAR A AÇÃO DE APAGAR EVENTO
+export async function apagarEventoAction(id: number) {
+    try {
+        await prisma.evento.delete({
+            where: { id }
+        });
+
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/admin/escalas');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao apagar evento:", error);
+        return { ok: false, error: "Erro ao remover o evento. Verifica se existem escalas dependentes." };
     }
 }
