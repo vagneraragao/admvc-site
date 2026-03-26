@@ -223,23 +223,34 @@ export async function finalizarRifaAction(rifaId: number) {
 }
 
 export async function solicitarSaldoCantinaAction(formData: FormData) {
+    console.log(`\n======================================================`);
+    console.log(`📝 [CANTINA] NOVO PEDIDO DE CARREGAMENTO RECEBIDO`);
+    console.log(`⏰ Data/Hora: ${new Date().toISOString()}`);
+
     try {
         const membroId = Number(formData.get('membro_id'));
+        const valorCru = String(formData.get('valor'));
+        const formaPagamento = formData.get('forma_pagamento') as string;
+
+        console.log(`👤 ID do Membro: ${membroId}`);
+        console.log(`💳 Método de Pagamento: ${formaPagamento}`);
+        console.log(`💶 Valor Original Digitado: "${valorCru}"`);
 
         // 1. TRUQUE DA VÍRGULA: Substitui vírgulas por pontos (Ex: 17,50 vira 17.50)
-        // Isso evita que o Prisma rejeite o número e falhe a gravação
-        const valorCru = String(formData.get('valor')).replace(',', '.');
-        const valor = Number(valorCru);
-
-        const formaPagamento = formData.get('forma_pagamento') as string;
+        const valorTratado = valorCru.replace(',', '.');
+        const valor = Number(valorTratado);
+        console.log(`💶 Valor Convertido P/ Sistema: €${valor}`);
 
         // Validação de segurança
         if (!membroId || !valor || isNaN(valor) || valor <= 0) {
+            console.error(`❌ [ERRO] Valor inválido ou ID do membro em falta.`);
+            console.log(`======================================================\n`);
             return { ok: false, error: "Valor inválido. Por favor, verifique o montante." };
         }
 
         // 2. GRAVAR COMO PENDENTE
-        await prisma.pedidoSaldoCantina.create({
+        console.log(`💾 [PRISMA] A gravar o pedido na base de dados (Status: PENDENTE)...`);
+        const novoPedido = await prisma.pedidoSaldoCantina.create({
             data: {
                 membro_id: membroId,
                 valor: valor,
@@ -248,83 +259,54 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
             }
         });
 
-        // 3. O SEGREDO DO CACHE: Mandar o Next.js atualizar as DUAS dashboards!
-        revalidatePath('/membros/dashboard');
-        revalidatePath('/departamentos/financeiro/dashboard'); // Faltava limpar o cache do tesoureiro!
+        console.log(`✅ [SUCESSO] Pedido #${novoPedido.id} registado no sistema!`);
 
+        // 3. O SEGREDO DO CACHE: Mandar o Next.js atualizar as DUAS dashboards!
+        console.log(`🔄 [CACHE] A limpar cache das dashboards do Membro e Tesoureiro...`);
+        revalidatePath('/membros/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard');
+
+        console.log(`======================================================\n`);
         return { ok: true };
     } catch (error: any) {
-        console.error("Erro ao solicitar saldo:", error);
+        console.error(`🚨 [FALHA CRÍTICA AO SOLICITAR SALDO]`, error);
+        console.log(`======================================================\n`);
         return { ok: false, error: "Erro interno ao processar o pedido." };
     }
 }
 
+
 export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: string | null, valor: number) {
+    console.log(`\n======================================================`);
+    console.log(`[FINANCEIRO] INICIANDO APROVAÇÃO DE SALDO`);
+    console.log(`-> Pedido ID: ${pedidoId}`);
+    console.log(`-> Valor a carregar: €${valor}`);
+
     try {
-        if (!loyverseId) {
+        if (!loyverseId || loyverseId.trim() === '' || loyverseId === 'null') {
+            console.error(`[ERRO CRÍTICO] O loyverseId está vazio ou nulo!`);
             throw new Error("O membro não tem um ID do Loyverse associado.");
         }
 
         const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
 
         // ====================================================================
-        // 1. FORÇA BRUTA: INJETAR OS PONTOS DIRETAMENTE NA CONTA DO CLIENTE
+        // 1. OBTER STORE, PAYMENT E ITEM (Para gerar o recibo)
         // ====================================================================
-        // A) Primeiro, lemos os dados completos que o cliente já tem lá
-        const customerRes = await fetch(`https://api.loyverse.com/v1.0/customers/${loyverseId}`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${loyverseToken}` }
-        });
+        console.log(`[LOYVERSE] A obter IDs do sistema...`);
+        const [storesRes, paymentRes, itemsRes] = await Promise.all([
+            fetch('https://api.loyverse.com/v1.0/stores', { headers: { 'Authorization': `Bearer ${loyverseToken}` } }),
+            fetch('https://api.loyverse.com/v1.0/payment_types', { headers: { 'Authorization': `Bearer ${loyverseToken}` } }),
+            fetch('https://api.loyverse.com/v1.0/items', { headers: { 'Authorization': `Bearer ${loyverseToken}` } })
+        ]);
 
-        if (!customerRes.ok) {
-            const errGet = await customerRes.text();
-            throw new Error(`Erro ao ler cliente no Loyverse: ${errGet}`);
-        }
-
-        const customerData = await customerRes.json();
-        const currentPoints = Number(customerData.total_points || 0);
-        const newPoints = currentPoints + Number(valor);
-
-        // B) Atualizamos o saldo do cliente enviando o ID, os Pontos e o Nome (para evitar bloqueios)
-        const updateCustomerRes = await fetch('https://api.loyverse.com/v1.0/customers', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${loyverseToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                id: loyverseId,
-                name: customerData.name || "Membro", // O Loyverse costuma exigir o nome nas atualizações
-                total_points: newPoints
-            })
-        });
-
-        if (!updateCustomerRes.ok) {
-            // AGORA SIM! VAMOS VER O ERRO REAL DO LOYVERSE:
-            const errorText = await updateCustomerRes.text();
-            throw new Error(`O Loyverse bloqueou a injeção de pontos: ${errorText}`);
-        }
-
-        // ====================================================================
-        // 2. OBTER LOJA, PAGAMENTO E PRODUTO (Como já tínhamos feito)
-        // ====================================================================
-        const storesRes = await fetch('https://api.loyverse.com/v1.0/stores', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${loyverseToken}` }
-        });
-        const storeId = (await storesRes.json()).stores[0].id;
-
-        const paymentRes = await fetch('https://api.loyverse.com/v1.0/payment_types', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${loyverseToken}` }
-        });
-        const paymentTypeId = (await paymentRes.json()).payment_types[0].id;
-
-        const itemsRes = await fetch('https://api.loyverse.com/v1.0/items', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${loyverseToken}` }
-        });
+        const storeId = (await storesRes.json()).stores[0]?.id;
+        const paymentTypeId = (await paymentRes.json()).payment_types[0]?.id;
         const itemsData = await itemsRes.json();
+
+        if (!storeId || !paymentTypeId) {
+            throw new Error("Erro de configuração de loja no Loyverse.");
+        }
 
         let recargaVariantId = null;
         let recargaItemId = null;
@@ -340,6 +322,7 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
         }
 
         if (!recargaVariantId) {
+            console.log(`[LOYVERSE] A criar item "Recarga Cantina"...`);
             const novoItemRes = await fetch('https://api.loyverse.com/v1.0/items', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${loyverseToken}`, 'Content-Type': 'application/json' },
@@ -347,54 +330,57 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
             });
             const novoItemData = await novoItemRes.json();
             recargaItemId = novoItemData.id;
-            recargaVariantId = novoItemData.variants[0].variant_id;
+            recargaVariantId = novoItemData.variants[0]?.variant_id;
         }
 
         // ====================================================================
-        // 3. GERAR O RECIBO CONTABILÍSTICO (Sem os pontos para não duplicar)
+        // 2. GERAR RECIBO E DEIXAR O LOYVERSE DAR OS PONTOS AUTOMATICAMENTE
         // ====================================================================
+        console.log(`[LOYVERSE] A gerar recibo oficial. O Loyverse vai calcular os pontos sozinho...`);
+
         const receipt = {
             store_id: storeId,
-            customer_id: loyverseId,
+            customer_id: loyverseId, // MANTEMOS O NOME DO MEMBRO PARA ELE RECEBER OS PONTOS
             order_type: 'SALES',
             source: 'API',
             receipt_type: 'SALE',
             total_money: valor,
             total_tax: 0,
-            // Removi o 'points_earned' para evitar que o Loyverse dê pontos em duplicado.
-            payments: [
-                {
-                    payment_type_id: paymentTypeId,
-                    money_amount: valor
-                }
-            ],
-            line_items: [
-                {
-                    item_id: recargaItemId,
-                    variant_id: recargaVariantId,
-                    quantity: 1,
-                    price: valor,
-                    gross_total_money: valor,
-                    total_money: valor
-                }
-            ]
+            payments: [{ payment_type_id: paymentTypeId, money_amount: valor }],
+            line_items: [{
+                item_id: recargaItemId,
+                variant_id: recargaVariantId,
+                quantity: 1,
+                price: valor,
+                gross_total_money: valor,
+                total_money: valor
+            }]
         };
 
-        const loyverseRes = await fetch(`https://api.loyverse.com/v1.0/receipts`, {
+        const loyverseReceiptRes = await fetch(`https://api.loyverse.com/v1.0/receipts`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${loyverseToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(receipt)
         });
 
-        if (!loyverseRes.ok) throw new Error("Recibo rejeitado, mas pontos adicionados!");
+        if (!loyverseReceiptRes.ok) {
+            const recErr = await loyverseReceiptRes.text();
+            console.error(`[LOYVERSE ERRO] Falha ao gerar recibo:`, recErr);
+            throw new Error("O Loyverse rejeitou o recibo.");
+        }
+
+        console.log(`✅ [LOYVERSE] Recibo aceite! Pontos atribuídos pelo Loyverse.`);
 
         // ====================================================================
-        // 4. ATUALIZAR STATUS NO BANCO E REVALIDAR
+        // 3. ATUALIZAR STATUS NO PRISMA
         // ====================================================================
+        console.log(`[PRISMA] Pedido #${pedidoId} aprovado com sucesso!`);
         await prisma.pedidoSaldoCantina.update({
             where: { id: pedidoId },
             data: { status: 'APROVADO' }
         });
+
+        console.log(`======================================================\n`);
 
         revalidatePath('/departamentos/financeiro/dashboard');
         revalidatePath('/membros/dashboard');
@@ -402,6 +388,7 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
         return { ok: true };
 
     } catch (error: any) {
+        console.error(`[ERRO FINAL]`, error);
         return { ok: false, error: error.message };
     }
 }
@@ -498,9 +485,10 @@ export async function setVencedoresRifaAction(formData: FormData) {
     }
 }
 
-
 export async function getHistoricoComprasLoyverse(loyverseId: string) {
-    if (!loyverseId) return { error: "ID não encontrado" };
+    if (!loyverseId) {
+        throw new Error("O membro não tem um ID do Loyverse associado.");
+    }
     const token = process.env.LOYVERSE_ACCESS_TOKEN;
 
     try {

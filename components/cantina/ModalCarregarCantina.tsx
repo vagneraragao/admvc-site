@@ -1,13 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Coffee, Euro, Loader2, CheckCircle2, X, Check } from 'lucide-react'
+import { Coffee, Euro, Loader2, CheckCircle2, X, Check, RefreshCw } from 'lucide-react'
 import { solicitarSaldoCantinaAction } from '@/actions/financeiro-actions'
+import { useRouter } from 'next/navigation' // 👈 Importação para forçar o refresh
 
 export default function ModalCarregarCantina({ membroId }: { membroId: number }) {
+    const router = useRouter(); // Hook de navegação
+
+    // ESTADOS DO MODAL
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [sucesso, setSucesso] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false); // Estado para o botão de sync
 
     // ESTADOS PARA O VALOR
     const [valorSelecionado, setValorSelecionado] = useState<number | string>(10);
@@ -27,8 +32,20 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
         setIsCustom(true);
     };
 
+    // Função de Refresh
+    const handleRefreshSaldo = async () => {
+        setIsRefreshing(true);
+        // O router.refresh() diz ao Next.js para re-renderizar a página no servidor
+        // Isto fará com que o teu fetch() do Loyverse corra novamente.
+        router.refresh();
+
+        // Simular um pequeno delay para a animação de loading ser perceptível
+        setTimeout(() => {
+            setIsRefreshing(false);
+        }, 1500);
+    }
+
     async function handleSubmit(formData: FormData) {
-        // Prevenção extra
         if (!valorSelecionado || Number(valorSelecionado) <= 0) {
             alert("Por favor, insira um valor válido.");
             return;
@@ -42,7 +59,6 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
             setTimeout(() => {
                 setAberto(false);
                 setSucesso(false);
-                // Reseta para o padrão ao fechar
                 setValorSelecionado(10);
                 setIsCustom(false);
             }, 3000);
@@ -53,7 +69,9 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
     }
 
     return (
-        <>
+        <div className="flex items-center gap-3">
+
+            {/* BOTÃO CARREGAR SALDO (Original) */}
             <button
                 onClick={() => setAberto(true)}
                 className="bg-fg hover:bg-figueira text-bg px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl w-full md:w-auto"
@@ -61,6 +79,19 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                 <Euro size={16} /> Carregar Saldo
             </button>
 
+            {/* 👇 NOVO BOTÃO DE SINCRONIZAÇÃO 👇 */}
+            <button
+                onClick={handleRefreshSaldo}
+                disabled={isRefreshing}
+                title="Sincronizar Saldo"
+                className="bg-bg border border-soft hover:bg-figueira hover:text-white hover:border-figueira text-muted p-4 rounded-2xl transition-all active:scale-95 shadow-sm disabled:opacity-50"
+            >
+                <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin text-figueira' : ''}`} />
+            </button>
+
+            {/* ========================================================= */}
+            {/* MODAL                                                     */}
+            {/* ========================================================= */}
             {aberto && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-bg2 border border-soft w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
@@ -84,14 +115,11 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                             </div>
                         ) : (
                             <form action={handleSubmit} className="p-6 space-y-6">
-                                {/* Campos invisíveis para o FormData */}
                                 <input type="hidden" name="membro_id" value={membroId} />
                                 <input type="hidden" name="valor" value={valorSelecionado} />
 
                                 <div>
                                     <label className="text-[9px] font-black uppercase text-muted ml-2 tracking-widest">Selecione o Valor</label>
-
-                                    {/* CAIXAS RÁPIDAS */}
                                     <div className="grid grid-cols-3 gap-3 mt-3">
                                         {opcoesPadrao.map(val => {
                                             const isAtivo = !isCustom && Number(valorSelecionado) === val;
@@ -115,14 +143,12 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                                         })}
                                     </div>
 
-                                    {/* DIVISOR */}
                                     <div className="flex items-center gap-3 py-4">
                                         <div className="h-[1px] flex-1 bg-soft"></div>
                                         <span className="text-[8px] font-black uppercase tracking-widest text-muted">Ou Customizado</span>
                                         <div className="h-[1px] flex-1 bg-soft"></div>
                                     </div>
 
-                                    {/* CAMPO DE VALOR LIVRE */}
                                     <div className="relative">
                                         <Euro size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isCustom ? 'text-figueira' : 'text-muted'}`} />
                                         <input
@@ -149,7 +175,6 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                                     </select>
                                 </div>
 
-                                {/* BOTÃO SUBMIT */}
                                 <button
                                     disabled={loading || !valorSelecionado || Number(valorSelecionado) <= 0}
                                     className="w-full bg-fg text-bg py-5 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-figueira transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95 shadow-xl"
@@ -168,6 +193,6 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                     </div>
                 </div>
             )}
-        </>
+        </div>
     )
 }

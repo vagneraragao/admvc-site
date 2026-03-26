@@ -107,7 +107,7 @@ export default async function GestaoCantinaPage() {
             <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
                 {/* 1. Menu Público */}
-                <Link href="/cantina/menu" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-figueira hover:shadow-lg hover:shadow-figueira/10 transition-all group flex flex-col justify-between gap-4 h-full">
+                <Link href="/departamentos/cantina/menu" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-figueira hover:shadow-lg hover:shadow-figueira/10 transition-all group flex flex-col justify-between gap-4 h-full">
                     <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Smartphone size={20} />
                     </div>
@@ -118,7 +118,7 @@ export default async function GestaoCantinaPage() {
                 </Link>
 
                 {/* 2. TV / Video Wall */}
-                <Link href="/cantina/tv" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 transition-all group flex flex-col justify-between gap-4 h-full">
+                <Link href="/departamentos/cantina/tv" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 transition-all group flex flex-col justify-between gap-4 h-full">
                     <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <MonitorPlay size={20} />
                     </div>

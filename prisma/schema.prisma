@@ -20,27 +20,23 @@ model Membro {
   id Int @id @default(autoincrement())
 
   // 1. Identificação Pessoal
-  first_name     String
-  last_name      String
-  email          String    @unique
-  password       String?
-  avatar_file    String?
-  birthdate      DateTime?
-  gender         String?
-  marital_status String?
-  nationality    String?
-  tax_id         String? // NIF ou CPF
-  id_card_number String? // Cartão de Cidadão / RG
-  profession     String?
-  lang           String?   @default("pt")
+  avatar_file     String?
+  first_name      String
+  last_name       String
+  email           String        @unique
+  phone_1         String
+  phone_2         String? // Opcional, nao aparece no cadastro
+  birthdate       DateTime?
+  gender          String?
+  profession      String?
+  father_name     String? // 2. Filiação Pai
+  mother_name     String? // 2. Filiação Mãe
+  escolaridade_id Int?
+  escolaridade    Escolaridade? @relation(fields: [escolaridade_id], references: [id])
+  conversion_date DateTime?
+  password        String?
 
-  // 2. Filiação
-  father_name String?
-  mother_name String?
-
-  // 3. Contacto e Morada
-  phone_1        String
-  phone_2        String?
+  // 2. Contacto e Morada
   address_1      String? // Rua
   address_2      String? // Complemento
   address_number String?
@@ -48,6 +44,14 @@ model Membro {
   id_city        String?
   state          String?
   country        String? @default("Portugal")
+  neighborhood   String?
+
+  // 3. Familia
+  marital_status String?
+  nationality    String?
+  tax_id         String? // NIF ou CPF
+  id_card_number String? // Cartão de Cidadão / RG
+  lang           String? @default("pt")
 
   // 4. Dados Eclesiásticos (Campos de Gestão)
   baptism_status  String?   @default("Não Batizado")
@@ -70,19 +74,16 @@ model Membro {
 
   // 6. Dados Matrimoniais e Filhos
   spouse_name      String? // Nome do Cônjuge
-  spouse_christian Boolean?      @default(false)
+  spouse_christian Boolean?  @default(false)
   wedding_date     DateTime? // Data do Casamento
-  has_children     Boolean?      @default(false)
-  children_number  Int?          @default(0)
-  escolaridade_id  Int?
-  escolaridade     Escolaridade? @relation(fields: [escolaridade_id], references: [id])
+  has_children     Boolean?  @default(false)
+  children_number  Int?      @default(0)
 
-  conversion_date DateTime?
   // 7. Conexão com a Família
   familia_id      Int?
-  familia         Familia?  @relation(fields: [familia_id], references: [id])
+  familia         Familia? @relation(fields: [familia_id], references: [id])
   parentesco      String? // Ex: "Pai", "Mãe", "Filho(a)", "Cônjuge"
-  is_family_admin Boolean   @default(false) // Se 'true', edita os outros da família
+  is_family_admin Boolean  @default(false) // Se 'true', edita os outros da família
 
   // 8. RELAÇÕES (Corrigidas)
   cargos                  Cargo[]
@@ -91,26 +92,31 @@ model Membro {
   grupos                  Grupo[]                  @relation("MembrosGrupo")
   lider_de_grupo          Grupo[]                  @relation("LideresGrupo")
   escalas                 Escala[]
-  //cargos                  IntegranteDepartamento[]
-  ip_assinatura           String?
-  data_aceite             DateTime?
-  termo_aceite            Boolean                  @default(false)
-  role                    Role                     @default(USER)
 
+  //cargos                  IntegranteDepartamento[]
+  ip_assinatura String?
+  data_aceite   DateTime? // apagar depois
+  termo_aceite  Boolean   @default(false) // apagar depois
+  role          Role      @default(USER)
+
+  // 9. Finanças
   objetivos_financeiros ObjetivoFinanceiro[]
   loyverse_id           String?              @unique
   rifa_numeros          RifaNumero[]
   pedidoSaldoCantinas   PedidoSaldoCantina[]
   contribuicoes         Contribuicao[] // <-- Adicione esta linha
   avisoMurals           AvisoMural[]
+
   // --- Documentação Legal e Interna ---
-  gdpr_aceite           Boolean              @default(false)
-  gdpr_data_assinatura  DateTime?
-  gdpr_validade         DateTime?
+  gdpr_aceite          Boolean   @default(false)
+  gdpr_data_assinatura DateTime?
+  gdpr_validade        DateTime?
 
   permanecer_aceite          Boolean   @default(false)
   permanecer_data_assinatura DateTime?
   permanecer_validade        DateTime?
+
+  encontros_assistidos EncontroGrupo[] @relation("MembrosPresentes")
 
   @@map("membros")
 }
@@ -187,9 +193,25 @@ model Grupo {
   departamento_id Int?
   departamento    Departamento? @relation(fields: [departamento_id], references: [id])
 
-  lideres     Membro[]     @relation("LideresGrupo")
-  membros     Membro[]     @relation("MembrosGrupo")
+  lideres     Membro[]        @relation("LideresGrupo")
+  membros     Membro[]        @relation("MembrosGrupo")
   avisoMurals AvisoMural[]
+  encontros   EncontroGrupo[]
+}
+
+model EncontroGrupo {
+  id       Int      @id @default(autoincrement())
+  grupo_id Int
+  data     DateTime
+  tema     String   @db.Text // O que foi ministrado
+  foto_url String? // Foto opcional do encontro
+
+  grupo Grupo @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
+
+  // Relação com os membros que estiveram presentes
+  presentes Membro[] @relation("MembrosPresentes")
+
+  criado_em DateTime @default(now())
 }
 
 model Cargo {
