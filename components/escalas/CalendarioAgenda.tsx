@@ -5,6 +5,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameD
 import { pt } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, Trash2, Loader2 } from 'lucide-react'
 import { apagarEventoAction } from '@/actions/admin-actions'
+import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 
 export default function CalendarioAgenda({ eventos }: { eventos: any[] }) {
     const [mesAtual, setMesAtual] = useState(new Date())
@@ -122,19 +123,28 @@ export default function CalendarioAgenda({ eventos }: { eventos: any[] }) {
                             // AQUI ESTÁ A CORREÇÃO: Formatamos a hora diretamente da data do evento!
                             const horarioEvento = format(new Date(ev.data), 'HH:mm');
 
-                            return (
+return (
                                 <div key={ev.id} className="bg-bg2 p-5 rounded-3xl border border-soft hover:border-figueira/30 transition-all flex flex-col gap-4 group relative overflow-hidden">
 
-                                    <button
-                                        onClick={() => handleApagarEvento(ev.id)}
-                                        disabled={isDeleting === ev.id}
-                                        title="Apagar Evento"
-                                        className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-colors active:scale-90 disabled:opacity-50"
-                                    >
-                                        {isDeleting === ev.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                                    </button>
+                                    {/* GRUPO DE AÇÕES (EDITAR E APAGAR) - Canto superior direito */}
+                                    <div className="absolute top-4 right-4 flex items-center gap-1.5 z-10">
+                                        
+                                        {/* O TEU MODAL DE EDITAR ENTRA AQUI */}
+                                        <ModalEditarEvento evento={ev} />
 
-                                    <div className="pr-8">
+                                        {/* O TEU BOTÃO DE APAGAR (Ajustei um pouco as margens para não colidir) */}
+                                        <button
+                                            onClick={() => handleApagarEvento(ev.id)}
+                                            disabled={isDeleting === ev.id}
+                                            title="Apagar Evento"
+                                            className="p-2.5 bg-red-500/5 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-colors active:scale-90 disabled:opacity-50 border border-red-500/10 shadow-sm"
+                                        >
+                                            {isDeleting === ev.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                        </button>
+                                    </div>
+
+                                    {/* DETALHES DO EVENTO */}
+                                    <div className="pr-20"> {/* Aumentei o padding direito para o texto não ficar por baixo dos botões */}
                                         <h4 className="text-sm font-black uppercase tracking-tight text-fg group-hover:text-figueira transition-colors truncate">{ev.nome}</h4>
                                         <div className="flex items-center gap-3 mt-2 text-[9px] font-black uppercase text-muted tracking-widest">
                                             {/* MOSTRA O HORÁRIO CORRETO AQUI */}
@@ -143,6 +153,7 @@ export default function CalendarioAgenda({ eventos }: { eventos: any[] }) {
                                         </div>
                                     </div>
 
+                                    {/* CONTADOR DE VOLUNTÁRIOS */}
                                     <div className="flex items-center justify-between border-t border-soft/50 pt-3 mt-1">
                                         <span className="text-[9px] font-black uppercase tracking-widest text-muted">Voluntários:</span>
 

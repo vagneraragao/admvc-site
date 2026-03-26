@@ -7,6 +7,7 @@ import ListaEscalados from '@/components/escalas/ListaEscalados'
 import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
 import ModalGerarEventosLote from '@/components/escalas/ModalGerarEventosLote'
 import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
+import ModalEditarEscala from '@/components/admin/ModalEditarEscala'
 
 export const dynamic = 'force-dynamic'
 
