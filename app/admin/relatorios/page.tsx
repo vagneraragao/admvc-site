@@ -1,3 +1,4 @@
+// app/admin/relatorios/page.tsx
 import prisma from '@/lib/prisma'
 import RelatoriosClient from '@/components/relatorios/RelatoriosClient'
 

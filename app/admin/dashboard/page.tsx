@@ -131,7 +131,7 @@ export default async function AdminDashboard() {
 
             {/* --- NAVEGAÇÃO PRINCIPAL (ESTILO MENU PILL) --- */}
             <nav className="flex flex-wrap gap-3">
-                <MenuPill title="Escalas" href="/admin/escalas" icon={<Calendar size={14} />} />
+                <MenuPill title="Eventos" href="/admin/escalas" icon={<Calendar size={14} />} />
                 <MenuPill title="Membros" href="/admin/membros" icon={<Users size={14} />} />
                 <MenuPill title="Famílias" href="/admin/familias" icon={<Home size={14} />} />
                 <MenuPill title="Departamentos" href="/admin/configuracoes" icon={<HeartHandshake size={14} />} />

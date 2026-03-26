@@ -225,7 +225,16 @@ export default function MeuPerfilClient({ membro, escolaridades = [] }: any) {
                                 <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute -bottom-1 -right-1 bg-fg text-bg p-2.5 rounded-xl shadow-xl hover:bg-figueira transition-all">
                                     <Camera size={16} strokeWidth={3} />
                                 </button>
-                                <input type="file" name="avatar" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+
+                                {/* O NOME AQUI TEM DE SER "avatar" PARA O BACK-END RECONHECER */}
+                                <input
+                                    type="file"
+                                    name="avatar"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                />
                             </div>
                             <div>
                                 <h4 className="text-xl font-black uppercase italic text-fg">Os Meus Dados</h4>

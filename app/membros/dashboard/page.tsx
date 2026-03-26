@@ -44,6 +44,7 @@ export default async function DashboardMembro() {
         include: {
             grupos: true, // Grupos onde é participante
             lider_de_grupo: true, // Grupos onde é líder
+            departamentos_liderados: true,
             ministerios: { include: { departamento: true } },
             familia: true,
             escalas: {
@@ -128,6 +129,24 @@ export default async function DashboardMembro() {
                 tipo: 'DEPARTAMENTO',
                 lider_id: depto.lider_id,
                 funcoes: [vinculo.funcao]
+            });
+        }
+    });
+
+    membro?.departamentos_liderados?.forEach((depto: any) => {
+        const key = `depto-${depto.id}`;
+        if (departamentosAgrupados.has(key)) {
+            const existente = departamentosAgrupados.get(key);
+            // Se o cartão já existe, adiciona-lhe a badge de "Líder"
+            if (!existente.funcoes.includes('Líder')) existente.funcoes.push('Líder');
+        } else {
+            // Se o cartão ainda não existe, cria-o do zero como "Líder"
+            departamentosAgrupados.set(key, {
+                id: depto.id,
+                nome: depto.nome,
+                tipo: 'DEPARTAMENTO',
+                lider_id: depto.lider_id,
+                funcoes: ['Líder']
             });
         }
     });

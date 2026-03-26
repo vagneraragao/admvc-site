@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs' // Recomendo bcryptjs para evitar problemas de compilação em Edge Runtime
-
+import { put } from '@vercel/blob' // <-- Importação do Blob Storage
 /*
 export async function atualizarDadosMembroAction(id: number, formData: FormData) {
     try {
@@ -172,7 +172,11 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
 
         const escolaridade_id = formData.get('escolaridade_id') ? Number(formData.get('escolaridade_id')) : null;
         const conversion_date = formData.get('conversion_date') ? new Date(formData.get('conversion_date') as string) : null;
-
+        const entry_date = formData.get('entry_date') ? new Date(formData.get('entry_date') as string) : null;
+        const baptism_date = formData.get('baptism_date') ? new Date(formData.get('baptism_date') as string) : null;
+        const wedding_date = formData.get('wedding_date') ? new Date(formData.get('wedding_date') as string) : null;
+        const spouse_christian = formData.get('spouse_christian') === 'true';
+        const has_children = formData.get('has_children') === 'true';
         // 1. DADOS BASE (Note que is_active, role e status NÃO estão aqui por segurança)
         const dataToUpdate: any = {
             first_name: formData.get('first_name') as string,
@@ -194,11 +198,35 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
             children_number: parseInt(formData.get('children_number') as string || "0"),
             escolaridade_id: escolaridade_id,
             conversion_date: conversion_date,
+            entry_date: entry_date,
+            baptism_date: baptism_date,
+            notes: formData.get('notes') as string || null,
+            previous_church: formData.get('previous_church') as string || null,
+            church_role: formData.get('church_role') as string || null,
+            ministry: formData.get('ministry') as string || null,
+            nationality: formData.get('nationality') as string || null,
+            tax_id: formData.get('tax_id') as string || null,
+            id_card_number: formData.get('id_card_number') as string || null,
+            marital_status: formData.get('marital_status') as string || null,
+            lang: formData.get('lang') as string || 'pt',
+            spouse_christian: spouse_christian,
+            wedding_date: wedding_date,
+            has_children: has_children,
         };
 
         // 2. LÓGICA DA NOVA SENHA (Exatamente igual à do Admin)
         const novaSenha = formData.get('nova_senha') as string;
+        const avatarFile = formData.get('avatar') as File | null;
+        if (avatarFile && avatarFile.size > 0 && avatarFile.name !== 'undefined') {
+            console.log(`📸 A fazer upload da nova foto (${avatarFile.name}) para o Blob Storage...`);
 
+            const blob = await put(`avatars/membro-${membroId}-${Date.now()}-${avatarFile.name}`, avatarFile, {
+                access: 'public',
+            });
+
+            dataToUpdate.avatar_file = blob.url; // Guarda o link público na base de dados
+            console.log(`✅ Upload concluído! URL: ${blob.url}`);
+        }
         if (novaSenha && novaSenha.trim() !== '') {
             console.log(`🔑 O Membro decidiu alterar a sua própria senha: "${novaSenha.trim()}"`);
             dataToUpdate.password = await bcrypt.hash(novaSenha.trim(), 10);
