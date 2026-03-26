@@ -39,12 +39,19 @@ export default async function AcolhimentoDashboard() {
         where: { status: 'NOVO' },
         orderBy: { data_primeira_visita: 'desc' }
     });
-
-    const emContacto = await prisma.visitante.findMany({
+    const emContactoRaw = await prisma.visitante.findMany({
         where: { status: 'EM_CONTACTO' },
         include: {
             acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } }
         }
+    });
+
+    const limite24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const emContacto = emContactoRaw.sort((a, b) => {
+        const dataA = a.acompanhamentos[0]?.data_contacto || a.data_primeira_visita;
+        const dataB = b.acompanhamentos[0]?.data_contacto || b.data_primeira_visita;
+        return new Date(dataB).getTime() - new Date(dataA).getTime();
     });
 
     const consolidados = await prisma.visitante.findMany({
@@ -56,6 +63,9 @@ export default async function AcolhimentoDashboard() {
             day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
         });
     };
+
+
+
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
@@ -89,138 +99,181 @@ export default async function AcolhimentoDashboard() {
 
             {/* ALERTA DE NOVOS (URGENTE) - Cores da paleta com foco no FIGUEIRA */}
             {novos.length > 0 && (
-                <section className="bg-fg p-6 md:p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-figueira/20 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none"></div>
-
-                    <div className="flex items-center justify-between mb-6 relative z-10 px-2">
-                        <div className="flex items-center gap-4 text-white">
-                            <div className="w-10 h-10 bg-figueira rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-figueira/20">
-                                <AlertCircle size={20} />
+                <section className="bg-fg rounded-[3rem] shadow-xl overflow-hidden border border-white/5">
+                    <details className="group" open={novos.length > 0 && novos.length <= 3}>
+                        <summary className="list-none cursor-pointer p-8 flex items-center justify-between group-open:border-b group-open:border-white/10 transition-all">
+                            <div className="flex items-center gap-6">
+                                <div className="w-14 h-14 bg-figueira rounded-2xl flex items-center justify-center animate-pulse shadow-lg shadow-figueira/20 text-white">
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none text-white">Novos Registos</h2>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] mt-2 text-figueira">
+                                        {novos.length} pessoas aguardam o primeiro contacto
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-black uppercase italic tracking-tighter leading-none">Novos Registos</h2>
-                                <p className="text-[9px] font-bold uppercase tracking-widest mt-1 text-white/50">{novos.length} pessoas aguardam contacto</p>
+                            <div className="flex items-center gap-4">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-open:hidden">Clique para gerir</span>
+                                <ChevronDown size={24} className="text-white/40 group-open:rotate-180 transition-transform duration-500" />
                             </div>
-                        </div>
-                    </div>
+                        </summary>
 
-                    {/* LISTA MINIMIZADA */}
-                    <div className="space-y-2 relative z-10">
-                        {novos.map(v => (
-                            <details key={v.id} className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all hover:bg-white/10">
-                                <summary className="list-none cursor-pointer p-4 flex items-center justify-between gap-4 select-none">
-                                    <div className="flex items-center gap-4 truncate">
-                                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
-                                            <span className="text-[10px] font-black">{v.nome[0]}</span>
-                                        </div>
-                                        <div className="truncate">
-                                            <h3 className="text-[11px] font-black text-white uppercase italic tracking-tight truncate">{v.nome}</h3>
-                                            <p className="text-[9px] font-bold text-figueira uppercase tracking-widest flex items-center gap-2">
-                                                <Phone size={10} /> {v.telefone}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <span className="hidden sm:block text-[8px] font-black bg-white/10 text-white/60 px-2 py-1 rounded-md uppercase tracking-widest border border-white/5">
-                                            {formatarDataHora(v.data_primeira_visita)}
-                                        </span>
-                                        <ChevronDown size={16} className="text-white/40 group-open:rotate-180 transition-transform" />
-                                    </div>
-                                </summary>
-
-                                {/* CONTEÚDO REVELADO */}
-                                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="pt-4 border-t border-white/10 flex flex-col gap-4">
-                                        {v.pedido_oracao && (
-                                            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                                <p className="text-[8px] font-black text-figueira uppercase tracking-[0.2em] mb-1.5">Mensagem / Pedido:</p>
-                                                <p className="text-xs text-white/80 italic font-medium leading-relaxed">
-                                                    "{v.pedido_oracao}"
-                                                </p>
+                        <div className="p-6 md:p-8 space-y-3 bg-white/[0.02] animate-in slide-in-from-top-4 duration-500">
+                            {novos.map(v => (
+                                <details key={v.id} className="group/item bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:bg-white/10 transition-all">
+                                    <summary className="list-none cursor-pointer p-5 flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-figueira/20 flex items-center justify-center text-white shrink-0 border border-white/10">
+                                                <span className="text-xs font-black uppercase">{v.nome[0]}</span>
                                             </div>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <a
-                                                href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`}
-                                                target="_blank"
-                                                className="flex-1 bg-green-500 text-white text-center py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-sm"
-                                            >
+                                            <div>
+                                                <h3 className="text-xs font-black text-white uppercase italic tracking-tight">{v.nome}</h3>
+                                                <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5">{v.telefone}</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={16} className="text-white/20 group-open/item:rotate-90 transition-transform" />
+                                    </summary>
+                                    <div className="px-5 pb-5 pt-2 border-t border-white/5">
+                                        {/* ... (Manter o conteúdo do v.pedido_oracao e botões WhatsApp/Modal que já tinhas) */}
+                                        <div className="flex gap-2 mt-4">
+                                            <a href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`} target="_blank" className="flex-1 bg-green-500 text-white text-center py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2">
                                                 <MessageCircle size={14} /> WhatsApp
                                             </a>
-                                            <div className="flex-1 flex">
-                                                <ModalAcompanhamento visitante={v} />
-                                            </div>
+                                            <ModalAcompanhamento visitante={v} />
                                         </div>
                                     </div>
-                                </div>
-                            </details>
-                        ))}
-                    </div>
+                                </details>
+                            ))}
+                        </div>
+                    </details>
                 </section>
             )}
 
             {/* GRID PRINCIPAL: EM ACOMPANHAMENTO & ESTATÍSTICAS */}
             <div className="grid lg:grid-cols-3 gap-8 items-start">
 
-                {/* LISTA EM CONTACTO */}
-                <section className="lg:col-span-2 bg-bg2 border border-soft p-8 rounded-[3rem] shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                            <Clock size={20} className="text-figueira" /> Em Acompanhamento
-                        </h2>
-                        <span className="bg-soft text-muted px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-soft">
-                            {emContacto.length} Registos
-                        </span>
-                    </div>
-
-                    <div className="space-y-3">
-                        {emContacto.map(v => (
-                            <div key={v.id} className="p-5 bg-bg border border-soft rounded-[2rem] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 group hover:border-figueira/40 transition-all shadow-sm">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="text-sm font-black uppercase text-fg italic tracking-tight">{v.nome}</h4>
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-figueira/5 rounded-lg border border-figueira/10">
-                                            <Target size={10} className="text-figueira" />
-                                            <span className="text-[8px] font-black text-figueira uppercase tracking-widest">
-                                                {v.quantidade_visitas} Visitas
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-[9px] font-bold text-muted uppercase tracking-widest pt-1">
-                                        <span className="flex items-center gap-1.5"><Phone size={10} className="text-figueira/50" /> {v.telefone}</span>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-soft"></span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="opacity-50">Último por:</span>
-                                            <span className="text-fg">{v.acompanhamentos[0]?.membro?.first_name || 'Sistema'}</span>
-                                            <ModalHistorico visitante={v} />
-                                        </div>
-                                    </div>
+                {/* LISTA EM CONTACTO (RETRÁTIL) */}
+                {/* LISTA EM CONTACTO (Colapsado por Padrão) */}
+                <section className="lg:col-span-2 bg-bg2 border border-soft rounded-[3rem] shadow-sm overflow-hidden">
+                    {/* Retirámos a propriedade 'open' para ficar sempre colapsado de início */}
+                    <details className="group">
+                        <summary className="list-none cursor-pointer p-8 flex items-center justify-between group-open:border-b group-open:border-soft transition-all hover:bg-soft/5">
+                            <div className="flex items-center gap-5">
+                                <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center">
+                                    <Clock size={24} />
                                 </div>
-
-                                <div className="flex gap-2 shrink-0">
-                                    <a
-                                        href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`}
-                                        target="_blank"
-                                        className="h-12 px-5 bg-bg border border-soft text-green-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-green-500 hover:text-white hover:border-green-500 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <MessageCircle size={14} />
-                                    </a>
-                                    <ModalAcompanhamento visitante={v} />
+                                <div>
+                                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg">Em Acompanhamento</h2>
+                                    <p className="text-[9px] font-black text-muted uppercase tracking-widest mt-1">{emContacto.length} Visitantes em ciclo ativo</p>
                                 </div>
                             </div>
-                        ))}
-                        {emContacto.length === 0 && (
-                            <div className="text-center py-20 border-2 border-dashed border-soft rounded-[2.5rem]">
-                                <p className="text-[10px] text-muted uppercase tracking-widest font-black italic">Não existem visitantes em contacto ativo.</p>
+                            <div className="flex items-center gap-4">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted group-open:hidden">Expandir lista</span>
+                                <ChevronDown size={24} className="text-muted/40 group-open:rotate-180 transition-transform duration-500" />
                             </div>
-                        )}
-                    </div>
+                        </summary>
+
+                        <div className="p-8 space-y-3 bg-bg/30 animate-in fade-in slide-in-from-top-2 duration-500">
+                            {emContacto.map(v => {
+                                // 1. Lógica do Atraso de 24h
+                                const ultimaData = v.acompanhamentos[0]?.data_contacto || v.data_primeira_visita;
+                                const isAtrasado = new Date(ultimaData) < limite24h;
+
+                                // 2. Lógica de Origem (Lê o campo que configurámos antes)
+                                const isSite = v.pedido_oracao?.includes('SITE') || v.pedido_oracao?.includes('CONTACTO');
+
+                                // 3. Definição Dinâmica da Cor do Box
+                                let boxColors = "";
+                                if (isAtrasado) {
+                                    boxColors = "border-red-500/30 bg-red-500/5 hover:border-red-500/50"; // Atrasado (Urgente)
+                                } else if (isSite) {
+                                    boxColors = "border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/40"; // Veio do Site (Azul/Índigo)
+                                } else {
+                                    boxColors = "bg-bg border-soft hover:border-figueira/40"; // Presencial / Boas-vindas (Padrão)
+                                }
+
+                                return (
+                                    <div key={v.id} className={`p-5 border rounded-[2rem] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 group/card transition-all shadow-sm ${boxColors}`}>
+
+                                        {/* DADOS DO VISITANTE */}
+                                        <div className="space-y-1">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <h4 className="text-sm font-black uppercase text-fg italic tracking-tight">{v.nome}</h4>
+
+                                                {/* TAG DE ORIGEM (NOVO) */}
+                                                {isSite ? (
+                                                    <span className="text-[8px] font-black bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 px-2 py-0.5 rounded-lg uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                                                        💻 Via Site
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black bg-figueira/10 text-figueira border border-figueira/20 px-2 py-0.5 rounded-lg uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                                                        🌱 Presencial
+                                                    </span>
+                                                )}
+
+                                                {/* Tag de Visitas */}
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-fg/5 rounded-lg border border-soft/30">
+                                                    <Target size={10} className="text-muted" />
+                                                    <span className="text-[8px] font-black text-muted uppercase tracking-widest">
+                                                        {v.quantidade_visitas} Visitas
+                                                    </span>
+                                                </div>
+
+                                                {/* ALERTA DE 24H */}
+                                                {isAtrasado && (
+                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/10 rounded-lg border border-red-500/20 animate-pulse">
+                                                        <AlertCircle size={10} className="text-red-500" />
+                                                        <span className="text-[8px] font-black text-red-600 uppercase tracking-widest">
+                                                            +24h sem registo
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-4 text-[9px] font-bold text-muted uppercase tracking-widest pt-1">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Phone size={10} className={isSite ? "text-indigo-400" : "text-figueira/50"} />
+                                                    {v.telefone}
+                                                </span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-soft"></span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="opacity-50">Último por:</span>
+                                                    <span className={isAtrasado ? 'text-red-500/80' : 'text-fg'}>
+                                                        {v.acompanhamentos[0]?.membro?.first_name || 'Sistema'}
+                                                    </span>
+                                                    <ModalHistorico visitante={v} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* AÇÕES */}
+                                        <div className="flex gap-2 shrink-0">
+                                            <a
+                                                href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`}
+                                                target="_blank"
+                                                className="h-12 px-5 bg-bg border border-soft text-green-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-green-500 hover:text-white hover:border-green-500 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <MessageCircle size={14} />
+                                            </a>
+                                            <ModalAcompanhamento visitante={v} />
+                                        </div>
+
+                                    </div>
+                                )
+                            })}
+
+                            {/* MENSAGEM SE ESTIVER VAZIO */}
+                            {emContacto.length === 0 && (
+                                <div className="text-center py-20 border-2 border-dashed border-soft rounded-[2.5rem]">
+                                    <p className="text-[10px] text-muted uppercase tracking-widest font-black italic">Não existem visitantes em contacto ativo.</p>
+                                </div>
+                            )}
+                        </div>
+                    </details>
                 </section>
 
-                {/* ESTATÍSTICAS / CONSOLIDADOS */}
+                {/* ESTATÍSTICAS / CONSOLIDADOS (COLUNA DA DIREITA) */}
                 <aside className="space-y-6">
                     <div className="bg-bg2 border border-soft p-10 rounded-[3rem] text-center shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-figueira"></div>
@@ -244,6 +297,7 @@ export default async function AcolhimentoDashboard() {
                         </p>
                     </div>
                 </aside>
+
             </div>
         </main>
     )
