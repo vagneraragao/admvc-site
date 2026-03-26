@@ -36,3 +36,52 @@ export async function registarVisitante(formData: FormData) {
         return { ok: false, error: "Ocorreu um erro ao registar." }
     }
 }
+
+export async function salvarRelatoRapido(formData: FormData) {
+    try {
+        // 1. Verificação de Segurança (Sessão do Membro)
+        const session = await getSessionData();
+        if (!session || !session.membroId) {
+            return { ok: false, error: "Sessão expirada ou não autorizada." };
+        }
+
+        // 2. Captura dos dados do formulário
+        const visitante_id = Number(formData.get('visitante_id'));
+        const relato = formData.get('relato') as string;
+
+        if (!relato || relato.trim() === "") {
+            return { ok: false, error: "O relato não pode estar vazio." };
+        }
+
+        // 3. Gravação do Acompanhamento (Histórico)
+        await prisma.acompanhamentoVisitante.create({
+            data: {
+                visitante_id,
+                membro_id: session.membroId,
+                tipo_contacto: 'WHATSAPP', // Definimos como padrão para o relato rápido
+                observacoes: relato,
+                data_contacto: new Date(),
+            }
+        });
+
+        // 4. Atualização do Status do Visitante
+        // Quando alguém faz um relato rápido, o status passa automaticamente para EM_CONTACTO
+        await prisma.visitante.update({
+            where: { id: visitante_id },
+            data: {
+                status: 'EM_CONTACTO',
+                data_ultima_visita: new Date()
+            }
+        });
+
+        // 5. Revalidação das páginas para atualizar os dados no ecrã
+        revalidatePath('/departamentos/acolhimento/dashboard');
+        revalidatePath('/membros/dashboard');
+
+        return { ok: true };
+
+    } catch (error) {
+        console.error("Erro ao salvar relato rápido:", error);
+        return { ok: false, error: "Falha técnica ao gravar o relato." };
+    }
+}
