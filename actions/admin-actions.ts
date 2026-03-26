@@ -30,149 +30,6 @@ export async function aprovarMembro(membroId: number, adminNome: string) {
     }
 }
 
-export async function removerMembroDepartamento(id: number) {
-    await prisma.integranteDepartamento.delete({ where: { id } });
-    revalidatePath("/admin/departamentos/gerenciar");
-}
-
-export async function buscarMembrosPorDepartamento(deptoId: number) {
-    try {
-        const integrantes = await prisma.integranteDepartamento.findMany({
-            where: { departamento_id: deptoId },
-            include: {
-                membro: {
-                    select: {
-                        id: true,
-                        first_name: true,
-                        last_name: true,
-                    }
-                }
-            }
-        });
-
-        // Formatamos para facilitar o uso no Select
-        return integrantes.map(i => ({
-            id: i.membro.id,
-            nome: `${i.membro.first_name} ${i.membro.last_name}`,
-            funcaoPadrao: i.funcao
-        }));
-    } catch (error) {
-        return [];
-    }
-}
-
-export async function vincularMembroDepartamento(formData: FormData) {
-    try {
-        const membro_id = Number(formData.get("membro_id"));
-        const departamento_id = Number(formData.get("departamento_id"));
-        const funcao = formData.get("funcao") as string;
-
-        // 1. Verifica se essa pessoa já tem EXATAMENTE essa função nesse depto
-        const jaExiste = await prisma.integranteDepartamento.findFirst({
-            where: {
-                membro_id,
-                departamento_id,
-                funcao
-            }
-        });
-
-        if (jaExiste) {
-            return { ok: false, error: "Este membro já possui esta função neste setor." };
-        }
-
-        // 2. Cria um novo registro (vínculo)
-        await prisma.integranteDepartamento.create({
-            data: {
-                membro_id,
-                departamento_id,
-                funcao,
-            },
-        });
-
-        revalidatePath("/admin/configuracoes");
-        return { ok: true };
-    } catch (error) {
-        console.error(error);
-        return { ok: false, error: "Erro ao vincular membro." };
-    }
-}
-
-export async function criarNovoMembroAction(formData: FormData) {
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    // 1. Verificação de e-mail duplicado
-    const existe = await prisma.membro.findUnique({ where: { email } });
-    if (existe) return { error: "Este e-mail já está registado em outro membro." };
-
-    // 2. Hash da password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Helper para converter as strings de data do formulário em Objetos Date do JS
-    const parseDate = (dateString: any) => {
-        if (!dateString || dateString === "") return null;
-        const d = new Date(dateString);
-        return isNaN(d.getTime()) ? null : d;
-    };
-
-    try {
-        await prisma.membro.create({
-            data: {
-                // --- DADOS PESSOAIS ---
-                first_name: formData.get("first_name") as string,
-                last_name: formData.get("last_name") as string,
-                email: email,
-                password: hashedPassword,
-                phone_1: formData.get("phone_1") as string,
-                gender: formData.get("gender") as string,
-                marital_status: formData.get("marital_status") as string,
-                birthdate: parseDate(formData.get("birthdate")),
-
-                // --- CAMPOS QUE VOCÊ ADICIONOU ---
-                profession: formData.get("profession") as string,
-                father_name: formData.get("father_name") as string,
-                mother_name: formData.get("mother_name") as string,
-
-                // --- ENDEREÇO (PORTUGAL) ---
-                address_1: formData.get("address_1") as string,
-                address_number: formData.get("address_number") as string,
-                postal_code: formData.get("postal_code") as string,
-                state: formData.get("neighborhood") as string, // Usado para Distrito
-                id_city: formData.get("city") as string,
-                country: (formData.get("country") as string) || "Portugal",
-
-                // --- ECLESIÁSTICO & ACESSO ---
-                role: (formData.get("role") as Role) || Role.USER,
-                status: (formData.get("status") as string) || "ATIVO",
-                loyverse_id: formData.get("loyverse_id") as string,
-                church_role: formData.get("church_role") as string,
-                baptism_date: parseDate(formData.get("baptism_date")),
-                data_admissao: parseDate(formData.get("admission_date")),
-                notes: formData.get("notes") as string,
-
-                // --- FAMÍLIA ---
-                spouse_name: formData.get("spouse_name") as string,
-                children_number: Number(formData.get("children_count")) || 0,
-
-                is_active: true,
-            }
-        });
-    } catch (error: any) {
-        console.error("ERRO NO PRISMA:", error);
-
-        // Se der erro de duplicidade (P2002), avisamos o user
-        if (error.code === 'P2002') {
-            return { error: "Erro: O E-mail ou o ID Loyverse já existem no sistema." };
-        }
-
-        return { error: "Não foi possível salvar o membro. Verifique os dados." };
-    }
-
-    // 4. Sucesso: Limpar cache e voltar para a lista
-    revalidatePath("/admin/membros");
-    redirect("/admin/membros");
-}
-
 export async function criarDepartamento(formData: FormData) {
 
 
@@ -182,12 +39,6 @@ export async function criarDepartamento(formData: FormData) {
     await prisma.departamento.create({ data: { nome } });
     revalidatePath('/admin/configuracoes');
 
-}
-
-export async function excluirDepartamento(id: number) {
-    // Nota: Verifique se existem membros vinculados antes de excluir ou trate o erro
-    await prisma.departamento.delete({ where: { id } });
-    revalidatePath('/admin/configuracoes');
 }
 
 export async function criarCargo(formData: FormData) {
@@ -470,16 +321,6 @@ export async function salvarEscala(formData: FormData) {
     }
 }
 
-export async function adicionarFuncaoAoDepartamento(formData: FormData) {
-    const nome = formData.get("nome") as string;
-    const departamento_id = Number(formData.get("departamento_id"));
-
-    await prisma.funcaoDepartamento.create({
-        data: { nome, departamento_id }
-    });
-    revalidatePath("/admin/configuracoes");
-}
-
 export async function removerFuncaoDoDepartamento(id: number) {
     await prisma.funcaoDepartamento.delete({ where: { id } });
     revalidatePath("/admin/configuracoes");
@@ -528,6 +369,33 @@ export async function removerFuncaoDoDepto(id: number) {
     revalidatePath("/admin/configuracoes");
     return { ok: true };
 }
+
+export async function buscarEquipaPorDepartamentoId(deptoId: number) {
+    try {
+        const integrantes = await prisma.integranteDepartamento.findMany({
+            where: { departamento_id: deptoId },
+            include: {
+                membro: {
+                    select: {
+                        id: true,
+                        first_name: true,
+                        last_name: true,
+                        avatar_file: true,
+                        phone_1: true
+                    }
+                }
+            },
+            // Ordena para os Líderes aparecerem no topo da lista
+            orderBy: { funcao: 'asc' }
+        });
+
+        return { ok: true, data: integrantes };
+    } catch (error) {
+        console.error(error);
+        return { ok: false, error: "Erro ao carregar a equipa." };
+    }
+}
+
 
 export async function gerarEventosLote(formData: FormData) {
     const nome = formData.get('nome') as string;
@@ -734,41 +602,45 @@ export async function criarEscala(formData: FormData) {
         const funcao = formData.get('funcao') as string;
         const horario = formData.get('horario') as string;
 
-        // ========================================================
-        // 🛡️ BARREIRA DE SEGURANÇA: Verificar se já está escalado
-        // ========================================================
-        const escalaExistente = await prisma.escala.findFirst({
-            where: {
-                evento_id: evento_id,
-                membro_id: membro_id
-            }
+        // Verifica se já está escalado neste evento para este departamento (A tua proteção que já funciona)
+        const jaEscalado = await prisma.escala.findFirst({
+            where: { evento_id, membro_id, departamento_id }
         });
 
-        if (escalaExistente) {
-            // Se já existir, bloqueamos e devolvemos o erro!
-            return {
-                ok: false,
-                error: "⚠️ Este voluntário já está escalado para este evento!"
-            };
+        if (jaEscalado) {
+            return { error: "Este voluntário já está escalado para este departamento neste evento." };
         }
-        // ========================================================
 
-        // Se passar na barreira, criamos a escala normalmente:
+        // Cria a escala
         await prisma.escala.create({
             data: {
                 evento_id,
-                departamento_id,
+                departamento_id, // 👈 Muito importante gravar o departamento para a lista agrupar bem!
                 membro_id,
                 funcao,
-                horario
+                horario,
+                confirmado: false // Por defeito fica a aguardar confirmação na Dashboard
             }
         });
 
-        revalidatePath('/admin/escalas');
+        // ====================================================================
+        // A MAGIA QUE RESOLVE O TEU PROBLEMA (LIMPEZA DE CACHE)
+        // ====================================================================
+
+        // 1. Atualiza a página onde o líder está a montar a escala
+        revalidatePath(`/membros/gestao/escalas/${evento_id}`);
+        revalidatePath(`/admin/escalas`); // (Coloca aqui as rotas exatas onde a tua ListaEscalados aparece)
+
+        // 2. Atualiza a Dashboard do Membro para que ele veja a notificação instantaneamente!
+        revalidatePath(`/membros/dashboard`);
+
+        // ====================================================================
+
         return { ok: true };
 
-    } catch (error: any) {
-        return { ok: false, error: "Erro interno ao criar escala." };
+    } catch (error) {
+        console.error("Erro ao criar escala:", error);
+        return { error: "Ocorreu um erro ao registar a escala na base de dados." };
     }
 }
 
@@ -944,5 +816,383 @@ export async function editarEventoAction(formData: FormData) {
     } catch (error: any) {
         console.error("Erro ao editar evento:", error);
         return { ok: false, error: "Erro ao atualizar o evento na base de dados." };
+    }
+}
+
+export async function removerEscalaAction(id: number) {
+    try {
+        await prisma.escala.delete({ where: { id } });
+        revalidatePath('/membros/gestao/escalas');
+        return { ok: true };
+    } catch (error) {
+        return { error: "Erro ao remover voluntário da escala." };
+    }
+}
+
+export async function atualizarEscalaAction(formData: FormData) {
+    try {
+        const id = Number(formData.get('id'));
+        const funcao = formData.get('funcao') as string;
+        const horario = formData.get('horario') as string;
+
+        await prisma.escala.update({
+            where: { id },
+            data: { funcao, horario }
+        });
+
+        revalidatePath('/membros/gestao/escalas');
+        return { ok: true };
+    } catch (error) {
+        return { error: "Erro ao atualizar a escala." };
+    }
+}
+
+// ============================================================================
+// 1. GESTÃO DE DEPARTAMENTOS (CONSOLIDADA)
+// ============================================================================
+
+/**
+ * SUBSTITUI: atualizarDepartamento e criarDepartamento
+ * Faz o "Upsert": Se tiver ID, atualiza. Se não tiver, cria. 
+ * Gere automaticamente o cargo de "Líder" na tabela de integrantes.
+ */
+
+
+export async function excluirDepartamento(id: number) {
+    try {
+        await prisma.departamento.delete({ where: { id } });
+        revalidatePath('/admin/configuracoes');
+        return { ok: true };
+    } catch (error: any) {
+        // Proteção: Se houverem escalas ou membros vinculados, o Prisma bloqueia e nós avisamos.
+        if (error.code === 'P2003') return { ok: false, error: "Não é possível excluir: existem membros ou eventos vinculados a este departamento." };
+        return { ok: false, error: "Erro ao excluir o departamento." };
+    }
+}
+
+// ============================================================================
+// 2. GESTÃO DE EQUIPAS E VÍNCULOS
+// ============================================================================
+
+export async function vincularMembroDepartamento(formData: FormData) {
+    try {
+        const membro_id = Number(formData.get("membro_id"));
+        const departamento_id = Number(formData.get("departamento_id"));
+        const funcao = formData.get("funcao") as string;
+
+        if (!membro_id || !departamento_id || !funcao) {
+            return { ok: false, error: "Todos os campos são obrigatórios." };
+        }
+
+        const jaExiste = await prisma.integranteDepartamento.findFirst({
+            where: { membro_id, departamento_id, funcao }
+        });
+
+        if (jaExiste) return { ok: false, error: "Este membro já possui esta função neste setor." };
+
+        await prisma.integranteDepartamento.create({
+            data: { membro_id, departamento_id, funcao },
+        });
+
+        revalidatePath("/admin/configuracoes");
+        return { ok: true };
+    } catch (error) {
+        console.error(error);
+        return { ok: false, error: "Erro crítico ao vincular membro." };
+    }
+}
+
+export async function removerMembroDepartamento(id: number) {
+    try {
+        await prisma.integranteDepartamento.delete({ where: { id } });
+        revalidatePath("/admin/departamentos/gerenciar");
+        return { ok: true };
+    } catch (error) {
+        return { ok: false, error: "Erro ao remover voluntário." };
+    }
+}
+
+export async function adicionarFuncaoAoDepartamento(formData: FormData) {
+    try {
+        const nome = formData.get("nome") as string;
+        const departamento_id = Number(formData.get("departamento_id"));
+
+        if (!nome || !departamento_id) return { ok: false, error: "Dados inválidos." };
+
+        await prisma.funcaoDepartamento.create({
+            data: { nome, departamento_id }
+        });
+        revalidatePath("/admin/configuracoes");
+        return { ok: true };
+    } catch (error) {
+        return { ok: false, error: "Erro ao adicionar nova função." };
+    }
+}
+
+export async function buscarMembrosPorDepartamento(deptoId: number) {
+    try {
+        const integrantes = await prisma.integranteDepartamento.findMany({
+            where: { departamento_id: deptoId },
+            include: {
+                membro: { select: { id: true, first_name: true, last_name: true } }
+            }
+        });
+
+        return integrantes.map(i => ({
+            id: i.membro.id,
+            nome: `${i.membro.first_name} ${i.membro.last_name}`,
+            funcaoPadrao: i.funcao
+        }));
+    } catch (error) {
+        console.error("Erro ao buscar integrantes:", error);
+        return [];
+    }
+}
+
+// ============================================================================
+// 3. GESTÃO DE MEMBROS (CADASTRO)
+// ============================================================================
+
+export async function criarNovoMembroAction(formData: FormData) {
+    const email = (formData.get("email") as string).toLowerCase().trim();
+    const password = formData.get("password") as string;
+
+    const existe = await prisma.membro.findUnique({ where: { email } });
+    if (existe) return { error: "Este e-mail já está registado em outro membro." };
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const parseDate = (dateString: any) => {
+        if (!dateString || dateString.trim() === "") return null;
+        const d = new Date(dateString);
+        return isNaN(d.getTime()) ? null : d;
+    };
+
+    try {
+        await prisma.membro.create({
+            data: {
+                first_name: formData.get("first_name") as string,
+                last_name: formData.get("last_name") as string,
+                email: email,
+                password: hashedPassword,
+                phone_1: formData.get("phone_1") as string,
+                gender: formData.get("gender") as string,
+                marital_status: formData.get("marital_status") as string,
+                birthdate: parseDate(formData.get("birthdate")),
+
+                profession: formData.get("profession") as string || null,
+                father_name: formData.get("father_name") as string || null,
+                mother_name: formData.get("mother_name") as string || null,
+
+                address_1: formData.get("address_1") as string || null,
+                address_number: formData.get("address_number") as string || null,
+                postal_code: formData.get("postal_code") as string || null,
+                state: formData.get("neighborhood") as string || null,
+                id_city: formData.get("city") as string || null,
+                country: (formData.get("country") as string) || "Portugal",
+
+                role: (formData.get("role") as any) || "USER",
+                status: (formData.get("status") as string) || "ATIVO",
+                loyverse_id: formData.get("loyverse_id") as string || null,
+                church_role: formData.get("church_role") as string || "Membro",
+                baptism_date: parseDate(formData.get("baptism_date")),
+                data_admissao: parseDate(formData.get("admission_date")),
+                notes: formData.get("notes") as string || null,
+
+                spouse_name: formData.get("spouse_name") as string || null,
+                children_number: Number(formData.get("children_count")) || 0,
+
+                is_active: true,
+            }
+        });
+    } catch (error: any) {
+        console.error("ERRO NO PRISMA:", error);
+        if (error.code === 'P2002') return { error: "Erro de Conflito: O E-mail ou o ID Loyverse já existem no sistema." };
+        return { error: "Não foi possível gravar o membro na base de dados." };
+    }
+
+    revalidatePath("/admin/membros");
+    redirect("/admin/membros");
+}
+
+
+
+export async function salvarDepartamento(formData: FormData) {
+    try {
+        const idRaw = formData.get("id");
+        const id = idRaw ? Number(idRaw) : null;
+
+        const nome = formData.get("nome") as string;
+        const descricao = formData.get("descricao") as string || null;
+
+        const liderInput = formData.get("lider_id");
+        const novoLiderId = liderInput && Number(liderInput) !== 0 ? Number(liderInput) : null;
+
+        if (!nome) return { ok: false, error: "O nome do departamento é obrigatório." };
+
+        await prisma.$transaction(async (tx) => {
+            let currentDeptId = id;
+
+            // ==========================================
+            // 1. CRIAR OU ATUALIZAR O DEPARTAMENTO
+            // ==========================================
+            if (id) {
+                // É UMA ATUALIZAÇÃO
+                const deptoAntigo = await tx.departamento.findUnique({ where: { id } });
+
+                // Se o líder mudou, removemos o cargo "Líder" do membro antigo
+                if (deptoAntigo && deptoAntigo.lider_id !== novoLiderId) {
+                    if (deptoAntigo.lider_id) {
+                        await tx.integranteDepartamento.deleteMany({
+                            where: {
+                                departamento_id: id,
+                                membro_id: deptoAntigo.lider_id,
+                                funcao: 'Líder'
+                            }
+                        });
+                    }
+                }
+
+                await tx.departamento.update({
+                    where: { id },
+                    data: { nome, descricao, lider_id: novoLiderId }
+                });
+            } else {
+                // É UMA CRIAÇÃO NOVA
+                const novoDepto = await tx.departamento.create({
+                    data: { nome, descricao, lider_id: novoLiderId }
+                });
+                currentDeptId = novoDepto.id;
+            }
+
+            // ==========================================
+            // 2. CONSOLIDAR O NOVO LÍDER (CRIAR CARGO E VÍNCULO)
+            // ==========================================
+            if (novoLiderId && currentDeptId) {
+
+                // Passo A: Verifica se o cargo "Líder" já existe neste departamento. Se não, cria-o.
+                const funcaoLider = await tx.funcaoDepartamento.findFirst({
+                    where: { departamento_id: currentDeptId, nome: 'Líder' }
+                });
+
+                if (!funcaoLider) {
+                    await tx.funcaoDepartamento.create({
+                        data: { nome: 'Líder', departamento_id: currentDeptId }
+                    });
+                }
+
+                // Passo B: Verifica se o membro já está vinculado como Líder. Se não, vincula-o.
+                const vinculoLider = await tx.integranteDepartamento.findFirst({
+                    where: {
+                        departamento_id: currentDeptId,
+                        membro_id: novoLiderId,
+                        funcao: 'Líder'
+                    }
+                });
+
+                if (!vinculoLider) {
+                    await tx.integranteDepartamento.create({
+                        data: {
+                            departamento_id: currentDeptId,
+                            membro_id: novoLiderId,
+                            funcao: 'Líder'
+                        }
+                    });
+                }
+            }
+        });
+
+        revalidatePath("/admin/configuracoes");
+        revalidatePath("/admin/departamentos");
+        revalidatePath("/membros/dashboard"); // Atualiza a dashboard do membro instantaneamente
+        return { ok: true };
+
+    } catch (error) {
+        console.error("Erro ao salvar departamento:", error);
+        return { ok: false, error: "Erro interno ao processar o departamento." };
+    }
+}
+
+
+export async function salvarGrupoAction(formData: FormData) {
+    try {
+        const idRaw = formData.get("id");
+        const id = idRaw ? Number(idRaw) : null;
+
+        // 1. Extrair os dados base do Grupo
+        const nome = formData.get("nome") as string;
+        const dia_semana = formData.get("dia_semana") as string;
+        const horario = formData.get("horario") as string;
+        const endereco = formData.get("endereco") as string;
+        const bairro = formData.get("bairro") as string;
+        const cidade = formData.get("cidade") as string;
+        const estado = formData.get("estado") as string;
+        const categoria = formData.get("categoria") as string || null;
+        const perfil = formData.get("perfil") as string || null;
+
+        // O LÍDER
+        const liderInput = formData.get("lider_id");
+        const liderId = liderInput && Number(liderInput) !== 0 ? Number(liderInput) : null;
+
+        if (!nome || !dia_semana || !horario || !endereco) {
+            return { ok: false, error: "Preencha os campos obrigatórios do grupo." };
+        }
+
+        if (id) {
+            // ==========================================
+            // ATUALIZAR UM GRUPO EXISTENTE
+            // ==========================================
+            await prisma.grupo.update({
+                where: { id },
+                data: {
+                    nome,
+                    dia_semana,
+                    horario,
+                    endereco,
+                    bairro,
+                    cidade,
+                    estado,
+                    categoria,
+                    perfil,
+
+                    // A MAGIA ACONTECE AQUI:
+                    // 'set' substitui todos os líderes antigos por este novo
+                    lideres: liderId ? { set: [{ id: liderId }] } : { set: [] },
+
+                    // Também garantimos que ele faz parte da lista de 'membros' (participantes)
+                    // Usamos 'connect' para adicioná-lo à lista sem apagar os outros
+                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
+                }
+            });
+        } else {
+            // ==========================================
+            // CRIAR UM NOVO GRUPO
+            // ==========================================
+            await prisma.grupo.create({
+                data: {
+                    nome,
+                    dia_semana,
+                    horario,
+                    endereco,
+                    bairro,
+                    cidade,
+                    estado,
+                    categoria,
+                    perfil,
+
+                    // Conecta o Líder logo na criação!
+                    lideres: liderId ? { connect: [{ id: liderId }] } : undefined,
+                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
+                }
+            });
+        }
+
+        revalidatePath("/admin/grupos");
+        revalidatePath("/membros/dashboard"); // Atualiza a dashboard do membro instantaneamente
+        return { ok: true };
+
+    } catch (error) {
+        console.error("Erro ao salvar grupo:", error);
+        return { ok: false, error: "Ocorreu um erro ao gravar o grupo." };
     }
 }

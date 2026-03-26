@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClose }: any) {
-    const [aba, setAba] = useState<'equipe' | 'funcoes' | 'dados'>('dados');
+    const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes'>('dados');
     const [loading, setLoading] = useState(false);
 
     const formFuncaoRef = useRef<HTMLFormElement>(null);
@@ -93,12 +93,13 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
                         <button onClick={() => setAba('dados')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'dados' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
                             <Settings size={14} className={aba === 'dados' ? 'text-figueira' : ''} /> Definições
                         </button>
-                        <button onClick={() => setAba('equipe')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'equipe' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
-                            <Users size={14} className={aba === 'equipe' ? 'text-figueira' : ''} /> Equipa
-                        </button>
                         <button onClick={() => setAba('funcoes')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'funcoes' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
                             <ShieldCheck size={14} className={aba === 'funcoes' ? 'text-figueira' : ''} /> Cargos
                         </button>
+                        <button onClick={() => setAba('equipe')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'equipe' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                            <Users size={14} className={aba === 'equipe' ? 'text-figueira' : ''} /> Equipa
+                        </button>
+
 
                     </div>
                 </header>
