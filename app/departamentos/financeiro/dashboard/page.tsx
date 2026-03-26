@@ -156,35 +156,69 @@ export default async function DashboardFinanceiro() {
             </section>
 
             {/* ALERTAS PENDENTES (MBWAY E CANTINA) */}
-            {(pedidosCantina.length > 0 || pendentesMBWay.length > 0) && (
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {pendentesMBWay.length > 0 && (
-                        <div className="bg-orange-50 border border-orange-200 p-6 rounded-[2rem] flex items-center justify-between gap-4 shadow-sm relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
-                            <div className="flex items-center gap-4">
-                                <div className="bg-orange-500/10 text-orange-500 p-3 rounded-xl shrink-0"><AlertCircle size={24} /></div>
-                                <div>
-                                    <h4 className="text-sm font-black text-orange-700 uppercase tracking-tighter">Ofertas MBWay</h4>
-                                    <p className="text-[10px] font-bold text-orange-600/80 uppercase tracking-widest mt-0.5">{pendentesMBWay.length} transações aguardam validação.</p>
+            {pedidosCantina.length > 0 && (
+                <details className="group bg-blue-50 border border-blue-200 rounded-[2.5rem] shadow-sm relative overflow-hidden transition-all open:pb-2">
+
+                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+
+                    {/* BARRA DE RESUMO (CLICÁVEL) */}
+                    <summary className="cursor-pointer p-6 flex items-center justify-between gap-4 list-none [&::-webkit-details-marker]:hidden select-none hover:bg-blue-500/5 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-blue-500/10 text-blue-500 p-3 rounded-xl shrink-0">
+                                <Coffee size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-blue-700 uppercase tracking-tighter">Saldos Cantina</h4>
+                                <p className="text-[10px] font-bold text-blue-600/80 uppercase tracking-widest mt-0.5">
+                                    {pedidosCantina.length} pedido(s) de carregamento pendente(s).
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-500/10 text-blue-600 p-2 rounded-full group-open:bg-blue-600 group-open:text-white transition-all shadow-sm">
+                            <ChevronDown size={20} className="group-open:rotate-180 transition-transform" />
+                        </div>
+                    </summary>
+
+                    {/* LISTA EXPANSÍVEL (DENTRO DO BOX) */}
+                    <div className="px-6 pb-6 pt-2 space-y-3 animate-in slide-in-from-top-4 duration-300">
+                        <div className="w-full h-[1px] bg-blue-200/50 mb-4"></div> {/* Linha divisória */}
+
+                        {pedidosCantina.map((pedido: any) => (
+                            <div key={pedido.id} className="bg-white border border-blue-100 p-4 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-blue-300 transition-colors">
+
+                                <div className="flex items-center gap-4 pl-2">
+                                    <div>
+                                        <h4 className="text-sm font-black text-blue-700 uppercase tracking-tighter leading-none">
+                                            {pedido.membro.first_name} {pedido.membro.last_name}
+                                        </h4>
+                                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-blue-600/80 uppercase tracking-widest mt-2">
+                                            <span className="bg-blue-50 px-2 py-1 rounded-md border border-blue-100">Pedido #{pedido.id}</span>
+                                            <span>•</span>
+                                            <span>{new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: 'short' }).format(new Date(pedido.createdAt))}</span>
+                                            <span>•</span>
+                                            <span className="text-figueira bg-figueira/10 px-2 py-1 rounded-md border border-figueira/20">{pedido.forma_pagamento}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0 pl-2 md:pl-0">
+                                    <span className="text-xl font-black italic text-blue-800">
+                                        €{Number(pedido.valor).toFixed(2)}
+                                    </span>
+
+                                    {/* BOTÃO INDIVIDUAL */}
+                                    <BotaoAprovarCantina
+                                        pedidoId={pedido.id}
+                                        loyverseId={pedido.membro.loyverse_id}
+                                        valor={Number(pedido.valor)}
+                                        nomeMembro={pedido.membro.first_name}
+                                    />
                                 </div>
                             </div>
-                            <BotaoConfirmarMBWay pendentes={pendentesMBWay} />
-                        </div>
-                    )}
-                    {pedidosCantina.length > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 p-6 rounded-[2rem] flex items-center justify-between gap-4 shadow-sm relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-                            <div className="flex items-center gap-4">
-                                <div className="bg-blue-500/10 text-blue-500 p-3 rounded-xl shrink-0"><Coffee size={24} /></div>
-                                <div>
-                                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tighter">Saldos Cantina</h4>
-                                    <p className="text-[10px] font-bold text-blue-600/80 uppercase tracking-widest mt-0.5">{pedidosCantina.length} pedidos de carregamento pendentes.</p>
-                                </div>
-                            </div>
-                            <BotaoAprovarCantina pedidos={pedidosCantina} />
-                        </div>
-                    )}
-                </section>
+                        ))}
+                    </div>
+                </details>
             )}
 
             {/* LINHA 1: RECEBER PAGAMENTO | GESTÃO DA OBRA */}

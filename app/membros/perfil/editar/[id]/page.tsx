@@ -21,7 +21,6 @@ export default async function EditarMeuPerfilPage({ params }: { params: Promise<
         redirect('/membros/dashboard?error=Não tem permissão para editar este perfil');
     }
 
-    // AQUI ESTAVA O PROBLEMA: Faltava buscar as escolaridades no Promise.all!
     const [membro, escolaridades] = await Promise.all([
         prisma.membro.findUnique({
             where: { id: idParaEditar },
@@ -32,7 +31,7 @@ export default async function EditarMeuPerfilPage({ params }: { params: Promise<
                 familia: true,
             }
         }),
-        prisma.escolaridade.findMany({ orderBy: { id: 'asc' } }), // <-- BUSCA AQUI
+        prisma.escolaridade.findMany({ orderBy: { id: 'asc' } }),
     ]);
 
     if (!membro) redirect('/membros/dashboard');
@@ -41,7 +40,7 @@ export default async function EditarMeuPerfilPage({ params }: { params: Promise<
         <div className="bg-bg min-h-screen pt-10">
             <MeuPerfilClient
                 membro={membro}
-                escolaridades={escolaridades} // <-- PASSA PARA O CLIENTE AQUI
+                escolaridades={escolaridades}
             />
         </div>
     );

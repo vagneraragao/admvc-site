@@ -19,6 +19,7 @@ import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
 import WidgetMural from '@/components/membros/WidgetMural'
 import WidgetAgendaIgreja from '@/components/membros/WidgetAgendaIgreja'
+import AgendaGruposMembro from '@/components/membros/AgendaGruposMembro'
 
 export default async function DashboardMembro() {
     const proximosEventos = await prisma.evento.findMany({
@@ -41,9 +42,9 @@ export default async function DashboardMembro() {
     const membro = await prisma.membro.findUnique({
         where: { id: membroId },
         include: {
+            grupos: true, // Grupos onde é participante
+            lider_de_grupo: true, // Grupos onde é líder
             ministerios: { include: { departamento: true } },
-            grupos: true,
-            lider_de_grupo: true,
             familia: true,
             escalas: {
                 where: { evento: { data: { gte: new Date() } } },
@@ -65,7 +66,6 @@ export default async function DashboardMembro() {
     const isEquipaCantina = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('cantina'));
     const isEquipaSocial = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('social') || v.departamento?.nome.toLowerCase().includes('despensa') || v.departamento?.nome.toLowerCase().includes('assistência'));
 
-    // Mostra o dropdown se o utilizador for admin ou participar numa equipa especial
     const mostraFerramentasExtra = role === 'ADMIN' || role === 'FINANCE' || isEquipaAcolhimento || isEquipaCantina || isEquipaSocial;
 
     const visitantesPendentesCount = (role === 'ADMIN' || isEquipaAcolhimento)
@@ -95,9 +95,17 @@ export default async function DashboardMembro() {
     if (membro?.loyverse_id) {
         try {
             const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
-            const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, { headers: { 'Authorization': `Bearer ${loyverseToken}` }, next: { revalidate: 60 } });
-            if (res.ok) { const data = await res.json(); saldoCantina = data.total_points || 0; }
-        } catch (error) { console.error("Erro ao buscar saldo Loyverse:", error); }
+            const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, {
+                headers: { 'Authorization': `Bearer ${loyverseToken}` },
+                cache: 'no-store'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                saldoCantina = data.total_points || 0;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar saldo Loyverse:", error);
+        }
     }
 
     const escalasPendentes = membro?.escalas.filter((esc: any) => !esc.confirmado) || [];
@@ -109,7 +117,7 @@ export default async function DashboardMembro() {
     membro?.ministerios?.forEach((vinculo: any) => {
         const depto = vinculo.departamento;
         if (!depto) return;
-        const key = `depto-${depto.id}`; // 👈 Chave única
+        const key = `depto-${depto.id}`;
         if (departamentosAgrupados.has(key)) {
             const existente = departamentosAgrupados.get(key);
             if (!existente.funcoes.includes(vinculo.funcao)) existente.funcoes.push(vinculo.funcao);
@@ -126,7 +134,7 @@ export default async function DashboardMembro() {
 
     // Adiciona Grupos Participantes
     membro?.grupos?.forEach((grupo: any) => {
-        const key = `grupo-${grupo.id}`; // 👈 Chave única
+        const key = `grupo-${grupo.id}`;
         if (!departamentosAgrupados.has(key)) {
             departamentosAgrupados.set(key, {
                 id: grupo.id,
@@ -144,9 +152,13 @@ export default async function DashboardMembro() {
             id: grupo.id,
             nome: grupo.nome,
             tipo: 'GRUPO',
-            funcoes: ['Líder do Grupo'] // Dá prioridade visual à liderança
+            funcoes: ['Líder do Grupo']
         });
     });
+
+    // CÁLCULO DOS GRUPOS ÚNICOS PARA O WIDGET DE AGENDA DA CÉLULA
+    const meusGrupos = [...(membro?.grupos || []), ...(membro?.lider_de_grupo || [])];
+    const gruposUnicos = Array.from(new Map(meusGrupos.map(g => [g.id, g])).values());
 
     const escalasAgrupadas = new Map();
     membro?.escalas.forEach((esc: any) => {
@@ -175,7 +187,6 @@ export default async function DashboardMembro() {
             <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[3rem] shadow-xl relative overflow-visible">
                 <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
 
-                    {/* INFO DO MEMBRO */}
                     <div className="flex items-center gap-6">
                         <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0">
                             {membro?.avatar_file ? (
@@ -206,20 +217,16 @@ export default async function DashboardMembro() {
                         </div>
                     </div>
 
-                    {/* AÇÕES (MURAL, FERRAMENTAS, LOGOUT) */}
                     <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto pt-4 lg:pt-0 border-t border-soft lg:border-0">
-
                         <Link href="/membros/mural" className="flex-1 lg:flex-none flex items-center justify-center gap-2 h-12 px-6 bg-bg border border-soft text-muted hover:text-figueira hover:border-figueira rounded-2xl group transition-all shadow-sm">
                             <MessageSquare size={16} className="group-hover:scale-110 transition-transform text-figueira" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Mural</span>
                         </Link>
-
                         <Link href={`/membros/perfil/editar/${membro?.id}`} className="flex-1 lg:flex-none flex items-center justify-center gap-2 h-12 px-4 bg-bg border border-soft text-muted hover:text-fg hover:border-fg rounded-2xl group transition-all shadow-sm" title="Editar Perfil">
                             <UserCircle size={18} className="group-hover:scale-110 transition-transform" />
                             <span className="lg:hidden text-[10px] font-black uppercase tracking-widest">Perfil</span>
                         </Link>
 
-                        {/* DROPDOWN DE FERRAMENTAS EXTRA (APARECE SE TIVER PERMISSÕES) */}
                         {mostraFerramentasExtra && (
                             <details className="group relative z-50 flex-1 lg:flex-none">
                                 <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
@@ -228,12 +235,10 @@ export default async function DashboardMembro() {
                                         <span className="lg:hidden text-[10px] font-black uppercase tracking-widest">Ferramentas</span>
                                     </div>
                                 </summary>
-
                                 <div className="absolute right-0 top-full mt-2 w-56 bg-bg border border-soft p-2 rounded-[1.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-1 z-50">
                                     <p className="text-[9px] font-black uppercase text-figueira tracking-widest border-b border-soft/50 pb-2 mb-1 px-3 mt-1">
                                         Área de Serviço
                                     </p>
-
                                     {role === 'ADMIN' && (
                                         <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                             <ShieldCheck size={14} className="text-muted group-hover/link:text-figueira" /> Painel ADMIN
@@ -262,7 +267,6 @@ export default async function DashboardMembro() {
                                 </div>
                             </details>
                         )}
-
                         <form action={logoutMembro} className="shrink-0">
                             <button type="submit" className="h-12 w-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Terminar Sessão">
                                 <LogOut size={16} strokeWidth={3} />
@@ -272,17 +276,13 @@ export default async function DashboardMembro() {
                 </div>
             </header>
 
-            {/* ========================================================= */}
-            {/* AVISOS CRÍTICOS (MANTIDOS IGUAIS PORQUE SÃO IMPORTANTES)  */}
-            {/* ========================================================= */}
+            {/* AVISOS CRÍTICOS */}
             <div className="space-y-4">
                 {(visitantesPendentesCount > 0 && (role === 'ADMIN' || isEquipaAcolhimento)) && (
                     <section className="bg-emerald-50 border-2 border-emerald-500/20 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in slide-in-from-top-4 duration-500">
                         <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
                         <div className="flex items-center gap-5">
-                            <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-2xl shrink-0">
-                                <HeartHandshake size={24} />
-                            </div>
+                            <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-2xl shrink-0"><HeartHandshake size={24} /></div>
                             <div>
                                 <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">Novos Visitantes</h3>
                                 <p className="text-xs font-medium text-muted mt-1 max-w-xl">
@@ -300,9 +300,7 @@ export default async function DashboardMembro() {
                     <section className="bg-bg2 border-2 border-orange-500/20 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm relative overflow-hidden animate-in fade-in duration-500">
                         <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
                         <div className="flex items-center gap-5">
-                            <div className="bg-orange-500/10 text-orange-500 p-4 rounded-2xl shrink-0">
-                                <FileSignature size={24} />
-                            </div>
+                            <div className="bg-orange-500/10 text-orange-500 p-4 rounded-2xl shrink-0"><FileSignature size={24} /></div>
                             <div>
                                 <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">Assinaturas Pendentes</h3>
                                 <p className="text-xs font-medium text-muted mt-1 max-w-xl">
@@ -341,14 +339,9 @@ export default async function DashboardMembro() {
                 )}
             </div>
 
-            {/* O RESTO DA PÁGINA MANTÉM-SE INALTERADO A PARTIR DAQUI (Departamentos, Escalas, Financeiro, Cantina) */}
-            {/* ========================================================= */}
-            {/* DEPARTAMENTOS DO MEMBRO & AGENDA DA IGREJA                */}
-            {/* ========================================================= */}
-            {/* ... o código que já tens continua aqui por baixo ... */}
-
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* COLUNA ESQUERDA (Ocupa 2/3 do ecrã): Departamentos */}
+            {/* SEÇÃO CORRIGIDA COM ITEMS-START E COLUNA DIREITA ARRUMADA */}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                {/* COLUNA ESQUERDA: Departamentos */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center gap-4">
                         <Users size={20} className="text-figueira" />
@@ -369,9 +362,19 @@ export default async function DashboardMembro() {
                     )}
                 </div>
 
-                {/* COLUNA DIREITA (Ocupa 1/3 do ecrã): Agenda Global */}
-                <div className="lg:col-span-1 h-full">
-                    <WidgetAgendaIgreja eventos={proximosEventos} isAdmin={role === 'ADMIN'} />
+                {/* COLUNA DIREITA: Agenda Global e Agenda de Grupos */}
+                <div className="lg:col-span-1 flex flex-col gap-8 w-full">
+                    {/* WIDGET AGENDA DA IGREJA */}
+                    <div className="w-full">
+                        <WidgetAgendaIgreja eventos={proximosEventos} isAdmin={role === 'ADMIN'} />
+                    </div>
+
+                    {/* WIDGET DA AGENDA DOS GRUPOS/CÉLULAS DO MEMBRO */}
+                    {gruposUnicos.length > 0 && (
+                        <div className="w-full">
+                            <AgendaGruposMembro gruposMembro={gruposUnicos} />
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -443,9 +446,7 @@ export default async function DashboardMembro() {
                     <div className="md:col-span-8 lg:col-span-9 space-y-8">
                         <div className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[2.5rem] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
                             <div className="flex items-start gap-5">
-                                <div className="p-4 bg-figueira/10 rounded-[1.5rem] text-figueira hidden sm:block">
-                                    <Receipt size={24} />
-                                </div>
+                                <div className="p-4 bg-figueira/10 rounded-[1.5rem] text-figueira hidden sm:block"><Receipt size={24} /></div>
                                 <div className="space-y-2">
                                     <h4 className="text-xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
                                         Conta Cantina
@@ -455,15 +456,10 @@ export default async function DashboardMembro() {
                                             <span className="bg-red-500/10 text-red-500 font-black tracking-widest text-[8px] px-2 py-0.5 rounded-full border border-red-500/20 uppercase">Pendente</span>
                                         )}
                                     </h4>
-                                    <p className="text-xs text-muted leading-relaxed font-medium max-w-md">
-                                        Identifica-te no balcão da cantina para debitar as tuas compras automaticamente.
-                                    </p>
+                                    <p className="text-xs text-muted leading-relaxed font-medium max-w-md">Identifica-te no balcão da cantina para debitar as tuas compras automaticamente.</p>
                                 </div>
                             </div>
-
-                            <div className="shrink-0">
-                                <ModalCarregarCantina membroId={membro.id} />
-                            </div>
+                            <div className="shrink-0"><ModalCarregarCantina membroId={membro.id} /></div>
                         </div>
 
                         <div id="secao-extrato" className="scroll-mt-24">
