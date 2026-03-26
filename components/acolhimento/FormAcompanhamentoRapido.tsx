@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { MessageCircle, Send, CheckCircle2, Loader2, History } from 'lucide-react'
-import { salvarRelatoRapido } from '@/actions/visitante-actions'
+import { salvarRelatoRapido } from '@/actions/visitante-actions';
 import ModalHistorico from './ModalHistorico'
 
 export default function FormAcompanhamentoRapido({ visitante }: { visitante: any }) {
