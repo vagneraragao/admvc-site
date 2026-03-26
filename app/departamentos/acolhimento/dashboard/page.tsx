@@ -3,7 +3,11 @@ import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
-import { HeartHandshake, Users, Phone, MessageCircle, QrCode, ArrowLeft, ChevronRight, AlertCircle, Clock, CalendarDays } from 'lucide-react'
+import {
+    HeartHandshake, Users, Phone, MessageCircle, QrCode,
+    ArrowLeft, ChevronRight, AlertCircle, Clock, CalendarDays,
+    Target, UserPlus, CheckCircle2, ChevronDown
+} from 'lucide-react'
 import ModalAcompanhamento from '@/components/acolhimento/ModalAcompanhamento'
 import ModalHistorico from '@/components/acolhimento/ModalHistorico'
 import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolidados'
@@ -11,40 +15,26 @@ import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolida
 export const dynamic = 'force-dynamic'
 
 export default async function AcolhimentoDashboard() {
-    // ========================================================================
-    // 1. VERIFICAÇÃO DE SEGURANÇA E ACESSO
-    // ========================================================================
     const session = await getSessionData();
     if (!session) redirect('/membros/login?error=Sessão expirada');
 
-    // Busca o membro logado e os seus departamentos
     const membroLogado = await prisma.membro.findUnique({
         where: { id: session.membroId },
-        include: {
-            ministerios: {
-                include: { departamento: true }
-            }
-        }
+        include: { ministerios: { include: { departamento: true } } }
     });
 
     if (!membroLogado) redirect('/membros/login');
 
     const isAdmin = session.role === 'ADMIN';
-
-    // Verifica se o membro tem "Acolhimento" ou "Integração" no nome do departamento
     const isEquipaAcolhimento = membroLogado.ministerios.some(vinculo => {
         const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
         return nomeDepto.includes('acolhimento') || nomeDepto.includes('integração');
     });
 
-    // Se não for Admin nem da equipa de Acolhimento, bloqueia o acesso
     if (!isAdmin && !isEquipaAcolhimento) {
-        redirect('/membros/dashboard?error=Acesso restrito à equipa de Acolhimento.');
+        redirect('/membros/dashboard?error=Acesso restrito.');
     }
 
-    // ========================================================================
-    // 2. BUSCAS DOS DADOS DOS VISITANTES
-    // ========================================================================
     const novos = await prisma.visitante.findMany({
         where: { status: 'NOVO' },
         orderBy: { data_primeira_visita: 'desc' }
@@ -59,146 +49,199 @@ export default async function AcolhimentoDashboard() {
 
     const consolidados = await prisma.visitante.findMany({
         where: { status: 'CONSOLIDADO' },
-        include: {
-            acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } }
-        },
-        orderBy: { data_ultima_visita: 'desc' }
     });
 
     const formatarDataHora = (data: Date) => {
         return new Date(data).toLocaleString('pt-PT', {
-            day: '2-digit', month: 'short',
-            hour: '2-digit', minute: '2-digit'
+            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
         });
     };
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+            {/* BREADCRUMBS */}
+            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
                 <Link href={isAdmin ? "/admin/dashboard" : "/membros/dashboard"} className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> {isAdmin ? "Painel Admin" : "Voltar à Dashboard"}
+                    <ArrowLeft size={12} strokeWidth={3} /> {isAdmin ? "Painel Admin" : "Dashboard"}
                 </Link>
                 <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Acolhimento & Integração</span>
+                <span className="text-fg italic">Acolhimento</span>
             </nav>
 
+            {/* HEADER */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-soft pb-8">
                 <div className="space-y-2">
                     <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <HeartHandshake size={14} /> Ministério de Integração
+                        <UserPlus size={14} /> Ciclo de Consolidação
                     </span>
                     <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
                         Gestão de <span className="text-muted/20">Visitantes.</span>
                     </h1>
                 </div>
 
-                <div className="shrink-0 flex gap-3">
-                    <Link href="/acolhimento/boasvindas" target="_blank" className="flex items-center gap-2 bg-bg2 border border-soft text-fg px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-figueira hover:text-figueira transition-all shadow-sm">
-                        <QrCode size={14} /> Link do QR Code
+                <div className="flex gap-3">
+                    <Link href="/boasvindas" target="_blank" className="bg-bg2 border border-soft text-fg px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-figueira transition-all shadow-sm flex items-center gap-2">
+                        <QrCode size={14} className="text-figueira" /> Ficha de Boas-Vindas
                     </Link>
                 </div>
             </header>
 
-            {/* ALERTAS DE NOVOS VISITANTES */}
+            {/* ALERTA DE NOVOS (URGENTE) - Cores da paleta com foco no FIGUEIRA */}
             {novos.length > 0 && (
-                <section className="bg-orange-50 border border-orange-200 p-8 rounded-[3rem] shadow-sm relative overflow-hidden">
-                    <div className="flex items-center gap-3 text-orange-600 mb-6 relative z-10">
-                        <AlertCircle size={24} className="animate-bounce" />
-                        <div>
-                            <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Ação Imediata</h2>
-                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">Novos visitantes aguardando contacto</p>
+                <section className="bg-fg p-6 md:p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-figueira/20 blur-[80px] rounded-full -mr-20 -mt-20 pointer-events-none"></div>
+
+                    <div className="flex items-center justify-between mb-6 relative z-10 px-2">
+                        <div className="flex items-center gap-4 text-white">
+                            <div className="w-10 h-10 bg-figueira rounded-xl flex items-center justify-center animate-pulse shadow-lg shadow-figueira/20">
+                                <AlertCircle size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black uppercase italic tracking-tighter leading-none">Novos Registos</h2>
+                                <p className="text-[9px] font-bold uppercase tracking-widest mt-1 text-white/50">{novos.length} pessoas aguardam contacto</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                    {/* LISTA MINIMIZADA */}
+                    <div className="space-y-2 relative z-10">
                         {novos.map(v => (
-                            <div key={v.id} className="bg-white p-6 rounded-[2rem] border border-orange-100 flex flex-col justify-between space-y-4 hover:border-orange-300 transition-all shadow-sm">
-                                <div>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-sm font-black text-orange-950 uppercase">{v.nome}</h3>
-                                        <div className="flex items-center gap-1 text-[8px] font-black text-orange-400 bg-orange-100 px-2 py-1 rounded-md uppercase tracking-widest">
-                                            <CalendarDays size={10} /> {formatarDataHora(v.data_primeira_visita)}
+                            <details key={v.id} className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all hover:bg-white/10">
+                                <summary className="list-none cursor-pointer p-4 flex items-center justify-between gap-4 select-none">
+                                    <div className="flex items-center gap-4 truncate">
+                                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                                            <span className="text-[10px] font-black">{v.nome[0]}</span>
+                                        </div>
+                                        <div className="truncate">
+                                            <h3 className="text-[11px] font-black text-white uppercase italic tracking-tight truncate">{v.nome}</h3>
+                                            <p className="text-[9px] font-bold text-figueira uppercase tracking-widest flex items-center gap-2">
+                                                <Phone size={10} /> {v.telefone}
+                                            </p>
                                         </div>
                                     </div>
-                                    <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-1">
-                                        <Phone size={10} /> {v.telefone}
-                                    </p>
 
-                                    {v.pedido_oracao && (
-                                        <div className="mt-4 bg-orange-50 p-4 rounded-2xl border border-orange-100/50">
-                                            <p className="text-[9px] font-black text-orange-800 uppercase tracking-widest mb-1">Pedido de Oração:</p>
-                                            <p className="text-xs text-orange-900 italic font-medium leading-relaxed">"{v.pedido_oracao}"</p>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        <span className="hidden sm:block text-[8px] font-black bg-white/10 text-white/60 px-2 py-1 rounded-md uppercase tracking-widest border border-white/5">
+                                            {formatarDataHora(v.data_primeira_visita)}
+                                        </span>
+                                        <ChevronDown size={16} className="text-white/40 group-open:rotate-180 transition-transform" />
+                                    </div>
+                                </summary>
+
+                                {/* CONTEÚDO REVELADO */}
+                                <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="pt-4 border-t border-white/10 flex flex-col gap-4">
+                                        {v.pedido_oracao && (
+                                            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                                <p className="text-[8px] font-black text-figueira uppercase tracking-[0.2em] mb-1.5">Mensagem / Pedido:</p>
+                                                <p className="text-xs text-white/80 italic font-medium leading-relaxed">
+                                                    "{v.pedido_oracao}"
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="flex gap-2">
+                                            <a
+                                                href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`}
+                                                target="_blank"
+                                                className="flex-1 bg-green-500 text-white text-center py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-sm"
+                                            >
+                                                <MessageCircle size={14} /> WhatsApp
+                                            </a>
+                                            <div className="flex-1 flex">
+                                                <ModalAcompanhamento visitante={v} />
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                                <div className="pt-4 border-t border-orange-100 flex gap-2">
-                                    <a href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`} target="_blank" className="flex-1 bg-green-500 text-white text-center py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-green-600 transition-all shadow-sm flex items-center justify-center gap-2">
-                                        <MessageCircle size={12} /> WhatsApp
-                                    </a>
-                                    <ModalAcompanhamento visitante={v} />
-                                </div>
-                            </div>
+                            </details>
                         ))}
                     </div>
                 </section>
             )}
 
-            {/* EM ACOMPANHAMENTO E KPIs */}
+            {/* GRID PRINCIPAL: EM ACOMPANHAMENTO & ESTATÍSTICAS */}
             <div className="grid lg:grid-cols-3 gap-8 items-start">
-                <section className="lg:col-span-2 bg-bg2 border border-soft p-8 rounded-[3rem]">
-                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg mb-6 flex items-center gap-3">
-                        <Clock size={18} className="text-figueira" /> Em Acompanhamento ({emContacto.length})
-                    </h2>
-                    <div className="space-y-4">
-                        {emContacto.map(v => (
-                            <div key={v.id} className="p-5 bg-bg border border-soft rounded-[2rem] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 group hover:border-figueira/50 transition-all shadow-sm">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="text-xs font-black uppercase text-fg">{v.nome}</h4>
-                                        <span className="text-[8px] font-black bg-figueira/10 text-figueira px-2 py-0.5 rounded-md uppercase tracking-widest">
-                                            {v.quantidade_visitas} {v.quantidade_visitas === 1 ? 'Visita' : 'Visitas'}
-                                        </span>
-                                    </div>
-                                    <p className="text-[9px] text-muted font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <Phone size={10} /> {v.telefone}
-                                    </p>
 
-                                    <div className="mt-2 text-[9px] font-bold text-muted uppercase tracking-widest flex items-center gap-2">
-                                        <span className="opacity-60">Último Contacto:</span> <span className="text-fg italic">Por {v.acompanhamentos[0]?.membro?.first_name || 'Alguém'}</span>
-                                        <span className="text-soft">•</span>
-                                        <ModalHistorico visitante={v} />
+                {/* LISTA EM CONTACTO */}
+                <section className="lg:col-span-2 bg-bg2 border border-soft p-8 rounded-[3rem] shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
+                            <Clock size={20} className="text-figueira" /> Em Acompanhamento
+                        </h2>
+                        <span className="bg-soft text-muted px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-soft">
+                            {emContacto.length} Registos
+                        </span>
+                    </div>
+
+                    <div className="space-y-3">
+                        {emContacto.map(v => (
+                            <div key={v.id} className="p-5 bg-bg border border-soft rounded-[2rem] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 group hover:border-figueira/40 transition-all shadow-sm">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <h4 className="text-sm font-black uppercase text-fg italic tracking-tight">{v.nome}</h4>
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-figueira/5 rounded-lg border border-figueira/10">
+                                            <Target size={10} className="text-figueira" />
+                                            <span className="text-[8px] font-black text-figueira uppercase tracking-widest">
+                                                {v.quantidade_visitas} Visitas
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 text-[9px] font-bold text-muted uppercase tracking-widest pt-1">
+                                        <span className="flex items-center gap-1.5"><Phone size={10} className="text-figueira/50" /> {v.telefone}</span>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-soft"></span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="opacity-50">Último por:</span>
+                                            <span className="text-fg">{v.acompanhamentos[0]?.membro?.first_name || 'Sistema'}</span>
+                                            <ModalHistorico visitante={v} />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex sm:flex-col gap-2 shrink-0">
+                                <div className="flex gap-2 shrink-0">
                                     <a
                                         href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`}
                                         target="_blank"
-                                        className="flex-1 sm:flex-none bg-green-500/10 text-green-600 text-center py-2.5 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 border border-green-500/20"
+                                        className="h-12 px-5 bg-bg border border-soft text-green-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-green-500 hover:text-white hover:border-green-500 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <MessageCircle size={12} /> WhatsApp
+                                        <MessageCircle size={14} />
                                     </a>
-
-                                    <div className="flex-1 sm:flex-none flex">
-                                        <ModalAcompanhamento visitante={v} />
-                                    </div>
+                                    <ModalAcompanhamento visitante={v} />
                                 </div>
                             </div>
                         ))}
-                        {emContacto.length === 0 && <p className="text-[10px] text-muted uppercase tracking-widest font-bold italic text-center py-6">Nenhum visitante em acompanhamento.</p>}
+                        {emContacto.length === 0 && (
+                            <div className="text-center py-20 border-2 border-dashed border-soft rounded-[2.5rem]">
+                                <p className="text-[10px] text-muted uppercase tracking-widest font-black italic">Não existem visitantes em contacto ativo.</p>
+                            </div>
+                        )}
                     </div>
                 </section>
 
-                <aside className="space-y-4">
-                    <div className="bg-bg2 border border-soft p-8 rounded-[3rem] text-center shadow-sm relative overflow-hidden group">
-                        <div className="w-16 h-16 bg-figueira/10 text-figueira rounded-3xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <Users size={24} />
+                {/* ESTATÍSTICAS / CONSOLIDADOS */}
+                <aside className="space-y-6">
+                    <div className="bg-bg2 border border-soft p-10 rounded-[3rem] text-center shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-figueira"></div>
+                        <div className="w-20 h-20 bg-figueira/10 text-figueira rounded-[2rem] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-all duration-500 shadow-inner">
+                            <CheckCircle2 size={32} />
                         </div>
-                        <h4 className="text-5xl font-black italic text-fg">{consolidados.length}</h4>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted mt-2 mb-8">Visitantes Consolidados</p>
+                        <div className="space-y-1">
+                            <h4 className="text-6xl font-black italic text-fg tracking-tighter leading-none">{consolidados.length}</h4>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted pb-8">Pessoas Integradas</p>
+                        </div>
 
                         <ModalListaConsolidados consolidados={consolidados} />
+                    </div>
+
+                    <div className="bg-fg p-8 rounded-[3rem] shadow-xl text-white">
+                        <h3 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <HeartHandshake size={14} className="text-figueira" /> Dica de Integração
+                        </h3>
+                        <p className="text-[11px] font-medium leading-relaxed opacity-70 italic">
+                            "Um visitante consolidado é alguém que encontrou uma família. O contacto nas primeiras 24h aumenta em 80% a chance de retorno."
+                        </p>
                     </div>
                 </aside>
             </div>
