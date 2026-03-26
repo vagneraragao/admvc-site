@@ -1,101 +1,131 @@
-⛪ ADMVC - Sistema Integrado de Acolhimento & Gestão
-"Sê muito bem-vindo, fica para sempre!" > Uma plataforma moderna desenvolvida para a Igreja ADMVC, focada em transformar o primeiro contacto de um visitante numa jornada de discipulado e cuidado.
+# ⛪ ADMVC - Sistema Integrado de Acolhimento & Gestão
 
-📖 Sobre o Projeto
-O ADMVC Core é uma aplicação web de alta performance que centraliza a comunicação entre o site público e a equipa de obreiros. O sistema automatiza o registo de novos visitantes, gere pedidos de oração e permite um acompanhamento detalhado de cada pessoa que entra em contacto com a igreja, seja presencialmente ou via digital.
+> **"Sê muito bem-vindo, fica para sempre!"** > Uma plataforma Fullstack de alta performance desenvolvida para a **Igreja ADMVC**, focada em transformar o primeiro contacto de um visitante numa jornada de cuidado, oração e integração ministerial.
 
-🌟 Diferenciais
-Design Premium: Interface minimalista, focada na paleta "Figueira" (#3F6B4F).
+---
 
-Experiência do Utilizador: Navegação fluida com animações framer-motion e tailwindcss-animate.
+## 📖 Sobre o Projeto
 
-Foco no Cuidado: Automatização de notificações via e-mail para resposta imediata da equipa.
+O **ADMVC Core** é o coração digital da nossa congregação. Ele serve como uma ponte inteligente entre o site público e a liderança, automatizando a captação de novos visitantes e oferecendo aos obreiros uma ferramenta de gestão em tempo real. 
 
-🛠️ Stack Tecnológica
-O projeto utiliza as tecnologias mais modernas do ecossistema Fullstack:
+O sistema foi desenhado para que nenhum pedido de oração seja esquecido e que cada pessoa que cruza as nossas portas (físicas ou digitais) receba o devido acompanhamento.
 
-Framework: Next.js 15+ (App Router & Server Actions).
+### 🌟 Diferenciais do Sistema
+* **Identidade Visual "Figueira":** Interface baseada na paleta institucional (#3F6B4F), unindo sobriedade e acolhimento.
+* **Comunicação em Tempo Real:** Notificações automáticas via e-mail (Resend) para a equipa interna.
+* **Foco no Cuidado (CRM Espiritual):** Gestão de status de visitantes e histórico de contactos.
+* **Transparência da Obra:** Visualização dinâmica do progresso da construção da nova sede.
 
-Linguagem: TypeScript (Tipagem estrita para maior segurança).
+---
 
-Base de Dados: PostgreSQL via Prisma ORM.
+## 🛠️ Stack Tecnológica
 
-Estilização: Tailwind CSS (Arquitetura baseada em componentes).
+O projeto utiliza as tecnologias mais modernas do ecossistema **TypeScript**:
 
-E-mails: Resend (Infraestrutura de alta entregabilidade).
+* **Framework:** [Next.js 15+](https://nextjs.org/) (App Router & Server Actions).
+* **Base de Dados:** PostgreSQL (Hospedagem em nuvem).
+* **ORM:** [Prisma](https://www.prisma.io/) (Type-safety e modelagem relacional).
+* **Estilização:** Tailwind CSS & Lucide Icons.
+* **E-mails:** [Resend API](https://resend.com/) (Infraestrutura de alta entregabilidade).
+* **Animações:** `tailwindcss-animate` para transições suaves.
 
-Iconografia: Lucide React.
+---
 
-🚀 Funcionalidades Principais
-1. Portal Público (/boasvindas & /contato)
-Formulário de boas-vindas otimizado para dispositivos móveis.
+## 🚀 Funcionalidades Detalhadas
 
-Captação de pedidos de oração e dados de contacto.
+### 1. Portal de Captação (`/boasvindas` & `/contato`)
+* **Boas-Vindas:** Formulário otimizado para telemóveis, captando Nome, WhatsApp e Pedido de Oração.
+* **Página de Contacto:** Triagem de mensagens externas com integração direta à Dashboard de Acolhimento.
+* **Smart Labels:** O sistema prefixa automaticamente os contactos (`🌱 [VISITANTE]` ou `✉️ [CONTACTO SITE]`) para facilitar a triagem.
 
-Fluxo inteligente: diferenciação automática entre contactos gerais e novos visitantes.
+### 2. Dashboard de Gestão do Acolhimento
+* **Visualização 360º:** Lista de visitantes com filtros por status (Novo, Em Contacto, Integrado).
+* **Relatos Rápidos:** Componente que permite registar conversas de WhatsApp sem sair da página principal.
+* **Modais de Acompanhamento:** Histórico detalhado de todas as interações passadas com o visitante.
 
-2. Dashboard de Acolhimento (/membros/dashboard)
-Gestão de Contactos: Lista dinâmica de visitantes com filtros de status.
+### 3. Monitorização da Construção (`Página Inicial`)
+* **Fé em Números:** Barra de progresso dinâmica que lê os valores da base de dados (`ProjetoObra`).
+* **Etapas da Sede:** Visualização percentual automática para:
+    1. Aquisição do Terreno
+    2. Estrutura e Alvenaria
+    3. Acabamentos e Mobiliário
 
-Relatos Rápidos: Inserção de notas de acompanhamento via WhatsApp com um clique.
+### 4. Automação de E-mail (Workflow)
+* **Notificações Internas:** Envio imediato para `admvcff@gmail.com` com:
+    * Dados completos do visitante.
+    * Botão direto para abrir conversa no **WhatsApp** (sem precisar de gravar o número).
+    * Link de acesso rápido à Dashboard de gestão.
 
-Histórico Detalhado: Registo cronológico de todas as interações com o visitante.
+---
 
-Construção da Obra: Visualização em tempo real do progresso das etapas da nova sede.
+## 🏗️ Estrutura de Pastas (Arquitetura)
 
-3. Automação de Notificações
-Smart Mailer: Envio de notificações personalizadas para a equipa interna.
+```text
+├── actions/              # Server Actions (Lógica de DB e disparo de E-mails)
+├── app/                  # Rotas, Layouts e Páginas (App Router)
+├── components/           # Componentes UI (Cards, Modais, Progress Bars)
+│   └── acolhimento/      # Componentes específicos da gestão de pessoas
+├── lib/                  # Utilitários (Prisma Client, Resend Config, Auth)
+├── prisma/               # Schema.prisma e Migrações de BD
+└── public/               # Assets (Logos, Imagens do Hero, Favicons)
 
-WhatsApp Integration: Botões dinâmicos que iniciam conversas diretas com o número do visitante sem necessidade de gravar o contacto manualmente.
+## ⚙️ Configuração do Ambiente
 
-🏗️ Arquitetura de Ficheiros
-Plaintext
-├── actions/              # Server Actions (Lógica de base de dados e e-mail)
-├── app/                  # Rotas e Páginas (App Router)
-├── components/           # Componentes UI (Cards, Modais, Formulários)
-├── lib/                  # Utilitários (Prisma Client, Configurações de E-mail)
-├── prisma/               # Schema e Migrações da Base de Dados
-└── public/               # Assets estáticos (Imagens e Logos)
-⚙️ Configuração Local
-Clonar o repositório:
+### 1. **Clonar e Instalar:**
+```bash
+   git clone [https://github.com/teu-usuario/admvc-site.git](https://github.com/teu-usuario/admvc-site.git)
+   npm install
+```
 
-Bash
-git clone https://github.com/teu-usuario/admvc-site.git
-Instalar dependências:
+### 2. Variáveis de Ambiente (.env.local):
+* **Crie um ficheiro na raiz do projeto e adicione as suas credenciais:
 
-Bash
-npm install
-Configurar Variáveis de Ambiente (.env.local):
+### Ligação à Base de Dados (PostgreSQL)
+DATABASE_URL="postgresql://utilizador:senha@localhost:5432/admvc"
 
-Fragmento do código
-DATABASE_URL="postgresql://..."
-RESEND_API_KEY="re_..."
-NEXTAUTH_SECRET="..."
+### Chave de API do Resend para envios de E-mail
+RESEND_API_KEY="re_sua_chave_privada_aqui"
+
+### Segredo para Autenticação (NextAuth ou similar)
+NEXTAUTH_SECRET="um_codigo_aleatorio_e_seguro"
+
 Sincronizar Base de Dados:
 
-Bash
+### Gera o Cliente Prisma baseado no schema
+npx prisma generate  
+
+### Aplica as tabelas na base de dados (Modo Desenvolvimento)
 npx prisma db push
-Iniciar em desenvolvimento:
 
-Bash
-npm run dev
-🎨 Identidade Visual
-O projeto utiliza variáveis CSS personalizadas para garantir consistência:
+### Sincronização da Base de Dados:
 
-Figueira: #3F6B4F (A cor da nossa essência)
+### Gera o Cliente Prisma baseado no schema
+npx prisma generate  
 
-Soft: #7FAE93 (Transições e estados secundários)
+### Aplica as tabelas na base de dados (Modo Desenvolvimento)
+npx prisma db push
 
-Bg2: Fundo neutro premium para leitura prolongada.
+### Execução do Projeto:
 
-📄 Licença
-Este projeto é de uso exclusivo da Igreja Assembleia de Deus Ministério Visão de Conquista (ADMVC). Todos os direitos reservados.
+* Inicia o servidor de desenvolvimento em http://localhost:3000
+npm run dev      
 
-Próximos Passos
-[ ] Implementação de notificações Push para obreiros.
+* Para gerar a versão de produção
+npm run build
 
-[ ] Relatórios mensais automáticos em PDF.
+## 🎨 Identidade Visual (Design System)
+* O projeto segue rigorosamente o manual de marca da congregação:
 
-[ ] Integração com API oficial do WhatsApp Business.
+* Primary (Figueira): #3F6B4F — Usado em botões de ação principal e cabeçalhos.
+* Secondary (Soft): #7FAE93 — Usado em estados de hover e elementos de suporte.
+* Tipografia: * Títulos: Black Italic (Uppercase) para um visual de impacto e modernidade.
+* Corpo: Sans-serif com tracking ajustado para máxima legibilidade.
+* Componentes: Cantos arredondados (rounded-[2rem]) para transmitir uma sensação de acolhimento e proximidade.
 
-Desenvolvido com ❤️ para o Reino.
+## 📄 Licença e Propósito
+* Este software é de propriedade e uso exclusivo da Igreja Assembleia de Deus - Ministério Visão de Conquista (ADMVC).
+
+* O código foi desenvolvido com o propósito de servir o Reino de Deus, utilizando a excelência tecnológica para potenciar o cuidado com o próximo.
+
+* Desenvolvido com ❤️ pela equipa de tecnologia ADMVC.
+
