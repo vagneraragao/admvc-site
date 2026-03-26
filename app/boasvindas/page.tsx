@@ -1,4 +1,4 @@
-// app/acolhimento/boasvindas/page.tsx
+// app/boasvindas/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -11,6 +11,10 @@ export default function BemVindoPage() {
 
     async function handleAction(formData: FormData) {
         setLoading(true)
+        // Adicionamos um identificador silencioso no início da mensagem
+        const originalMsg = formData.get('pedido_oracao') as string;
+        formData.set('pedido_oracao', `🌱 [NOVO VISITANTE]\n${originalMsg || 'Sem pedido específico.'}`);
+
         const res = await registarVisitante(formData)
         setLoading(false)
         if (res.ok) setSucesso(true)
@@ -66,6 +70,8 @@ export default function BemVindoPage() {
                     </div>
 
                     <form action={handleAction} className="space-y-5">
+                        {/* CAMPO DE E-MAIL (Faltava este!) */}
+
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-4">Como te chamas?</label>
                             <input name="nome" required placeholder="O teu nome..." className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm font-bold text-fg focus:border-figueira outline-none shadow-sm transition-all" />

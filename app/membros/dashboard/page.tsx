@@ -3,9 +3,10 @@ import prisma from '@/lib/prisma'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-    ShieldCheck, PieChart, UserCircle, LogOut, Users,
+    ShieldCheck, PieChart, UserCircle, LogOut, Users, Phone,
     LayoutDashboard, Coffee, Receipt, BellRing, FileSignature,
-    HeartHandshake, Store, Heart, MessageSquare, Menu, ArrowLeft
+    HeartHandshake, Store, Heart, MessageSquare, Menu, ArrowLeft,
+    MessageCircle, ChevronDown
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import { redirect } from 'next/navigation'
@@ -20,6 +21,8 @@ import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
 import WidgetMural from '@/components/membros/WidgetMural'
 import WidgetAgendaIgreja from '@/components/membros/WidgetAgendaIgreja'
 import AgendaGruposMembro from '@/components/membros/AgendaGruposMembro'
+import { salvarRelatoRapido } from '@/actions/visitante-actions'
+import FormAcompanhamentoRapido from '@/components/acolhimento/FormAcompanhamentoRapido'
 
 export default async function DashboardMembro() {
     const proximosEventos = await prisma.evento.findMany({
@@ -174,7 +177,25 @@ export default async function DashboardMembro() {
             funcoes: ['Líder do Grupo']
         });
     });
-
+    // BUSCA OS VISITANTES QUE ESTE MEMBRO ESPECÍFICO ESTÁ A ACOMPANHAR
+    const meusAcompanhamentos = isEquipaAcolhimento ? await prisma.visitante.findMany({
+        where: {
+            status: 'EM_CONTACTO',
+            acompanhamentos: {
+                some: {
+                    membro_id: membroId // Garante que EU participei no histórico
+                }
+            }
+        },
+        include: {
+            acompanhamentos: {
+                include: { membro: true },
+                orderBy: { data_contacto: 'desc' } // Traz TODOS, do mais recente para o mais antigo
+            }
+        },
+        orderBy: { data_ultima_visita: 'desc' },
+        take: 6 // Mostra os 6 visitantes mais recentes que eu acompanhei
+    }) : [];
     // CÁLCULO DOS GRUPOS ÚNICOS PARA O WIDGET DE AGENDA DA CÉLULA
     const meusGrupos = [...(membro?.grupos || []), ...(membro?.lider_de_grupo || [])];
     const gruposUnicos = Array.from(new Map(meusGrupos.map(g => [g.id, g])).values());
@@ -309,7 +330,7 @@ export default async function DashboardMembro() {
                                 </p>
                             </div>
                         </div>
-                        <Link href="/acolhimento/dashboard" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-sm">
+                        <Link href="/departamentos/acolhimento/dashboard" className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shrink-0 shadow-sm">
                             Acompanhar
                         </Link>
                     </section>
@@ -357,6 +378,43 @@ export default async function DashboardMembro() {
                     </section>
                 )}
             </div>
+
+            {/* SEÇÃO DE ACOMPANHAMENTOS (CORRIGIDA COM O TEU MODELO) */}
+            {isEquipaAcolhimento && meusAcompanhamentos.length > 0 && (
+                <section className="space-y-6 animate-in fade-in duration-700">
+                    <div className="flex items-center gap-4">
+                        <HeartHandshake size={20} className="text-figueira" />
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">DEPARTAMENTO DE ACOLHIMENTO</h2>
+                        <div className="h-[1px] flex-1 bg-soft"></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {meusAcompanhamentos.map((visitante: any) => (
+                            <details key={visitante.id} className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden transition-all hover:border-figueira/30 shadow-sm">
+
+                                <summary className="list-none cursor-pointer p-5 flex items-center justify-between gap-4 select-none">
+                                    <div className="flex items-center gap-4 truncate">
+                                        <div className="w-10 h-10 rounded-xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0">
+                                            <Users size={18} />
+                                        </div>
+                                        <div className="truncate">
+                                            <h3 className="text-sm font-black text-fg uppercase italic tracking-tight truncate">{visitante.nome}</h3>
+                                            <p className="text-[9px] font-bold text-muted uppercase tracking-widest">{visitante.telefone}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronDown size={18} className="text-muted group-open:rotate-180 transition-transform" />
+                                </summary>
+
+                                {/* CONTEÚDO EXPANDIDO: APENAS O COMPONENTE AQUI */}
+                                <div className="px-5 pb-6 animate-in slide-in-from-top-2 duration-300">
+                                    <FormAcompanhamentoRapido visitante={visitante} />
+                                </div>
+
+                            </details>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* SEÇÃO CORRIGIDA COM ITEMS-START E COLUNA DIREITA ARRUMADA */}
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">

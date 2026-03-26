@@ -40,7 +40,7 @@ export default async function HomePage() {
   const etapas: any[] = DADOS_CONSTRUCAO.etapas || [];
   const totalArrecadadoGeral = etapas.reduce((sum: number, etapa: any) => sum + (Number(etapa.atual) || 0), 0);
   const objetivoFinal = Number(DADOS_CONSTRUCAO.objetivoFinal) || 0;
-  
+
   const porcentagemGeral = objetivoFinal > 0
     ? Math.min(100, Math.round((totalArrecadadoGeral / objetivoFinal) * 100))
     : 0;
@@ -153,7 +153,10 @@ export default async function HomePage() {
 
                 <div className="relative h-2 w-full rounded-full bg-soft overflow-hidden shadow-inner">
                   <div
-                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out ${concluido ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-figueira shadow-[0_0_10px_rgba(63,107,79,0.4)]'}`}
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out ${concluido
+                      ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+                      : 'bg-figueira shadow-[0_0_10px_rgba(63,107,79,0.4)]'
+                      }`}
                     style={{ width: `${porcentagemEtapa}%` }}
                   />
                 </div>

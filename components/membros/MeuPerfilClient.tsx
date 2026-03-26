@@ -170,7 +170,7 @@ export default function MeuPerfilClient({ membro, escolaridades = [] }: any) {
                                 </>
                             ) : (
                                 <>
-                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Sem Família</h3>
+                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">FAMÍLIA ADMVC</h3>
                                     <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-1">Nenhum vínculo registado</p>
                                 </>
                             )}

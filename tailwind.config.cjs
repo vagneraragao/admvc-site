@@ -7,7 +7,13 @@ module.exports = {
     "./lib/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
-    extend: {}
+    extend: {
+      colors: {
+        figueira: '#3F6B4F',
+        soft: '#7FAE93',
+        // ...
+      }
+    }
   },
   plugins: []
 };
