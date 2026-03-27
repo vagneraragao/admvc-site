@@ -22,7 +22,7 @@ export default function FormularioGrupo({ departamentos }: { departamentos: any[
         <section className="bg-bg2 p-10 rounded-[4rem] border border-soft shadow-2xl space-y-8 relative overflow-hidden">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h2 className="text-3xl font-black uppercase italic tracking-tighter text-fg">Novo Grupo / Célula</h2>
+                    <h2 className="text-3xl font-black uppercase italic tracking-tighter text-fg">Novo Grupo / PGs</h2>
                     <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">Gestão de estrutura e localização</p>
                 </div>
                 <nav className="flex gap-2 bg-bg p-1.5 rounded-2xl border border-soft">
@@ -38,11 +38,11 @@ export default function FormularioGrupo({ departamentos }: { departamentos: any[
                     <div className="grid md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black uppercase ml-2 text-muted">Nome do Grupo</label>
-                            <input name="nome" placeholder="Ex: Célula Emanuel" className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm outline-none focus:border-figueira" required />
+                            <input name="nome" placeholder="Ex: PG Emanuel" className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm outline-none focus:border-figueira" required />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase ml-2 text-muted">Categoria</label>
-                            <input name="categoria" placeholder="Ex: Célula, Estudo..." className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm outline-none" />
+                            <input name="categoria" placeholder="Ex: PGs, Estudo..." className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm outline-none" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase ml-2 text-muted">Departamento Vinculado</label>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ChevronRight, HeartHandshake } from 'lucide-react'
 import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
 import DespensaManager from '@/components/despensa/DespensaManager'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,19 +57,27 @@ export default async function AdminDespensaPage() {
             categoria: categoriaNome,
             stock: stockInfo?.in_stock || 0,
             imagem: item.image_url || null,
-            varianteId: variantePrincipal?.variant_id // 👇 FUNDAMENTAL PARA ATUALIZAR O STOCK
+            varianteId: variantePrincipal?.variant_id
         };
     }).sort((a, b) => a.nome.localeCompare(b.nome));
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-            <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href={isAdmin || isFinance ? "/admin/dashboard" : "/membros/dashboard"} className="hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Voltar
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Ação Social & Despensa</span>
-            </nav>
+{/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <Breadcrumb items={[
+                { 
+                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard", 
+                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Ministérios", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Ação Social & Despensa" 
+                }
+            ]} />
 
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-soft pb-8">
                 <div className="space-y-2">

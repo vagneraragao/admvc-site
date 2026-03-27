@@ -57,7 +57,7 @@ export default function PainelFinanceiroMembro({
     return (
         <section className="space-y-6 scroll-mt-10 pb-20" id="meu-financeiro">
 
-            {/* CABEÇALHO DA SECÇÃO COM BOTÃO PDF */}
+            {/* CABEÇALHO DA SECÇÃO COM BOTÃO PDF 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Wallet size={20} className="text-figueira" />
@@ -70,7 +70,7 @@ export default function PainelFinanceiroMembro({
                 </div>
             </div>
             <div className="h-[1px] flex-1 bg-soft"></div>
-
+*/}
             <div className="grid lg:grid-cols-2 gap-10">
 
                 {/* --- COLUNA 1: DÍZIMOS E OFERTAS --- */}

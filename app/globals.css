@@ -133,3 +133,15 @@ body {
 .btn-ghost:hover {
   background: rgba(63, 107, 79, 0.12);
 }
+
+/* MODO PRIVACIDADE FINANCEIRA */
+.valor-dinheiro {
+  transition: all 0.3s ease;
+}
+
+.modo-privacidade .valor-dinheiro {
+  filter: blur(6px);
+  opacity: 0.5;
+  user-select: none;
+  pointer-events: none;
+}

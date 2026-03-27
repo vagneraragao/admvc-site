@@ -32,3 +32,58 @@ export async function registrarEncontroAction(formData: FormData, presentesIds: 
         return { sucesso: false, erro: "Falha ao gravar o encontro." };
     }
 }
+
+
+
+export async function atualizarDadosGrupoAction(formData: FormData) {
+    try {
+        const id = Number(formData.get('grupo_id'));
+        const dia_semana = formData.get('dia_semana') as string;
+        const horario = formData.get('horario') as string;
+        const endereco = formData.get('endereco') as string;
+        const numero = formData.get('numero') as string;
+        const bairro = formData.get('bairro') as string;
+        const cidade = formData.get('cidade') as string;
+        const estado = formData.get('estado') as string;
+        const pais = formData.get('pais') as string;
+
+        await prisma.grupo.update({
+            where: { id },
+            data: { 
+                dia_semana, 
+                horario, 
+                endereco, 
+                numero,
+                bairro, 
+                cidade,
+                estado,
+                pais
+            }
+        });
+
+        revalidatePath(`/membros/gestao/grupo/${id}`);
+        return { sucesso: true };
+    } catch (error) {
+        return { sucesso: false, erro: "Erro ao atualizar dados." };
+    }
+}
+
+export async function gerirMembroGrupoAction(grupoId: number, membroId: number, acao: 'ADICIONAR' | 'REMOVER') {
+    try {
+        if (acao === 'ADICIONAR') {
+            await prisma.grupo.update({
+                where: { id: grupoId },
+                data: { membros: { connect: { id: membroId } } }
+            });
+        } else {
+            await prisma.grupo.update({
+                where: { id: grupoId },
+                data: { membros: { disconnect: { id: membroId } } }
+            });
+        }
+        revalidatePath(`/membros/gestao/grupo/${grupoId}`);
+        return { sucesso: true };
+    } catch (error) {
+        return { sucesso: false, erro: "Erro ao processar membro." };
+    }
+}

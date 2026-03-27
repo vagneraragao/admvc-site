@@ -102,7 +102,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-soft pb-6">
                 <div>
                     <h2 className="text-3xl font-black uppercase italic tracking-tighter text-fg leading-none">
-                        {modo === 'lista' ? "Grupos & Células" : grupoAtual ? "Editar Grupo" : "Novo Grupo"}
+                        {modo === 'lista' ? "Grupos & PGs" : grupoAtual ? "Editar Grupo" : "Novo Grupo"}
                     </h2>
                     {modo === 'form' && (
                         <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-2">
@@ -227,7 +227,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                             <div className="space-y-1.5">
                                 <label className="text-[9px] font-black text-muted uppercase tracking-widest ml-2">Categoria</label>
                                 <select name="categoria" defaultValue={grupoAtual?.categoria || 'Célula'} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-sm font-bold focus:border-figueira outline-none shadow-sm appearance-none">
-                                    <option value="Célula">Célula</option>
+                                    <option value="Célula">PG</option>
                                     <option value="Estudo Bíblico">Estudo Bíblico</option>
                                     <option value="Reunião de Oração">Reunião de Oração</option>
                                     <option value="Equipa de Serviço">Equipa de Serviço</option>
@@ -365,7 +365,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                 <Building2 size={12} /> Departamento Associado
                             </label>
                             <select name="departamento_id" defaultValue={grupoAtual?.departamento_id || ''} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-sm font-bold focus:border-figueira outline-none shadow-sm min-w-[250px] appearance-none">
-                                <option value="">Sem vínculo / Célula Independente</option>
+                                <option value="">Sem vínculo / PG Independente</option>
                                 {departamentos.map(dept => (
                                     <option key={dept.id} value={dept.id}>{dept.nome}</option>
                                 ))}

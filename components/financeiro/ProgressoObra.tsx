@@ -63,8 +63,8 @@ export default async function ProgressoObra() {
                     <div>
                         <span className="text-[9px] font-black text-muted uppercase tracking-widest block mb-0.5">Arrecadação Total</span>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-fg italic">{euro(totalArrecadadoGeral)}</span>
-                            <span className="text-xs font-bold text-muted">/ {euro(DADOS_CONSTRUCAO.objetivoFinal)}</span>
+                            <span className="text-2xl font-black text-fg valor-dinheiro italic">{euro(totalArrecadadoGeral)}</span>
+                            <span className="text-xs font-bold valor-dinheiro text-muted">/ {euro(DADOS_CONSTRUCAO.objetivoFinal)}</span>
                         </div>
                     </div>
                     <div className="border-l border-soft pl-4 ml-2">

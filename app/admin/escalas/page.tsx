@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, CalendarDays, PlusCircle, Settings2, Users, ChevronDown } from 'lucide-react'
+import { ArrowLeft, ChevronRight, CalendarDays, PlusCircle, Settings2, Users } from 'lucide-react'
 import GerenciadorEventos from '@/components/GerenciadorEventos'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
@@ -8,6 +8,7 @@ import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
 import ModalGerarEventosLote from '@/components/escalas/ModalGerarEventosLote'
 import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
 import ModalEditarEscala from '@/components/admin/ModalEditarEscala'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,8 @@ export default async function EscalasPage() {
     const membrosComFuncoes = await prisma.membro.findMany({
         where: { status: 'ATIVO' },
         include: {
-            ministerios: { select: { departamento_id: true, funcao: true } }
+            ministerios: { select: { departamento_id: true, funcao: true } },
+            departamentos_liderados: { select: { id: true } } // Garantimos que traz as lideranças também
         },
         orderBy: { first_name: "asc" }
     });
@@ -42,16 +44,22 @@ export default async function EscalasPage() {
     const eventosFuturos = eventos.filter(e => new Date(e.data) >= new Date(new Date().setHours(0, 0, 0, 0)));
 
     return (
-        <main className="max-w-6xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* --- BREADCRUMBS --- */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/admin/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Dashboard Admin
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Escalas e Eventos</span>
-            </nav>
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <Breadcrumb items={[
+                { 
+                    label: "Dashboard", 
+                    href: "/admin/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Escalas e Eventos" 
+                }
+            ]} />
+
+
+
 
             {/* --- CABEÇALHO --- */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-2">
@@ -77,83 +85,69 @@ export default async function EscalasPage() {
                 <a href="#calendario" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center gap-2 whitespace-nowrap">
                     <CalendarDays size={14} /> Visão Calendário
                 </a>
-                <a href="#montador" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-blue-500 transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <Settings2 size={14} /> Montador de Escalas
-                </a>
-                <a href="#visao-geral" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-emerald-500 transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <Users size={14} /> Equipas Escaladas
+                <a href="#atribuicoes" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-blue-500 transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <Settings2 size={14} /> Gestão de Escalas
                 </a>
             </nav>
 
-            <div className="space-y-10">
+            <div className="space-y-12">
 
-                {/* --- 01. CALENDÁRIO (SEMPRE ABERTO COMO PEDISTE) --- */}
+                {/* --- 01. CALENDÁRIO (SEMPRE ABERTO) --- */}
                 <section id="calendario" className="w-full scroll-mt-24">
                     <CalendarioAgenda eventos={eventos} />
                 </section>
 
-                {/* --- 02. MONTADOR DE ESCALAS (CARD CONTRAÍVEL) --- */}
-                <section id="montador" className="scroll-mt-24 w-full">
-                    <details className="group bg-bg2 border border-soft rounded-[3.5rem] shadow-sm overflow-hidden transition-all duration-300">
+                {/* ========================================================= */}
+                {/* 02. NOVO LAYOUT UNIFICADO: LADO A LADO                    */}
+                {/* ========================================================= */}
+                <section id="atribuicoes" className="grid lg:grid-cols-12 gap-8 items-start pt-4 scroll-mt-24">
 
-                        <summary className="list-none cursor-pointer p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors outline-none">
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center shrink-0 shadow-sm transition-transform group-open:scale-110">
-                                    <Settings2 size={20} className="text-blue-500" />
+                    {/* COLUNA ESQUERDA: MONTADOR DE ESCALAS (Fixo no scroll) */}
+                    {/* Alterei o top-24 para compensar a barra de navegação sticky que adicionaste */}
+                    <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 z-10 space-y-6">
+                        <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
+                            {/* Linha de destaque no topo do card */}
+                            <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+                            
+                            <div className="flex items-center gap-4 border-b border-soft pb-6 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                    <Settings2 size={20} />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                        Atribuir Escala
-                                    </h2>
+                                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Atribuir Escala</h2>
                                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">
-                                        Selecione o evento e aloque os voluntários nas respetivas funções.
+                                        Adicionar voluntário
                                     </p>
                                 </div>
                             </div>
-                            <div className="w-10 h-10 rounded-2xl bg-bg border border-soft flex items-center justify-center text-muted group-open:bg-blue-600 group-open:text-white group-open:border-blue-600 transition-all shadow-sm shrink-0">
-                                <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
-                            </div>
-                        </summary>
 
-                        {/* CONTEÚDO EXPANDIDO */}
-                        <div className="px-8 md:px-10 pb-10 border-t border-soft/50 pt-8 animate-in slide-in-from-top-4 fade-in duration-300">
                             <MontadorEscalas
                                 eventos={eventosFuturos}
                                 departamentos={departamentos}
                                 membros={membrosComFuncoes}
                             />
                         </div>
-                    </details>
-                </section>
+                    </aside>
 
-                {/* --- 03. VISÃO GERAL DAS EQUIPAS (CARD CONTRAÍVEL) --- */}
-                <section id="visao-geral" className="scroll-mt-24 w-full">
-                    <details className="group bg-bg2 border border-soft rounded-[3.5rem] shadow-sm overflow-hidden transition-all duration-300">
-
-                        <summary className="list-none cursor-pointer p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors outline-none">
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center shrink-0 shadow-sm transition-transform group-open:scale-110">
-                                    <Users size={20} className="text-emerald-500" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                        Visão Geral das Equipas
-                                    </h2>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">
-                                        Consulte quem está escalado para os próximos eventos e confirmações.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-2xl bg-bg border border-soft flex items-center justify-center text-muted group-open:bg-emerald-500 group-open:text-white group-open:border-emerald-500 transition-all shadow-sm shrink-0">
-                                <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
-                            </div>
-                        </summary>
-
-                        {/* CONTEÚDO EXPANDIDO */}
-                        <div className="px-8 md:px-10 pb-10 border-t border-soft/50 pt-8 animate-in slide-in-from-top-4 fade-in duration-300">
-                            <ListaEscalados eventos={eventosFuturos} />
+                    {/* COLUNA DIREITA: VISÃO GERAL (Lista de Eventos Colapsáveis) */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+                        
+                        {/* Cabeçalho subtil da lista */}
+                        <div className="flex items-center gap-3 px-2">
+                            <Users size={16} className="text-emerald-500" />
+                            <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro Geral de Escalas</h2>
                         </div>
-                    </details>
+
+                        {/* Chamamos a Lista passando isAdmin e os membros */}
+                        <div className="animate-in slide-in-from-bottom-4 duration-500">
+                            <ListaEscalados 
+                                eventos={eventosFuturos} 
+                                isAdmin={true} 
+                                membros={membrosComFuncoes} 
+                            />
+                        </div>
+
+                    </div>
                 </section>
 
             </div>
