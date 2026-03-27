@@ -42,7 +42,7 @@ export default function AgendaGruposMembro({ gruposMembro }: { gruposMembro: any
                 </div>
                 <div>
                     <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">
-                        Agenda da Célula
+                        Agenda do PG
                     </h3>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
                         Os teus próximos encontros

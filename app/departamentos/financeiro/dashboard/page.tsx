@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma'
 import {
     Target, Receipt, Wallet, Ticket, Archive, CheckCircle2, AlertCircle,
     Coffee, ArrowLeft, ChevronRight, PlusCircle, ChevronDown, HandCoins,
-    History, Users, Menu, Layers, ShieldCheck, Heart
+    History, Users, Menu, Layers, ShieldCheck, Heart, PieChart
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -14,10 +14,14 @@ import ModalNovaCampanha from '@/components/financeiro/ModalNovaCampanha'
 import GrelhaRifa from '@/components/financeiro/GrelhaRifa'
 import ModalHistoricoRifa from '@/components/financeiro/ModalHistoricoRifa'
 import BotaoAprovarCantina from '@/components/financeiro/BotaoAprovarCantina'
-import ModalLancarContribuicaoGlobal from '@/components/financeiro/ModalLancarContribuicaoGlobal'
+// import ModalLancarContribuicaoGlobal from '@/components/financeiro/ModalLancarContribuicaoGlobal'
 import FiltroTotaisFinanceiro from '@/components/financeiro/FiltroTotaisFinanceiro'
 import GestaoObraWidget from '@/components/financeiro/GestaoObraWidget'
 import ModalPagamentoRapidoCarne from '@/components/financeiro/ModalPagamentoRapidoCarne'
+import BotaoPrivacidade from '@/components/financeiro/BotaoPrivacidade'
+import ModalEntradaUnificada from '@/components/financeiro/ModalEntradaUnificada'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import ModalRelatorioTesouraria from '@/components/financeiro/ModalRelatorioTesouraria'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,14 +85,21 @@ export default async function DashboardFinanceiro() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700">
 
-            {/* --- BREADCRUMBS --- */}
-            <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/membros/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Dashboard Global
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Tesouraria</span>
-            </nav>
+{/* BREADCRUMB PADRONIZADO */}
+            <Breadcrumb items={[
+                { 
+                    label: "Dashboard Global", 
+                    href: "/membros/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Financeiro", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Tesouraria" 
+                }
+            ]} />
 
             {/* --- CABEÇALHO LIMPO E COMPACTO --- */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
@@ -104,7 +115,13 @@ export default async function DashboardFinanceiro() {
                 <div className="flex flex-wrap items-center gap-3">
 
                     {/* BOTÕES DE ACÇÃO RÁPIDA (Substituem aquela linha feia de botões que estava solta) */}
-                    <ModalLancarContribuicaoGlobal membros={membros} />
+                    {/* <ModalLancarContribuicaoGlobal membros={membros} /> */}
+                   
+                    <ModalEntradaUnificada
+                        membros={membrosParaReceber}
+                        carnesAtivos={objetivos}
+                        rifaAtiva={rifaAtiva}
+                    />
 
                     <details className="group relative z-40">
                         <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
@@ -112,6 +129,7 @@ export default async function DashboardFinanceiro() {
                                 <PlusCircle size={14} />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Nova Campanha</span>
                                 <ChevronDown size={14} className="opacity-50 group-open:rotate-180 transition-transform ml-1" />
+
                             </div>
                         </summary>
 
@@ -122,9 +140,9 @@ export default async function DashboardFinanceiro() {
                         </div>
                     </details>
 
-                    {/* DROPDOWN DE FERRAMENTAS DO ADMIN (Mantendo o design system) */}
+{/* DROPDOWN DE FERRAMENTAS DO ADMIN (Mantendo o design system) */}
                     {session.role === 'ADMIN' && (
-                        <details className="group relative z-30">
+                        <details className="group relative z-[60]">
                             <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
                                 <div className="h-12 w-12 bg-bg2 border border-soft text-fg rounded-2xl flex items-center justify-center hover:bg-soft transition-all active:scale-95 shadow-sm">
                                     <Menu size={16} className="text-muted group-open:text-figueira transition-colors" />
@@ -141,18 +159,32 @@ export default async function DashboardFinanceiro() {
                                 <Link href="/departamentos/cantina/despensa" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                     <Heart size={14} className="text-muted group-hover/link:text-figueira" /> Ação Social
                                 </Link>
+                                
+                                {/* O TEU NOVO MODAL ESTÁ AQUI */}
+                                <ModalRelatorioTesouraria membros={membros} />
+
                             </div>
                         </details>
                     )}
                 </div>
             </header>
 
-            {/* --- KPI'S (ESTATÍSTICAS BÁSICAS) --- */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+{/* --- KPI'S (ESTATÍSTICAS BÁSICAS) --- */}
+            <section className="grid grid-cols-2 lg:grid-cols-5 gap-5">
                 <StatCard label="Campanhas Ativas" value={campanhasAgrupadas.length} icon={<Target size={14} className="text-muted" />} />
                 <StatCard label="Rifas Ativas" value={rifasAtivasCount} icon={<Ticket size={14} className="text-muted" />} />
                 <StatCard label="Dizimistas" value={totalDizimistas} icon={<Users size={14} className="text-muted" />} />
                 <StatCard label="Pendentes MBWay" value={pendentesMBWay.length} highlight={pendentesMBWay.length > 0} icon={<AlertCircle size={14} className={pendentesMBWay.length > 0 ? "text-orange-500" : "text-muted"} />} />
+                
+                {/* CARTÃO DO BOTÃO DE PRIVACIDADE */}
+                <div className="p-6 rounded-[2rem] border bg-bg2 border-soft text-fg shadow-sm flex flex-col justify-between transition-all hover:-translate-y-1">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Privacidade</p>
+                    <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] font-bold text-muted w-1/2 leading-tight">Ocultar valores da tela</span>
+                        {/* O botão entra aqui, alinhado à direita! */}
+                        <BotaoPrivacidade />
+                    </div>
+                </div>
             </section>
 
             {/* ALERTAS PENDENTES (MBWAY E CANTINA) */}
@@ -221,7 +253,7 @@ export default async function DashboardFinanceiro() {
                 </details>
             )}
 
-            {/* LINHA 1: RECEBER PAGAMENTO | GESTÃO DA OBRA */}
+            {/* LINHA 1: RECEBER PAGAMENTO | GESTÃO DA OBRA
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                 <div className="h-full">
                     <FormLancamentoOferta membros={membrosParaReceber} objetivos={objetivos} />
@@ -230,17 +262,104 @@ export default async function DashboardFinanceiro() {
                     <GestaoObraWidget />
                 </div>
             </section>
+*/}
+{/* ======================================================= */}
+            {/* VISÃO GERAL: PROGRESSO DA OBRA E RELATÓRIO CONSOLIDADO  */}
+            {/* ======================================================= */}
+            <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                
+                {/* COLUNA ESQUERDA: Progresso Financeiro / Obra (Colapsável) */}
+                <details className="group bg-bg2 border border-soft rounded-[2.5rem] shadow-sm overflow-hidden transition-all open:pb-6 w-full">
+                    <summary className="cursor-pointer p-6 flex items-center justify-between gap-4 list-none [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors select-none">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-figueira/10 text-figueira p-4 rounded-3xl shrink-0">
+                                <Target size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tighter text-fg leading-none">
+                                    Progresso Financeiro
+                                </h3>
+                                <p className="text-[10px] text-muted font-black mt-1.5 uppercase tracking-widest">
+                                    Acompanhamento da Obra
+                                </p>
+                            </div>
+                        </div>
+                        <div className="bg-bg border border-soft p-2 rounded-full group-open:bg-figueira group-open:text-white transition-all shadow-sm">
+                            <ChevronDown size={20} className="group-open:rotate-180 transition-transform" />
+                        </div>
+                    </summary>
 
-            {/* SORTEIO ATIVO */}
-            {rifaAtiva && (
-                <section className="space-y-6 pt-6 border-t border-soft">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                            <Ticket size={20} className="text-figueira" /> Sorteios em Andamento
-                        </h2>
+                    <div className="px-6 pt-4 border-t border-soft animate-in slide-in-from-top-4 duration-300">
+                        {/* Como o GestaoObraWidget já deve ter o seu próprio fundo, 
+                            podemos colocá-lo aqui dentro diretamente */}
+                        <GestaoObraWidget />
                     </div>
-                    <GrelhaRifa rifa={rifaAtiva} membros={membros} />
-                </section>
+                </details>
+
+                {/* COLUNA DIREITA: Relatório Consolidado de Entradas (Colapsável) */}
+                <details className="group bg-bg2 border border-soft rounded-[2.5rem] shadow-sm overflow-hidden transition-all open:pb-6 w-full">
+                    <summary className="cursor-pointer p-6 flex items-center justify-between gap-4 list-none [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors select-none">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-blue-500/10 text-blue-500 p-4 rounded-3xl shrink-0">
+                                <PieChart size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tighter text-fg leading-none">
+                                    Relatório Consolidado
+                                </h3>
+                                <p className="text-[10px] text-muted font-black mt-1.5 uppercase tracking-widest">
+                                    Resumo de Entradas e Transações
+                                </p>
+                            </div>
+                        </div>
+                        <div className="bg-bg border border-soft p-2 rounded-full group-open:bg-blue-500 group-open:text-white transition-all shadow-sm">
+                            <ChevronDown size={20} className="group-open:rotate-180 transition-transform" />
+                        </div>
+                    </summary>
+
+                    <div className="px-6 pt-4 border-t border-soft animate-in slide-in-from-top-4 duration-300">
+                        {/* Se o FiltroTotaisFinanceiro tiver bordas ou fundos duplicados, 
+                            você pode ajustá-lo depois para ficar 100% liso aqui dentro */}
+                        <FiltroTotaisFinanceiro transacoes={transacoesFlat} />
+                    </div>
+                </details>
+
+            </section>
+
+
+{/* SORTEIO ATIVO (CARD COLAPSÁVEL) */}
+            {rifaAtiva && (
+                <details className="group bg-bg2 border border-soft rounded-[2.5rem] shadow-sm overflow-hidden transition-all open:pb-6 mt-6">
+                    {/* O "CARD" PEQUENO QUE FICA SEMPRE VISÍVEL */}
+                    <summary className="cursor-pointer p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 list-none [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors select-none">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-figueira/10 text-figueira p-4 rounded-3xl shrink-0">
+                                <Ticket size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tighter text-fg leading-none">
+                                    Sorteio em Andamento
+                                </h3>
+                                <p className="text-[10px] text-muted font-black mt-1.5 uppercase tracking-widest flex items-center gap-1">
+                                    {rifaAtiva.nome} • Progresso: {rifaAtiva.numeros_vendidos.length}/{rifaAtiva.total_numeros}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Ícone de Seta que gira ao abrir */}
+                        <div className="bg-bg border border-soft p-2 rounded-full group-open:bg-figueira group-open:text-white transition-all shadow-sm self-end md:self-auto">
+                            <ChevronDown size={20} className="group-open:rotate-180 transition-transform" />
+                        </div>
+                    </summary>
+
+                    {/* CONTEÚDO EXPANDIDO (A GRELHA) */}
+                    <div className="px-6 pt-4 border-t border-soft animate-in slide-in-from-top-4 duration-300">
+                        {/* Removi o padding exagerado e deixei a grelha fluir naturalmente */}
+                        <div className="bg-white rounded-[2rem] p-2 shadow-sm border border-soft/50">
+                            <GrelhaRifa rifa={rifaAtiva} membros={membros} />
+                        </div>
+                    </div>
+                </details>
             )}
 
             {/* GESTÃO DE CAMPANHAS E CARNÊS */}
@@ -276,14 +395,24 @@ export default async function DashboardFinanceiro() {
                                     <div className="flex items-center gap-8 justify-between md:justify-end">
                                         <div className="text-right">
                                             <span className="text-[8px] font-black text-muted uppercase block">Arrecadado</span>
-                                            <div className="flex items-center gap-2 justify-end">
-                                                <p className="text-lg font-black text-fg">{euro(campanha.totalPago)} <span className="text-xs text-muted font-medium">/ {euro(campanha.metaTotal)}</span></p>
-                                                {campanha.valorPendente > 0 && (
-                                                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md border border-orange-200">
-                                                        +{euro(campanha.valorPendente)} pendente
-                                                    </span>
-                                                )}
-                                            </div>
+<div className="flex items-center gap-2 justify-end">
+    <p className="text-lg font-black text-fg">
+        {/* Envolvemos o Total Pago */}
+        <span className="valor-dinheiro inline-block">{euro(campanha.totalPago)}</span> 
+        
+        <span className="text-xs text-muted font-medium">
+            {/* A barra "/" fica de fora, envolvemos apenas a Meta Total */}
+            / <span className="valor-dinheiro inline-block">{euro(campanha.metaTotal)}</span>
+        </span>
+    </p>
+    
+    {campanha.valorPendente > 0 && (
+        <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md border border-orange-200">
+            {/* O sinal de "+" fica de fora, envolvemos o valor, e o "pendente" fica de fora */}
+            +<span className="valor-dinheiro inline-block">{euro(campanha.valorPendente)}</span> pendente
+        </span>
+    )}
+</div>
                                         </div>
                                         <div className="text-right w-16 hidden md:block">
                                             <span className="text-[8px] font-black text-muted uppercase block">Progresso</span>
@@ -372,13 +501,10 @@ export default async function DashboardFinanceiro() {
             </details>
 
             {/* RELATÓRIO E HISTÓRICO DE SORTEIOS */}
+{/* HISTÓRICO DE SORTEIOS FINALIZADOS */}
             <section className="space-y-10 pt-6 border-t border-soft">
-                <div className="w-full">
-                    <FiltroTotaisFinanceiro transacoes={transacoesFlat} />
-                </div>
-
                 {rifasFinalizadas.length > 0 && (
-                    <div className="space-y-6 pt-6">
+                    <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
                                 <Archive size={20} className="text-muted" /> Histórico de Sorteios

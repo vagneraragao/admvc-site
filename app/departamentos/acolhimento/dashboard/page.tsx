@@ -11,7 +11,7 @@ import {
 import ModalAcompanhamento from '@/components/acolhimento/ModalAcompanhamento'
 import ModalHistorico from '@/components/acolhimento/ModalHistorico'
 import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolidados'
-
+import Breadcrumb from '@/components/ui/Breadcrumb'
 export const dynamic = 'force-dynamic'
 
 export default async function AcolhimentoDashboard() {
@@ -55,8 +55,17 @@ export default async function AcolhimentoDashboard() {
     });
 
     const consolidados = await prisma.visitante.findMany({
-        where: { status: 'CONSOLIDADO' },
-    });
+
+    where: { status: 'CONSOLIDADO' },
+    include: {
+        acompanhamentos: {
+            include: { membro: true }, // Isto é obrigatório para aparecer o nome de quem atendeu!
+            orderBy: { data_contacto: 'desc' }
+        }
+    }
+});
+
+
 
     const formatarDataHora = (data: Date) => {
         return new Date(data).toLocaleString('pt-PT', {
@@ -70,14 +79,21 @@ export default async function AcolhimentoDashboard() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* BREADCRUMBS */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href={isAdmin ? "/admin/dashboard" : "/membros/dashboard"} className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> {isAdmin ? "Painel Admin" : "Dashboard"}
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Acolhimento</span>
-            </nav>
+{/* BREADCRUMB REUTILIZÁVEL */}
+            <Breadcrumb items={[
+                { 
+                    label: isAdmin ? "Painel Admin" : "Dashboard", 
+                    href: isAdmin ? "/admin/dashboard" : "/membros/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Ministérios", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Acolhimento" 
+                }
+            ]} />
 
             {/* HEADER */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-soft pb-8">

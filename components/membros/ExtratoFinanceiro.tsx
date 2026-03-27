@@ -52,7 +52,9 @@ export default function ExtratoFinanceiro({ objetivos }: { objetivos: any[] }) {
 
                     <div className="text-right">
                         <span className="text-xs font-black text-figueira italic">
-                            {euro(item.valor_pago)}
+                            <div className="preco-destaque">
+                                <span className="valor-dinheiro inline-block">{euro(item.valor_pago)}   </span>
+                            </div>
                         </span>
                         {/* Status subtil se necessário */}
                         <p className="text-[7px] font-black text-muted uppercase tracking-tighter opacity-50">Confirmado</p>

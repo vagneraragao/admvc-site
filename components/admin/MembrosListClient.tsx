@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, MapPin, Download, Plus, Edit3, Eye, Phone, Mail, User, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, FileSignature } from 'lucide-react'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export default function MembrosListClient({ membros }: { membros: any[] }) {
     // ESTADOS PARA OS FILTROS E PAGINAÇÃO
@@ -66,7 +67,21 @@ export default function MembrosListClient({ membros }: { membros: any[] }) {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-
+{/* BREADCRUMB PADRONIZADO */}
+            <Breadcrumb items={[
+                { 
+                    label: "Dashboard Global", 
+                    href: "/admin/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Administração", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Painel de Membros" 
+                }
+            ]} />
             {/* CABEÇALHO DA PÁGINA */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
                 <div className="space-y-2">

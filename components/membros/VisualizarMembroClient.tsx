@@ -239,7 +239,7 @@ export default function VisualizarMembroClient({ membro }: any) {
                         </div>
 
                         <ListGroup title="Departamentos & Funções" items={departamentos} color="bg-fg text-bg" icon={<ShieldCheck size={14} />} showFuncao={true} />
-                        <ListGroup title="Grupos & Células" items={todosGrupos} color="bg-blue-600 text-white" icon={<Users2 size={14} />} />
+                        <ListGroup title="Grupos & PGs" items={todosGrupos} color="bg-blue-600 text-white" icon={<Users2 size={14} />} />
                     </div>
                 )}
             </div>

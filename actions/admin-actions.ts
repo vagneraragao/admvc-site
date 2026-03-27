@@ -604,10 +604,6 @@ export async function criarEscala(formData: FormData) {
             }
         });
 
-        // ====================================================================
-        // A MAGIA QUE RESOLVE O TEU PROBLEMA (LIMPEZA DE CACHE)
-        // ====================================================================
-
         // 1. Atualiza a página onde o líder está a montar a escala
         revalidatePath(`/membros/gestao/escalas/${evento_id}`);
         revalidatePath(`/admin/escalas`); // (Coloca aqui as rotas exatas onde a tua ListaEscalados aparece)
@@ -615,11 +611,14 @@ export async function criarEscala(formData: FormData) {
         // 2. Atualiza a Dashboard do Membro para que ele veja a notificação instantaneamente!
         revalidatePath(`/membros/dashboard`);
 
-        // ====================================================================
+return { ok: true };
 
-        return { ok: true };
+    } catch (error: any) {
+        // 👇 SE A BASE DE DADOS BLOQUEAR POR CAUSA DA REGRA @@unique
+        if (error.code === 'P2002') {
+            return { error: "Este voluntário já está escalado para este culto/evento (possivelmente noutro departamento)." };
+        }
 
-    } catch (error) {
         console.error("Erro ao criar escala:", error);
         return { error: "Ocorreu um erro ao registar a escala na base de dados." };
     }

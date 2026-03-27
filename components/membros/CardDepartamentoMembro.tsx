@@ -127,7 +127,7 @@ export default function CardDepartamentoMembro({ depto, membroId, role }: any) {
                             {/* BOTÕES DE AÇÃO UNIFICADOS */}
                             <div className="grid grid-cols-1 gap-2 pt-1">
                                 {isGrupo ? (
-                                    /* LÓGICA PARA GRUPOS / CÉLULAS */
+                                    /* LÓGICA PARA GRUPOS / PGS */
                                     podeGerenciar ? (
                                         <Link href={`/membros/gestao/grupo/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnPrimary}`}>
                                             <Edit3 size={14} /> Gerir Célula

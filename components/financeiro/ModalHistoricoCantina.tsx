@@ -124,7 +124,7 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
                                         </h4>
                                         <div className="text-right">
                                             <span className="text-[8px] font-black uppercase text-muted tracking-widest block leading-none mb-1">Total do Mês</span>
-                                            <span className="text-sm text-figueira italic font-black leading-none">{euro(dados.total)}</span>
+                                            <span className="text-sm text-figueira valor-dinheiro italic font-black leading-none">{euro(dados.total)}</span>
                                         </div>
                                     </div>
 
@@ -207,7 +207,7 @@ function ReciboItem({ recibo, euro }: { recibo: any, euro: (v: number) => string
                 </div>
 
                 <div className="text-right shrink-0">
-                    <p className="text-sm font-black italic text-fg leading-none">{euro(valorTotal)}</p>
+                    <p className="text-sm font-black italic text-fg valor-dinheiro leading-none">{euro(valorTotal)}</p>
                 </div>
             </button>
 
@@ -221,7 +221,7 @@ function ReciboItem({ recibo, euro }: { recibo: any, euro: (v: number) => string
                                     <span className="font-black text-muted w-4 text-right shrink-0">{item.quantity}x</span>
                                     <span className="font-bold text-fg uppercase tracking-tight">{item.item_name}</span>
                                 </div>
-                                <span className="font-black text-fg shrink-0 pl-4">{euro(Math.abs(item.total_money))}</span>
+                                <span className="font-black valor-dinheirotext-fg shrink-0 pl-4">{euro(Math.abs(item.total_money))}</span>
                             </div>
                         ))}
                     </div>

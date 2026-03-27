@@ -31,9 +31,7 @@ export default async function ListaMembrosAdmin() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-6">
 
-            <div className="px-2 pb-2">
-                <Breadcrumbs items={[{ label: "Membros", href: "/admin/membros" }]} />
-            </div>
+
 
             <MembrosListClient membros={membros} />
 

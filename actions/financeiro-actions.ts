@@ -38,40 +38,6 @@ export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: 
     }
 }
 
-export async function registrarPagamentoCampanhaAction(formData: FormData) {
-    try {
-        const session = await getSessionData();
-        if (!session) return { ok: false, error: 'Sessão expirada.' };
-
-        const objetivo_id = parseInt(formData.get('objetivo_id') as string);
-        const valor_pago = parseFloat(formData.get('valor_pago') as string);
-        const forma_pagamento = formData.get('forma_pagamento') as string;
-
-        // 1. Regista a entrada do dinheiro
-        await prisma.lancamentoFinanceiro.create({
-            data: {
-                objetivo_id,
-                valor_pago,
-                forma_pagamento,
-                registrado_por_id: session.membroId // Quem recebeu o dinheiro (o Tesoureiro)
-            }
-        });
-
-        // 2. Incrementa o número de parcelas pagas na campanha
-        await prisma.objetivoFinanceiro.update({
-            where: { id: objetivo_id },
-            data: {
-                parcelas_pagas: { increment: 1 }
-            }
-        });
-
-        revalidatePath('/departamentos/financeiro/dashboard');
-        return { ok: true };
-    } catch (error) {
-        console.error("Erro ao registar pagamento:", error);
-        return { ok: false, error: 'Erro ao processar o pagamento.' };
-    }
-}
 
 export async function venderNumeroRifaAction(formData: FormData) {
     try {
@@ -275,7 +241,6 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
     }
 }
 
-
 export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: string | null, valor: number) {
     console.log(`\n======================================================`);
     console.log(`[FINANCEIRO] INICIANDO APROVAÇÃO DE SALDO`);
@@ -389,33 +354,6 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
 
     } catch (error: any) {
         console.error(`[ERRO FINAL]`, error);
-        return { ok: false, error: error.message };
-    }
-}
-
-export async function lancarContribuicaoAction(formData: FormData) {
-    try {
-        const membroId = Number(formData.get('membroId'));
-        const valor = Number(formData.get('valor'));
-        const tipo = formData.get('tipo') as string; // "DIZIMO" ou "OFERTA"
-        const observacao = formData.get('observacao') as string;
-        const data = formData.get('data') ? new Date(formData.get('data') as string) : new Date();
-
-        await prisma.contribuicao.create({
-            data: {
-                membro_id: membroId,
-                tipo,
-                valor,
-                data,
-                observacao
-            }
-        });
-
-        revalidatePath('/admin/membros/editar/[id]');
-        revalidatePath('/membros/dashboard');
-
-        return { ok: true };
-    } catch (error: any) {
         return { ok: false, error: error.message };
     }
 }
@@ -595,5 +533,198 @@ export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
         return { ok: true };
     } catch (e: any) {
         return { ok: false, error: e.message };
+    }
+}
+
+export async function lancarContribuicaoAction(formData: FormData) {
+    try {
+        const membroId = Number(formData.get('membroId'));
+        const valor = Number(formData.get('valor'));
+        const tipo = formData.get('tipo') as string; 
+        const observacao = formData.get('observacao') as string;
+        const data = formData.get('data') ? new Date(formData.get('data') as string) : new Date();
+
+        await prisma.contribuicao.create({
+            data: {
+                membro_id: membroId,
+                tipo,
+                valor,
+                data,
+                observacao
+            }
+        });
+
+        // 🧹 LIMPEZA DE CACHE CORRETA!
+        // Removemos aquele com o "[id]" que dava erro, e adicionamos o dashboard financeiro!
+        revalidatePath('/membros/dashboard');
+        revalidatePath('/departamentos/financeiro/dashboard'); // 👈 A mágica que atualiza a tua tela na hora!
+        revalidatePath('/financeiro/dashboard'); // (Coloquei as duas variações de URL por segurança)
+
+        return { ok: true };
+    } catch (error: any) {
+        return { ok: false, error: error.message };
+    }
+}
+
+export async function registrarPagamentoCampanhaAction(formData: FormData) {
+    try {
+        const session = await getSessionData();
+        if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+        const objetivo_id = parseInt(formData.get('objetivo_id') as string);
+        const valor_pago = parseFloat(formData.get('valor_pago') as string);
+        const forma_pagamento = formData.get('forma_pagamento') as string;
+
+        // 1. Regista a entrada do dinheiro
+        await prisma.lancamentoFinanceiro.create({
+            data: {
+                objetivo_id,
+                valor_pago,
+                forma_pagamento,
+                registrado_por_id: session.membroId // Quem recebeu o dinheiro (o Tesoureiro)
+            }
+        });
+
+        // 2. Incrementa o número de parcelas pagas na campanha
+        await prisma.objetivoFinanceiro.update({
+            where: { id: objetivo_id },
+            data: {
+                parcelas_pagas: { increment: 1 }
+            }
+        });
+
+        revalidatePath('/departamentos/financeiro/dashboard');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao registar pagamento:", error);
+        return { ok: false, error: 'Erro ao processar o pagamento.' };
+    }
+}
+
+export async function buscarExtratoFinanceiroMembro(membroId: number, ano: number, mes: number = 0) {
+    try {
+        let dataInicio, dataFim;
+
+        // Se escolheu um mês específico (1 a 12)
+        if (mes > 0) {
+            dataInicio = new Date(ano, mes - 1, 1); // Primeiro dia do mês
+            dataFim = new Date(ano, mes, 0, 23, 59, 59); // Último dia do mês
+        } else {
+            // Se escolheu 0 (Ano Inteiro)
+            dataInicio = new Date(ano, 0, 1);
+            dataFim = new Date(ano, 11, 31, 23, 59, 59);
+        }
+
+        // 1. Busca Dízimos e Ofertas
+        const contribuicoes = await prisma.contribuicao.findMany({
+            where: { membro_id: membroId, data: { gte: dataInicio, lte: dataFim } },
+            orderBy: { data: 'asc' }
+        });
+
+        // 2. Busca Pagamentos de Carnês/Campanhas
+        const lancamentos = await prisma.lancamentoFinanceiro.findMany({
+            where: {
+                objetivo: { membro_id: membroId },
+                data_recebimento: { gte: dataInicio, lte: dataFim }
+            },
+            include: { objetivo: true },
+            orderBy: { data_recebimento: 'asc' }
+        });
+
+        // 3. Unifica e ordena por data
+        const transacoes = [
+            ...contribuicoes.map((c: any) => ({
+                id: `contrib-${c.id}`,
+                data: c.data || c.createdAt,
+                tipo: c.tipo,
+                descricao: c.observacao || c.tipo,
+                valor: c.valor
+            })),
+            ...lancamentos.map((l: any) => ({
+                id: `carne-${l.id}`,
+                data: l.data_recebimento,
+                tipo: 'CAMPANHA',
+                descricao: `Campanha: ${l.objetivo.nome}`,
+                valor: l.valor_pago
+            }))
+        ].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
+        return { sucesso: true, transacoes };
+    } catch (error) {
+        console.error("Erro ao buscar extrato:", error);
+        return { sucesso: false, erro: "Falha ao carregar o relatório." };
+    }
+}
+
+export async function buscarRelatorioTesouraria(ano: number, mes: number, membroIdFiltro: string, tipoFiltro: string) {
+    try {
+        let dataInicio, dataFim;
+
+        if (mes > 0) {
+            dataInicio = new Date(ano, mes - 1, 1);
+            dataFim = new Date(ano, mes, 0, 23, 59, 59);
+        } else {
+            dataInicio = new Date(ano, 0, 1);
+            dataFim = new Date(ano, 11, 31, 23, 59, 59);
+        }
+
+        const membroId = membroIdFiltro && membroIdFiltro !== 'todos' ? Number(membroIdFiltro) : undefined;
+
+        // 1. Busca Dízimos, Ofertas e Missões
+        let whereContribuicoes: any = { data: { gte: dataInicio, lte: dataFim } };
+        if (membroId) whereContribuicoes.membro_id = membroId;
+        
+        // Se escolheu um tipo específico que não é CAMPANHA
+        if (tipoFiltro !== 'TODOS' && tipoFiltro !== 'CAMPANHA') {
+            whereContribuicoes.tipo = tipoFiltro;
+        } else if (tipoFiltro === 'CAMPANHA') {
+            whereContribuicoes.id = -1; // Truque para não trazer contribuições se ele só quer ver Campanhas
+        }
+
+        const contribuicoes = await prisma.contribuicao.findMany({
+            where: whereContribuicoes,
+            include: { membro: true },
+            orderBy: { data: 'asc' }
+        });
+
+        // 2. Busca Pagamentos de Carnês/Campanhas
+        let whereLancamentos: any = { data_recebimento: { gte: dataInicio, lte: dataFim } };
+        if (membroId) whereLancamentos.objetivo = { membro_id: membroId };
+        
+        // Se escolheu um tipo específico que não é CAMPANHA, não trazemos os carnês
+        if (tipoFiltro !== 'TODOS' && tipoFiltro !== 'CAMPANHA') {
+            whereLancamentos.id = -1; 
+        }
+
+        const lancamentos = await prisma.lancamentoFinanceiro.findMany({
+            where: whereLancamentos,
+            include: { objetivo: { include: { membro: true } } },
+            orderBy: { data_recebimento: 'asc' }
+        });
+
+        // 3. Unifica e formata tudo
+        const transacoes = [
+            ...contribuicoes.map((c: any) => ({
+                id: `contrib-${c.id}`,
+                data: c.data || c.createdAt,
+                nome: c.membro ? `${c.membro.first_name} ${c.membro.last_name}` : 'Oferta Anónima',
+                tipo: c.tipo,
+                descricao: c.observacao || c.tipo,
+                valor: c.valor
+            })),
+            ...lancamentos.map((l: any) => ({
+                id: `carne-${l.id}`,
+                data: l.data_recebimento,
+                nome: `${l.objetivo.membro.first_name} ${l.objetivo.membro.last_name}`,
+                tipo: 'CAMPANHA',
+                descricao: `Campanha: ${l.objetivo.nome}`,
+                valor: l.valor_pago
+            }))
+        ].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
+        return { sucesso: true, transacoes };
+    } catch (error) {
+        console.error("Erro ao buscar relatório tesouraria:", error);
+        return { sucesso: false, erro: "Falha ao carregar o relatório." };
     }
 }

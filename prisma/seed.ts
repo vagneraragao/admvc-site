@@ -49,7 +49,6 @@ async function main() {
         { nome: 'Ministério de Louvor', descricao: 'Música e adoração' },
         { nome: 'Evangelismo e Missões', descricao: 'Expansão do reino e evangelismo' },
         { nome: 'Mídia e Comunicação', descricao: 'Som, imagem, redes sociais e transmissões' },
-        // Os 3 abaixo são vitais estarem aqui para os acessos do painel funcionarem:
         { nome: 'Acolhimento e Integração', descricao: 'Receção e acompanhamento de visitantes' },
         { nome: 'Cantina', descricao: 'Gestão da cafetaria e alimentação' },
         { nome: 'Ação Social', descricao: 'Despensa, cabazes e assistência à comunidade' }
@@ -74,7 +73,9 @@ async function main() {
             nome: "Ministério de Diaconia",
             descricao: "Serviço prático, ordem do culto e assistência à Ceia do Senhor.",
             funcoes: [
-                'Diácono', 'Diaconisa', 'Líder de Diaconia', 'Auxiliar de Santa Ceia'
+                'Diácono', 'Diaconisa', 'Líder de Diaconia', 'Auxiliar de Santa Ceia',
+                'Recepção Interna', 'Recepção Externa', 'Estacionamento', 'Limpeza',
+                'Nave', 'Crianças', 'Líder de Turno'
             ]
         },
         {
@@ -83,7 +84,8 @@ async function main() {
             funcoes: [
                 'Ministro(a) de Louvor', 'Vocalista', 'Backing Vocal', 'Baterista',
                 'Tecladista', 'Baixista', 'Guitarrista', 'Violonista', 'Saxsofonista',
-                'Percussionista', 'Diretor(a) Musical', 'Líder', 'Técnico(a) de som'
+                'Percussionista', 'Diretor(a) Musical', 'Líder', 'Técnico(a) de som',
+                'Líder de Turno', 'Mesa de Som', 'Sonoplasta'
             ]
         },
         {
@@ -98,16 +100,12 @@ async function main() {
             nome: "Mídia e Comunicação",
             descricao: "Responsável pela projeção, som, fotografia, vídeo e redes sociais.",
             funcoes: [
-                'Operador(a) de Som / Áudio', 'Operador(a) de Multimédia (Projeção)',
-                'Operador(a) de Câmera / Vídeo', 'Fotógrafo(a)',
-                'Gestor(a) de Redes Sociais', 'Iluminador(a)', 'Líder',
+                'Operador(a) de Som', 'Operador(a) de Projeção',
+                'Fotógrafo(a)', 'Redes Sociais', 'Iluminador(a)', 'Líder',
                 'Diretor(a) de mídia e comunicação',
                 'Coordenador(a) de equipe', 'Operador(a) de Live',
-                'Assistente de palco',
-                'Cinegrafista',
-                'Editor(a) de vídeo',
-                'Designer gráfico',
-                'Operador(a) de transmissão',
+                'Cinegrafista', 'Editor(a) de vídeo',
+                'Designer gráfico', 'Operador(a) de transmissão',
                 'Roteirista / produtor(a) de conteúdo'
             ]
         },
@@ -132,7 +130,7 @@ async function main() {
             descricao: "Preparação de refeições e gestão do espaço de comunhão.",
             funcoes: [
                 'Responsável da Cantina', 'Cozinheiro(a)',
-                'Atendente de Balcão / Caixa', 'Auxiliar de Logística e Limpeza'
+                'Atendente de Caixa', 'Auxiliar de Logística e Limpeza'
             ]
         }
     ];
@@ -208,12 +206,11 @@ async function main() {
             await prisma.grupo.create({
                 data: {
                     nome: nomeGrupo,
-                    dia_semana: 'A definir',  // Campo obrigatório no schema
-                    horario: 'A definir',     // Campo obrigatório no schema
+                    dia_semana: 'A definir',
+                    horario: 'A definir',
                     perfil: nomeGrupo.replace('SOMOS 1 - ', ''),
                     categoria: 'Comunhão',
                     descricao: `Grupo destinado a ${nomeGrupo.replace('SOMOS 1 - ', '').toLowerCase()}`,
-                    // Campos de endereço obrigatórios no seu schema
                     endereco: 'Sede ADMVC',
                     bairro: 'Centro',
                     cidade: 'Figueira da Foz',

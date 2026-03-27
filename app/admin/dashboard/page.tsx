@@ -12,6 +12,7 @@ import {
     ShieldCheck, HeartHandshake, AlertTriangle, Menu, CreditCard, ArrowUpRight
 } from 'lucide-react'
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,15 +79,21 @@ export default async function AdminDashboard() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700">
 
-            {/* --- BREADCRUMBS --- */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/membros/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Dashboard Global
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Painel Administrativo</span>
-            </nav>
-
+{/* BREADCRUMB PADRONIZADO */}
+            <Breadcrumb items={[
+                { 
+                    label: "Dashboard Global", 
+                    href: "/membros/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Administração", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Painel Administrativo" 
+                }
+            ]} />
             {/* --- CABEÇALHO LIMPO E COMPACTO --- */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
                 <div className="space-y-2">

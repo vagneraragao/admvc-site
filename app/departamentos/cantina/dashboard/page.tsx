@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink, MonitorPlay, Smartphone, Coffee } from 'lucide-react'
 import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
 import CantinaManager from '@/components/cantina/CantinaManager'
-
+import Breadcrumb from '@/components/ui/Breadcrumb'
 export const dynamic = 'force-dynamic'
 
 export default async function GestaoCantinaPage() {
@@ -76,14 +76,21 @@ export default async function GestaoCantinaPage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* --- BREADCRUMBS INTELIGENTES --- */}
-            <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href={isAdmin || isFinance ? "/admin/dashboard" : "/membros/dashboard"} className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> {(isAdmin || isFinance) ? "Painel Admin" : "Voltar à Dashboard"}
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Gestão da Cantina</span>
-            </nav>
+{/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <Breadcrumb items={[
+                { 
+                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard", 
+                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Logística / Cantina", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Gestão da Cantina" 
+                }
+            ]} />
 
             {/* --- CABEÇALHO --- */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-soft pb-6">

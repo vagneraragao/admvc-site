@@ -98,7 +98,7 @@ export default async function GestaoObraFinanceiro() {
                     <div className="p-6 bg-green-500/5 border border-green-500/20 rounded-[2rem] flex justify-between items-center">
                         <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-muted block mb-1">Total Arrecadado até Hoje</span>
-                            <span className="text-4xl font-black italic text-green-500">{euro(totalArrecadado)}</span>
+                            <span className="text-4xl font-black italic text-green-500 valor-dinheiro inline-block">{euro(totalArrecadado)}</span>
                         </div>
                         <div className="text-right">
                             <span className="text-[10px] font-black uppercase tracking-widest text-muted block mb-1">Objetivo Global</span>

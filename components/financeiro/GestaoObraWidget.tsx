@@ -82,7 +82,7 @@ export default async function GestaoObraWidget() {
                 <div className="flex items-center justify-between bg-bg border border-soft p-4 rounded-2xl">
                     <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted block">Arrecadado</span>
-                        <span className="text-lg font-black italic text-green-500">{euro(totalArrecadado)}</span>
+                        <span className="text-lg font-black italic valor-dinheiro text-green-500">{euro(totalArrecadado)}</span>
                     </div>
                     <div className="text-right">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted block mb-1">Objetivo (€)</span>
@@ -90,7 +90,7 @@ export default async function GestaoObraWidget() {
                             type="number"
                             name="objetivoFinal"
                             defaultValue={projeto.objetivoFinal}
-                            className="bg-bg2 border border-soft p-2 rounded-xl text-sm font-bold text-fg text-right w-28 outline-none focus:border-green-500 transition-colors"
+                            className="bg-bg2 border border-soft p-2 rounded-xl text-sm valor-dinheiro font-bold text-fg text-right w-28 outline-none focus:border-green-500 transition-colors"
                         />
                     </div>
                 </div>
@@ -102,7 +102,7 @@ export default async function GestaoObraWidget() {
                         <div key={etapa.id} className="flex items-center justify-between gap-4 border-b border-soft/50 pb-3 last:border-0 last:pb-0">
                             <div className="flex-1 overflow-hidden">
                                 <h4 className="font-black text-fg uppercase text-[11px] truncate">{etapa.nome}</h4>
-                                <span className="text-[8px] font-bold text-muted uppercase tracking-widest block truncate">
+                                <span className="text-[8px] font-bold text-muted valor-dinheiro uppercase tracking-widest block truncate">
                                     Alvo: {euro(etapa.alvo)}
                                 </span>
                             </div>
@@ -113,7 +113,7 @@ export default async function GestaoObraWidget() {
                                     name={`etapa_${etapa.id}`}
                                     defaultValue={etapa.atual}
                                     placeholder="Atual €"
-                                    className="w-full bg-bg border border-soft rounded-xl p-2.5 text-xs font-bold text-fg text-right focus:border-green-500 outline-none transition-colors"
+                                    className="w-full bg-bg border border-soft rounded-xl p-2.5 valor-dinheiro text-xs font-bold text-fg text-right focus:border-green-500 outline-none transition-colors"
                                 />
                             </div>
                         </div>

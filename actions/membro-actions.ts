@@ -304,3 +304,35 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
         return { ok: false, error: "Erro ao registar assinatura." };
     }
 }
+
+export async function buscarRelatorioEscalasAction(membroId: number, mes: number, ano: number) {
+    try {
+        // Define o primeiro e o último dia do mês escolhido
+        const dataInicio = new Date(ano, mes - 1, 1);
+        const dataFim = new Date(ano, mes, 0, 23, 59, 59);
+
+        const escalas = await prisma.escala.findMany({
+            where: {
+                membro_id: membroId,
+                evento: {
+                    data: {
+                        gte: dataInicio,
+                        lte: dataFim
+                    }
+                }
+            },
+            include: {
+                evento: true,
+                departamento: true
+            },
+            orderBy: {
+                evento: { data: 'asc' }
+            }
+        });
+
+        return { sucesso: true, escalas };
+    } catch (error) {
+        console.error("Erro ao buscar relatório:", error);
+        return { sucesso: false, erro: "Falha ao carregar o relatório." };
+    }
+}

@@ -7,21 +7,26 @@ import { atualizarCompradorRifaAction, venderNumerosRifaLoteAction, finalizarRif
 interface GrelhaRifaProps {
     rifa: any;
     membros: any[];
+    // 🔴 NOVO: Prop opcional para receber o membro que já foi escolhido no Modal Unificado
+    membroPreSelecionadoId?: string; 
 }
 
-export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
+export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: GrelhaRifaProps) {
     const [numerosSelecionados, setNumerosSelecionados] = useState<number[]>([]);
     const [numeroEditando, setNumeroEditando] = useState<number | null>(null);
 
     const [loading, setLoading] = useState(false);
-    const [tipoComprador, setTipoComprador] = useState<'MEMBRO' | 'EXTERNO'>('MEMBRO');
+    
+    // 🔴 LÓGICA INTELIGENTE: Se recebeu membro do modal, já define como MEMBRO
+    const [tipoComprador, setTipoComprador] = useState<'MEMBRO' | 'EXTERNO'>(
+        membroPreSelecionadoId && membroPreSelecionadoId !== 'anonimo' ? 'MEMBRO' : 'EXTERNO'
+    );
     const [isEditing, setIsEditing] = useState(false);
-
-    // NOVO ESTADO: Ativa o painel lateral para escolher os vencedores
     const [modoSorteio, setModoSorteio] = useState(false);
 
+    // 🔴 LÓGICA INTELIGENTE: Inicializa os campos de busca se já houver um membro pré-selecionado
     const [buscaMembro, setBuscaMembro] = useState('');
-    const [membroIdSelecionado, setMembroIdSelecionado] = useState('');
+    const [membroIdSelecionado, setMembroIdSelecionado] = useState(membroPreSelecionadoId || '');
 
     const todosNumeros = Array.from({ length: rifa.total_numeros }, (_, i) => i + 1);
 
@@ -33,15 +38,32 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
     const vendaSelecionada = numeroEditando ? mapaVendidos.get(numeroEditando) : null;
     const valorTotalLote = rifa.valor_numero * numerosSelecionados.length;
 
+    // Efeito para preencher os dados de pesquisa caso um membro venha por Prop (do Modal)
+    useEffect(() => {
+        if (membroPreSelecionadoId && membroPreSelecionadoId !== 'anonimo') {
+            const membro = membros.find(m => String(m.id) === String(membroPreSelecionadoId));
+            if (membro) {
+                setBuscaMembro(`${membro.first_name} ${membro.last_name}`);
+                setMembroIdSelecionado(String(membro.id));
+                setTipoComprador('MEMBRO');
+            }
+        } else if (membroPreSelecionadoId === 'anonimo') {
+             setBuscaMembro('');
+             setMembroIdSelecionado('');
+             setTipoComprador('EXTERNO');
+        }
+    }, [membroPreSelecionadoId, membros]);
+
+    // Efeito para Edição
     useEffect(() => {
         if (isEditing && vendaSelecionada && vendaSelecionada.membro) {
             setBuscaMembro(`${vendaSelecionada.membro.first_name} ${vendaSelecionada.membro.last_name}`);
             setMembroIdSelecionado(vendaSelecionada.membro_id.toString());
-        } else if (!isEditing && numerosSelecionados.length === 0) {
+        } else if (!isEditing && numerosSelecionados.length === 0 && !membroPreSelecionadoId) {
             setBuscaMembro('');
             setMembroIdSelecionado('');
         }
-    }, [isEditing, vendaSelecionada, numerosSelecionados.length]);
+    }, [isEditing, vendaSelecionada, numerosSelecionados.length, membroPreSelecionadoId]);
 
     const handlePesquisaMembro = (e: React.ChangeEvent<HTMLInputElement>) => {
         const valorDigitado = e.target.value;
@@ -72,7 +94,14 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
         if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return alert("Selecione um membro válido.");
         setLoading(true);
         const result = await venderNumerosRifaLoteAction(formData);
-        if (result.ok) { setNumerosSelecionados([]); setBuscaMembro(''); setMembroIdSelecionado(''); }
+        if (result.ok) { 
+            setNumerosSelecionados([]); 
+            // Só limpa a busca se não estivermos no modal unificado
+            if (!membroPreSelecionadoId) {
+                setBuscaMembro(''); 
+                setMembroIdSelecionado(''); 
+            }
+        }
         else alert(result.error);
         setLoading(false);
     }
@@ -81,7 +110,13 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
         if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return alert("Selecione um membro válido.");
         setLoading(true);
         const result = await atualizarCompradorRifaAction(formData);
-        if (result.ok) { setIsEditing(false); setBuscaMembro(''); setMembroIdSelecionado(''); }
+        if (result.ok) { 
+            setIsEditing(false); 
+            if (!membroPreSelecionadoId) {
+                setBuscaMembro(''); 
+                setMembroIdSelecionado(''); 
+            }
+        }
         else alert(result.error);
         setLoading(false);
     }
@@ -94,17 +129,15 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
         }
     }
 
-    // --- NOVA FUNÇÃO DE SUBMISSÃO DO SORTEIO ---
     async function handleDeclararVencedoresMultiplos(formData: FormData) {
         setLoading(true);
         const result = await setVencedoresRifaAction(formData);
         if (!result.ok) { alert(result.error); setLoading(false); }
-        // Se sucesso, o ecrã atualiza sozinho e a rifa desaparece
     }
 
     return (
         <div className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col md:flex-row">
-
+            {/* CONTEÚDO DA GRELHA E DOS BOTÕES MANTIDO... */}
             <div className="flex-1 p-6 md:p-8 border-b md:border-b-0 md:border-r border-soft">
                 <div className="flex justify-between items-start mb-6">
                     <div>
@@ -129,7 +162,7 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                             </button>
                             {rifa.numeros_vendidos.length > 0 && (
                                 <button onClick={() => { setModoSorteio(true); setNumeroEditando(null); setNumerosSelecionados([]); }} className="text-[8px] font-black uppercase tracking-widest bg-yellow-100 text-yellow-700 hover:bg-yellow-500 hover:text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
-                                    <Trophy size={10} /> Realizar Sorteio
+                                    <Trophy size={10} /> Sorteio
                                 </button>
                             )}
                         </div>
@@ -147,6 +180,7 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                         return (
                             <button
                                 key={num}
+                                type="button" // 🔴 PREVENÇÃO CONTRA SUBMIT INDESEJADO
                                 onClick={() => isVendido ? selecionarNumeroVendido(num) : toggleNumeroLivre(num)}
                                 className={`relative aspect-square rounded-xl flex flex-col items-center justify-center transition-all overflow-hidden ${isVendido ? isSelecionadoVendido ? 'bg-figueira text-white shadow-lg scale-110 z-10 border-2 border-white' : 'bg-figueira/10 text-figueira border border-figueira/30 hover:bg-figueira/20' : isSelecionadoLivre ? 'bg-fg text-bg shadow-lg scale-110 z-10' : 'bg-bg border border-soft text-fg hover:border-fg hover:bg-fg/5'}`}
                             >
@@ -158,12 +192,10 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                 </div>
             </div>
 
-            <div className="w-full md:w-80 p-6 md:p-8 bg-bg flex flex-col justify-center min-h-[300px]">
-
-                {/* ======================================================= */}
-                {/* MODO: REALIZAR SORTEIO (SELECIONAR 1º, 2º e 3º LUGAR)     */}
-                {/* ======================================================= */}
+<div className="w-full md:w-80 p-6 md:p-8 bg-bg flex flex-col justify-center min-h-[300px]">
+                
                 {modoSorteio ? (
+                    // 1. MODO SORTEIO
                     <form action={handleDeclararVencedoresMultiplos} className="space-y-6 animate-in slide-in-from-right-4 fade-in">
                         <input type="hidden" name="rifa_id" value={rifa.id} />
 
@@ -182,7 +214,6 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                         </div>
 
                         <div className="space-y-4">
-                            {/* 1º LUGAR (OBRIGATÓRIO) */}
                             <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-2xl">
                                 <label className="text-[10px] font-black uppercase text-yellow-700 tracking-widest flex items-center gap-1 mb-2">
                                     <Trophy size={12} /> 1º Prémio (Obrigatório)
@@ -197,7 +228,6 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                                 </select>
                             </div>
 
-                            {/* 2º LUGAR */}
                             <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl">
                                 <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest flex items-center gap-1 mb-2">
                                     <Medal size={12} /> 2º Prémio (Opcional)
@@ -210,7 +240,6 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                                 </select>
                             </div>
 
-                            {/* 3º LUGAR */}
                             <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl">
                                 <label className="text-[10px] font-black uppercase text-orange-700 tracking-widest flex items-center gap-1 mb-2">
                                     <Medal size={12} className="text-orange-600" /> 3º Prémio (Opcional)
@@ -231,60 +260,88 @@ export default function GrelhaRifa({ rifa, membros }: GrelhaRifaProps) {
                     </form>
 
                 ) : numerosSelecionados.length === 0 && !numeroEditando ? (
-                    // ESTADO NORMAL (VAZIO)
+                    // 2. ESTADO NORMAL (VAZIO)
                     <div className="text-center opacity-50 space-y-3">
                         <Layers size={40} className="mx-auto text-muted" />
                         <p className="text-[10px] font-black uppercase text-muted tracking-widest leading-relaxed">
                             Clica nos números livres<br />para venda múltipla
                         </p>
                     </div>
+
                 ) : vendaSelecionada && !isEditing ? (
-                    // ... (Restante do código original para Visualizar e Editar Comprador MANTIDO IGUAL)
+                    // 3. VISUALIZAÇÃO DE NÚMERO JÁ VENDIDO
                     <div className="space-y-6 animate-in slide-in-from-right-4 fade-in flex flex-col h-full justify-between">
                         <div>
                             <div className="flex justify-between items-start">
                                 <div><span className="text-[9px] font-black uppercase text-figueira tracking-widest flex items-center gap-1"><CheckCircle2 size={12} /> Número Vendido</span><h4 className="text-4xl font-black italic text-fg mt-1">#{numeroEditando}</h4></div>
-                                <button onClick={() => setNumeroEditando(null)} className="p-2 bg-bg2 rounded-xl text-muted hover:text-red-500"><X size={16} /></button>
+                                <button type="button" onClick={() => setNumeroEditando(null)} className="p-2 bg-bg2 rounded-xl text-muted hover:text-red-500"><X size={16} /></button>
                             </div>
                             <div className="space-y-4 pt-4 border-t border-soft mt-4">
                                 <div className="bg-figueira/10 border border-figueira/20 p-5 rounded-2xl relative">
                                     <span className="text-[8px] font-black uppercase text-muted tracking-widest block mb-1">Comprador</span>
                                     <p className="text-sm font-black text-figueira uppercase pr-8">{vendaSelecionada.membro ? `${vendaSelecionada.membro.first_name} ${vendaSelecionada.membro.last_name}` : vendaSelecionada.nome_externo}</p>
-                                    <button onClick={() => { setTipoComprador(vendaSelecionada.membro ? 'MEMBRO' : 'EXTERNO'); setIsEditing(true); }} className="absolute top-4 right-4 p-2 bg-white rounded-lg text-figueira hover:bg-figueira hover:text-white transition-all"><Edit3 size={14} /></button>
+                                    <button type="button" onClick={() => { setTipoComprador(vendaSelecionada.membro ? 'MEMBRO' : 'EXTERNO'); setIsEditing(true); }} className="absolute top-4 right-4 p-2 bg-white rounded-lg text-figueira hover:bg-figueira hover:text-white transition-all"><Edit3 size={14} /></button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                 ) : (
-                    // ... (Formulário de Venda / Edição MANTIDO IGUAL - o código original da resposta anterior)
+                    // 4. FORMULÁRIO DE VENDA (OU EDIÇÃO)
                     <form action={isEditing ? handleAtualizar : handleVenderLote} className="space-y-6 animate-in slide-in-from-right-4 fade-in">
-                        {/* ... Resto do form de venda/edição, sem alterações ... */}
                         {isEditing ? <input type="hidden" name="venda_id" value={vendaSelecionada.id} /> : <><input type="hidden" name="rifa_id" value={rifa.id} /><input type="hidden" name="numeros" value={JSON.stringify(numerosSelecionados)} /></>}
                         <input type="hidden" name="membro_id" value={tipoComprador === 'MEMBRO' ? membroIdSelecionado : ""} />
+                        
                         <div className="flex justify-between items-start">
                             <div><span className={`text-[9px] font-black uppercase tracking-widest block ${isEditing ? 'text-orange-500' : 'text-muted'}`}>{isEditing ? 'A Corrigir Dono' : `${numerosSelecionados.length} Números`}</span><h4 className={`text-2xl font-black italic leading-none mt-1 ${isEditing ? 'text-fg' : 'text-figueira'}`}>{isEditing ? `#${numeroEditando}` : numerosSelecionados.join(', ')}</h4></div>
                             <button type="button" onClick={() => { isEditing ? setIsEditing(false) : setNumerosSelecionados([]) }} className="p-2 bg-bg2 rounded-xl"><X size={16} /></button>
                         </div>
+
                         <div className="space-y-4 pt-4 border-t border-soft">
-                            <div className="flex bg-bg2 p-1 rounded-xl">
-                                <button type="button" onClick={() => setTipoComprador('MEMBRO')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg ${tipoComprador === 'MEMBRO' ? 'bg-white shadow-sm text-fg' : 'text-muted'}`}>Membro</button>
-                                <button type="button" onClick={() => setTipoComprador('EXTERNO')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg ${tipoComprador === 'EXTERNO' ? 'bg-white shadow-sm text-fg' : 'text-muted'}`}>Externo</button>
-                            </div>
+                            
+                            {!membroPreSelecionadoId && (
+                                <div className="flex bg-bg2 p-1 rounded-xl">
+                                    <button type="button" onClick={() => setTipoComprador('MEMBRO')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg ${tipoComprador === 'MEMBRO' ? 'bg-white shadow-sm text-fg' : 'text-muted'}`}>Membro</button>
+                                    <button type="button" onClick={() => setTipoComprador('EXTERNO')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg ${tipoComprador === 'EXTERNO' ? 'bg-white shadow-sm text-fg' : 'text-muted'}`}>Externo</button>
+                                </div>
+                            )}
+
                             {tipoComprador === 'MEMBRO' ? (
                                 <div className="space-y-2">
                                     <div className="relative mt-1">
                                         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/50" />
-                                        <input list="lista-membros-rifa" value={buscaMembro} onChange={handlePesquisaMembro} placeholder="Pesquisar..." required={tipoComprador === 'MEMBRO'} className="w-full bg-bg border border-soft p-4 pl-10 rounded-2xl text-xs font-bold" />
+                                        <input 
+                                            list="lista-membros-rifa" 
+                                            value={buscaMembro} 
+                                            onChange={handlePesquisaMembro} 
+                                            placeholder="Pesquisar..." 
+                                            required={tipoComprador === 'MEMBRO'} 
+                                            readOnly={!!membroPreSelecionadoId && membroPreSelecionadoId !== 'anonimo'}
+                                            className={`w-full bg-bg border border-soft p-4 pl-10 rounded-2xl text-xs font-bold ${membroPreSelecionadoId ? 'opacity-70 cursor-not-allowed bg-soft/10' : ''}`} 
+                                        />
                                         <datalist id="lista-membros-rifa">{membros.map(m => <option key={m.id} value={`${m.first_name} ${m.last_name}`} />)}</datalist>
                                     </div>
+                                    
+                                    {membroPreSelecionadoId && membroPreSelecionadoId !== 'anonimo' && (
+                                        <p className="text-[9px] font-black text-figueira uppercase tracking-widest mt-2 flex items-center gap-1">
+                                            <CheckCircle2 size={10} /> Comprador selecionado
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
-                                <input name="nome_externo" required defaultValue={isEditing && vendaSelecionada?.nome_externo ? vendaSelecionada.nome_externo : ""} placeholder="Ex: Sr. Manuel do Café" className="w-full bg-bg border border-soft p-4 rounded-2xl text-xs font-bold" />
+                                <input 
+                                    name="nome_externo" 
+                                    required 
+                                    defaultValue={isEditing && vendaSelecionada?.nome_externo ? vendaSelecionada.nome_externo : (membroPreSelecionadoId === 'anonimo' ? 'Oferta Anónima' : '')} 
+                                    placeholder="Ex: Sr. Manuel do Café" 
+                                    className="w-full bg-bg border border-soft p-4 rounded-2xl text-xs font-bold" 
+                                />
                             )}
                         </div>
-                        <button disabled={loading || (tipoComprador === 'MEMBRO' && (!membroIdSelecionado || membroIdSelecionado === ''))} className={`w-full text-bg py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest ${isEditing ? 'bg-orange-500' : 'bg-fg'}`}>
+                        
+                        <button disabled={loading || (tipoComprador === 'MEMBRO' && (!membroIdSelecionado || membroIdSelecionado === ''))} className={`w-full text-bg py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-fg hover:bg-black'}`}>
                             {loading ? <Loader2 className="animate-spin" size={16} /> : (isEditing ? <Edit3 size={16} /> : <CheckCircle2 size={16} />)}
-                            {loading ? 'A Gravar...' : (isEditing ? 'Guardar Correção' : `Vender ${numerosSelecionados.length}`)}
+                            {loading ? 'A Gravar...' : (isEditing ? 'Guardar Correção' : `Vender (€${valorTotalLote.toFixed(2)})`)}
                         </button>
                     </form>
                 )}

@@ -14,6 +14,7 @@ enum Role {
   LEADER
   ADMIN
   FINANCE
+  MANAGER // Novo - Vagner
 }
 
 model Membro {
@@ -95,8 +96,8 @@ model Membro {
 
   //cargos                  IntegranteDepartamento[]
   ip_assinatura String?
-  data_aceite   DateTime? // apagar depois
-  termo_aceite  Boolean   @default(false) // apagar depois
+  data_aceite   DateTime?
+  termo_aceite  Boolean   @default(false)
   role          Role      @default(USER)
 
   // 9. Finanças
@@ -104,7 +105,7 @@ model Membro {
   loyverse_id           String?              @unique
   rifa_numeros          RifaNumero[]
   pedidoSaldoCantinas   PedidoSaldoCantina[]
-  contribuicoes         Contribuicao[] // <-- Adicione esta linha
+  contribuicoes         Contribuicao[]
   avisoMurals           AvisoMural[]
 
   // --- Documentação Legal e Interna ---
@@ -118,13 +119,18 @@ model Membro {
 
   encontros_assistidos EncontroGrupo[] @relation("MembrosPresentes")
 
+  // Relações com a Agenda
+  agenda_dono     Agenda?       @relation("DonoAgenda")
+  agendas_geridas Agenda[]      @relation("GestoresAgenda")
+  compromissos    Compromisso[] @relation("CompromissoMembros")
+
   @@map("membros")
 }
 
 model Familia {
   id         Int      @id @default(autoincrement())
-  surname    String // Ex: "Família Silva"
-  members    Membro[] // Ligação com os membros
+  surname    String
+  members    Membro[]
   created_at DateTime @default(now())
 }
 
@@ -146,11 +152,13 @@ model Departamento {
   lider    Membro? @relation("LiderDepartamento", fields: [lider_id], references: [id])
 
   // Relações Corrigidas
-  integrantes IntegranteDepartamento[] // Membros e suas funções
-  grupos      Grupo[] // Grupos que nasceram deste departamento
-  escalas     Escala[]
-  funcoes     FuncaoDepartamento[]
-  avisoMurals AvisoMural[]
+  integrantes   IntegranteDepartamento[]
+  grupos        Grupo[]
+  escalas       Escala[]
+  funcoes       FuncaoDepartamento[]
+  avisoMurals   AvisoMural[]
+  compromissos  Compromisso[]            @relation("CompromissoDepartamentos")
+  compromissoId Int?
 }
 
 model IntegranteDepartamento {
@@ -162,23 +170,23 @@ model IntegranteDepartamento {
   departamento_id Int
   departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
 
-  funcao String // Ex: "Baixista", "Recepção", "Vocal principal"
+  funcao String
 
   data_entrada DateTime @default(now())
 
   // Garante que a pessoa não é cadastrada duas vezes no mesmo departamento
   // Caso tenha várias funções, a principal/última fica salva aqui.
-  //@@unique([membro_id, departamento_id])
+  @@unique([membro_id, departamento_id]) // Novo - Vagner
 }
 
 model Grupo {
   id            Int      @id @default(autoincrement())
   nome          String
   data_abertura DateTime @default(now())
-  dia_semana    String // Ex: Segunda-feira
-  horario       String // Ex: 20:00
-  perfil        String? // Ex: Jovens, Casais
-  categoria     String? // Ex: Célula, Estudo Bíblico
+  dia_semana    String
+  horario       String
+  perfil        String?
+  categoria     String?
   descricao     String?
 
   // Localização
@@ -193,22 +201,23 @@ model Grupo {
   departamento_id Int?
   departamento    Departamento? @relation(fields: [departamento_id], references: [id])
 
-  lideres     Membro[]        @relation("LideresGrupo")
-  membros     Membro[]        @relation("MembrosGrupo")
-  avisoMurals AvisoMural[]
-  encontros   EncontroGrupo[]
+  lideres       Membro[]        @relation("LideresGrupo")
+  membros       Membro[]        @relation("MembrosGrupo")
+  avisoMurals   AvisoMural[]
+  encontros     EncontroGrupo[]
+  compromissos  Compromisso[]   @relation("CompromissoGrupos")
+  compromissoId Int?
 }
 
 model EncontroGrupo {
   id       Int      @id @default(autoincrement())
   grupo_id Int
   data     DateTime
-  tema     String   @db.Text // O que foi ministrado
-  foto_url String? // Foto opcional do encontro
+  tema     String   @db.Text
+  foto_url String?
 
   grupo Grupo @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
 
-  // Relação com os membros que estiveram presentes
   presentes Membro[] @relation("MembrosPresentes")
 
   criado_em DateTime @default(now())
@@ -217,16 +226,16 @@ model EncontroGrupo {
 model Cargo {
   id      Int      @id @default(autoincrement())
   nome    String   @unique
-  membros Membro[] // Pessoas que possuem este cargo
+  membros Membro[]
 }
 
 model Evento {
   id        Int      @id @default(autoincrement())
-  nome      String // Ex: Culto de Domingo, Conferência de Jovens
-  data      DateTime // Dia e hora do evento
+  nome      String
+  data      DateTime
   descricao String?
 
-  escalas Escala[] // Relação com as escalas desse evento
+  escalas Escala[]
 
   criado_em     DateTime @default(now())
   atualizado_em DateTime @updatedAt
@@ -234,8 +243,8 @@ model Evento {
 
 model Escala {
   id         Int      @id @default(autoincrement())
-  funcao     String // Ex: "Bateria", "Recepção Porta Principal", "Câmera 1"
-  confirmado Boolean  @default(false) // Para o membro aceitar/recusar depois
+  funcao     String
+  confirmado Boolean  @default(false)
   horario    String?
   criado_em  DateTime @default(now())
 
@@ -249,32 +258,30 @@ model Escala {
   membro_id Int
   membro    Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
 
-  // 🛡️ BLOQUEIO DE DUPLICAÇÃO: 
-  // Garante que o mesmo membro NÃO pode ser adicionado duas vezes ao mesmo evento.
   @@unique([evento_id, membro_id])
 }
 
 model FuncaoDepartamento {
   id              Int          @id @default(autoincrement())
-  nome            String // Ex: "Vocalista", "Sonoplasta"
+  nome            String
   departamento_id Int
   departamento    Departamento @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
 
-  @@unique([nome, departamento_id]) // Evita duplicar a mesma função no mesmo depto
+  @@unique([nome, departamento_id])
 }
 
 model ObjetivoFinanceiro {
   id             Int    @id @default(autoincrement())
-  nome           String // Ex: "Desafio da Construção"
+  nome           String
   valor_mensal   Float
   parcelas_total Int
   parcelas_pagas Int    @default(0)
-  data_pagamento Int // Dia do mês (ex: 10)
+  data_pagamento Int
 
   membro_id Int
   membro    Membro @relation(fields: [membro_id], references: [id])
 
-  status      String                 @default("ATIVO") // ATIVO, CONCLUIDO, PAUSADO
+  status      String                 @default("ATIVO")
   createdAt   DateTime               @default(now())
   lancamentos LancamentoFinanceiro[]
 }
@@ -286,22 +293,22 @@ model LancamentoFinanceiro {
 
   valor_pago       Float
   data_recebimento DateTime @default(now())
-  forma_pagamento  String // Ex: "PIX", "Cartão", "Dinheiro"
-  comprovante_url  String? // Link para a foto do comprovante
+  forma_pagamento  String
+  comprovante_url  String?
 
-  registrado_por_id Int // ID do administrador FINANCE que lançou
+  registrado_por_id Int
 }
 
 model Rifa {
   id                Int          @id @default(autoincrement())
-  nome              String // Ex: "Rifa de Páscoa"
-  premio            String // Ex: "Cabaz com 5kg de Chocolate"
-  valor_numero      Float // Ex: 5.00 (Preço de cada bilhete)
-  total_numeros     Int // Ex: 100 (Para gerar a grelha de 1 a 100)
+  nome              String
+  premio            String
+  valor_numero      Float
+  total_numeros     Int
   data_sorteio      DateTime?
-  status            String       @default("ATIVA") // ATIVA, FINALIZADA
+  status            String       @default("ATIVA")
   createdAt         DateTime     @default(now())
-  numero_sorteado   Int? // O número vencedor (fica nulo até ao sorteio)
+  numero_sorteado   Int?
   numeros_vendidos  RifaNumero[]
   numero_sorteado_2 Int?
   numero_sorteado_3 Int?
@@ -309,12 +316,12 @@ model Rifa {
 
 model RifaNumero {
   id     Int @id @default(autoincrement())
-  numero Int // O número escolhido (ex: 42)
+  numero Int
 
   rifa_id Int
   rifa    Rifa @relation(fields: [rifa_id], references: [id], onDelete: Cascade)
 
-  membro_id Int? // Quem comprou (se for membro da igreja)
+  membro_id Int?
   membro    Membro? @relation(fields: [membro_id], references: [id])
 
   nome_externo String? // Se o membro vendeu a um vizinho/amigo de fora da igreja
@@ -322,7 +329,6 @@ model RifaNumero {
 
   createdAt DateTime @default(now())
 
-  // Esta linha garante que o banco de dados nunca deixe vender o mesmo número 2 vezes na mesma rifa
   @@unique([rifa_id, numero])
 }
 
@@ -331,8 +337,8 @@ model PedidoSaldoCantina {
   membro_id       Int
   membro          Membro   @relation(fields: [membro_id], references: [id])
   valor           Float
-  forma_pagamento String // Ex: MBWAY, Transferencia, Dinheiro
-  status          String   @default("PENDENTE") // PENDENTE, APROVADO, REJEITADO
+  forma_pagamento String
+  status          String   @default("PENDENTE")
   createdAt       DateTime @default(now())
 }
 
@@ -341,11 +347,11 @@ model Contribuicao {
   membro_id Int
   membro    Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
 
-  tipo       String // "DIZIMO" ou "OFERTA"
+  tipo       String
   valor      Float
   data       DateTime @default(now())
-  metodo     String? // "NUMERARIO", "MBWAY", "TRANSFERENCIA", etc.
-  observacao String? // Ex: "Oferta de Missões", "Dízimo de Março"
+  metodo     String?
+  observacao String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -356,12 +362,14 @@ model Visitante {
   nome                 String
   telefone             String
   pedido_oracao        String?  @db.Text
+  email                String?
   data_primeira_visita DateTime @default(now())
   data_ultima_visita   DateTime @default(now())
   quantidade_visitas   Int      @default(1)
-  status               String   @default("NOVO") // NOVO, EM_CONTACTO, CONSOLIDADO
+  status               String   @default("NOVO")
 
   acompanhamentos AcompanhamentoVisitante[]
+  compromissos    Compromisso[]             @relation("CompromissoVisitantes")
 
   @@map("visitantes")
 }
@@ -369,8 +377,8 @@ model Visitante {
 model AcompanhamentoVisitante {
   id            Int      @id @default(autoincrement())
   visitante_id  Int
-  membro_id     Int // O líder/voluntário que fez a chamada
-  tipo_contacto String // LIGACAO, WHATSAPP, ORACAO
+  membro_id     Int
+  tipo_contacto String
   observacoes   String?  @db.Text
   data_contacto DateTime @default(now())
 
@@ -394,8 +402,8 @@ model EtapaObra {
   projeto_obra_id String
   projeto         ProjetoObra @relation(fields: [projeto_obra_id], references: [id], onDelete: Cascade)
   nome            String
-  alvo            Float // Valor que precisam alcançar
-  atual           Float       @default(0) // Valor que a tesouraria vai preencher
+  alvo            Float
+  atual           Float       @default(0)
   ordem           Int         @default(0)
 }
 
@@ -413,4 +421,44 @@ model AvisoMural {
 
   grupo_id Int?
   grupo    Grupo? @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
+}
+
+model Agenda {
+  id         Int     @id @default(autoincrement())
+  slug       String  @unique
+  nome       String
+  is_publica Boolean @default(true)
+
+  dono_id Int    @unique
+  dono    Membro @relation("DonoAgenda", fields: [dono_id], references: [id], onDelete: Cascade)
+
+  gestores Membro[] @relation("GestoresAgenda")
+
+  compromissos Compromisso[]
+
+  criado_em DateTime @default(now())
+}
+
+model Compromisso {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  categoria   String
+  data_inicio DateTime
+  data_fim    DateTime
+  observacoes String?
+  status      String   @default("AGENDADO")
+
+  agenda_id Int
+  agenda    Agenda @relation(fields: [agenda_id], references: [id], onDelete: Cascade)
+
+  membros       Membro[]       @relation("CompromissoMembros")
+  visitantes    Visitante[]    @relation("CompromissoVisitantes")
+  departamentos Departamento[] @relation("CompromissoDepartamentos")
+
+  externos String?
+
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+
+  grupos Grupo[] @relation("CompromissoGrupos")
 }

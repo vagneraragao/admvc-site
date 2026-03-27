@@ -6,7 +6,7 @@ import DeptoItem from '@/components/DeptoItem'
 import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import { Plus, Briefcase, LayoutGrid, Users, ArrowLeft, ChevronRight, Settings2, Shield, ChevronDown } from 'lucide-react'
-
+import Breadcrumb from '@/components/ui/Breadcrumb'
 export const dynamic = 'force-dynamic'
 
 export default async function ConfiguracoesPage() {
@@ -42,14 +42,21 @@ export default async function ConfiguracoesPage() {
     return (
         <main className="max-w-6xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* --- BREADCRUMBS --- */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/admin/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Painel Admin
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Configurações Estruturais</span>
-            </nav>
+{/* BREADCRUMB PADRONIZADO */}
+            <Breadcrumb items={[
+                { 
+                    label: "Painel Admin", 
+                    href: "/admin/dashboard", 
+                    isBackIcon: true 
+                },
+                { 
+                    label: "Sistema", 
+                    hideOnMobile: true 
+                },
+                { 
+                    label: "Configurações Estruturais" 
+                }
+            ]} />
 
             {/* --- CABEÇALHO --- */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-2">
@@ -75,7 +82,7 @@ export default async function ConfiguracoesPage() {
                     <LayoutGrid size={14} /> Departamentos
                 </a>
                 <a href="#grupos" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-emerald-500 transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <Users size={14} /> Grupos & Células
+                    <Users size={14} /> Grupos & PGs
                 </a>
             </nav>
 
@@ -197,7 +204,7 @@ export default async function ConfiguracoesPage() {
                             </div>
                             <div>
                                 <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                    Grupos & Células
+                                    Grupos & PGs
                                     <span className="text-[9px] font-black bg-bg border border-soft px-3 py-1 rounded-md uppercase text-muted tracking-widest not-italic shadow-sm">{grupos.length}</span>
                                 </h2>
                                 <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">Faça a gestão dos grupos de trabalho e reuniões.</p>
