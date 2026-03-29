@@ -76,19 +76,19 @@ export default async function GestaoCantinaPage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-{/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
             <Breadcrumb items={[
-                { 
-                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard", 
-                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard",
+                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Logística / Cantina", 
-                    hideOnMobile: true 
+                {
+                    label: "Logística / Cantina",
+                    hideOnMobile: true
                 },
-                { 
-                    label: "Gestão da Cantina" 
+                {
+                    label: "Gestão da Cantina"
                 }
             ]} />
 

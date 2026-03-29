@@ -3,17 +3,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { atualizarMembroAdmin } from '@/actions/admin-actions'
 import {
-    User, MapPin, Users2, Save, Church, FileSignature, AlertCircle,
+    User, MapPin, Users2, Save, Church, FileSignature, AlertCircle, Plus, Users,
     Check, ChevronRight, ArrowLeft, Camera, Loader2, Lock, ShieldAlert, Home, CheckCircle2, XCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+
 
 export default function EditarMembroClient({
     membro,
     roles = [],
     isAdmin = false,
-    escolaridades = []
+    escolaridades = [],
+    familias = []
 }: any) {
     const [isPending, setIsPending] = useState(false)
     const [mostrarSucesso, setMostrarSucesso] = useState(false)
@@ -21,6 +24,11 @@ export default function EditarMembroClient({
 
     const [previewFoto, setPreviewFoto] = useState(membro.avatar_file || null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [temFilhos, setTemFilhos] = useState(membro.has_children ? "true" : "false")
+    const [modalFamiliaAberto, setModalFamiliaAberto] = useState(false)
+    const [familiaSelecionada, setFamiliaSelecionada] = useState(membro.familia_id || "")
+    const [parentescoSelecionado, setParentescoSelecionado] = useState(membro.parentesco || "")
+
 
     // ========================================================================
     // MAGIA DO CÓDIGO POSTAL (PORTUGAL - GEOAPI.PT)
@@ -31,6 +39,7 @@ export default function EditarMembroClient({
         address_1: membro.address_1 || '',
         neighborhood: membro.neighborhood || '',
         city: membro.id_city || membro.city || '',
+        state: membro.state || '', // <-- Adicionado o Distrito
         country: membro.country || 'Portugal'
     })
 
@@ -49,9 +58,12 @@ export default function EditarMembroClient({
                     if (info && !info.erro) {
                         setEndereco(prev => ({
                             ...prev,
-                            address_1: info.rua || (info.ruas && info.ruas[0]) || prev.address_1,
+                            // A API geoapi.pt pode retornar 'Rua', 'rua', ou uma array 'ruas'
+                            address_1: info.Rua || info.rua || (info.ruas && info.ruas[0]) || prev.address_1,
                             neighborhood: info.Freguesia || prev.neighborhood,
-                            city: info.Localidade || info.Município || prev.city,
+                            city: info.Localidade || info.Município || info.Concelho || prev.city,
+                            state: info.Distrito || prev.state,
+                            country: 'Portugal' // Força Portugal pois a API é PT
                         }));
                     }
                 }
@@ -98,7 +110,7 @@ export default function EditarMembroClient({
     const StatusDoc = ({ nome, aceite, validade }: any) => {
         const expirado = validade && new Date(validade) < new Date();
         const ok = aceite && !expirado;
-
+        console.log("Famílias recebidas no Cliente:", familias);
         return (
             <div className={`flex items-center gap-3 p-3 pr-5 rounded-2xl border ${ok ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
@@ -121,22 +133,33 @@ export default function EditarMembroClient({
             <form action={handleAction} className="space-y-8">
                 <input type="hidden" name="id" value={membro.id} />
 
-                {/* BREADCRUMBS */}
-                <nav className="flex items-center gap-4 mb-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                    <Link href="/admin/membros" className="hover:text-figueira transition-colors flex items-center gap-2">
-                        <ArrowLeft size={12} strokeWidth={3} /> Voltar à Lista
-                    </Link>
-                    <ChevronRight size={10} className="opacity-30" />
-                    <span className="text-fg italic">Editar Perfil</span>
-                </nav>
+                {/* BREADCRUMB INTELIGENTE */}
+                <div className="mb-6">
+                    <Breadcrumb items={[
+                        {
+                            label: isAdmin ? "Voltar à Lista" : "Dashboard",
+                            href: isAdmin ? "/admin/membros" : "/membros/dashboard",
+                            isBackIcon: true
+                        },
+                        {
+                            label: isAdmin ? "Gestão de Membros" : "O Meu Perfil",
+                            hideOnMobile: true
+                        },
+                        {
+                            label: "Editar Perfil"
+                        }
+                    ]} />
+                </div>
 
                 {/* HEADER */}
                 <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-soft pb-8">
                     <div className="space-y-4">
                         <div className="space-y-1">
-                            <span className="text-figueira font-black text-[10px] uppercase tracking-[0.4em] flex items-center gap-2">
-                                <ShieldAlert size={14} /> Painel Administrativo
-                            </span>
+                            {isAdmin && (
+                                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.4em] flex items-center gap-2">
+                                    <ShieldAlert size={14} /> Painel Administrativo
+                                </span>
+                            )}
                             <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
                                 Editar <span className="text-muted/20">Membro.</span>
                             </h1>
@@ -163,24 +186,41 @@ export default function EditarMembroClient({
 
                 {/* 1. BANNER FAMÍLIA E COMPLIANCE */}
                 <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2.5rem] flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center shadow-sm">
-                    {/* Bloco Família */}
-                    <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${membro.familia ? 'bg-figueira text-white shadow-md' : 'bg-soft text-muted'}`}>
-                            <Home size={24} />
+
+                    {/* Bloco Família (AGORA COM O BOTÃO DE ATALHO) */}
+                    <div className="flex items-center justify-between w-full lg:w-auto flex-1">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${membro.familia ? 'bg-figueira text-white shadow-md' : 'bg-soft text-muted'}`}>
+                                <Home size={24} />
+                            </div>
+                            <div>
+                                {membro.familia ? (
+                                    <>
+                                        <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Família {membro.familia.surname}</h3>
+                                        <p className="text-[9px] text-figueira font-black uppercase tracking-widest mt-1 bg-figueira/10 px-2 py-0.5 rounded border border-figueira/20 inline-block">Vinculado a Família</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">FAMÍLIA ADMVC</h3>
+                                        <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-1">Nenhum vínculo registado</p>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            {membro.familia ? (
-                                <>
-                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Família {membro.familia.surname}</h3>
-                                    <p className="text-[9px] text-figueira font-black uppercase tracking-widest mt-1 bg-figueira/10 px-2 py-0.5 rounded border border-figueira/20 inline-block">Grupo Familiar Vinculado</p>
-                                </>
-                            ) : (
-                                <>
-                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">FAMÍLIA ADMVC</h3>
-                                    <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-1">Nenhum vínculo registado</p>
-                                </>
-                            )}
-                        </div>
+
+                        {/* 👇 NOVO BOTÃO DE ATALHO PARA /ADMIN/FAMILIAS 👇 */}
+                        {isAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => setModalFamiliaAberto(true)}
+                                className={`ml-4 flex items-center gap-2 p-3 md:px-5 md:py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border shrink-0 ${membro.familia ? 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira' : 'bg-figueira border-figueira text-white shadow-lg hover:bg-figueira/80'}`}
+                            >
+                                {membro.familia ? <Users size={16} /> : <Plus size={16} />}
+                                <span className="hidden md:inline">
+                                    {membro.familia ? 'Alterar Família' : 'Vincular a Família'}
+                                </span>
+                            </button>
+                        )}
                     </div>
 
                     <div className="hidden lg:block w-[1px] h-12 bg-soft mx-2"></div>
@@ -282,7 +322,7 @@ export default function EditarMembroClient({
                     </div>
 
                     {/* ========================================================= */}
-                    {/* ABA 2: MORADA (ORDEM ESPECÍFICA)                          */}
+                    {/* ABA 2: MORADA (REORGANIZADA - CÓDIGO POSTAL PRIMEIRO)     */}
                     {/* ========================================================= */}
                     <div className={abaAtiva === 'endereco' ? 'block animate-in fade-in slide-in-from-bottom-4' : 'hidden'}>
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-8 pb-4 border-b border-soft">
@@ -290,11 +330,9 @@ export default function EditarMembroClient({
                         </h4>
 
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Input label="Morada 1 (Rua/Avenida)" name="address_1" value={endereco.address_1} onChange={(e: any) => setEndereco({ ...endereco, address_1: e.target.value })} className="md:col-span-2 lg:col-span-3" />
-                            <Input label="Morada 2 (Complemento)" name="address_2" defaultValue={membro.address_2} className="md:col-span-2" />
-                            <Input label="Número / Lote" name="address_number" defaultValue={membro.address_number} />
 
-                            <div className="space-y-2 relative">
+                            {/* 1. CÓDIGO POSTAL NO TOPO */}
+                            <div className="space-y-2 relative md:col-span-1">
                                 <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Código Postal</label>
                                 <input
                                     name="postal_code"
@@ -307,15 +345,22 @@ export default function EditarMembroClient({
                                 {buscandoCP && <Loader2 size={14} className="animate-spin text-figueira absolute right-4 top-[38px]" />}
                             </div>
 
+                            {/* 2. PAÍS (AO LADO DO CP PARA MANTER EQUILÍBRIO NA GRID) */}
+                            <Input label="País" name="country" value={endereco.country} onChange={(e: any) => setEndereco({ ...endereco, country: e.target.value })} className="md:col-span-1 lg:col-span-2" />
+
+                            {/* 3. RESTANTES CAMPOS DE MORADA */}
+                            <Input label="Morada 1 (Rua/Avenida)" name="address_1" value={endereco.address_1} onChange={(e: any) => setEndereco({ ...endereco, address_1: e.target.value })} className="md:col-span-2 lg:col-span-3" />
+                            <Input label="Morada 2 (Complemento)" name="address_2" defaultValue={membro.address_2} />
+                            <Input label="Número / Lote" name="address_number" defaultValue={membro.address_number} />
+                            <Input label="Freguesia / Bairro" name="neighborhood" value={endereco.neighborhood} onChange={(e: any) => setEndereco({ ...endereco, neighborhood: e.target.value })} />
+
                             <Input label="Cidade / Município" name="id_city" value={endereco.city} onChange={(e: any) => setEndereco({ ...endereco, city: e.target.value })} />
-                            <Input label="Distrito / Estado" name="state" defaultValue={membro.state} />
-                            <Input label="País" name="country" value={endereco.country} onChange={(e: any) => setEndereco({ ...endereco, country: e.target.value })} />
-                            <Input label="Freguesia / Bairro" name="neighborhood" value={endereco.neighborhood} onChange={(e: any) => setEndereco({ ...endereco, neighborhood: e.target.value })} className="md:col-span-2" />
+                            <Input label="Distrito / Estado" name="state" value={endereco.state} onChange={(e: any) => setEndereco({ ...endereco, state: e.target.value })} />
                         </div>
                     </div>
 
                     {/* ========================================================= */}
-                    {/* ABA 3: FAMÍLIA E DOCUMENTOS (ORDEM ESPECÍFICA)            */}
+                    {/* ABA 3: FAMÍLIA E DOCUMENTOS                               */}
                     {/* ========================================================= */}
                     <div className={abaAtiva === 'familia' ? 'block animate-in fade-in slide-in-from-bottom-4' : 'hidden'}>
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2 mb-8 pb-4 border-b border-soft">
@@ -324,15 +369,38 @@ export default function EditarMembroClient({
 
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Select label="Estado Civil" name="marital_status" defaultValue={membro.marital_status} options={['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União de Facto']} />
-                            <Input label="Nacionalidade" name="nationality" defaultValue={membro.nationality} />
+                            <Input label="Nacionalidade" name="nationality" defaultValue={membro.nationality} options={['Brasileiro(a)', 'Português(a)', 'Angolano(a)', 'Cabo Verdiano(a)', 'Outro']} />
                             <Input label="NIF / CPF (Identificação Fiscal)" name="tax_id" defaultValue={membro.tax_id} />
                             <Input label="Cartão de Cidadão / RG" name="id_card_number" defaultValue={membro.id_card_number} />
-                            <Input label="Idioma Preferencial" name="lang" defaultValue={membro.lang || 'pt'} />
+                            <Input label="Idioma Preferencial" name="lang" defaultValue={membro.lang} options={['Português', 'Inglês', 'Espanhol', 'Francês', 'Outro']} />
                             <Input label="Nome do Cônjuge" name="spouse_name" defaultValue={membro.spouse_name} />
                             <Select label="Cônjuge é Cristão?" name="spouse_christian" defaultValue={membro.spouse_christian ? "true" : "false"} options={[{ label: 'Sim', value: 'true' }, { label: 'Não', value: 'false' }]} />
                             <Input label="Data de Casamento" name="wedding_date" type="date" defaultValue={formatDate(membro.wedding_date)} />
-                            <Select label="Tem Filhos?" name="has_children" defaultValue={membro.has_children ? "true" : "false"} options={[{ label: 'Sim', value: 'true' }, { label: 'Não', value: 'false' }]} />
-                            <Input label="Número de Filhos" name="children_number" type="number" min="0" defaultValue={membro.children_number || 0} />
+
+                            {/* 👇 CAMPO COM ONCHANGE PARA ATUALIZAR O ESTADO 👇 */}
+                            <Select
+                                label="Tem Filhos?"
+                                name="has_children"
+                                defaultValue={temFilhos}
+                                onChange={(e: any) => setTemFilhos(e.target.value)}
+                                options={[{ label: 'Sim', value: 'true' }, { label: 'Não', value: 'false' }]}
+                            />
+
+                            {/* 👇 RENDERIZAÇÃO CONDICIONAL COM ANIMAÇÃO 👇 */}
+                            {temFilhos === 'true' ? (
+                                <div className="animate-in zoom-in-95 fade-in duration-300">
+                                    <Input
+                                        label="Número de Filhos"
+                                        name="children_number"
+                                        type="number"
+                                        min="1"
+                                        defaultValue={membro.children_number || 1}
+                                    />
+                                </div>
+                            ) : (
+                                /* Input escondido (opcional) para garantir que envia 0 caso mude de ideias e meta "Não" */
+                                <input type="hidden" name="children_number" value="0" />
+                            )}
                         </div>
                     </div>
 
@@ -431,6 +499,100 @@ export default function EditarMembroClient({
                     </div>
 
                 </div>
+                {/* ========================================================= */}
+                {/* INPUT ESCONDIDO QUE GUARDA A FAMÍLIA SELECIONADA          */}
+                {/* ========================================================= */}
+                <input type="hidden" name="familia_id" value={familiaSelecionada} />
+                <input type="hidden" name="parentesco" value={parentescoSelecionado} />
+
+                {/* ========================================================= */}
+                {/* MODAL DE SELEÇÃO DE FAMÍLIA                               */}
+                {/* ========================================================= */}
+                {modalFamiliaAberto && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/80 backdrop-blur-md animate-in fade-in duration-200">
+                        <div className="bg-bg2 border border-soft w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+
+                            {/* Cabeçalho do Modal */}
+                            <div className="flex justify-between items-center p-6 border-b border-soft bg-soft/10">
+                                <div>
+                                    <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
+                                        <Home className="text-figueira" size={20} /> Agregado Familiar
+                                    </h3>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
+                                        Vincule este membro a uma família existente.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalFamiliaAberto(false)}
+                                    className="text-muted hover:text-red-500 bg-soft/50 hover:bg-soft p-2 rounded-xl transition-all"
+                                >
+                                    <XCircle size={20} />
+                                </button>
+                            </div>
+
+                            {/* Corpo do Modal */}
+                            <div className="p-6 md:p-8 space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-2">
+                                        Selecione a Família
+                                    </label>
+                                    <select
+                                        value={familiaSelecionada}
+                                        onChange={(e) => setFamiliaSelecionada(e.target.value)}
+                                        className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm font-bold text-fg focus:border-figueira outline-none shadow-sm transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Nenhuma Família (Remover Vínculo)</option>
+                                        {familias.map((f: any) => (
+                                            <option key={f.id} value={f.id}>
+                                                Família {f.surname}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* 👇 SÓ MOSTRA O PARENTESCO SE UMA FAMÍLIA ESTIVER SELECIONADA 👇 */}
+                                {familiaSelecionada && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-2">
+                                            Papel na Família (Parentesco)
+                                        </label>
+                                        <select
+                                            value={parentescoSelecionado}
+                                            onChange={(e) => setParentescoSelecionado(e.target.value)}
+                                            className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm font-bold text-fg focus:border-figueira outline-none shadow-sm transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Selecione o grau de parentesco...</option>
+                                            <option value="Pai">Pai / Marido</option>
+                                            <option value="Mãe">Mãe / Esposa</option>
+                                            <option value="Filho(a)">Filho(a)</option>
+                                            <option value="Avô/Avó">Avô / Avó</option>
+                                            <option value="Irmão/Irmã">Irmão / Irmã</option>
+                                            <option value="Outro">Outro</option>
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="bg-figueira/10 border border-figueira/20 rounded-2xl p-4 flex items-start gap-3">
+                                    <AlertCircle size={16} className="text-figueira shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-figueira/80 font-bold uppercase tracking-widest leading-relaxed">
+                                        A alteração só será guardada quando clicar em "Confirmar Edição" no topo da página principal.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setModalFamiliaAberto(false);
+                                    }}
+                                    className="w-full bg-fg text-bg py-5 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-figueira transition-all flex items-center justify-center gap-2 active:scale-95 shadow-xl"
+                                >
+                                    <CheckCircle2 size={16} /> Aplicar Seleção
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
             </form>
         </main>
     )

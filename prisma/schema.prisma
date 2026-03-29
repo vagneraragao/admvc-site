@@ -235,10 +235,10 @@ model Evento {
   data      DateTime
   descricao String?
 
-  escalas Escala[]
-
-  criado_em     DateTime @default(now())
-  atualizado_em DateTime @updatedAt
+  escalas       Escala[]
+  repertorio    RepertorioEvento[]
+  criado_em     DateTime           @default(now())
+  atualizado_em DateTime           @updatedAt
 }
 
 model Escala {
@@ -461,4 +461,30 @@ model Compromisso {
   atualizado_em DateTime @updatedAt
 
   grupos Grupo[] @relation("CompromissoGrupos")
+}
+
+model Musica {
+  id          String  @id @default(uuid())
+  titulo      String
+  artista     String?
+  bpm         Int?
+  link_video  String? // Link do YouTube/Spotify
+  holyrics_id String? @unique // <--- ADICIONE ESTA LINHA
+
+  // Relação com os eventos (O repertório)
+  eventos RepertorioEvento[]
+}
+
+model RepertorioEvento {
+  id        String @id @default(uuid())
+  evento_id Int // <-- CORRIGIDO AQUI: Mudou de String para Int
+  evento    Evento @relation(fields: [evento_id], references: [id])
+
+  musica_id String
+  musica    Musica @relation(fields: [musica_id], references: [id])
+
+  tom_tocado String // Ex: "G", "C#m" - O tom escolhido para ESTE culto
+  ordem      Int // 1, 2, 3 (Para ordenar as músicas no culto)
+
+  @@unique([evento_id, musica_id]) // Evita a mesma música duplicada no mesmo culto
 }

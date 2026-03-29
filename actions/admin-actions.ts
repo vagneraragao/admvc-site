@@ -11,6 +11,7 @@ import { put } from "@vercel/blob";
 import { Role } from "@prisma/client";
 import { cookies } from 'next/headers'
 
+
 export async function aprovarMembro(membroId: number, adminNome: string) {
     try {
         await prisma.membro.update({
@@ -611,7 +612,7 @@ export async function criarEscala(formData: FormData) {
         // 2. Atualiza a Dashboard do Membro para que ele veja a notificação instantaneamente!
         revalidatePath(`/membros/dashboard`);
 
-return { ok: true };
+        return { ok: true };
 
     } catch (error: any) {
         // 👇 SE A BASE DE DADOS BLOQUEAR POR CAUSA DA REGRA @@unique
@@ -623,6 +624,8 @@ return { ok: true };
         return { error: "Ocorreu um erro ao registar a escala na base de dados." };
     }
 }
+
+
 
 export async function atualizarMembroAdmin(id: number, formData: FormData) {
     try {
@@ -638,14 +641,24 @@ export async function atualizarMembroAdmin(id: number, formData: FormData) {
         const escolaridadeRaw = formData.get('escolaridade_id');
         const escolaridade_id = escolaridadeRaw ? Number(escolaridadeRaw) : null;
 
+        const familiaIdRaw = formData.get('familia_id') as string;
+        const parentescoRaw = formData.get('parentesco') as string;
+        const familiaUpdate = familiaIdRaw
+            ? { connect: { id: Number(familiaIdRaw) } } // Se escolheu uma, conecta
+            : { disconnect: true }; // Se escolheu "Nenhuma" (vazio), desconecta
+
+        //
         // Tratamento de Datas
         const conversion_date = formData.get('conversion_date') ? new Date(formData.get('conversion_date') as string) : null;
         const entry_date = formData.get('entry_date') ? new Date(formData.get('entry_date') as string) : null;
         const baptism_date = formData.get('baptism_date') ? new Date(formData.get('baptism_date') as string) : null;
         const birthdate = formData.get('birthdate') ? new Date(formData.get('birthdate') as string) : null;
+        const wedding_date = formData.get('wedding_date') ? new Date(formData.get('wedding_date') as string) : null;
 
-        // Tratamento do Checkbox de Acesso
+        // Tratamento de Booleanos
         const isActiveMarcado = formData.get('is_active') === 'on' || formData.get('is_active') === 'true';
+        const isSpouseChristian = formData.get('spouse_christian') === 'true';
+        const hasChildren = formData.get('has_children') === 'true';
 
         // Tratamento do Loyverse (Prevenção do erro de duplicação P2002)
         const loyverseIdRaw = formData.get('loyverse_id') as string;
@@ -653,7 +666,7 @@ export async function atualizarMembroAdmin(id: number, formData: FormData) {
 
         // 🛡️ A LISTA COMPLETA DE CAMPOS A ATUALIZAR
         const dataToUpdate: any = {
-            // Pessoal
+            // --- DADOS PESSOAIS ---
             first_name: formData.get('first_name') as string,
             last_name: formData.get('last_name') as string,
             email: (formData.get('email') as string).toLowerCase().trim(),
@@ -663,47 +676,90 @@ export async function atualizarMembroAdmin(id: number, formData: FormData) {
             profession: formData.get('profession') as string,
             father_name: formData.get('father_name') as string,
             mother_name: formData.get('mother_name') as string,
+            escolaridade: escolaridade_id ? { connect: { id: escolaridade_id } } : { disconnect: true },
 
-            // Relação Oficial do Prisma para Escolaridade
-            escolaridade: escolaridade_id
-                ? { connect: { id: escolaridade_id } }
-                : { disconnect: true },
-
-            conversion_date: conversion_date,
-
-            // Endereço
+            // --- MORADA ---
             postal_code: formData.get('postal_code') as string,
             address_1: formData.get('address_1') as string,
+            address_2: formData.get('address_2') as string,
             address_number: formData.get('address_number') as string,
-            //neighborhood: formData.get('neighborhood') as string,
+            neighborhood: formData.get('neighborhood') as string,
             id_city: formData.get('id_city') as string,
+            state: formData.get('state') as string,
             country: formData.get('country') as string || 'Portugal',
 
-            // Eclesiástico e Acesso
-            is_active: isActiveMarcado,
-            role: formData.get('role') as any,
-            loyverse_id: loyverseIdTratado,
-            entry_date: entry_date,
-            baptism_date: baptism_date,
-            church_role: formData.get('church_role') as string,
-            status: formData.get('status') as string,
-
-            // Família
+            // --- DOCUMENTAÇÃO E RELAÇÕES ---
+            marital_status: formData.get('marital_status') as string,
+            nationality: formData.get('nationality') as string,
+            tax_id: formData.get('tax_id') as string,
+            id_card_number: formData.get('id_card_number') as string,
+            lang: formData.get('lang') as string,
             spouse_name: formData.get('spouse_name') as string,
+            spouse_christian: isSpouseChristian,
+            wedding_date: wedding_date,
+            has_children: hasChildren,
             children_number: parseInt(formData.get('children_number') as string || "0"),
 
-            // Grupos N-N
+            // --- JORNADA ESPIRITUAL (ECLESIÁSTICO) ---
+            entry_date: entry_date,
+            baptism_date: baptism_date,
+            conversion_date: conversion_date,
+            notes: formData.get('notes') as string,
+            previous_church: formData.get('previous_church') as string,
+            church_role: formData.get('church_role') as string,
+            ministry: formData.get('ministry') as string,
+
+            // --- ADMINISTRATIVO ---
+            is_active: isActiveMarcado,
+            role: formData.get('role') as any,
+            status: formData.get('status') as string,
+            loyverse_id: loyverseIdTratado,
+            familia: familiaUpdate,
+            parentesco: familiaIdRaw ? (parentescoRaw || null) : null,
             grupos: { set: grupoIds.map(gid => ({ id: gid })) }
         };
 
-        // Lógica da senha
+        // ====================================================================
+        // 📸 LÓGICA DE UPLOAD DA FOTO DE PERFIL (VERCEL BLOB STORAGE)
+        // ====================================================================
+        const avatarFile = formData.get('avatar') as File | null;
+
+        // Verifica se foi enviada uma nova imagem (tamanho maior que 0)
+        if (avatarFile && avatarFile.size > 0) {
+            console.log(`📸 A enviar nova foto de perfil para o Blob Storage...`);
+
+            // Cria um nome de ficheiro único para evitar substituições indesejadas
+            const extension = avatarFile.name.split('.').pop();
+            const fileName = `avatars/membro-${membroId}-${Date.now()}.${extension}`;
+
+            try {
+                // Envia diretamente o File para o Vercel Blob
+                const blob = await put(fileName, avatarFile, {
+                    access: 'public',
+                    addRandomSuffix: false
+                });
+
+                // Grava o URL público gerado pelo Blob na base de dados
+                dataToUpdate.avatar_file = blob.url;
+                console.log(`✅ Foto guardada com sucesso no Blob: ${blob.url}`);
+            } catch (blobError) {
+                console.error("❌ Erro ao enviar a imagem para o Blob Storage:", blobError);
+                // Mesmo que a foto falhe, não bloqueamos a atualização dos outros dados
+            }
+        }
+
+        // ====================================================================
+        // 🔐 LÓGICA DA SENHA
+        // ====================================================================
         const novaSenha = formData.get('nova_senha') as string;
         if (novaSenha && novaSenha.trim() !== '') {
             dataToUpdate.password = await bcrypt.hash(novaSenha.trim(), 10);
-            console.log(`🔐 Nova senha encriptada com sucesso.`);
+            console.log(`🔐 Nova senha encriptada e processada.`);
         }
 
-        // Executa o update principal
+        // ====================================================================
+        // 💾 EXECUÇÃO NA BASE DE DADOS (PRISMA)
+        // ====================================================================
         await prisma.membro.update({
             where: { id: membroId },
             data: dataToUpdate
@@ -724,7 +780,7 @@ export async function atualizarMembroAdmin(id: number, formData: FormData) {
             });
         }
 
-        console.log(`💾 Membro gravado com sucesso! (Incluindo Loyverse e Escolaridade)`);
+        console.log(`💾 Membro gravado com sucesso!`);
         console.log(`=============================================\n`);
 
         revalidatePath('/admin/membros');
@@ -1141,8 +1197,8 @@ export async function editarEscalaAction(formData: FormData) {
         });
 
         // Atualiza a página onde as escalas estão a ser mostradas
-        revalidatePath('/admin/escalas'); 
-        
+        revalidatePath('/admin/escalas');
+
         return { ok: true };
     } catch (error) {
         console.error("Erro ao editar escala:", error);
@@ -1158,8 +1214,8 @@ export async function editarEventoAction(formData: FormData) {
     try {
         const id = formData.get('id') as string;
         const nome = formData.get('nome') as string;
-        const dataStr = formData.get('data') as string; 
-        const horaStr = formData.get('horario') as string; 
+        const dataStr = formData.get('data') as string;
+        const horaStr = formData.get('horario') as string;
         const descricao = formData.get('descricao') as string; // <-- NOVO
 
         if (!id || !nome || !dataStr || !horaStr) {

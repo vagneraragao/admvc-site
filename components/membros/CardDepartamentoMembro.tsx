@@ -130,11 +130,11 @@ export default function CardDepartamentoMembro({ depto, membroId, role }: any) {
                                     /* LÓGICA PARA GRUPOS / PGS */
                                     podeGerenciar ? (
                                         <Link href={`/membros/gestao/grupo/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnPrimary}`}>
-                                            <Edit3 size={14} /> Gerir Célula
+                                            <Edit3 size={14} /> Gerir Grupo
                                         </Link>
                                     ) : (
                                         <Link href={`/membros/gestao/grupo/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 group/btn ${tema.btnSecondary}`}>
-                                            Acessar Célula <ArrowRight size={14} className="opacity-50 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
+                                            Acessar Grupo <ArrowRight size={14} className="opacity-50 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
                                         </Link>
                                     )
                                 ) : (

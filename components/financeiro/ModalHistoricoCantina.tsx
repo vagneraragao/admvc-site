@@ -21,8 +21,8 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
         e.stopPropagation()
 
         if (!loyverseId) {
-            alert("A sua conta ainda não está ligada à Cantina.");
-            return;
+            alert("A sua conta ainda não está ligada à Cantina.")
+            return
         }
 
         setIsOpen(true)
@@ -34,7 +34,7 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
         const res = await getHistoricoComprasLoyverse(loyverseId)
         if (res.receipts) {
             // Removemos os recibos com valor 0 ou nulo (que geralmente são recargas, não consumos)
-            const apenasConsumos = res.receipts.filter((r: any) => r.total_money > 0);
+            const apenasConsumos = res.receipts.filter((r: any) => r.total_money > 0)
             setRecibos(apenasConsumos)
         }
         setLoading(false)
@@ -46,19 +46,19 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
     // AGRUPAMENTO INTELIGENTE POR MÊS E ANO
     // ========================================================================
     const recibosAgrupados = useMemo(() => {
-        if (!recibos.length) return {};
+        if (!recibos.length) return {}
 
         const grupos: { [key: string]: { recibos: any[], total: number } } = {}
 
         // Ordena os recibos do mais recente para o mais antigo
-        const recibosOrdenados = [...recibos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const recibosOrdenados = [...recibos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
         recibosOrdenados.forEach((recibo) => {
             const data = new Date(recibo.created_at)
 
             // Cria a chave "Março 2026"
-            const mesAnoCru = data.toLocaleString('pt-PT', { month: 'long', year: 'numeric' });
-            const mesAno = mesAnoCru.charAt(0).toUpperCase() + mesAnoCru.slice(1).replace(' de ', ' ');
+            const mesAnoCru = data.toLocaleString('pt-PT', { month: 'long', year: 'numeric' })
+            const mesAno = mesAnoCru.charAt(0).toUpperCase() + mesAnoCru.slice(1).replace(' de ', ' ')
 
             if (!grupos[mesAno]) {
                 grupos[mesAno] = { recibos: [], total: 0 }
@@ -152,12 +152,18 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
 
     return (
         <>
+            {/* 👇 BOTÃO ATUALIZADO PARA O ESTILO "APP FINANCEIRA" 👇 */}
             <button
                 type="button"
                 onClick={abrirHistorico}
-                className="w-full flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white p-4 rounded-2xl transition-all active:scale-95 border border-white/5"
+                className="flex flex-col items-center gap-2 group/btn w-full cursor-pointer"
             >
-                <Receipt size={16} /> Ver Extrato
+                <div className="w-12 h-12 bg-white/5 text-white/70 rounded-[1rem] flex items-center justify-center group-hover/btn:bg-white/20 group-hover/btn:text-white transition-all duration-300 border border-white/5 group-active/btn:scale-95 mx-auto">
+                    <Receipt size={20} />
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover/btn:text-white transition-colors">
+                    Histórico
+                </span>
             </button>
 
             {mounted && isOpen && createPortal(modalContent, document.body)}
@@ -178,7 +184,7 @@ function ReciboItem({ recibo, euro }: { recibo: any, euro: (v: number) => string
     const min = dataValida.getMinutes().toString().padStart(2, '0')
 
     const itens = recibo?.line_items || []
-    const valorTotal = Math.abs(recibo.total_money || 0);
+    const valorTotal = Math.abs(recibo.total_money || 0)
 
     return (
         <div className="bg-bg2 border border-soft rounded-[1.5rem] relative overflow-hidden transition-all hover:border-figueira/30 shadow-sm">

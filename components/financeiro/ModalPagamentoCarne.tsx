@@ -43,7 +43,7 @@ export default function ModalPagamentoCarne({ carne }: { carne: any }) {
                                 <DollarSign size={32} />
                             </div>
                             <h3 className="text-xl font-black uppercase italic tracking-tighter">Lançar Parcela</h3>
-                            <p className="text-[10px] text-muted font-bold uppercase">{carne.membro.nome}</p>
+                            <p className="text-[10px] text-muted font-bold uppercase">{carne.membro.first_name} {carne.membro.last_name}</p>
                         </div>
 
                         <div className="bg-bg p-4 rounded-2xl border border-soft space-y-3">

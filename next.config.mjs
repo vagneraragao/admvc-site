@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // 👇 AQUI ESTÁ A PARTE QUE FALTAVA PARA AS IMAGENS DO VERCEL BLOB
     images: {
         remotePatterns: [
             {
@@ -9,14 +8,18 @@ const nextConfig = {
                 port: '',
                 pathname: '/**',
             },
+            {
+                protocol: 'https',
+                hostname: 'images.unsplash.com',
+                port: '',
+                pathname: '/**',
+            },
         ],
     },
 
-    // 👇 AS TUAS CONFIGURAÇÕES DE SEGURANÇA (Mantidas intactas)
     async headers() {
         return [
             {
-                // Aplica a todas as rotas
                 source: '/(.*)',
                 headers: [
                     {

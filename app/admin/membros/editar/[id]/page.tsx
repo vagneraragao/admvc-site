@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import EditarMembroClient from '@/components/Client' // Confirma se o caminho está correto
+import EditarMembroClient from '@/components/membros/Client' // Confirma se o caminho está correto
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
@@ -51,6 +51,18 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
         { label: 'Administrador Geral', value: 'ADMIN' },
     ];
 
+    const familias = await prisma.familia.findMany({
+        select: {
+            id: true,
+            surname: true,
+        },
+        orderBy: {
+            surname: 'asc'
+        }
+    });
+
+    if (!membro) return <div>Membro não encontrado</div>;
+
     return (
         <EditarMembroClient
             membro={membro}
@@ -60,6 +72,7 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
             roles={rolesDisponiveis}
             isAdmin={true}
             escolaridades={escolaridades}
+            familias={familias}
         />
     );
 }

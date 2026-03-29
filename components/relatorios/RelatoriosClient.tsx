@@ -7,6 +7,7 @@ import {
     Cake, Heart, Droplet, MapPin, ShieldCheck,
     X, PieChart, TrendingUp, FileSignature, ChevronDown
 } from 'lucide-react'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export default function RelatoriosClient({ membros }: { membros: any[] }) {
     const [relatorioAtivo, setRelatorioAtivo] = useState<string | null>(null);
@@ -161,16 +162,25 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <div className="mb-6">
+                <Breadcrumb items={[
+                    {
+                        label: "Dashboard Admin",
+                        href: "/admin/dashboard",
+                        isBackIcon: true
+                    },
+                    {
+                        label: "Módulo Analítico",
+                        hideOnMobile: true
+                    },
+                    {
+                        label: "Relatórios"
+                    }
+                ]} />
+            </div>
 
-            {/* --- BREADCRUMBS E HEADER (MANTIDOS IGUAIS) --- */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/admin/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Dashboard Admin
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Relatórios</span>
-            </nav>
-
+            {/* HEADER (MANTIDO ESTRUTURALMENTE IGUAL) */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">
                 <div className="space-y-2">
                     <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
