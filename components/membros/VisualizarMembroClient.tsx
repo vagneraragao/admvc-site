@@ -8,6 +8,7 @@ import {
     Lock, CheckCircle2, XCircle, Home, Mail, Phone
 } from "lucide-react";
 import Image from "next/image";
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export default function VisualizarMembroClient({ membro }: any) {
     const [abaAtiva, setAbaAtiva] = useState(1);
@@ -52,24 +53,35 @@ export default function VisualizarMembroClient({ membro }: any) {
     return (
         <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-24">
 
-            {/* BREADCRUMBS */}
-            <nav className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                    <Link href="/admin/membros" className="hover:text-figueira transition-colors flex items-center gap-2">
-                        <ArrowLeft size={12} strokeWidth={3} /> Voltar à Lista
-                    </Link>
-                    <ChevronRight size={10} className="opacity-30" />
-                    <span className="text-fg italic hidden sm:inline">Ficha do Membro</span>
-                </div>
+            {/* HEADER DE NAVEGAÇÃO E AÇÕES */}
+            <div className="flex items-center justify-between gap-4 mb-6">
+
+                {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+                <Breadcrumb items={[
+                    {
+                        label: "Voltar à Lista",
+                        href: "/admin/membros",
+                        isBackIcon: true
+                    },
+                    {
+                        label: "Gestão de Membros",
+                        hideOnMobile: true
+                    },
+                    {
+                        label: "Ficha do Membro"
+                    }
+                ]} />
 
                 {/* BOTÃO DE AÇÃO NO TOPO (Padrão Admin) */}
                 <Link
                     href={`/admin/membros/editar/${membro.id}`}
-                    className="flex items-center gap-2 bg-fg text-bg px-5 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira transition-all shadow-lg active:scale-95"
+                    className="flex items-center gap-2 bg-fg text-bg px-5 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira transition-all shadow-lg active:scale-95 shrink-0"
                 >
                     <Edit3 size={14} /> Editar
                 </Link>
-            </nav>
+
+            </div>
+
 
             {/* CABEÇALHO DO PERFIL (CARD PREMIUM) */}
             <header className="bg-bg2 border border-soft p-8 md:p-12 rounded-[3.5rem] shadow-sm relative overflow-visible flex flex-col md:flex-row items-center md:items-start gap-8">

@@ -3,8 +3,9 @@
 
 import { useState } from 'react'
 import { Download, Upload, CheckCircle2, AlertTriangle, XCircle, ArrowRight, FileSpreadsheet, Loader2 } from 'lucide-react'
-import { analisarCSV, exportarMembrosCSV, confirmarImportacao } from './actions'
+import { analisarCSV, exportarMembrosCSV, confirmarImportacao } from '@/actions/membro-actions'
 import Link from 'next/link'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export default function ImportExportPage() {
     const [loadingExport, setLoadingExport] = useState(false);
@@ -78,18 +79,32 @@ export default function ImportExportPage() {
     return (
         <main className="max-w-5xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700">
 
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg leading-none flex items-center gap-3">
-                        <FileSpreadsheet className="text-figueira" /> Importar / Exportar
-                    </h1>
-                    <p className="text-xs text-muted font-bold tracking-widest uppercase mt-2">
-                        Gerencie os dados dos membros em massa (CSV).
-                    </p>
-                </div>
-                <Link href="/admin/dashboard" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
-                    Voltar ao Admin
-                </Link>
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <div className="mb-6">
+                <Breadcrumb items={[
+                    {
+                        label: "Painel Admin",
+                        href: "/admin/dashboard",
+                        isBackIcon: true
+                    },
+                    {
+                        label: "Gestão de Membros",
+                        hideOnMobile: true
+                    },
+                    {
+                        label: "Importar / Exportar"
+                    }
+                ]} />
+            </div>
+
+            {/* HEADER LIMPO E FOCADO */}
+            <header className="flex flex-col gap-2 pb-6 border-b border-soft">
+                <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-fg leading-none flex items-center gap-3">
+                    <FileSpreadsheet size={32} className="text-figueira" /> Importar / Exportar
+                </h1>
+                <p className="text-[10px] sm:text-xs text-muted font-bold tracking-widest uppercase mt-1">
+                    Gerencie os dados dos membros em massa (CSV).
+                </p>
             </header>
 
             <div className="grid md:grid-cols-2 gap-8 items-start">

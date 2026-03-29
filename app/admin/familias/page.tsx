@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { GestaoFamiliaCard } from '@/components/familias/GestaoFamiliaCard'
 import NovaFamiliaModal from '@/components/familias/NovaFamiliaModal'
 import { ArrowLeft, ChevronRight, Home, Users, ShieldCheck } from 'lucide-react'
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,15 +28,23 @@ export default async function AdminFamiliasPage() {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700">
-
-            {/* BREADCRUMBS (BARRA DE HISTÓRICO) */}
-            <nav className="flex items-center gap-4 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                <Link href="/admin/dashboard" className="hover:text-figueira transition-colors flex items-center gap-2">
-                    <ArrowLeft size={12} strokeWidth={3} /> Painel Admin
-                </Link>
-                <ChevronRight size={10} className="opacity-30" />
-                <span className="text-fg italic">Gestão de Famílias</span>
-            </nav>
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <div className="mb-6">
+                <Breadcrumb items={[
+                    {
+                        label: "Painel Admin",
+                        href: "/admin/dashboard",
+                        isBackIcon: true
+                    },
+                    {
+                        label: "Comunidade", // ou "Membros", dependendo de como organizas mentalmente a tua plataforma
+                        hideOnMobile: true
+                    },
+                    {
+                        label: "Gestão de Famílias"
+                    }
+                ]} />
+            </div>
 
             {/* HEADER OTIMIZADO */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-soft pb-8">

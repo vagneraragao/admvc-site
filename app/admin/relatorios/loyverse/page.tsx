@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { ShieldCheck, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle2, User } from 'lucide-react';
 import Link from 'next/link';
 import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse';
+import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic';
 
@@ -49,12 +50,23 @@ export default async function DiagnosticoLoyversePage() {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700">
-            {/* NAVEGAÇÃO */}
-            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted">
-                <Link href="/admin/dashboard" className="hover:text-figueira flex items-center gap-2">
-                    <ArrowLeft size={14} /> Painel Admin
-                </Link>
-            </nav>
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            <div className="mb-6">
+                <Breadcrumb items={[
+                    {
+                        label: "Painel Admin",
+                        href: "/admin/dashboard",
+                        isBackIcon: true
+                    },
+                    {
+                        label: "Cantina", // Opcional: Categoria intermédia (ex: "Configurações")
+                        hideOnMobile: true
+                    },
+                    {
+                        label: "Diagnóstico de Integração" // Substitui pelo nome real da página (ex: "Criar Utilizador")
+                    }
+                ]} />
+            </div>
 
             <header className="flex flex-col md:flex-row justify-between md:items-end gap-6 border-b border-soft pb-8">
                 <div>
