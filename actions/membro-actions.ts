@@ -548,3 +548,4 @@ export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: n
 
     return qualificados.map(q => q.membro);
 }
+

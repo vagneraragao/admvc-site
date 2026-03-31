@@ -1,13 +1,13 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, CalendarDays, PlusCircle, Settings2, Users } from 'lucide-react'
-import GerenciadorEventos from '@/components/GerenciadorEventos'
+//import GerenciadorEventos from '@/components/GerenciadorEventos'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
 import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
-import ModalGerarEventosLote from '@/components/escalas/ModalGerarEventosLote'
+//import ModalGerarEventosLote from '@/components/escalas/ModalGerarEventosLote'
 import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
-import ModalEditarEscala from '@/components/admin/ModalEditarEscala'
+//import ModalEditarEscala from '@/components/admin/ModalEditarEscala'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,13 @@ export default async function EscalasPage() {
     const eventos = await prisma.evento.findMany({
         where: { data: { gte: dataInicioMes } },
         include: {
+            mensagemEvento: {                    // ← ADICIONA
+                include: {
+                    pregador: {
+                        select: { id: true, first_name: true, last_name: true, avatar_file: true }
+                    }
+                }
+            },
             escalas: {
                 include: {
                     membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
@@ -28,7 +35,7 @@ export default async function EscalasPage() {
             }
         },
         orderBy: { data: 'asc' }
-    });
+    })
 
     const departamentos = await prisma.departamento.findMany({ orderBy: { nome: 'asc' } });
 
@@ -61,13 +68,13 @@ export default async function EscalasPage() {
 
             {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
             <Breadcrumb items={[
-                { 
-                    label: "Dashboard", 
-                    href: "/admin/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: "Dashboard",
+                    href: "/admin/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Escalas e Eventos" 
+                {
+                    label: "Escalas e Eventos"
                 }
             ]} />
 
@@ -121,7 +128,7 @@ export default async function EscalasPage() {
                         <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
                             {/* Linha de destaque no topo do card */}
                             <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
-                            
+
                             <div className="flex items-center gap-4 border-b border-soft pb-6 mb-6">
                                 <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                                     <Settings2 size={20} />
@@ -144,7 +151,7 @@ export default async function EscalasPage() {
 
                     {/* COLUNA DIREITA: VISÃO GERAL (Lista de Eventos Colapsáveis) */}
                     <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-                        
+
                         {/* Cabeçalho subtil da lista */}
                         <div className="flex items-center gap-3 px-2">
                             <Users size={16} className="text-emerald-500" />
@@ -153,10 +160,10 @@ export default async function EscalasPage() {
 
                         {/* Chamamos a Lista passando isAdmin e os membros */}
                         <div className="animate-in slide-in-from-bottom-4 duration-500">
-                            <ListaEscalados 
-                                eventos={eventosFuturos} 
-                                isAdmin={true} 
-                                membros={membrosComFuncoes} 
+                            <ListaEscalados
+                                eventos={eventosFuturos}
+                                isAdmin={true}
+                                membros={membrosComFuncoes}
                             />
                         </div>
 

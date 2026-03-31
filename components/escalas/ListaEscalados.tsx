@@ -10,6 +10,7 @@ import { removerEscalaAction, atualizarEscalaAction } from '@/actions/admin-acti
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 import BotaoApagarEvento from '@/components/admin/BotaoApagarEvento'
 import ModalRepertorio from '@/components/louvor/ModalRepertorio'
+import SecaoMensagemEvento from '@/components/escalas/SecaoMensagemEvento'
 
 export default function ListaEscalados({
     eventos,
@@ -143,7 +144,7 @@ export default function ListaEscalados({
                                 </div>
 
                                 {isAdmin && (
-                                    <div className="mt-1 sm:mt-0 flex gap-2" onClick={e => e.preventDefault()}>
+                                    <div className="mt-1 sm:mt-0 flex gap-2" onClick={e => e.stopPropagation()}>
                                         <ModalEditarEvento evento={evento} />
                                         <BotaoApagarEvento id={evento.id} nome={evento.nome} />
                                     </div>
@@ -328,7 +329,14 @@ export default function ListaEscalados({
                                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-fg">Gestão Musical</h4>
                                     </div>
                                     <ModalRepertorio eventoId={evento.id} repertorioInical={evento.repertorio || []} podeEditar={true} />
+                                    <SecaoMensagemEvento
+                                        eventoId={evento.id}
+                                        eventoNome={evento.nome}
+                                        membros={membros || []}
+                                        podeEditar={!!isAdmin}
+                                    />
                                 </div>
+
                             )}
                         </div>
                     </details>

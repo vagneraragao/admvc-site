@@ -998,8 +998,13 @@ export async function editarEscalaAction(formData: FormData) {
 }
 
 export async function editarEventoAction(formData: FormData) {
+    console.log('=== EDITAR EVENTO ===')
+    console.log('id:', formData.get('id'))
+    console.log('nome:', formData.get('nome'))
     try {
         const db = await getDb();
+        console.log('db obtido com sucesso')
+
         const id = formData.get('id') as string;
         const nome = formData.get('nome') as string;
         const dataStr = formData.get('data') as string;
