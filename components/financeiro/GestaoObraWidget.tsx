@@ -3,23 +3,37 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { Building2, Save } from 'lucide-react'
 
+import { getSessionData } from '@/lib/auth-utils'
+
 export default async function GestaoObraWidget() {
+    const session = await getSessionData();
+    if (!session) return null;
+
+    const membro = await prisma.membro.findUnique({
+        where: { id: session.membroId },
+        select: { tenant_id: true }
+    });
+
+    if (!membro) return null;
+
     // 1. Busca o projeto ou cria um padrão se não existir
     let projeto = await prisma.projetoObra.findFirst({
+        where: { tenant_id: membro.tenant_id },
         include: { etapas: { orderBy: { ordem: 'asc' } } }
     });
 
     if (!projeto) {
         projeto = await prisma.projetoObra.create({
             data: {
+                tenant_id: membro.tenant_id,
                 titulo: "Campanha de Construção: Nossa Sede",
                 descricao: "Acompanhe os passos de fé para a nossa sede na Figueira da Foz.",
                 objetivoFinal: 750000,
                 etapas: {
                     create: [
-                        { nome: "1. Terreno", alvo: 150000, atual: 0, ordem: 1 },
-                        { nome: "2. Estrutura", alvo: 300000, atual: 0, ordem: 2 },
-                        { nome: "3. Acabamentos", alvo: 300000, atual: 0, ordem: 3 }
+                        { tenant_id: membro.tenant_id, nome: "1. Terreno", alvo: 150000, atual: 0, ordem: 1 },
+                        { tenant_id: membro.tenant_id, nome: "2. Estrutura", alvo: 300000, atual: 0, ordem: 2 },
+                        { tenant_id: membro.tenant_id, nome: "3. Acabamentos", alvo: 300000, atual: 0, ordem: 3 }
                     ]
                 }
             },

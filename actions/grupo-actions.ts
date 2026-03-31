@@ -13,8 +13,16 @@ export async function registrarEncontroAction(formData: FormData, presentesIds: 
         // const foto_file = formData.get('foto') as File;
         const foto_url = null; // Substitui pelo link do upload real quando tiveres
 
+        const grupo = await prisma.grupo.findUnique({
+            where: { id: grupo_id },
+            select: { tenant_id: true }
+        });
+
+        if (!grupo) return { sucesso: false, erro: "Grupo não encontrado." };
+
         await prisma.encontroGrupo.create({
             data: {
+                tenant_id: grupo.tenant_id,
                 grupo_id,
                 data,
                 tema,

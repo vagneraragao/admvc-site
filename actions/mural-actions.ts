@@ -20,9 +20,17 @@ export async function publicarAviso(formData: FormData) {
         const isDepto = destino.startsWith('DEP_');
         const idReal = destino.replace('DEP_', '').replace('GRP_', '');
 
+        const membro = await prisma.membro.findUnique({
+            where: { id: session.membroId },
+            select: { tenant_id: true }
+        });
+
+        if (!membro) return { error: 'Utilizador não encontrado.' };
+
         // ATENÇÃO: Se o ID na sua base de dados for String em vez de Int, remova o "Number()" abaixo.
         await prisma.avisoMural.create({
             data: {
+                tenant_id: membro.tenant_id,
                 texto: texto.trim(),
                 autor_id: session.membroId,
                 departamento_id: isDepto ? Number(idReal) : null,

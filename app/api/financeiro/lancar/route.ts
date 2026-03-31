@@ -22,9 +22,20 @@ export async function POST(request: Request) {
         // 2. Operação em Transação (Garante que ou faz tudo, ou não faz nada)
         const resultado = await prisma.$transaction(async (tx) => {
 
+            // Buscamos o objetivo primeiro para pegar o tenant_id
+            const objetivo = await tx.objetivoFinanceiro.findUnique({
+                where: { id: Number(objetivoId) },
+                include: { lancamentos: true }
+            })
+
+            if (!objetivo) {
+                throw new Error("Objetivo financeiro não encontrado.");
+            }
+
             // A. Cria o registro do lançamento (o rastro financeiro)
             const novoLancamento = await tx.lancamentoFinanceiro.create({
                 data: {
+                    tenant_id: objetivo.tenant_id,
                     objetivo_id: Number(objetivoId),
                     valor_pago: parseFloat(valor),
                     forma_pagamento: String(forma).toUpperCase(),
@@ -34,14 +45,9 @@ export async function POST(request: Request) {
             })
 
             // B. Opcional: Atualiza o status do Objetivo se ele for concluído
-            // Buscamos o objetivo para ver o total prometido vs total pago
-            const objetivo = await tx.objetivoFinanceiro.findUnique({
-                where: { id: Number(objetivoId) },
-                include: { lancamentos: true }
-            })
-
-            const totalJaPago = objetivo?.lancamentos.reduce((sum, l) => sum + l.valor_pago, 0) || 0;
-            const metaTotal = (objetivo?.valor_mensal || 0) * (objetivo?.parcelas_total || 0);
+            // Somamos os lançamentos antigos + o valor atual
+            const totalJaPago = objetivo.lancamentos.reduce((sum, l) => sum + l.valor_pago, 0) + parseFloat(valor);
+            const metaTotal = (objetivo.valor_mensal || 0) * (objetivo.parcelas_total || 0);
 
             if (totalJaPago >= metaTotal) {
                 await tx.objetivoFinanceiro.update({

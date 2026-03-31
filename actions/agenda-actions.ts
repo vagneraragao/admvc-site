@@ -31,9 +31,14 @@ export async function criarAgendaAction(formData: FormData) {
             return { ok: false, error: "Este líder já possui uma agenda criada." };
         }
 
-        // 3. Cria a Agenda
+        // 3. Vai buscar o tenant_id do líder
+        const dono = await prisma.membro.findUnique({ where: { id: dono_id }, select: { tenant_id: true } });
+        if (!dono) return { ok: false, error: "Líder não encontrado." };
+
+        // 4. Cria a Agenda
         await prisma.agenda.create({
             data: {
+                tenant_id: dono.tenant_id,
                 nome,
                 slug,
                 dono_id,
@@ -66,7 +71,7 @@ export async function editarAgendaAction(formData: FormData) {
         const slugExiste = await prisma.agenda.findFirst({
             where: { slug: slug, NOT: { id: id } }
         });
-        
+
         if (slugExiste) {
             return { ok: false, error: "Este link já está a ser utilizado por outra agenda." };
         }
@@ -113,7 +118,7 @@ export async function criarCompromissoAction(formData: FormData) {
         const membros_ids = formData.getAll('membros[]').map(id => Number(id));
         const visitantes_ids = formData.getAll('visitantes[]').map(id => Number(id));
         const departamentos_ids = formData.getAll('departamentos[]').map(id => Number(id));
-// Capturar múltiplos IDs (Adiciona estas duas linhas)
+        // Capturar múltiplos IDs (Adiciona estas duas linhas)
         const grupos_ids = formData.getAll('grupos[]').map(id => Number(id));
         const celulas_ids = formData.getAll('celulas[]').map(id => Number(id));
 
@@ -124,9 +129,20 @@ export async function criarCompromissoAction(formData: FormData) {
         const data_inicio = new Date(`${dataStr}T${hora_inicioStr}:00`);
         const data_fim = new Date(`${dataStr}T${hora_fimStr}:00`);
 
+        // 1. Vai buscar a agenda para saber qual é o tenant_id
+        const agenda = await prisma.agenda.findUnique({ where: { id: agenda_id } });
+        if (!agenda) return { ok: false, error: "Agenda não encontrada." };
+
         await prisma.compromisso.create({
             data: {
-                agenda_id, titulo, categoria, data_inicio, data_fim, observacoes, externos,
+                tenant_id: agenda.tenant_id,
+                agenda_id: agenda_id,
+                titulo, 
+                categoria, 
+                data_inicio, 
+                data_fim, 
+                observacoes, 
+                externos,
                 // Conecta múltiplos registos ao mesmo tempo!
                 membros: { connect: membros_ids.map(id => ({ id })) },
                 visitantes: { connect: visitantes_ids.map(id => ({ id })) },
@@ -165,18 +181,18 @@ export async function alterarStatusCompromisso(id: number, status: 'AGENDADO' | 
 
             // Apanha o email dos membros
             comp.membros.forEach(m => {
-                if (m.email) { 
-                    emailsParaEnviar.push(m.email); 
-                    nomesParaEmail.push(m.first_name); 
+                if (m.email) {
+                    emailsParaEnviar.push(m.email);
+                    nomesParaEmail.push(m.first_name);
                 }
             });
 
             // Apanha o email dos visitantes (se tiverem esse campo preenchido)
             comp.visitantes.forEach(v => {
                 // Assumindo que o visitante tem um campo email. Se não tiver no teu Prisma, apaga o if.
-                if (v.email) { 
-                    emailsParaEnviar.push(v.email); 
-                    nomesParaEmail.push(v.nome.split(' ')[0]); 
+                if (v.email) {
+                    emailsParaEnviar.push(v.email);
+                    nomesParaEmail.push(v.nome.split(' ')[0]);
                 }
             });
 

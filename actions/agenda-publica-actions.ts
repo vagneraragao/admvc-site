@@ -17,6 +17,17 @@ export async function submeterMarcacaoPublica(formData: FormData) {
             return { ok: false, error: "Preencha todos os campos obrigatórios." };
         }
 
+        // 0. Buscar a Agenda para obter o tenant_id
+        const agenda = await prisma.agenda.findUnique({
+            where: { id: agenda_id }
+        });
+
+        if (!agenda) {
+            return { ok: false, error: "Agenda não encontrada." };
+        }
+
+        const tenant_id = agenda.tenant_id;
+
         // 1. Calcula a Data de Fim (vamos assumir reuniões de 1 hora por padrão)
         const data_inicio_completa = new Date(`${data_str}T${hora_inicio}:00`);
         const data_fim_completa = new Date(data_inicio_completa.getTime() + 60 * 60 * 1000);
@@ -42,11 +53,12 @@ export async function submeterMarcacaoPublica(formData: FormData) {
 
         // Se não for membro, procuramos ou criamos um visitante
         if (!membro_id) {
-            let visitante = await prisma.visitante.findFirst({ where: { telefone } });
+            let visitante = await prisma.visitante.findFirst({ where: { telefone, tenant_id } });
             
             if (!visitante) {
                 visitante = await prisma.visitante.create({
                     data: {
+                        tenant_id,
                         nome,
                         telefone,
                         email,
@@ -61,6 +73,7 @@ export async function submeterMarcacaoPublica(formData: FormData) {
         // 4. Criar o Compromisso
         await prisma.compromisso.create({
             data: {
+                tenant_id,
                 agenda_id,
                 titulo: `Agendamento Web: ${categoria}`,
                 categoria,

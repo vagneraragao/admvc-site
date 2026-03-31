@@ -14,22 +14,33 @@ export default async function GestaoObraFinanceiro() {
         redirect('/membros/dashboard?error=Acesso Negado');
     }
 
+    const membro = await prisma.membro.findUnique({
+        where: { id: session.membroId },
+        select: { tenant_id: true }
+    });
+
+    if (!membro) {
+        redirect('/membros/dashboard?error=Usuário não encontrado');
+    }
+
     // Busca o projeto ou cria um padrão se não existir
     let projeto = await prisma.projetoObra.findFirst({
+        where: { tenant_id: membro.tenant_id },
         include: { etapas: { orderBy: { ordem: 'asc' } } }
     });
 
     if (!projeto) {
         projeto = await prisma.projetoObra.create({
             data: {
+                tenant_id: membro.tenant_id,
                 titulo: "Campanha de Construção: Nossa Sede",
                 descricao: "Acompanhe os passos de fé para a nossa sede na Figueira da Foz.",
                 objetivoFinal: 750000,
                 etapas: {
                     create: [
-                        { nome: "1. Terreno", alvo: 150000, atual: 0, ordem: 1 },
-                        { nome: "2. Estrutura", alvo: 300000, atual: 0, ordem: 2 },
-                        { nome: "3. Acabamentos", alvo: 300000, atual: 0, ordem: 3 }
+                        { tenant_id: membro.tenant_id, nome: "1. Terreno", alvo: 150000, atual: 0, ordem: 1 },
+                        { tenant_id: membro.tenant_id, nome: "2. Estrutura", alvo: 300000, atual: 0, ordem: 2 },
+                        { tenant_id: membro.tenant_id, nome: "3. Acabamentos", alvo: 300000, atual: 0, ordem: 3 }
                     ]
                 }
             },
