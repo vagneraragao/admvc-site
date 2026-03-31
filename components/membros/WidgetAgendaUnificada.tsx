@@ -1,202 +1,206 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { CalendarDays, Users, ChevronDown, X, MapPin, Clock, Info } from "lucide-react";
+import { useState } from 'react'
+import { CalendarDays, Users, X, MapPin, Clock, Info, ChevronRight } from 'lucide-react'
 
-export default function WidgetAgendaUnificada({ eventosIgreja = [], gruposMembro = [], isAdmin }: any) {
-    // ESTADOS
-    const [expandido, setExpandido] = useState(false);
-    const [eventoSelecionado, setEventoSelecionado] = useState<any | null>(null); // Controla o Popup
+export default function WidgetAgendaUnificada({
+    eventosIgreja = [],
+    gruposMembro = [],
+    isAdmin
+}: any) {
+    const [eventoSelecionado, setEventoSelecionado] = useState<any | null>(null)
+    const [verTodos, setVerTodos] = useState(false)
 
-    // 1. UNIR E PADRONIZAR EVENTOS (Agora puxando mais dados para o popup)
     const todosEventos = [
-        ...eventosIgreja.map((evento: any) => ({
-            id: `igreja-${evento.id}`,
-            titulo: evento.nome,
-            data: new Date(evento.data),
+        ...eventosIgreja.map((e: any) => ({
+            id: `igreja-${e.id}`,
+            titulo: e.nome,
+            data: new Date(e.data),
             tipo: 'IGREJA',
-            // Adicione os campos reais do seu Prisma aqui:
-            descricao: evento.descricao || 'Sem informações adicionais registadas para este evento.',
-            local: evento.local || 'Instalações da Igreja',
+            descricao: e.descricao || 'Sem informações adicionais.',
+            local: e.local || 'Instalações da Igreja',
         })),
-        ...gruposMembro.map((grupo: any) => ({
-            id: `grupo-${grupo.id}`,
-            titulo: `Reunião: ${grupo.nome}`,
-            data: grupo.createdAt ? new Date(grupo.createdAt) : new Date(), 
+        ...gruposMembro.map((g: any) => ({
+            id: `grupo-${g.id}`,
+            titulo: g.nome,
+            data: g.createdAt ? new Date(g.createdAt) : new Date(),
             tipo: 'GRUPO',
-            // Adicione os campos reais do seu Prisma aqui:
-            descricao: grupo.descricao || 'Reunião regular do seu grupo/pg.',
-            local: grupo.local || 'Casa do Líder ou Local Habitual',
+            descricao: g.descricao || 'Reunião regular do grupo.',
+            local: g.endereco ? `${g.bairro}, ${g.cidade}` : 'Local habitual',
         }))
-    ];
+    ].sort((a, b) => a.data.getTime() - b.data.getTime())
 
-    // 2. ORDENAR POR DATA
-    todosEventos.sort((a, b) => a.data.getTime() - b.data.getTime());
+    const limite = verTodos ? todosEventos.length : 4
+    const eventosVisiveis = todosEventos.slice(0, limite)
 
-    // 3. LIMITAR E PAGINAR
-    const eventosLimitados = todosEventos.slice(0, 8);
-    const eventosParaMostrar = expandido ? eventosLimitados : eventosLimitados.slice(0, 3);
+    const formatData = (data: Date) => {
+        const hoje = new Date()
+        const amanha = new Date(hoje)
+        amanha.setDate(amanha.getDate() + 1)
+
+        const mesmodia = (a: Date, b: Date) =>
+            a.getDate() === b.getDate() &&
+            a.getMonth() === b.getMonth() &&
+            a.getFullYear() === b.getFullYear()
+
+        if (mesmodia(data, hoje)) return 'Hoje'
+        if (mesmodia(data, amanha)) return 'Amanhã'
+        return data.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+    }
+
+    const diasRestantes = (data: Date) => {
+        const hoje = new Date()
+        hoje.setHours(0, 0, 0, 0)
+        const diff = Math.ceil((data.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+        return diff
+    }
 
     return (
         <>
-            <div className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[2.5rem] shadow-sm flex flex-col h-full animate-in fade-in duration-500 relative">
-                {/* CABEÇALHO DO WIDGET */}
-                <div className="flex items-center gap-4 mb-6">
-                    <CalendarDays size={20} className="text-figueira" />
-                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg">Agenda</h2>
-                    <div className="h-[1px] flex-1 bg-soft"></div>
-                </div>
+            <div className="space-y-2">
+                {eventosVisiveis.length === 0 ? (
+                    <div className="py-10 text-center border-2 border-dashed border-soft rounded-2xl">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">
+                            Nenhum evento programado.
+                        </p>
+                    </div>
+                ) : (
+                    eventosVisiveis.map(item => {
+                        const dias = diasRestantes(item.data)
+                        const isHoje = dias === 0
+                        const isProximo = dias <= 3
 
-                {/* LISTA DE EVENTOS */}
-                <div className="flex flex-col gap-4 flex-1">
-                    {eventosParaMostrar.map((item) => (
-                        <div 
-                            key={item.id}
-                            onClick={() => setEventoSelecionado(item)} // ABRE O POPUP
-                            className="flex items-center gap-4 p-4 rounded-2xl border border-soft bg-bg hover:border-figueira/50 hover:shadow-md cursor-pointer transition-all active:scale-[0.98] group"
-                        >
-                            {/* ÍCONE COM AS CORES */}
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                                item.tipo === 'IGREJA' 
-                                    ? 'bg-figueira/10 text-figueira group-hover:bg-figueira group-hover:text-white' 
-                                    : 'bg-fg/5 text-fg group-hover:bg-fg group-hover:text-bg'
-                            }`}>
-                                {item.tipo === 'IGREJA' ? <CalendarDays size={18} /> : <Users size={18} />}
-                            </div>
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setEventoSelecionado(item)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all text-left group hover:border-figueira/30 active:scale-[0.99]
+                                    ${isHoje ? 'bg-figueira/5 border-figueira/20' : 'bg-bg border-soft'}`}
+                            >
+                                {/* DATA PILL */}
+                                <div className={`shrink-0 w-11 text-center rounded-xl py-1.5 ${isHoje ? 'bg-figueira text-white' : 'bg-bg2 border border-soft text-fg'}`}>
+                                    <span className="block text-[7px] font-black uppercase opacity-70 leading-none">
+                                        {item.data.toLocaleDateString('pt-PT', { month: 'short' })}
+                                    </span>
+                                    <span className="block text-sm font-black italic leading-tight">
+                                        {item.data.toLocaleDateString('pt-PT', { day: '2-digit' })}
+                                    </span>
+                                </div>
 
-                            {/* INFO DO EVENTO */}
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-black text-fg uppercase italic tracking-tight truncate group-hover:text-figueira transition-colors">
-                                    {item.titulo}
-                                </p>
-                                <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-0.5">
-                                    {item.data.toLocaleDateString('pt-PT', { 
-                                        day: '2-digit', month: 'short'
-                                    })} às {item.data.toLocaleTimeString('pt-PT', { 
-                                        hour: '2-digit', minute:'2-digit' 
-                                    })}
-                                </p>
-                            </div>
-                            
-                            {/* TAG CONDICIONAL */}
-                            <div className="shrink-0 hidden sm:block">
-                                <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest border ${
-                                    item.tipo === 'IGREJA' 
-                                        ? 'text-figueira bg-figueira/5 border-figueira/20' 
-                                        : 'text-muted bg-soft border-soft/50'
-                                }`}>
-                                    {item.tipo === 'IGREJA' ? 'Igreja' : 'Grupo'}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                                {/* TÍTULO E HORA */}
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-[11px] font-black uppercase italic tracking-tight truncate leading-none ${isHoje ? 'text-figueira' : 'text-fg group-hover:text-figueira transition-colors'}`}>
+                                        {item.titulo}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
+                                        {formatData(item.data)} · {item.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
 
-                    {todosEventos.length === 0 && (
-                        <div className="py-8 text-center border-2 border-dashed border-soft rounded-[2rem] bg-bg/50">
-                            <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">
-                                Nenhum evento programado.
-                            </p>
-                        </div>
-                    )}
-                </div>
+                                {/* BADGE */}
+                                <div className="shrink-0 flex items-center gap-2">
+                                    {isHoje && (
+                                        <span className="text-[7px] font-black uppercase tracking-widest bg-figueira text-white px-2 py-1 rounded-lg">
+                                            Hoje
+                                        </span>
+                                    )}
+                                    {!isHoje && isProximo && (
+                                        <span className="text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-600 border border-orange-500/20 px-2 py-1 rounded-lg">
+                                            {dias}d
+                                        </span>
+                                    )}
+                                    <span className={`hidden sm:block text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${item.tipo === 'IGREJA' ? 'bg-figueira/5 text-figueira border-figueira/20' : 'bg-soft text-muted border-soft/50'}`}>
+                                        {item.tipo === 'IGREJA' ? 'Igreja' : 'Grupo'}
+                                    </span>
+                                    <ChevronRight size={12} className="text-muted/40 group-hover:text-figueira transition-colors" />
+                                </div>
+                            </button>
+                        )
+                    })
+                )}
 
-                {/* BOTÃO EXPANDIR / COLAPSAR */}
-                {eventosLimitados.length > 3 && (
+                {todosEventos.length > 4 && (
                     <button
-                        onClick={() => setExpandido(!expandido)}
-                        className="mt-6 flex items-center justify-center gap-2 w-full py-4 rounded-2xl border border-soft text-[10px] font-black text-muted uppercase tracking-widest hover:bg-soft hover:text-fg transition-all active:scale-95 group"
+                        onClick={() => setVerTodos(!verTodos)}
+                        className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center justify-center gap-1.5"
                     >
-                        {expandido ? 'Ver Menos' : `Ver Mais (${eventosLimitados.length - 3})`}
-                        <ChevronDown size={14} className={`transition-transform text-muted group-hover:text-fg ${expandido ? 'rotate-180' : ''}`} />
+                        {verTodos ? 'Ver menos' : `Ver mais ${todosEventos.length - 4} eventos`}
+                        <ChevronRight size={11} className={`transition-transform ${verTodos ? 'rotate-90' : ''}`} />
                     </button>
                 )}
             </div>
 
-            {/* POPUP / MODAL DE DETALHES DO EVENTO */}
+            {/* MODAL DE DETALHES */}
             {eventoSelecionado && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    {/* Clique fora do popup para fechar */}
-                    <div className="absolute inset-0" onClick={() => setEventoSelecionado(null)}></div>
-                    
-                    {/* Conteúdo do Popup */}
-                    <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200">
-                        {/* Botão de Fechar */}
-                        <button 
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setEventoSelecionado(null)}
+                >
+                    <div
+                        className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
                             onClick={() => setEventoSelecionado(null)}
-                            className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center bg-soft text-muted hover:bg-red-50 hover:text-red-500 rounded-xl transition-all active:scale-95"
+                            className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center bg-soft text-muted hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
                         >
-                            <X size={16} strokeWidth={3} />
+                            <X size={15} strokeWidth={3} />
                         </button>
 
-                        <div className="space-y-6 mt-2">
-                            {/* Cabeçalho do Popup */}
-                            <div className="flex items-center gap-4 border-b border-soft pb-6">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                    eventoSelecionado.tipo === 'IGREJA' 
-                                        ? 'bg-figueira/10 text-figueira' 
-                                        : 'bg-fg text-bg'
-                                }`}>
-                                    {eventoSelecionado.tipo === 'IGREJA' ? <CalendarDays size={24} /> : <Users size={24} />}
+                        <div className="space-y-5 mt-1">
+                            <div className="flex items-center gap-4 border-b border-soft pb-5">
+                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${eventoSelecionado.tipo === 'IGREJA' ? 'bg-figueira/10 text-figueira' : 'bg-fg text-bg'}`}>
+                                    {eventoSelecionado.tipo === 'IGREJA' ? <CalendarDays size={20} /> : <Users size={20} />}
                                 </div>
                                 <div className="pr-8">
-                                    <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest border inline-block mb-2 ${
-                                        eventoSelecionado.tipo === 'IGREJA' ? 'text-figueira bg-figueira/5 border-figueira/20' : 'text-muted bg-soft border-soft/50'
-                                    }`}>
+                                    <span className={`text-[7px] font-black px-2 py-1 rounded-md uppercase tracking-widest border inline-block mb-1.5 ${eventoSelecionado.tipo === 'IGREJA' ? 'text-figueira bg-figueira/5 border-figueira/20' : 'text-muted bg-soft border-soft/50'}`}>
                                         {eventoSelecionado.tipo === 'IGREJA' ? 'Evento da Igreja' : 'Reunião de Grupo'}
                                     </span>
-                                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-tight">
+                                    <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-tight">
                                         {eventoSelecionado.titulo}
                                     </h3>
                                 </div>
                             </div>
 
-                            {/* Informações Detalhadas */}
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <div className="flex gap-3">
-                                    <Clock size={16} className="text-muted shrink-0 mt-0.5" />
+                                    <Clock size={14} className="text-muted shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Data e Hora</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Data e Hora</p>
                                         <p className="text-sm font-bold text-fg mt-0.5">
-                                            {eventoSelecionado.data.toLocaleDateString('pt-PT', { 
-                                                weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
-                                            })} <br/>
-                                            <span className="text-figueira">
-                                                às {eventoSelecionado.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute:'2-digit' })}
+                                            {eventoSelecionado.data.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                                            <span className="text-figueira block">
+                                                às {eventoSelecionado.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="flex gap-3">
-                                    <MapPin size={16} className="text-muted shrink-0 mt-0.5" />
+                                    <MapPin size={14} className="text-muted shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Localização</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Local</p>
                                         <p className="text-sm font-bold text-fg mt-0.5">{eventoSelecionado.local}</p>
                                     </div>
                                 </div>
-
-                                <div className="flex gap-3 bg-bg border border-soft p-4 rounded-2xl mt-4">
-                                    <Info size={16} className="text-figueira shrink-0 mt-0.5" />
+                                <div className="flex gap-3 bg-bg border border-soft p-4 rounded-2xl">
+                                    <Info size={14} className="text-figueira shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Detalhes</p>
-                                        <p className="text-xs font-medium text-fg mt-1 leading-relaxed">
-                                            {eventoSelecionado.descricao}
-                                        </p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Detalhes</p>
+                                        <p className="text-xs font-medium text-fg mt-1 leading-relaxed">{eventoSelecionado.descricao}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Botão de Ação Opcional */}
-                            <button 
+                            <button
                                 onClick={() => setEventoSelecionado(null)}
-                                className="w-full py-4 mt-2 bg-fg text-bg rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95 shadow-sm"
+                                className="w-full py-3.5 bg-fg text-bg rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95"
                             >
-                                Fechar Detalhes
+                                Fechar
                             </button>
                         </div>
                     </div>
                 </div>
             )}
         </>
-    );
+    )
 }

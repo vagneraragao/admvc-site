@@ -8,6 +8,7 @@ import {
     LayoutGrid, Edit3, ArrowRight, X, Phone, Loader2
 } from 'lucide-react'
 import { buscarEquipaPorDepartamentoId } from '@/actions/admin-actions'
+import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
 
 export default function CardDepartamentoMembro({ depto, membroId, role, podeGerirEscalas }: any) {
     const [expandido, setExpandido] = useState(false)
@@ -97,7 +98,7 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
                                     </div>
                                 ) : (
                                     <div className="px-3 py-1 rounded-full border border-soft bg-bg/50 text-muted text-[8px] font-black uppercase tracking-widest">
-                                        {isGrupo ? 'Célula' : 'Departamento'}
+                                        {isGrupo ? 'Grupo' : 'Departamento'}
                                     </div>
                                 )}
                             </div>

@@ -1,28 +1,35 @@
-import prisma from '@/lib/prisma'
-// Certifique-se que o caminho abaixo aponta para o novo componente do Membro que criámos!
-import MeuPerfilClient from '@/components/membros/MeuPerfilClient'
+// app/membros/perfil/[id]/page.tsx
+import { getTenantClient } from '@/lib/prisma'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
+import MeuPerfilClient from '@/components/membros/MeuPerfilClient'
 
-// Nota: No Next 15, params é uma Promise. Se der erro, remova o await.
-export default async function EditarMeuPerfilPage({ params }: { params: Promise<{ id: string }> }) {
-    const session = await getSessionData();
+export default async function EditarMeuPerfilPage({
+    params
+}: {
+    params: Promise<{ id: string }>
+}) {
+    const session = await getSessionData()
+    if (!session) redirect('/membros/login')
 
-    // Aguarda os parâmetros
-    const { id: idParam } = await params;
-    const idParaEditar = Number(idParam);
+    const { id: idParam } = await params
+    const idParaEditar = Number(idParam)
 
-    if (!session) redirect('/membros/login');
-
-    // SEGURANÇA: Só pode editar se for o próprio ID ou se for ADMIN
-    const podeEditar = session.membroId === idParaEditar || session.role === 'ADMIN';
-
+    // Segurança: só o próprio membro ou ADMIN
+    const podeEditar = session.membroId === idParaEditar || session.role === 'ADMIN'
     if (!podeEditar) {
-        redirect('/membros/dashboard?error=Não tem permissão para editar este perfil');
+        redirect('/membros/dashboard?error=Sem permissão para editar este perfil')
     }
 
+    const headersList = await headers()
+    const tenantIdStr = headersList.get('x-tenant-id')
+    if (!tenantIdStr) redirect('/membros/login?error=Igreja não identificada.')
+
+    const db = getTenantClient(Number(tenantIdStr))
+
     const [membro, escolaridades] = await Promise.all([
-        prisma.membro.findUnique({
+        db.membro.findUnique({
             where: { id: idParaEditar },
             include: {
                 ministerios: { include: { departamento: true } },
@@ -31,10 +38,10 @@ export default async function EditarMeuPerfilPage({ params }: { params: Promise<
                 familia: true,
             }
         }),
-        prisma.escolaridade.findMany({ orderBy: { id: 'asc' } }),
-    ]);
+        db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
+    ])
 
-    if (!membro) redirect('/membros/dashboard');
+    if (!membro) redirect('/membros/dashboard')
 
     return (
         <div className="bg-bg min-h-screen pt-10">
@@ -43,5 +50,5 @@ export default async function EditarMeuPerfilPage({ params }: { params: Promise<
                 escolaridades={escolaridades}
             />
         </div>
-    );
+    )
 }

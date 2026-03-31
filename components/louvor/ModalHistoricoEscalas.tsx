@@ -20,13 +20,14 @@ export default function ModalHistoricoEscalas({ departamentoId }: { departamento
 
     return (
         <>
+            {/* Tabela de Membros 
             <button
                 onClick={abrirHistorico}
                 className="flex items-center gap-2 bg-bg border border-soft hover:border-figueira/40 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-all shadow-sm"
             >
                 <BarChart3 size={14} /> Relatório de Escalas
             </button>
-
+            */}
             {isOpen && (
                 <Portal>
                     <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">

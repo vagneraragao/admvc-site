@@ -2,258 +2,241 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link' // 👈 Importar o Link do Next.js
+import Link from 'next/link'
 import {
     Wallet, Eye, EyeOff, Coffee, Plus, RefreshCw,
-    Euro, Loader2, CheckCircle2, X, Check, Utensils, Receipt // 👈 Novos ícones
+    Euro, Loader2, CheckCircle2, X, Check, Utensils
 } from 'lucide-react'
 import ModalHistoricoCantina from '@/components/financeiro/ModalHistoricoCantina'
 import { solicitarSaldoCantinaAction } from '@/actions/financeiro-actions'
 
-export default function CardWalletCantina({ membro, saldoLoyverse }: { membro: any, saldoLoyverse?: number }) {
+export default function CardWalletCantina({
+    membro,
+    saldoLoyverse
+}: {
+    membro: any
+    saldoLoyverse?: number
+}) {
     const router = useRouter()
-
-    // ESTADOS DO CARTÃO
-    const [showBalance, setShowBalance] = useState(false)
-    const [isRefreshing, setIsRefreshing] = useState(false)
     const saldo = saldoLoyverse ?? 0
 
-    // ESTADOS DO MODAL DE CARREGAMENTO
+    const [mostrar, setMostrar] = useState(false)
+    const [refreshing, setRefreshing] = useState(false)
     const [aberto, setAberto] = useState(false)
     const [loading, setLoading] = useState(false)
     const [sucesso, setSucesso] = useState(false)
-    const [valorSelecionado, setValorSelecionado] = useState<number | string>(10)
-    const [isCustom, setIsCustom] = useState(false)
+    const [valor, setValor] = useState<number | string>(10)
+    const [custom, setCustom] = useState(false)
 
-    const opcoesPadrao = [5, 10, 20]
+    const opcoes = [5, 10, 20]
 
-    // --- FUNÇÕES DE AÇÃO ---
-
-    const handleRefreshSaldo = async () => {
-        setIsRefreshing(true)
+    const handleRefresh = () => {
+        setRefreshing(true)
         router.refresh()
-        setTimeout(() => setIsRefreshing(false), 1500)
-    }
-
-    const handleCaixaClick = (val: number) => {
-        setValorSelecionado(val)
-        setIsCustom(false)
-    }
-
-    const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setValorSelecionado(e.target.value)
-        setIsCustom(true)
+        setTimeout(() => setRefreshing(false), 1500)
     }
 
     async function handleSubmit(formData: FormData) {
-        if (!valorSelecionado || Number(valorSelecionado) <= 0) {
-            alert("Por favor, insira um valor válido.")
-            return
-        }
-
+        if (!valor || Number(valor) <= 0) { alert('Valor inválido.'); return }
         setLoading(true)
         const res = await solicitarSaldoCantinaAction(formData)
-
         if (res.ok) {
             setSucesso(true)
-            setTimeout(() => {
-                setAberto(false)
-                setSucesso(false)
-                setValorSelecionado(10)
-                setIsCustom(false)
-            }, 3000)
-        } else {
-            alert(res.error)
-        }
+            setTimeout(() => { setAberto(false); setSucesso(false); setValor(10); setCustom(false) }, 3000)
+        } else { alert(res.error) }
         setLoading(false)
     }
 
     return (
         <>
-            <div className="bg-fg text-bg p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group transition-all hover:shadow-figueira/10 hover:-translate-y-1 duration-300 flex flex-col h-full">
+            {/* CARD PRINCIPAL */}
+            <div className="bg-fg text-bg rounded-[2.5rem] p-7 flex flex-col gap-6 relative overflow-hidden shadow-xl">
 
-                {/* Elementos Decorativos de Fundo */}
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-figueira opacity-10 rounded-full blur-3xl group-hover:opacity-20 group-hover:scale-110 transition-all duration-700"></div>
-                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
+                {/* Detalhe decorativo subtil */}
+                <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/5 rounded-full" />
+                <div className="absolute -left-4 -bottom-6 w-24 h-24 bg-figueira/10 rounded-full" />
 
-                <div className="flex flex-col h-full justify-between space-y-8 relative z-10">
-
-                    {/* CABEÇALHO DO CARTÃO */}
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            {/* 👇 Nova versão com hover (group/wallet) 👇 */}
-                            <div className="p-2.5 bg-bg/10 hover:bg-figueira rounded-2xl backdrop-blur-md border border-white/5 shadow-inner transition-all duration-300 group/wallet cursor-default">
-                                <Wallet size={16} className="text-figueira group-hover/wallet:text-white group-hover/wallet:scale-110 transition-all duration-300" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/50">
-                                Saldo Cantina
-                            </span>
+                {/* TOPO */}
+                <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                            <Wallet size={15} className="text-figueira" />
                         </div>
-
-                        {/* CONTROLES: Sincronizar & Olho */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleRefreshSaldo}
-                                disabled={isRefreshing}
-                                title="Sincronizar Saldo"
-                                className="p-3 bg-white/5 hover:bg-figueira hover:text-white rounded-2xl transition-all duration-300 active:scale-95 text-white/40 border border-white/5 disabled:opacity-50"
-                            >
-                                <RefreshCw size={16} className={isRefreshing ? 'animate-spin text-white' : ''} />
-                            </button>
-
-                            <button
-                                onClick={() => setShowBalance(!showBalance)}
-                                title={showBalance ? "Ocultar Saldo" : "Mostrar Saldo"}
-                                className="p-3 bg-white/5 hover:bg-figueira hover:text-white rounded-2xl transition-all duration-300 active:scale-95 text-white/40 border border-white/5"
-                            >
-                                {showBalance ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white/50">
+                            Cantina
+                        </span>
                     </div>
-
-                    {/* ZONA DO VALOR CENTRAL */}
-                    <div className="space-y-1 py-2">
-                        <div className="flex items-baseline gap-2">
-                            <h2 className={`text-5xl font-black italic tracking-tighter transition-all duration-300 ${!showBalance && "translate-y-1 opacity-80 tracking-widest"}`}>
-                                {showBalance ? (
-                                    new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(saldo)
-                                ) : (
-                                    "••••••"
-                                )}
-                            </h2>
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-figueira flex items-center gap-2 mt-2">
-                            <Coffee size={12} /> Disponível para consumo
-                        </p>
-                    </div>
-
-                    {/* ========================================================= */}
-                    {/* NOVO RODAPÉ - ESTILO APP FINANCEIRA                       */}
-                    {/* ========================================================= */}
-                    <div className="pt-6 border-t border-white/10 flex justify-between items-start gap-2 w-full z-20 relative">
-
-                        {/* 1. BOTÃO CARREGAR */}
-                        <button onClick={() => setAberto(true)} className="flex flex-col items-center gap-2 group/btn flex-1 cursor-pointer">
-                            <div className="w-12 h-12 bg-figueira/20 text-figueira rounded-[1rem] flex items-center justify-center group-hover/btn:bg-figueira group-hover/btn:text-white transition-all duration-300 shadow-inner group-active/btn:scale-95">
-                                <Plus size={20} />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover/btn:text-white transition-colors">Carregar</span>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            className="w-8 h-8 bg-white/8 hover:bg-white/15 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
+                        >
+                            <RefreshCw size={13} className={`text-white/60 ${refreshing ? 'animate-spin' : ''}`} />
                         </button>
-
-                        {/* 2. BOTÃO MENU CANTINA */}
-                        <Link href="/departamentos/cantina/menu" className="flex flex-col items-center gap-2 group/btn flex-1 cursor-pointer">
-                            <div className="w-12 h-12 bg-white/5 text-white/70 rounded-[1rem] flex items-center justify-center group-hover/btn:bg-white/20 group-hover/btn:text-white transition-all duration-300 border border-white/5 group-active/btn:scale-95">
-                                <Utensils size={20} />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover/btn:text-white transition-colors">Menu</span>
-                        </Link>
-
-                        {/* 3. BOTÃO HISTÓRICO */}
-                        <div className="flex flex-col items-center flex-1 w-full">
-                            <ModalHistoricoCantina loyverseId={membro?.loyverse_id} />
-                        </div>
+                        <button
+                            onClick={() => setMostrar(!mostrar)}
+                            className="w-8 h-8 bg-white/8 hover:bg-white/15 rounded-xl flex items-center justify-center transition-all"
+                        >
+                            {mostrar ? <EyeOff size={13} className="text-white/60" /> : <Eye size={13} className="text-white/60" />}
+                        </button>
                     </div>
+                </div>
 
+                {/* SALDO */}
+                <div className="relative z-10 space-y-1">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/40">
+                        Saldo disponível
+                    </p>
+                    <p className="text-4xl font-black italic tracking-tighter leading-none">
+                        {mostrar
+                            ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(saldo)
+                            : '••••••'
+                        }
+                    </p>
+                </div>
+
+                {/* AÇÕES */}
+                <div className="grid grid-cols-3 gap-2 relative z-10 pt-2 border-t border-white/10">
+                    <AcaoBtn
+                        icon={<Plus size={16} />}
+                        label="Carregar"
+                        onClick={() => setAberto(true)}
+                        destaque
+                    />
+                    <Link href="/departamentos/cantina/menu" className="flex flex-col items-center gap-2 group">
+                        <div className="w-10 h-10 bg-white/8 hover:bg-white/15 rounded-2xl flex items-center justify-center transition-all group-active:scale-95">
+                            <Utensils size={16} className="text-white/70" />
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70 transition-colors">
+                            Menu
+                        </span>
+                    </Link>
+                    <div className="flex flex-col items-center gap-2">
+                        <ModalHistoricoCantina loyverseId={membro?.loyverse_id} />
+                    </div>
                 </div>
             </div>
 
-            {/* MODAL DE CARREGAMENTO (Ocultado aqui para brevidade, mas mantenha o código do modal que estava na resposta anterior exatamente igual!) */}
+            {/* MODAL DE CARREGAMENTO */}
             {aberto && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/80 backdrop-blur-md animate-in fade-in duration-200">
-                    {/* ... Restante do código do Modal permanece igual ... */}
-                    <div className="bg-bg2 border border-soft w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        {/* Cabeçalho do Modal */}
-                        <div className="flex justify-between items-center p-6 border-b border-soft">
-                            <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
-                                <Coffee className="text-figueira" /> Adicionar Saldo
-                            </h3>
-                            <button onClick={() => setAberto(false)} className="text-muted hover:text-red-500 bg-soft/50 hover:bg-soft p-2 rounded-xl transition-all">
-                                <X size={20} />
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setAberto(false)}
+                >
+                    <div
+                        className="bg-bg w-full max-w-sm rounded-[2.5rem] border border-soft shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* HEADER */}
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-soft">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-figueira/10 text-figueira rounded-xl flex items-center justify-center">
+                                    <Coffee size={16} />
+                                </div>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">
+                                    Carregar Saldo
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setAberto(false)}
+                                className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
+                            >
+                                <X size={15} />
                             </button>
                         </div>
 
                         {sucesso ? (
-                            <div className="p-8 text-center space-y-4 animate-in zoom-in-50 duration-500">
-                                <CheckCircle2 size={56} className="text-green-500 mx-auto" strokeWidth={1.5} />
+                            <div className="px-6 py-12 text-center space-y-4 animate-in zoom-in-95 duration-300">
+                                <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto">
+                                    <CheckCircle2 size={28} className="text-emerald-500" />
+                                </div>
                                 <div>
-                                    <h4 className="text-xl font-black italic text-fg uppercase">Pedido Enviado!</h4>
-                                    <p className="text-xs text-muted mt-2 leading-relaxed">O tesoureiro irá validar o pagamento e o saldo ficará disponível em breve.</p>
+                                    <h4 className="text-base font-black uppercase italic text-fg">Pedido Enviado!</h4>
+                                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-2 leading-relaxed">
+                                        O tesoureiro irá validar e o saldo ficará disponível em breve.
+                                    </p>
                                 </div>
                             </div>
                         ) : (
-                            <form action={handleSubmit} className="p-6 space-y-6">
+                            <form action={handleSubmit} className="p-6 space-y-5">
                                 <input type="hidden" name="membro_id" value={membro?.id} />
-                                <input type="hidden" name="valor" value={valorSelecionado} />
+                                <input type="hidden" name="valor" value={valor} />
 
-                                <div>
-                                    <label className="text-[9px] font-black uppercase text-muted ml-2 tracking-widest">Selecione o Valor</label>
-                                    <div className="grid grid-cols-3 gap-3 mt-3">
-                                        {opcoesPadrao.map(val => {
-                                            const isAtivo = !isCustom && Number(valorSelecionado) === val;
+                                {/* VALORES RÁPIDOS */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-muted">
+                                        Valor
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {opcoes.map(op => {
+                                            const ativo = !custom && Number(valor) === op
                                             return (
                                                 <button
-                                                    key={val}
+                                                    key={op}
                                                     type="button"
-                                                    onClick={() => handleCaixaClick(val)}
-                                                    className={`
-                                                        relative p-4 rounded-xl border-2 font-black text-lg transition-all active:scale-95 flex flex-col items-center justify-center
-                                                        ${isAtivo
-                                                            ? 'bg-figueira border-figueira text-white scale-105 shadow-lg shadow-figueira/20 z-10'
-                                                            : 'bg-bg border-soft text-muted hover:border-figueira/40 hover:text-fg'
-                                                        }
-                                                    `}
+                                                    onClick={() => { setValor(op); setCustom(false) }}
+                                                    className={`py-3.5 rounded-2xl font-black text-base border-2 transition-all active:scale-95 relative
+                                                        ${ativo
+                                                            ? 'bg-figueira border-figueira text-white shadow-md'
+                                                            : 'bg-bg2 border-soft text-muted hover:border-figueira/30 hover:text-fg'
+                                                        }`}
                                                 >
-                                                    {isAtivo && <Check size={14} className="absolute top-1.5 right-1.5 opacity-60" strokeWidth={4} />}
-                                                    €{val}
+                                                    {ativo && (
+                                                        <Check size={10} className="absolute top-1.5 right-1.5 opacity-70" strokeWidth={4} />
+                                                    )}
+                                                    €{op}
                                                 </button>
                                             )
                                         })}
                                     </div>
+                                </div>
 
-                                    <div className="flex items-center gap-3 py-4">
-                                        <div className="h-[1px] flex-1 bg-soft"></div>
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-muted">Ou Customizado</span>
-                                        <div className="h-[1px] flex-1 bg-soft"></div>
-                                    </div>
-
+                                {/* VALOR CUSTOMIZADO */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-muted">
+                                        Outro valor
+                                    </label>
                                     <div className="relative">
-                                        <Euro size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isCustom ? 'text-figueira' : 'text-muted'}`} />
+                                        <Euro size={14} className={`absolute left-4 top-1/2 -translate-y-1/2 ${custom ? 'text-figueira' : 'text-muted'}`} />
                                         <input
                                             type="number"
                                             min="1"
                                             step="0.01"
                                             placeholder="Ex: 15.00"
-                                            value={isCustom ? valorSelecionado : ''}
-                                            onChange={handleCustomChange}
-                                            className={`
-                                                w-full bg-bg border-2 rounded-xl pl-12 pr-4 py-4 text-sm font-black outline-none transition-all
-                                                ${isCustom ? 'border-figueira text-fg ring-4 ring-figueira/10' : 'border-soft text-fg focus:border-figueira'}
-                                            `}
+                                            value={custom ? valor : ''}
+                                            onChange={e => { setValor(e.target.value); setCustom(true) }}
+                                            className={`w-full bg-bg2 border-2 rounded-2xl pl-10 pr-4 py-3.5 text-sm font-black outline-none transition-all
+                                                ${custom ? 'border-figueira ring-4 ring-figueira/8' : 'border-soft focus:border-figueira'}`}
                                         />
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-[9px] font-black uppercase text-muted ml-2 tracking-widest">Método de Envio</label>
-                                    <select name="forma_pagamento" required className="w-full bg-bg border-2 border-soft p-4 rounded-xl text-xs font-bold outline-none focus:border-figueira mt-2 transition-colors appearance-none cursor-pointer">
+                                {/* MÉTODO */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-muted">
+                                        Método de pagamento
+                                    </label>
+                                    <select
+                                        name="forma_pagamento"
+                                        required
+                                        className="w-full bg-bg2 border-2 border-soft rounded-2xl px-4 py-3.5 text-sm font-bold outline-none focus:border-figueira transition-all appearance-none cursor-pointer"
+                                    >
                                         <option value="MBWAY">MB WAY</option>
                                         <option value="Transferencia">Transferência Bancária</option>
-                                        <option value="Dinheiro">Dinheiro (Entregue em Mão)</option>
+                                        <option value="Dinheiro">Dinheiro (Em mão)</option>
                                     </select>
                                 </div>
 
                                 <button
-                                    disabled={loading || !valorSelecionado || Number(valorSelecionado) <= 0}
-                                    className="w-full bg-fg text-bg py-5 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-figueira hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95 shadow-xl"
+                                    type="submit"
+                                    disabled={loading || !valor || Number(valor) <= 0}
+                                    className="w-full bg-fg text-bg py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-figueira transition-all flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 shadow-lg"
                                 >
-                                    {loading ? (
-                                        <Loader2 className="animate-spin" size={18} />
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 size={16} className="group-hover:scale-110 transition-transform" />
-                                            Confirmar • €{valorSelecionado || '0'}
-                                        </>
-                                    )}
+                                    {loading
+                                        ? <Loader2 size={16} className="animate-spin" />
+                                        : <><CheckCircle2 size={15} /> Confirmar · €{valor || '0'}</>
+                                    }
                                 </button>
                             </form>
                         )}
@@ -261,5 +244,29 @@ export default function CardWalletCantina({ membro, saldoLoyverse }: { membro: a
                 </div>
             )}
         </>
+    )
+}
+
+// ── BOTÃO DE AÇÃO ─────────────────────────────────────────────────────────────
+function AcaoBtn({ icon, label, onClick, destaque }: {
+    icon: React.ReactNode
+    label: string
+    onClick: () => void
+    destaque?: boolean
+}) {
+    return (
+        <button onClick={onClick} className="flex flex-col items-center gap-2 group">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-active:scale-95
+                ${destaque
+                    ? 'bg-figueira/20 text-figueira hover:bg-figueira hover:text-white'
+                    : 'bg-white/8 text-white/70 hover:bg-white/15'
+                }`}>
+                {icon}
+            </div>
+            <span className={`text-[8px] font-black uppercase tracking-widest transition-colors
+                ${destaque ? 'text-figueira/70 group-hover:text-figueira' : 'text-white/40 group-hover:text-white/70'}`}>
+                {label}
+            </span>
+        </button>
     )
 }
