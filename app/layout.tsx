@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import SiteHeader from "@/components/ui/site-header";
+import SiteFooter from "@/components/ui/site-footer";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} | ${SITE_TAGLINE}`,

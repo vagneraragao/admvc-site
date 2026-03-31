@@ -1,6 +1,5 @@
 // app/admin/membros/page.tsx
 import prisma from '@/lib/prisma'
-import Breadcrumbs from '@/components/Breadcrumbs';
 import MembrosListClient from '@/components/admin/MembrosListClient'; // Ajusta o caminho se necessário
 
 export const dynamic = 'force-dynamic'

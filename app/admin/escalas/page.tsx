@@ -35,7 +35,20 @@ export default async function EscalasPage() {
     const membrosComFuncoes = await prisma.membro.findMany({
         where: { status: 'ATIVO' },
         include: {
-            ministerios: { select: { departamento_id: true, funcao: true } },
+            ministerios: {
+                select: {
+                    departamento_id: true,
+                    funcoes: {
+                        select: {
+                            funcao: {
+                                select: {
+                                    nome: true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             departamentos_liderados: { select: { id: true } } // Garantimos que traz as lideranças também
         },
         orderBy: { first_name: "asc" }

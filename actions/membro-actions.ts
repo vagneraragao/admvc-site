@@ -1,10 +1,29 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+import prisma, { getTenantClient } from '@/lib/prisma'
+import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs' // Recomendo bcryptjs para evitar problemas de compilação em Edge Runtime
 import { put } from '@vercel/blob' // <-- Importação do Blob Storage
 import { getSessionData } from '@/lib/auth-utils'
+
+// ============================================================================
+// 🛠️ FUNÇÕES AUXILIARES PARA MULTITENANT
+// ============================================================================
+async function getDb() {
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+    if (!tenantId) throw new Error("Sessão inválida. Igreja não identificada.");
+    return getTenantClient(Number(tenantId));
+}
+
+async function getContext() {
+    const headersList = await headers();
+    const tenantId = Number(headersList.get('x-tenant-id'));
+    if (!tenantId) throw new Error("Igreja não identificada.");
+    const db = getTenantClient(tenantId);
+    return { db, tenantId };
+}
 
 /*
 export async function atualizarDadosMembroAction(id: number, formData: FormData) {
@@ -117,53 +136,70 @@ export async function definirResponsavelFamilia(membroId: number, familiaId: num
 
 export async function cadastrarMembroCompleto(formData: FormData) {
     try {
+        // 1. Instanciamos o banco de dados blindado (Multitenant)
+        const db = await getDb();
+
         const passwordRaw = (formData.get('password') as string) || "membro123";
         const hashedPassword = await bcrypt.hash(passwordRaw, 10);
 
+        // Captura de IDs estrangeiros
         const escolaridade_id = formData.get('escolaridade_id') ? Number(formData.get('escolaridade_id')) : null;
+        const congregacao_id = formData.get('congregacao_id') ? Number(formData.get('congregacao_id')) : null;
+
         const conversion_date = formData.get('conversion_date') ? new Date(formData.get('conversion_date') as string) : null;
 
         // VERIFICAÇÃO DE CHECKBOXES (HTML envia "on" quando marcado)
-        const isFamilyAdmin = formData.get('is_family_admin') === 'on' || formData.get('is_family_admin') === 'Sim';
-        const hasChildren = formData.get('has_children') === 'on' || formData.get('has_children') === 'Sim';
-        const spouseChristian = formData.get('spouse_christian') === 'on' || formData.get('spouse_christian') === 'Sim';
+        const isFamilyAdmin = formData.get('is_family_admin') === 'on' || formData.get('is_family_admin') === 'true' || formData.get('is_family_admin') === 'Sim';
+        const hasChildren = formData.get('has_children') === 'on' || formData.get('has_children') === 'true' || formData.get('has_children') === 'Sim';
+        const spouseChristian = formData.get('spouse_christian') === 'on' || formData.get('spouse_christian') === 'true' || formData.get('spouse_christian') === 'Sim';
         const isActive = formData.get('is_active') === 'on' || formData.get('is_active') === 'true' || formData.get('is_active') === 'Sim';
 
-        const novoMembroData = {
-            first_name: formData.get('first_name') as string,
-            last_name: formData.get('last_name') as string,
-            email: (formData.get('email') as string).toLowerCase().trim(),
-            password: hashedPassword,
-            gender: formData.get('gender') as string,
-            birthdate: formData.get('birthdate') ? new Date(formData.get('birthdate') as string) : null,
-            phone_1: formData.get('phone_1') as string,
-            address_1: formData.get('address_1') as string,
-            country: (formData.get('country') as string) || "Portugal",
-            spouse_name: (formData.get('spouse_name') as string) || null,
-            spouse_christian: spouseChristian,
-            has_children: hasChildren,
-            children_number: parseInt(formData.get('children_number') as string || "0"),
-            is_family_admin: isFamilyAdmin,
-            lang: "pt",
+        // 2. Gravação no banco de dados
+        const novo = await db.membro.create({
+            data: {
+                first_name: formData.get('first_name') as string,
+                last_name: formData.get('last_name') as string,
+                email: (formData.get('email') as string).toLowerCase().trim(),
+                password: hashedPassword,
+                gender: formData.get('gender') as string,
+                birthdate: formData.get('birthdate') ? new Date(formData.get('birthdate') as string) : null,
+                phone_1: formData.get('phone_1') as string,
+                address_1: formData.get('address_1') as string,
+                country: (formData.get('country') as string) || "Portugal",
+                spouse_name: (formData.get('spouse_name') as string) || null,
+                spouse_christian: spouseChristian,
+                has_children: hasChildren,
+                children_number: parseInt(formData.get('children_number') as string || "0"),
+                is_family_admin: isFamilyAdmin,
+                lang: "pt",
+                status: (formData.get('status') as string) || "ATIVO",
+                role: (formData.get('role') as any) || "USER",
+                is_active: isActive !== undefined ? isActive : true,
+                conversion_date: conversion_date,
 
-            // CORREÇÃO 1: Lê o Status e a Role dinamicamente do formulário!
-            status: (formData.get('status') as string) || "ATIVO",
-            role: (formData.get('role') as any) || "USER",
-            is_active: isActive !== undefined ? isActive : true,
+                // --- A CORREÇÃO DO TYPESCRIPT ESTÁ AQUI ---
+                // Usamos o ID diretamente em vez de 'connect' para satisfazer o UncheckedCreateInput
+                escolaridade_id: escolaridade_id,
 
-            escolaridade_id: escolaridade_id,
-            conversion_date: conversion_date,
-        };
+                // Já deixei preparado para gravar a congregação (Filial) se ela vier no form
+                congregacao_id: congregacao_id,
 
-        const novo = await prisma.membro.create({
-            data: novoMembroData
+                // MULTITENANT: Obrigatório para o TypeScript, a extensão substitui pelo ID real!
+                tenant_id: 0
+            }
         });
 
         revalidatePath('/admin/membros');
         return { sucesso: true, id: novo.id };
     } catch (error: any) {
         console.error("Erro ao cadastrar:", error);
-        return { erro: error.message };
+
+        // Tratamento de erro amigável se o email já existir
+        if (error.code === 'P2002') {
+            return { erro: "Este e-mail já está a ser utilizado por outro membro." };
+        }
+
+        return { erro: error.message || "Erro interno ao guardar o membro." };
     }
 }
 
@@ -432,23 +468,83 @@ export async function analisarCSV(formData: FormData) {
     return { resultados };
 }
 
-// 3. CONFIRMAR: Gravação em massa
+// --- CONFIRMAR E GRAVAR COM LOOKUP DE CONGREGAÇÃO ---
 export async function confirmarImportacao(membrosValidos: any[]) {
-    const session = await getSessionData();
-    if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' };
-
     try {
-        const dataToInsert = membrosValidos.map(m => ({
-            ...m.dados,
-            is_active: true,
-            termo_aceite: false
-        }));
+        const { db, tenantId } = await getContext();
+        const passwordPadrao = await bcrypt.hash("admvc123", 10);
 
-        await prisma.membro.createMany({ data: dataToInsert });
+        // 1. Buscar todas as congregações desta igreja para mapear Nome -> ID
+        const congregacoesExistentes = await db.congregacao.findMany({
+            select: { id: true, nome: true }
+        });
+
+        // Criar um mapa simples: { "Sede": 1, "Porto": 5, ... }
+        // Usamos toLowerCase() para evitar erros de digitação (ex: "sede" vs "Sede")
+        const mapaCongregacoes = new Map(
+            congregacoesExistentes.map(c => [c.nome.toLowerCase().trim(), c.id])
+        );
+
+        // 2. Preparar os dados para o Prisma
+        const criacoes = membrosValidos.map(item => {
+            const d = item.dados;
+
+            // Tentar encontrar o ID da congregação pelo nome enviado no CSV
+            const nomeNoCsv = d.congregacao_nome?.toLowerCase().trim();
+            const congregacaoIdEncontrado = nomeNoCsv ? mapaCongregacoes.get(nomeNoCsv) : null;
+
+            return {
+                first_name: d.first_name,
+                last_name: d.last_name,
+                email: d.email,
+                password: passwordPadrao,
+                phone_1: d.phone_1 || "",
+                id_city: d.id_city || "",
+                church_role: d.church_role || "Membro",
+                status: d.status || "ATIVO",
+                birthdate: d.birthdate ? new Date(d.birthdate) : null,
+
+                // Se achou a congregação, usa o ID. Se não, fica null (Sede/Geral)
+                congregacao_id: congregacaoIdEncontrado,
+
+                tenant_id: 0, // A extensão Multitenant trata do resto
+                is_active: true
+            };
+        });
+
+        // 3. Gravação em massa (Transaction implicita)
+        await db.membro.createMany({
+            data: criacoes as any,
+            skipDuplicates: true // Segurança extra
+        });
 
         revalidatePath('/admin/membros');
-        return { ok: true, contagem: dataToInsert.length };
-    } catch (error: any) {
-        return { error: 'Erro na gravação: ' + error.message };
+        return { ok: true, message: `${membrosValidos.length} membros importados com sucesso!` };
+
+    } catch (e) {
+        console.error("ERRO IMPORTAÇÃO:", e);
+        return { error: "Erro crítico ao gravar membros. Verifique se os dados do CSV são válidos." };
     }
+}
+
+
+export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: number) {
+    const db = await getDb();
+
+    // Procura integrantes que tenham a função selecionada vinculada
+    const qualificados = await db.integranteDepartamento.findMany({
+        where: {
+            departamento_id: departamentoId,
+            funcoes: {
+                some: { funcao_id: funcaoId }
+            }
+        },
+        include: {
+            membro: {
+                select: { id: true, first_name: true, last_name: true, avatar_file: true }
+            }
+        }
+    });
+
+    return qualificados.map(q => q.membro);
 }

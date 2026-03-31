@@ -79,19 +79,19 @@ export default async function AdminDashboard() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700">
 
-{/* BREADCRUMB PADRONIZADO */}
+            {/* BREADCRUMB PADRONIZADO */}
             <Breadcrumb items={[
-                { 
-                    label: "Dashboard Global", 
-                    href: "/membros/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: "Dashboard Global",
+                    href: "/membros/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Administração", 
-                    hideOnMobile: true 
+                {
+                    label: "Administração",
+                    hideOnMobile: true
                 },
-                { 
-                    label: "Painel Administrativo" 
+                {
+                    label: "Painel Administrativo"
                 }
             ]} />
             {/* --- CABEÇALHO LIMPO E COMPACTO --- */}
@@ -142,7 +142,7 @@ export default async function AdminDashboard() {
                 <MenuPill title="Membros" href="/admin/membros" icon={<Users size={14} />} />
                 <MenuPill title="Famílias" href="/admin/familias" icon={<Home size={14} />} />
                 <MenuPill title="Departamentos" href="/admin/configuracoes" icon={<HeartHandshake size={14} />} />
-                <MenuPill title="Estatísticas" href="/admin/relatorios" icon={<BarChart3 size={14} />} />
+                <MenuPill title="Relatórios" href="/admin/relatorios" icon={<BarChart3 size={14} />} />
             </nav>
 
             {/* --- KPI'S (ESTATÍSTICAS BÁSICAS) --- */}

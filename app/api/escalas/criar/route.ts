@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma'
 export async function POST(request: Request) {
     try {
         const body = await request.json()
-        const { eventoId, membroId, departamentoId, funcao, horario } = body
+        const { eventoId, membroId, departamentoId, funcao, funcaoId, horario } = body
 
         // Validação básica
         if (!eventoId || !membroId || !departamentoId || !funcao) {
@@ -19,7 +19,9 @@ export async function POST(request: Request) {
                 membro_id: Number(membroId),
                 departamento_id: Number(departamentoId),
                 funcao: String(funcao),
+                funcao_id: funcaoId ? Number(funcaoId) : null,
                 horario: String(horario),
+                tenant_id: 0,
             },
             include: {
                 evento: true,

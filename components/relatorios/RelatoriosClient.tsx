@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import {
     ArrowLeft, ChevronRight, BarChart3, Users, Briefcase,
-    Cake, Heart, Droplet, MapPin, ShieldCheck,
+    Cake, Heart, Droplet, MapPin, ShieldCheck, Calendar,
     X, PieChart, TrendingUp, FileSignature, ChevronDown
 } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -155,7 +155,8 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
         { id: 'cidade', label: 'Distribuição Cidades', icon: <MapPin size={20} /> },
         { id: 'bairro', label: 'Zonas e Bairros', icon: <MapPin size={20} /> },
         { id: 'gdpr', label: 'Compliance (GDPR)', icon: <FileSignature size={20} /> },
-        { id: 'permissoes', label: 'Níveis Sistema', icon: <ShieldCheck size={20} /> },
+        { id: 'permissoes', label: 'Níveis de Acesso', icon: <ShieldCheck size={20} /> },
+        { id: 'escalas', label: 'Escalas', icon: <Calendar size={20} /> },
     ];
 
     const relatorioAtual = relatoriosDisponiveis.find(r => r.id === relatorioAtivo);

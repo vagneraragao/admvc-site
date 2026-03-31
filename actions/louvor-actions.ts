@@ -43,7 +43,15 @@ export async function buscarMusicasCatalogo(busca: string = '') {
 // 3. ADICIONAR MÚSICA AO EVENTO (Cria a ligação e define a ordem)
 export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: string, tomTocado: string) {
     try {
-        // Primeiro, descobre qual é a última ordem para colocar a nova no final
+        // 1. Descobrir o tenant_id do evento para manter a integridade multitenant
+        const evento = await prisma.evento.findUnique({
+            where: { id: eventoId },
+            select: { tenant_id: true }
+        });
+
+        if (!evento) return { success: false, error: 'Evento não encontrado.' };
+
+        // 2. Descobrir qual é a última ordem para colocar a nova no final
         const ultimaMusica = await prisma.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
@@ -55,6 +63,7 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
             data: {
                 evento_id: eventoId,
                 musica_id: musicaId,
+                tenant_id: evento.tenant_id,
                 tom_tocado: tomTocado,
                 ordem: proximaOrdem
             }
@@ -125,18 +134,27 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
             });
         }
 
-        // 2. Define a ordem (coloca no final da lista)
+        // 2. Descobrir o tenant_id do evento
+        const eventoReq = await prisma.evento.findUnique({
+            where: { id: eventoId },
+            select: { tenant_id: true }
+        });
+
+        if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
+
+        // 3. Define a ordem (coloca no final da lista)
         const ultimaMusica = await prisma.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
         });
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
 
-        // 3. Salva a música na escala do culto
+        // 4. Salva a música na escala do culto
         const novoItem = await prisma.repertorioEvento.create({
             data: {
                 evento_id: eventoId,
                 musica_id: musica.id,
+                tenant_id: eventoReq.tenant_id,
                 tom_tocado: tom,
                 ordem: proximaOrdem
             }
@@ -194,6 +212,13 @@ export async function buscarMusicasLocalmente(busca: string) {
 // 3. Adiciona a música na escala usando o ID do nosso banco
 export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: string, tom: string) {
     try {
+        const eventoReq = await prisma.evento.findUnique({
+            where: { id: eventoId },
+            select: { tenant_id: true }
+        });
+
+        if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
+
         const ultimaMusica = await prisma.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
@@ -201,7 +226,13 @@ export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: s
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
 
         const novoItem = await prisma.repertorioEvento.create({
-            data: { evento_id: eventoId, musica_id: musicaId, tom_tocado: tom, ordem: proximaOrdem }
+            data: {
+                evento_id: eventoId,
+                musica_id: musicaId,
+                tenant_id: eventoReq.tenant_id,
+                tom_tocado: tom,
+                ordem: proximaOrdem
+            }
         });
 
         revalidatePath('/membros/dashboard');
@@ -286,5 +317,49 @@ export async function getEstatisticasEscalas(departamentoId: number) {
         };
     } catch (error: any) {
         return { success: false, error: error.message };
+    }
+}
+
+export async function adicionarMusicaManualAoEvento(eventoId: number, titulo: string, artista: string, tom: string) {
+    try {
+        // 1. Descobrir o tenant_id do evento
+        const eventoReq = await prisma.evento.findUnique({
+            where: { id: eventoId },
+            select: { tenant_id: true }
+        });
+
+        if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
+
+        // 2. Criar a música no nosso banco (offline, sem holyrics_id)
+        const novaMusica = await prisma.musica.create({
+            data: {
+                titulo,
+                artista: artista || null,
+                holyrics_id: null // Fica nulo até o próximo Sync
+            }
+        });
+
+        // 3. Descobrir a ordem para colocar no final da lista
+        const ultimaMusica = await prisma.repertorioEvento.findFirst({
+            where: { evento_id: eventoId },
+            orderBy: { ordem: 'desc' }
+        });
+        const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
+
+        // 4. Adicionar à escala
+        await prisma.repertorioEvento.create({
+            data: {
+                tenant_id: eventoReq.tenant_id,
+                evento_id: eventoId,
+                musica_id: novaMusica.id,
+                tom_tocado: tom,
+                ordem: proximaOrdem
+            }
+        });
+
+        revalidatePath('/membros/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: 'Erro ao criar música manual: ' + error.message };
     }
 }

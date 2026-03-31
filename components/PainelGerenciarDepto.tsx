@@ -8,22 +8,37 @@ import {
     removerMembroDepartamento
 } from '@/actions/admin-actions'
 import {
-    Users, Settings, FileText, X, Search, Plus, Trash2,
-    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft
+    Users, Settings, X, Search, Plus, Trash2, UserMinus, CalendarDays,
+    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft, CheckCircle2
 } from 'lucide-react'
 
+import { alternarPermissaoEscala } from '@/actions/admin-actions'
+
+
+// E adicione estas duas novas actions no topo:
+import { removerFuncaoDoMembro, removerMembroTotal } from '@/actions/admin-actions'
+
+
+
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClose }: any) {
-    const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes'>('dados');
+    const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes'>('equipe');
     const [loading, setLoading] = useState(false);
 
     const formFuncaoRef = useRef<HTMLFormElement>(null);
     const formEquipeRef = useRef<HTMLFormElement>(null);
 
     // ========================================================================
-    // PESQUISA INTELIGENTE: EQUIPA
+    // ESTADOS: VÍNCULO MÚLTIPLO (ABA EQUIPA)
     // ========================================================================
+    const [funcoesSelecionadas, setFuncoesSelecionadas] = useState<number[]>([]);
     const [buscaEquipe, setBuscaEquipe] = useState("");
     const [membroEquipeSelecionado, setMembroEquipeSelecionado] = useState<any>(null);
+
+    const toggleFuncao = (id: number) => {
+        setFuncoesSelecionadas(prev =>
+            prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+        );
+    };
 
     const membrosEquipeFiltrados = useMemo(() => {
         if (buscaEquipe.length < 2) return [];
@@ -33,7 +48,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
     }, [buscaEquipe, membrosDisponiveis]);
 
     // ========================================================================
-    // PESQUISA INTELIGENTE: LÍDER DO SETOR
+    // ESTADOS: GESTÃO DE LÍDER (ABA DADOS)
     // ========================================================================
     const [buscaLider, setBuscaLider] = useState("");
     const liderAtualInfo = membrosDisponiveis.find((m: any) => m.id === depto.lider_id);
@@ -47,7 +62,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
     }, [buscaLider, membrosDisponiveis]);
 
     // ========================================================================
-    // LÓGICA DE AGRUPAMENTO DE MEMBROS
+    // LÓGICA DE AGRUPAMENTO
     // ========================================================================
     const integrantesAgrupadosMap = new Map<number, any>();
 
@@ -56,120 +71,122 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
         if (!integrantesAgrupadosMap.has(membroId)) {
             integrantesAgrupadosMap.set(membroId, {
                 membro: item.membro,
-                atribuicoes: []
+                atribuicoes: [],
+                pode_gerir_escalas: item.pode_gerir_escalas,
+                integrante_id: item.id // 👈 GUARDAMOS O ID DO VÍNCULO AQUI
             });
         }
-        integrantesAgrupadosMap.get(membroId).atribuicoes.push({
-            id: item.id,
-            nome: item.funcao
-        });
+
+        const grupo = integrantesAgrupadosMap.get(membroId);
+
+        if (item.funcoes && item.funcoes.length > 0) {
+            item.funcoes.forEach((f: any) => {
+                if (!grupo.atribuicoes.find((a: any) => a.id === f.id)) {
+                    grupo.atribuicoes.push({ id: f.id, nome: f.funcao?.nome || 'Cargo Desconhecido' });
+                }
+            });
+        } else if (item.funcao) {
+            grupo.atribuicoes.push({ id: item.id, nome: item.funcao });
+        }
     });
 
     const listaIntegrantesAgrupados = Array.from(integrantesAgrupadosMap.values());
 
     return (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-            {/* Backdrop com desfoque refinado */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+        // 👇 AQUI MUDA DE JUSTIFY-END PARA CENTER (MODAL CENTRALIZADO)
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <div className="absolute inset-0 bg-bg/80 backdrop-blur-md animate-in fade-in" onClick={onClose} />
 
-            {/* Painel Lateral */}
-            <div className="relative w-full max-w-2xl bg-bg h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 rounded-l-[2.5rem] overflow-hidden">
+            {/* 👇 LARGURA MÁXIMA AUMENTADA (max-w-4xl) E CANTOS ARREDONDADOS (rounded-[3rem]) */}
+            <div className="relative w-full max-w-4xl bg-bg max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-soft">
 
-                {/* HEADER FIXO E ELEGANTE */}
-                <header className="px-10 pt-10 pb-0 border-b border-soft bg-bg2 shrink-0 relative z-30">
+                {/* HEADER FIXO DO MODAL */}
+                <header className="px-8 md:px-12 pt-10 pb-0 border-b border-soft bg-bg2 shrink-0 relative z-30">
                     <div className="flex justify-between items-start mb-8">
                         <div>
                             <span className="flex items-center gap-2 text-figueira font-black text-[9px] uppercase tracking-[0.3em] mb-2">
-                                <Briefcase size={12} /> Gestão Setorial
+                                <Briefcase size={12} /> Painel do Departamento
                             </span>
                             <h2 className="text-3xl font-black italic uppercase text-fg leading-none tracking-tighter">{depto.nome}</h2>
                         </div>
-                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-bg border border-soft text-muted hover:text-fg hover:border-figueira/50 transition-all shadow-sm active:scale-90">
+                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-bg border border-soft text-muted hover:text-red-500 hover:bg-red-50 transition-all shadow-sm active:scale-90">
                             <X size={16} />
                         </button>
                     </div>
 
-                    <div className="flex gap-8">
-                        <button onClick={() => setAba('dados')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'dados' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
-                            <Settings size={14} className={aba === 'dados' ? 'text-figueira' : ''} /> Definições
+                    <div className="flex gap-8 overflow-x-auto custom-scrollbar">
+                        <button onClick={() => setAba('equipe')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${aba === 'equipe' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                            <Users size={14} /> Equipa & Voluntários
                         </button>
-                        <button onClick={() => setAba('funcoes')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'funcoes' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
-                            <ShieldCheck size={14} className={aba === 'funcoes' ? 'text-figueira' : ''} /> Cargos
+                        <button onClick={() => setAba('funcoes')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${aba === 'funcoes' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                            <ShieldCheck size={14} /> Estrutura de Cargos
                         </button>
-                        <button onClick={() => setAba('equipe')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${aba === 'equipe' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
-                            <Users size={14} className={aba === 'equipe' ? 'text-figueira' : ''} /> Equipa
+                        <button onClick={() => setAba('dados')} className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${aba === 'dados' ? 'border-figueira text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                            <Settings size={14} /> Definições Gerais
                         </button>
-
-
                     </div>
                 </header>
 
-                {/* CONTEÚDO SCROLLÁVEL */}
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-bg relative z-20">
+                {/* ÁREA DE SCROLL (CORPO DO MODAL) */}
+                <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar bg-bg relative z-20">
 
                     {/* ===================================================== */}
-                    {/* ABA: EQUIPE (VÍNCULO AGRUPADO) */}
+                    {/* ABA: EQUIPA */}
                     {/* ===================================================== */}
                     {aba === 'equipe' && (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
 
-                            {/* FORMULÁRIO DE ADIÇÃO (CLEAN) */}
+                            {/* FORMULÁRIO */}
                             <form
                                 ref={formEquipeRef}
-                                action={async (fd) => {
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
                                     if (!membroEquipeSelecionado) return alert("Selecione um membro.");
+                                    if (funcoesSelecionadas.length === 0) return alert("Selecione pelo menos um cargo.");
                                     setLoading(true);
+                                    const fd = new FormData(e.currentTarget);
                                     const res = await vincularMembroDepartamento(fd);
                                     if (res?.ok) {
-                                        formEquipeRef.current?.reset();
                                         setMembroEquipeSelecionado(null);
+                                        setFuncoesSelecionadas([]);
                                         setBuscaEquipe("");
+                                        formEquipeRef.current?.reset();
                                     } else if (res?.error) {
                                         alert(res.error);
                                     }
                                     setLoading(false);
                                 }}
-                                className="bg-bg2 p-8 rounded-[2.5rem] border border-soft shadow-sm space-y-6 relative z-50"
+                                className="bg-bg2 p-8 rounded-[2.5rem] border border-soft shadow-sm space-y-8"
                             >
-                                <div className="flex items-center gap-3 border-b border-soft pb-4 mb-2">
-                                    <div className="bg-figueira/10 p-2 rounded-xl text-figueira"><UserPlus size={16} /></div>
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-fg">Adicionar à Equipa</h3>
+                                <div className="flex items-center gap-3 border-b border-soft pb-6">
+                                    <div className="bg-figueira/10 p-2.5 rounded-xl text-figueira"><UserPlus size={18} /></div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-fg">Vincular Novo Integrante</h3>
+                                        <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">Selecione o membro e os cargos múltiplos.</p>
+                                    </div>
                                 </div>
 
                                 <input type="hidden" name="departamento_id" value={depto.id} />
                                 <input type="hidden" name="membro_id" value={membroEquipeSelecionado?.id || ""} />
+                                {funcoesSelecionadas.map(id => <input key={id} type="hidden" name="funcoes_ids" value={id} />)}
 
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    {/* PESQUISA DE MEMBRO */}
-                                    <div className="space-y-1.5 relative">
-                                        <label className="text-[9px] font-black uppercase text-muted ml-2">Pessoa</label>
-
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* COLUNA ESQUERDA: MEMBRO */}
+                                    <div className="space-y-2 relative">
+                                        <label className="text-[10px] font-black uppercase text-muted ml-2">Pesquisar Membro</label>
                                         {membroEquipeSelecionado ? (
-                                            <div className="flex items-center justify-between bg-bg border border-figueira px-4 py-3.5 rounded-2xl shadow-inner">
-                                                <span className="text-xs font-bold text-fg uppercase">{membroEquipeSelecionado.first_name} {membroEquipeSelecionado.last_name}</span>
-                                                <button type="button" onClick={() => setMembroEquipeSelecionado(null)} className="text-muted hover:text-red-500 transition-colors"><X size={14} /></button>
+                                            <div className="flex items-center justify-between bg-bg border border-figueira px-5 py-4 rounded-2xl shadow-sm">
+                                                <span className="text-xs font-black text-fg uppercase tracking-wide">{membroEquipeSelecionado.first_name} {membroEquipeSelecionado.last_name}</span>
+                                                <button type="button" onClick={() => setMembroEquipeSelecionado(null)} className="text-muted hover:text-red-500 transition-colors bg-soft hover:bg-red-50 p-1.5 rounded-lg"><X size={14} /></button>
                                             </div>
                                         ) : (
                                             <div className="relative">
-                                                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Procurar membro..."
-                                                    value={buscaEquipe}
-                                                    onChange={(e) => setBuscaEquipe(e.target.value)}
-                                                    className="w-full bg-bg border border-soft pl-10 pr-4 py-3.5 rounded-2xl text-xs font-bold focus:border-figueira outline-none transition-all shadow-sm"
-                                                />
-                                                {/* RESULTADOS DA PESQUISA */}
+                                                <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
+                                                <input type="text" placeholder="Escreva o nome..." value={buscaEquipe} onChange={(e) => setBuscaEquipe(e.target.value)} className="w-full bg-bg border border-soft pl-12 pr-4 py-4 rounded-2xl text-xs font-bold focus:border-figueira outline-none shadow-sm transition-all" />
                                                 {membrosEquipeFiltrados.length > 0 && (
                                                     <div className="absolute top-full left-0 right-0 mt-2 bg-bg border border-soft rounded-2xl shadow-2xl overflow-hidden z-[100]">
                                                         {membrosEquipeFiltrados.map((m: any) => (
-                                                            <div
-                                                                key={m.id}
-                                                                onClick={() => { setMembroEquipeSelecionado(m); setBuscaEquipe(""); }}
-                                                                className="px-4 py-3 hover:bg-soft cursor-pointer text-[10px] font-black uppercase tracking-widest border-b border-soft last:border-0 transition-colors"
-                                                            >
-                                                                {m.first_name} {m.last_name}
-                                                            </div>
+                                                            <div key={m.id} onClick={() => { setMembroEquipeSelecionado(m); setBuscaEquipe(""); }} className="px-5 py-4 hover:bg-soft cursor-pointer text-[10px] font-black uppercase tracking-widest border-b border-soft transition-colors">{m.first_name} {m.last_name}</div>
                                                         ))}
                                                     </div>
                                                 )}
@@ -177,63 +194,118 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
                                         )}
                                     </div>
 
-                                    {/* SELEÇÃO DE FUNÇÃO */}
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black uppercase text-muted ml-2">Atribuição / Cargo</label>
-                                        <select name="funcao" required className="w-full bg-bg border border-soft px-4 py-3.5 rounded-2xl text-xs font-bold focus:border-figueira outline-none shadow-sm appearance-none">
-                                            <option value="">Selecionar...</option>
-                                            {depto.funcoes?.map((f: any) => (
-                                                <option key={f.id} value={f.nome}>{f.nome}</option>
-                                            ))}
-                                        </select>
+                                    {/* COLUNA DIREITA: CARGOS */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase text-muted ml-2 tracking-[0.1em]">Cargos a Atribuir</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {depto.funcoes?.map((f: any) => {
+                                                const selected = funcoesSelecionadas.includes(f.id);
+                                                return (
+                                                    <button key={f.id} type="button" onClick={() => toggleFuncao(f.id)} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${selected ? 'bg-figueira border-figueira text-white shadow-md scale-105' : 'bg-bg border-soft text-muted hover:border-figueira/50 hover:text-fg'}`}>
+                                                        {selected ? <CheckCircle2 size={12} /> : <Plus size={12} />} {f.nome}
+                                                    </button>
+                                                );
+                                            })}
+                                            {depto.funcoes?.length === 0 && <p className="text-[10px] text-muted italic p-2">Nenhum cargo criado na aba "Cargos".</p>}
+                                        </div>
                                     </div>
                                 </div>
-
-                                <button disabled={loading || !membroEquipeSelecionado} className="w-full bg-fg text-bg py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-figueira hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
-                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                    Vincular ao Departamento
+                                <button disabled={loading || !membroEquipeSelecionado || funcoesSelecionadas.length === 0} className="w-full bg-fg text-bg py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-figueira hover:text-white shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 transition-all mt-4">
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Confirmar Vínculo à Equipa
                                 </button>
                             </form>
 
-                            {/* LISTA DE INTEGRANTES */}
-                            <div className="space-y-4">
-                                <h3 className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest flex items-center gap-2">
-                                    <Users size={12} /> Integrantes Cadastrados ({listaIntegrantesAgrupados.length})
+                            {/* LISTA DE INTEGRANTES - AGORA COM BOTÃO DE REMOVER MEMBRO */}
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase text-fg ml-2 tracking-widest flex items-center gap-2 border-b border-soft pb-4">
+                                    <Users size={16} className="text-muted" /> Voluntários Cadastrados
+                                    <span className="bg-soft text-muted px-2 py-0.5 rounded-md text-[9px]">{listaIntegrantesAgrupados.length}</span>
                                 </h3>
 
-                                <div className="grid gap-3">
+                                <div className="grid gap-4">
                                     {listaIntegrantesAgrupados.map((grupo: any) => (
-                                        <div key={grupo.membro.id} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-[2rem] transition-all border ${grupo.membro.id === depto.lider_id ? 'border-figueira/40 bg-figueira/5 shadow-sm' : 'bg-bg2 border-soft hover:border-soft/80'}`}>
+                                        <div key={grupo.membro.id} className={`flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-[2rem] border transition-all ${grupo.membro.id === depto.lider_id ? 'border-figueira/40 bg-figueira/5 shadow-sm' : 'bg-bg2 border-soft hover:border-soft/80'}`}>
 
-                                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                                                <div className="w-12 h-12 rounded-2xl bg-bg border border-soft flex items-center justify-center text-[10px] font-black text-figueira shadow-sm shrink-0">
+                                            {/* INFO DO MEMBRO E BOTÕES DE AÇÃO */}
+                                            <div className="flex items-center gap-5 min-w-0">
+                                                <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center text-[12px] font-black text-figueira shrink-0 shadow-sm">
                                                     {grupo.membro.first_name[0]}{grupo.membro.last_name[0]}
                                                 </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-black uppercase text-fg truncate flex items-center gap-2">
+                                                    <p className="text-base font-black uppercase text-fg truncate flex items-center gap-3">
                                                         {grupo.membro.first_name} {grupo.membro.last_name}
-                                                        {grupo.membro.id === depto.lider_id && <span className="shrink-0 text-[7px] bg-figueira text-white px-2 py-0.5 rounded-md font-black uppercase tracking-widest">Líder</span>}
+                                                        {grupo.membro.id === depto.lider_id && <span className="text-[8px] bg-figueira text-white px-2 py-1 rounded-md tracking-widest">Líder</span>}
                                                     </p>
-                                                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5">{grupo.atribuicoes.length} função(ões)</p>
+
+                                                    {/* BARRA DE FERRAMENTAS DO MEMBRO */}
+                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                                        <p className="text-[9px] font-bold text-muted uppercase tracking-widest">ID #{grupo.membro.id}</p>
+
+                                                        {/* 👇 NOVO BOTÃO: DELEGAR ESCALAS (Não aparece para o líder, pois ele já tem acesso) */}
+                                                        {grupo.membro.id !== depto.lider_id && (
+                                                            <button
+                                                                disabled={loading}
+                                                                onClick={async () => {
+                                                                    setLoading(true);
+                                                                    const res = await alternarPermissaoEscala(grupo.integrante_id, grupo.pode_gerir_escalas);
+                                                                    setLoading(false);
+                                                                }}
+                                                                className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50 border ${grupo.pode_gerir_escalas
+                                                                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+                                                                    : 'bg-bg text-muted border-soft hover:bg-soft hover:text-fg'
+                                                                    }`}
+                                                            >
+                                                                <CalendarDays size={10} />
+                                                                {grupo.pode_gerir_escalas ? 'Delegado: Faz Escalas' : 'Pode Fazer Escalas?'}
+                                                            </button>
+                                                        )}
+
+                                                        {/* BOTÃO REMOVER MEMBRO COMPLETO */}
+                                                        <button
+                                                            disabled={loading}
+                                                            onClick={async () => {
+                                                                if (confirm(`Tem certeza que deseja remover ${grupo.membro.first_name} de todos os cargos deste departamento?`)) {
+                                                                    setLoading(true);
+                                                                    await removerMembroTotal(grupo.membro.id, depto.id);
+                                                                    setLoading(false);
+                                                                }
+                                                            }}
+                                                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors bg-red-500/5 hover:bg-red-500/10 px-2 py-1 rounded-lg disabled:opacity-50"
+                                                        >
+                                                            <UserMinus size={10} /> Remover
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* TAGS DE FUNÇÃO */}
-                                            <div className="flex flex-wrap gap-2 sm:justify-end">
+                                            {/* TAGS (CARGOS) NO LADO DIREITO */}
+                                            <div className="flex flex-wrap gap-2 md:justify-end shrink-0 max-w-sm">
                                                 {grupo.atribuicoes.map((atrib: any) => (
-                                                    <div key={atrib.id} className="group/atrib flex items-center gap-2 bg-bg border border-soft px-3 py-1.5 rounded-xl hover:border-red-200 hover:bg-red-50 transition-all cursor-pointer shadow-sm" onClick={() => confirm(`Remover a função ${atrib.nome}?`) && removerMembroDepartamento(atrib.id)}>
-                                                        <span className="text-[9px] font-bold text-fg uppercase tracking-wide group-hover/atrib:text-red-700">{atrib.nome}</span>
-                                                        <X size={10} className="text-muted group-hover/atrib:text-red-500 transition-colors" />
-                                                    </div>
+                                                    <button
+                                                        key={atrib.id}
+                                                        disabled={loading}
+                                                        onClick={async () => {
+                                                            if (confirm(`Remover o cargo de ${atrib.nome}?`)) {
+                                                                setLoading(true);
+                                                                await removerFuncaoDoMembro(atrib.id);
+                                                                setLoading(false);
+                                                            }
+                                                        }}
+                                                        className="group/atrib flex items-center gap-2 bg-bg border border-soft px-3 py-1.5 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                                    >
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-figueira group-hover/atrib:bg-red-500 transition-colors"></div>
+                                                        <span className="text-[10px] font-bold text-fg uppercase tracking-wider group-hover/atrib:text-red-700">{atrib.nome}</span>
+                                                        <X size={12} className="text-muted/50 group-hover/atrib:text-red-500 transition-colors ml-1" />
+                                                    </button>
                                                 ))}
                                             </div>
                                         </div>
                                     ))}
 
-                                    {depto.integrantes?.length === 0 && (
-                                        <div className="p-12 text-center bg-bg2 border-2 border-dashed border-soft rounded-[3rem]">
-                                            <Users size={32} className="text-muted/30 mx-auto mb-3" />
-                                            <p className="text-[10px] text-muted font-bold uppercase tracking-widest">A equipa está vazia.</p>
+                                    {listaIntegrantesAgrupados.length === 0 && (
+                                        <div className="py-16 text-center bg-bg2 border-2 border-dashed border-soft rounded-[3rem]">
+                                            <Users size={32} className="text-muted/30 mx-auto mb-4" />
+                                            <p className="text-xs text-muted font-bold uppercase tracking-widest">Este departamento ainda não tem membros.</p>
                                         </div>
                                     )}
                                 </div>
@@ -245,45 +317,41 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
                     {/* ABA: FUNÇÕES (CARGOS) */}
                     {/* ===================================================== */}
                     {aba === 'funcoes' && (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                            <form
-                                ref={formFuncaoRef}
-                                action={async (fd) => {
-                                    setLoading(true);
-                                    await adicionarFuncaoAoDepto(fd);
-                                    formFuncaoRef.current?.reset();
-                                    setLoading(false);
-                                }}
-                                className="bg-bg2 p-6 rounded-[2.5rem] border border-soft shadow-sm flex flex-col sm:flex-row gap-3"
-                            >
+                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+                            <form action={async (fd) => {
+                                setLoading(true);
+                                await adicionarFuncaoAoDepto(fd);
+                                formFuncaoRef.current?.reset();
+                                setLoading(false);
+                            }} className="bg-bg2 p-8 rounded-[2.5rem] border border-soft shadow-sm flex flex-col md:flex-row gap-4 items-end">
                                 <input type="hidden" name="departamento_id" value={depto.id} />
-                                <div className="relative flex-1">
-                                    <ShieldCheck size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
-                                    <input name="nome" placeholder="Nome do novo cargo (ex: Tecladista)" required className="w-full bg-bg border border-soft pl-12 pr-6 py-4 rounded-2xl font-bold text-xs outline-none focus:border-figueira shadow-inner transition-all" />
+                                <div className="relative flex-1 w-full space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest">Nome do Cargo</label>
+                                    <div className="relative">
+                                        <ShieldCheck size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
+                                        <input name="nome" placeholder="Ex: Guitarrista, Sonoplasta..." required className="w-full bg-bg border border-soft pl-14 pr-6 py-5 rounded-2xl font-bold text-sm outline-none focus:border-figueira shadow-inner transition-all" />
+                                    </div>
                                 </div>
-                                <button disabled={loading} className="bg-figueira text-white px-8 py-4 sm:py-0 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:shadow-lg hover:shadow-figueira/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95">
-                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Criar Cargo
+                                <button disabled={loading} className="w-full md:w-auto bg-figueira text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Adicionar Cargo
                                 </button>
                             </form>
 
-                            <div className="space-y-3">
-                                <h3 className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest">Cargos Habilitados</h3>
-                                <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-fg ml-2 border-b border-soft pb-4">Cargos Disponíveis</h3>
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {depto.funcoes?.map((f: any) => (
-                                        <div key={f.id} className="group flex justify-between items-center p-5 bg-bg2 border border-soft rounded-[2rem] hover:border-figueira/40 transition-all shadow-sm">
+                                        <div key={f.id} className="group flex justify-between items-center p-6 bg-bg2 border border-soft rounded-[2rem] hover:border-figueira/40 transition-all shadow-sm">
                                             <span className="text-xs font-black uppercase text-fg tracking-widest flex items-center gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-figueira block"></span> {f.nome}
+                                                <span className="w-2 h-2 rounded-full bg-figueira block shadow-sm shadow-figueira/50"></span> {f.nome}
                                             </span>
-                                            <button
-                                                onClick={() => confirm("Excluir esta função permanentemente?") && removerFuncaoDoDepto(f.id)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-xl bg-bg border border-soft hover:bg-red-50 hover:border-red-200 text-muted hover:text-red-500 transition-all shadow-sm"
-                                            >
-                                                <Trash2 size={12} />
+                                            <button onClick={() => confirm("Excluir esta função permanentemente?") && removerFuncaoDoDepto(f.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-bg border border-soft hover:bg-red-50 hover:border-red-200 text-muted hover:text-red-500 transition-all shadow-sm">
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     ))}
                                     {depto.funcoes?.length === 0 && (
-                                        <p className="col-span-full text-[10px] text-center text-muted py-8 font-bold uppercase tracking-widest italic">Nenhum cargo registado.</p>
+                                        <p className="col-span-full text-[10px] text-center text-muted py-12 font-bold uppercase tracking-widest italic bg-bg2 border border-soft rounded-[2rem]">Nenhum cargo configurado.</p>
                                     )}
                                 </div>
                             </div>
@@ -298,49 +366,38 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
                             setLoading(true);
                             const res = await atualizarDepartamento(formData);
                             setLoading(false);
-                            if (res?.ok) alert("Informações atualizadas com sucesso!");
-                        }} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 relative z-10">
-
-                            <div className="bg-bg2 p-8 md:p-10 rounded-[3rem] border border-soft shadow-sm space-y-6">
+                            if (res?.ok) alert("Informações atualizadas!");
+                        }} className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="bg-bg2 p-10 md:p-12 rounded-[3rem] border border-soft shadow-sm space-y-8">
                                 <input type="hidden" name="id" value={depto.id} />
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase text-muted ml-4 tracking-widest">Nome Oficial</label>
-                                    <input name="nome" defaultValue={depto.nome} required className="w-full bg-bg border border-soft p-5 rounded-3xl text-sm font-bold focus:border-figueira outline-none shadow-sm transition-all" />
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest">Nome Oficial</label>
+                                    <input name="nome" defaultValue={depto.nome} required className="w-full bg-bg border border-soft p-5 rounded-2xl text-sm font-bold focus:border-figueira outline-none shadow-sm transition-all" />
                                 </div>
 
-                                <div className="space-y-1.5 relative">
-                                    <label className="text-[9px] font-black uppercase text-muted ml-4 tracking-widest">Responsável (Líder)</label>
+                                <div className="space-y-2 relative">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest">Responsável (Líder)</label>
                                     <input type="hidden" name="lider_id" value={liderSelecionado?.id || ""} />
 
                                     {liderSelecionado ? (
-                                        <div className="flex items-center justify-between bg-bg border border-figueira p-5 rounded-3xl shadow-inner transition-all">
-                                            <div className="flex items-center gap-3">
-                                                <ShieldCheck size={16} className="text-figueira" />
-                                                <span className="text-xs font-black text-fg uppercase tracking-widest">{liderSelecionado.first_name} {liderSelecionado.last_name}</span>
+                                        <div className="flex items-center justify-between bg-bg border border-figueira p-5 rounded-2xl shadow-sm transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <ShieldCheck size={20} className="text-figueira" />
+                                                <span className="text-sm font-black text-fg uppercase tracking-widest">{liderSelecionado.first_name} {liderSelecionado.last_name}</span>
                                             </div>
-                                            <button type="button" onClick={() => setLiderSelecionado(null)} className="bg-soft/50 hover:bg-red-100 p-2 rounded-xl text-muted hover:text-red-500 transition-colors">
-                                                <X size={14} />
+                                            <button type="button" onClick={() => setLiderSelecionado(null)} className="bg-soft hover:bg-red-100 p-2.5 rounded-xl text-muted hover:text-red-500 transition-colors">
+                                                <X size={16} />
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="relative">
-                                            <Search size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
-                                            <input
-                                                type="text"
-                                                placeholder="Procurar novo líder..."
-                                                value={buscaLider}
-                                                onChange={(e) => setBuscaLider(e.target.value)}
-                                                className="w-full bg-bg border border-soft pl-12 pr-5 py-5 rounded-3xl text-sm font-bold focus:border-figueira outline-none shadow-sm transition-all"
-                                            />
+                                            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
+                                            <input type="text" placeholder="Procurar novo líder..." value={buscaLider} onChange={(e) => setBuscaLider(e.target.value)} className="w-full bg-bg border border-soft pl-14 pr-5 py-5 rounded-2xl text-sm font-bold focus:border-figueira outline-none shadow-sm transition-all" />
                                             {membrosLiderFiltrados.length > 0 && (
                                                 <div className="absolute top-full left-0 right-0 mt-2 bg-bg border border-soft rounded-2xl shadow-2xl overflow-hidden z-[100]">
                                                     {membrosLiderFiltrados.map((m: any) => (
-                                                        <div
-                                                            key={m.id}
-                                                            onClick={() => { setLiderSelecionado(m); setBuscaLider(""); }}
-                                                            className="px-5 py-4 hover:bg-soft cursor-pointer text-[10px] font-black uppercase tracking-widest border-b border-soft last:border-0 transition-colors"
-                                                        >
+                                                        <div key={m.id} onClick={() => { setLiderSelecionado(m); setBuscaLider(""); }} className="px-6 py-5 hover:bg-soft cursor-pointer text-xs font-black uppercase tracking-widest border-b border-soft last:border-0 transition-colors">
                                                             {m.first_name} {m.last_name}
                                                         </div>
                                                     ))}
@@ -350,21 +407,22 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, onClos
                                     )}
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase text-muted ml-4 tracking-widest flex items-center gap-2">
-                                        <AlignLeft size={10} /> Descrição / Notas
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-2 tracking-widest flex items-center gap-2">
+                                        <AlignLeft size={12} /> Notas e Observações
                                     </label>
-                                    <textarea name="descricao" defaultValue={depto.descricao} rows={4} className="w-full bg-bg border border-soft p-5 rounded-3xl text-xs font-bold focus:border-figueira outline-none resize-none shadow-sm leading-relaxed" />
+                                    <textarea name="descricao" defaultValue={depto.descricao} rows={5} className="w-full bg-bg border border-soft p-5 rounded-2xl text-sm font-bold focus:border-figueira outline-none resize-none shadow-sm leading-relaxed" />
                                 </div>
                             </div>
 
-                            <button disabled={loading} className="w-full bg-fg text-bg py-5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:bg-figueira hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                {loading ? "A Guardar..." : "Guardar Alterações"}
-                            </button>
+                            <div className="flex justify-end">
+                                <button disabled={loading} className="w-full md:w-auto bg-fg text-bg px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:bg-figueira hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                    Salvar Alterações
+                                </button>
+                            </div>
                         </form>
                     )}
-
                 </div>
             </div>
         </div>

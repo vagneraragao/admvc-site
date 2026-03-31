@@ -1,5 +1,6 @@
 // app/membros/dashboard/page.tsx
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma' // 🔄 MUDANÇA 1: Usar o cliente multitenant
+import { headers } from 'next/headers' // 🔄 MUDANÇA 2: Importar os headers
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -15,7 +16,6 @@ import { getSessionData } from '@/lib/auth-utils'
 import CardWalletCantina from '@/components/membros/CardWalletCantina'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import PainelFinanceiroMembro from '@/components/membros/PainelFinanceiroMembro'
-//import ModalCarregarCantina from '@/components/cantina/ModalCarregarCantina'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
 import WidgetMural from '@/components/membros/WidgetMural'
@@ -24,51 +24,68 @@ import WidgetAgendaUnificada from '@/components/membros/WidgetAgendaUnificada'
 import AvisoEscalaVazia from '@/components/membros/AvisoEscalaVazia'
 import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
 import ModalExtratoMembro from '@/components/financeiro/ModalExtratoMembro'
-// import Breadcrumb from '@/components/ui/Breadcrumb'
 import ModalRepertorio from '@/components/louvor/ModalRepertorio'
 import ModalHistoricoEscalas from '@/components/louvor/ModalHistoricoEscalas'
 
 export default async function DashboardMembro() {
-    // 1. DADOS BASE DA SESSÃO E EVENTOS GERAIS
+    // 1. DADOS BASE DA SESSÃO
     const session = await getSessionData();
     if (!session) redirect('/membros/login');
     const { membroId, role } = session;
 
-    const proximosEventosPromise = prisma.evento.findMany({
+    // 🔄 MUDANÇA 3: Iniciar o Prisma blindado para a igreja deste utilizador
+    const headersList = await headers();
+    const tenantIdStr = headersList.get('x-tenant-id');
+
+    if (!tenantIdStr) {
+        // Fallback de segurança caso o middleware falhe
+        return redirect('/membros/login?error=Igreja não identificada na sessão.');
+    }
+
+    const db = getTenantClient(Number(tenantIdStr));
+
+    // A partir daqui, trocamos "prisma." por "db."
+    // O Prisma Extension vai garantir que só traz eventos e membros DESTE tenant_id.
+
+    const proximosEventosPromise = db.evento.findMany({
         where: { data: { gte: new Date() } },
         orderBy: { data: 'asc' },
         take: 10
     });
 
     // 2. BUSCA O MEMBRO (Query Principal)
-    const membro = await prisma.membro.findUnique({
+    const membro = await db.membro.findUnique({
         where: { id: membroId },
         include: {
             grupos: true,
             lider_de_grupo: true,
             departamentos_liderados: true,
-            ministerios: { include: { departamento: true } },
-            familia: true,
-
-            // 1. Bloco das Escalas (Agora incluindo o repertório e a ordem correta)
-            escalas: {
-                where: { evento: { data: { gte: new Date() } } },
-                orderBy: { evento: { data: 'asc' } }, // Mantém a ordenação cronológica das escalas
+            ministerios: {
                 include: {
                     departamento: true,
-                    // ATUALIZADO: Traz o evento com o repertório e os dados da música
+                    funcoes: { include: { funcao: true } }
+                }
+            },
+            familia: true,
+
+            // Bloco das Escalas 
+            escalas: {
+                where: { evento: { data: { gte: new Date() } } },
+                orderBy: { evento: { data: 'asc' } },
+                include: {
+                    departamento: true,
                     evento: {
                         include: {
                             repertorio: {
                                 include: { musica: true },
-                                orderBy: { ordem: 'asc' } // Mantém a ordem das músicas no culto
+                                orderBy: { ordem: 'asc' }
                             }
                         }
                     }
                 }
-            }, // <--- Fechamento correto da configuração das escalas
+            },
 
-            // 2. Bloco Financeiro (Fica de fora das escalas)
+            // Bloco Financeiro 
             objetivos_financeiros: {
                 include: { lancamentos: { orderBy: { data_recebimento: 'desc' } } }
             }
@@ -77,22 +94,22 @@ export default async function DashboardMembro() {
 
     if (!membro) return redirect('/membros/login?error=Sessão expirada ou utilizador inexistente');
 
-    // 3. VERIFICAÇÕES DE PERMISSÃO E VARIÁVEIS ÚTEIS
-    const isEquipaMidia = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('mídia') || v.departamento?.nome.toLowerCase().includes('midia') || v.departamento?.nome.toLowerCase().includes('multimédia'));
-    const isEquipaAcolhimento = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('acolhimento') || v.departamento?.nome.toLowerCase().includes('integração'));
-    const isEquipaCantina = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('cantina'));
-    const isEquipaSocial = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('social') || v.departamento?.nome.toLowerCase().includes('despensa') || v.departamento?.nome.toLowerCase().includes('assistência'));
+    // 3. VERIFICAÇÕES DE PERMISSÃO E VARIÁVEIS ÚTEIS (Mantido intacto)
+    const isEquipaMidia = membro.ministerios.some((v: any) => v.departamento?.nome.toLowerCase().includes('mídia') || v.departamento?.nome.toLowerCase().includes('midia') || v.departamento?.nome.toLowerCase().includes('multimédia'));
+    const isEquipaAcolhimento = membro.ministerios.some((v: any) => v.departamento?.nome.toLowerCase().includes('acolhimento') || v.departamento?.nome.toLowerCase().includes('integração'));
+    const isEquipaCantina = membro.ministerios.some((v: any) => v.departamento?.nome.toLowerCase().includes('cantina'));
+    const isEquipaSocial = membro.ministerios.some((v: any) => v.departamento?.nome.toLowerCase().includes('social') || v.departamento?.nome.toLowerCase().includes('despensa') || v.departamento?.nome.toLowerCase().includes('assistência'));
     const mostraFerramentasExtra = role === 'ADMIN' || role === 'FINANCE' || isEquipaAcolhimento || isEquipaCantina || isEquipaSocial || isEquipaMidia;
-    const deptIds = membro.ministerios?.map(m => m.departamento?.id).filter(Boolean) || [];
-    const grupoIds = membro.grupos?.map(g => g.id).filter(Boolean) || [];
-    const isEquipaLouvor = membro.ministerios.some(v => v.departamento?.nome.toLowerCase().includes('louvor') || v.departamento?.nome.toLowerCase().includes('música') || v.departamento?.nome.toLowerCase().includes('musica'));
+    const deptIds = membro.ministerios?.map((m: any) => m.departamento?.id).filter(Boolean) || [];
+    const grupoIds = membro.grupos?.map((g: any) => g.id).filter(Boolean) || [];
+    const isEquipaLouvor = membro.ministerios.some((v: any) => v.departamento?.nome.toLowerCase().includes('louvor') || v.departamento?.nome.toLowerCase().includes('música') || v.departamento?.nome.toLowerCase().includes('musica'));
 
     // Busca o ID do departamento de Louvor para o relatório
-    const deptoLouvor = membro.ministerios.find(v =>
+    const deptoLouvor = membro.ministerios.find((v: any) =>
         v.departamento?.nome.toLowerCase().includes('louvor') ||
         v.departamento?.nome.toLowerCase().includes('música') ||
         v.departamento?.nome.toLowerCase().includes('musica')
-    )?.departamento || membro.departamentos_liderados.find(d =>
+    )?.departamento || membro.departamentos_liderados.find((d: any) =>
         d.nome.toLowerCase().includes('louvor') ||
         d.nome.toLowerCase().includes('música') ||
         d.nome.toLowerCase().includes('musica')
@@ -100,20 +117,18 @@ export default async function DashboardMembro() {
 
     let departamentoLouvorId = deptoLouvor?.id;
 
-    // Se for ADMIN e não estiver no louvor, busca o ID do louvor no banco para o relatório
     if (!departamentoLouvorId && role === 'ADMIN') {
-        const depto = await prisma.departamento.findFirst({
+        const depto = await db.departamento.findFirst({
             where: { nome: { contains: 'Louvor', mode: 'insensitive' } }
         });
         departamentoLouvorId = depto?.id;
     }
 
-    // Se ainda for nulo mas ele lidera algum departamento, usa o primeiro que ele lidera como fallback
     if (!departamentoLouvorId && membro.departamentos_liderados?.length > 0) {
         departamentoLouvorId = membro.departamentos_liderados[0].id;
     }
 
-    // 4. FUNÇÃO PARA BUSCAR SALDO LOYVERSE DE FORMA ISOLADA
+    // 4. FUNÇÃO PARA BUSCAR SALDO LOYVERSE DE FORMA ISOLADA (Mantido intacto)
     const fetchLoyverseSaldo = async () => {
         if (!membro.loyverse_id) return 0;
         try {
@@ -125,7 +140,7 @@ export default async function DashboardMembro() {
         } catch { return 0; }
     };
 
-    // 5. OTIMIZAÇÃO: EXECUTAR QUERIES SECUNDÁRIAS EM PARALELO (MUITO MAIS RÁPIDO!)
+    // 5. OTIMIZAÇÃO: EXECUTAR QUERIES SECUNDÁRIAS EM PARALELO (Trocado para db)
     const [
         proximosEventos,
         visitantesPendentesCount,
@@ -137,16 +152,16 @@ export default async function DashboardMembro() {
         saldoCantina
     ] = await Promise.all([
         proximosEventosPromise,
-        (role === 'ADMIN' || isEquipaAcolhimento) ? prisma.visitante.count({ where: { status: 'NOVO' } }) : Promise.resolve(0),
-        prisma.avisoMural.findMany({
+        (role === 'ADMIN' || isEquipaAcolhimento) ? db.visitante.count({ where: { status: 'NOVO' } }) : Promise.resolve(0),
+        db.avisoMural.findMany({
             where: { OR: [{ departamento_id: { in: deptIds.length > 0 ? deptIds : [-1] } }, { grupo_id: { in: grupoIds.length > 0 ? grupoIds : [-1] } }] },
             include: { autor: { select: { first_name: true, last_name: true, avatar_file: true } }, departamento: { select: { nome: true } }, grupo: { select: { nome: true } } },
             orderBy: { createdAt: 'desc' }, take: 5
         }),
-        prisma.rifaNumero.findMany({ where: { membro_id: membroId }, include: { rifa: true }, orderBy: { createdAt: 'desc' } }),
-        prisma.contribuicao.findMany({ where: { membro_id: membroId }, orderBy: { data: 'desc' } }),
-        prisma.pedidoSaldoCantina.findMany({ where: { membro_id: membroId }, orderBy: { createdAt: 'desc' } }),
-        isEquipaAcolhimento ? prisma.visitante.findMany({
+        db.rifaNumero.findMany({ where: { membro_id: membroId }, include: { rifa: true }, orderBy: { createdAt: 'desc' } }),
+        db.contribuicao.findMany({ where: { membro_id: membroId }, orderBy: { data: 'desc' } }),
+        db.pedidoSaldoCantina.findMany({ where: { membro_id: membroId }, orderBy: { createdAt: 'desc' } }),
+        isEquipaAcolhimento ? db.visitante.findMany({
             where: { status: 'EM_CONTACTO', acompanhamentos: { some: { membro_id: membroId } } },
             include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } },
             orderBy: { data_ultima_visita: 'desc' }, take: 6
@@ -165,10 +180,23 @@ export default async function DashboardMembro() {
     membro.ministerios?.forEach((vinculo: any) => {
         if (!vinculo.departamento) return;
         const key = `depto-${vinculo.departamento.id}`;
+        const funcoesMembro = vinculo.funcoes?.map((f: any) => f.funcao.nome) || [];
+
         if (departamentosAgrupados.has(key)) {
-            if (!departamentosAgrupados.get(key).funcoes.includes(vinculo.funcao)) departamentosAgrupados.get(key).funcoes.push(vinculo.funcao);
+            const existente = departamentosAgrupados.get(key);
+            funcoesMembro.forEach((funcNome: string) => {
+                if (!existente.funcoes.includes(funcNome)) existente.funcoes.push(funcNome);
+            });
+            if (vinculo.pode_gerir_escalas) existente.pode_gerir_escalas = true;
         } else {
-            departamentosAgrupados.set(key, { id: vinculo.departamento.id, nome: vinculo.departamento.nome, tipo: 'DEPARTAMENTO', lider_id: vinculo.departamento.lider_id, funcoes: [vinculo.funcao] });
+            departamentosAgrupados.set(key, {
+                id: vinculo.departamento.id,
+                nome: vinculo.departamento.nome,
+                tipo: 'DEPARTAMENTO',
+                lider_id: vinculo.departamento.lider_id,
+                funcoes: funcoesMembro,
+                pode_gerir_escalas: vinculo.pode_gerir_escalas
+            });
         }
     });
     membro.departamentos_liderados?.forEach((depto: any) => {
@@ -414,20 +442,19 @@ export default async function DashboardMembro() {
                                             </div>
                                         )}
                                     </div>
-                                    {/* SE FOR DO DEPARTAMENTO DE LOUVOR, MOSTRA O REPERTÓRIO */}
-                                    {esc.departamento.nome.toLowerCase().includes('louvor') && (
-                                        <div className="mt-4 pt-4 border-t border-soft/50 animate-in fade-in">
-                                            <ModalRepertorio
-                                                eventoId={esc.evento.id}
-                                                repertorioInical={esc.evento.repertorio}
-                                                podeEditar={
-                                                    role === 'ADMIN' ||
-                                                    membro.departamentos_liderados?.some((d: any) => d.id === esc.departamento.id) ||
-                                                    (isEquipaLouvor && esc.funcoes?.includes('Líder'))
-                                                }
-                                            />
-                                        </div>
-                                    )}
+                                    {/* SE FOR DO DEPARTAMENTO DE LOUVOR OU MÚSICA, MOSTRA O REPERTÓRIO */}
+                                    {(esc.departamento.nome.toLowerCase().includes('louvor') ||
+                                        esc.departamento.nome.toLowerCase().includes('música') ||
+                                        esc.departamento.nome.toLowerCase().includes('musica') ||
+                                        esc.departamento.nome.toLowerCase().includes('banda')) && (
+                                            <div className="mt-4 pt-4 border-t border-soft/50 animate-in fade-in">
+                                                <ModalRepertorio
+                                                    eventoId={esc.evento.id}
+                                                    repertorioInical={esc.evento.repertorio || []}
+                                                    podeEditar={true}
+                                                />
+                                            </div>
+                                        )}
                                     <div className={isConfirmado ? 'mt-3' : 'mt-5'}>
                                         <BotoesEscala escalaIds={esc.ids} confirmado={isConfirmado} />
                                     </div>
@@ -521,7 +548,7 @@ export default async function DashboardMembro() {
                 {departamentosAgrupados.size > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Array.from(departamentosAgrupados.values()).map((depto: any) => (
-                            <CardDepartamentoMembro key={depto.id} depto={depto} membroId={membro?.id} role={role} />
+                            <CardDepartamentoMembro key={depto.id} depto={depto} membroId={membro?.id} role={role} podeGerirEscalas={depto.pode_gerir_escalas} />
                         ))}
                     </div>
                 ) : (

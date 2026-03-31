@@ -1,0 +1,102 @@
+'use server'
+
+import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
+import { revalidatePath } from 'next/cache'
+
+export async function criarNovaIgreja(formData: FormData) {
+    // 1. Dados da Igreja
+    const nomeIgreja = formData.get('nomeIgreja') as string;
+    const slug = formData.get('slug') as string; // Ex: 'assembleia-central'
+
+    // 2. Dados do Primeiro Admin (Pastor/Líder)
+    const adminNome = formData.get('adminNome') as string;
+    const adminEmail = formData.get('adminEmail') as string;
+    const adminPassword = formData.get('adminPassword') as string;
+
+    try {
+        // Validação básica
+        if (!nomeIgreja || !slug || !adminEmail || !adminPassword) {
+            return { error: 'Por favor, preencha todos os campos obrigatórios.' };
+        }
+
+        // Verifica se o slug ou o email já existem (agora usando o prisma base global)
+        const emailExiste = await prisma.membro.findUnique({ where: { email: adminEmail } });
+        if (emailExiste) return { error: 'Este e-mail já está em uso em outra conta.' };
+
+        const slugExiste = await prisma.tenant.findUnique({ where: { slug } });
+        if (slugExiste) return { error: 'Este identificador (slug) já está em uso.' };
+
+        // Hash da senha do novo admin
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+        // 3. A MÁGICA: Transação para criar o Tenant e o Membro juntos
+        const novaIgreja = await prisma.$transaction(async (tx) => {
+            // A. Cria o Tenant (Igreja)
+            const tenant = await tx.tenant.create({
+                data: {
+                    nome: nomeIgreja,
+                    slug: slug.toLowerCase().replace(/\s+/g, '-'), // Garante que o slug é válido
+                    plano: 'PRO', // Ou 'FREE', dependendo da sua regra de negócio
+                }
+            });
+
+            // B. Cria o primeiro Membro como ADMIN vinculado a este novo Tenant
+            await tx.membro.create({
+                data: {
+                    first_name: adminNome,
+                    last_name: 'Admin',
+                    email: adminEmail,
+                    password: hashedPassword,
+                    phone_1: '000000000', // Valor padrão, ele pode alterar depois
+                    role: 'ADMIN',
+                    is_active: true,
+                    tenant_id: tenant.id, // <- Vinculando o admin à nova igreja
+                }
+            });
+
+            return tenant;
+        });
+
+        revalidatePath('/admin/dashboard'); // Atualiza a página do super admin
+        return { success: true, message: `Igreja ${novaIgreja.nome} criada com sucesso!` };
+
+    } catch (error) {
+        console.error("Erro ao criar igreja:", error);
+        return { error: 'Erro interno ao tentar criar a nova igreja.' };
+    }
+}
+
+
+// Adicione isto no final de @/actions/super-admin-actions.ts
+
+export async function atualizarIgreja(id: number, formData: FormData) {
+    const nome = formData.get('nomeIgreja') as string;
+    const slug = formData.get('slug') as string;
+    const plano = formData.get('plano') as string || 'FREE';
+
+    try {
+        // Usamos o prisma global porque estamos a editar um Tenant
+        const slugExiste = await prisma.tenant.findFirst({
+            where: { slug, NOT: { id } }
+        });
+
+        if (slugExiste) return { error: 'Este identificador (slug) já está a ser usado por outra igreja.' };
+
+        await prisma.tenant.update({
+            where: { id },
+            data: {
+                nome,
+                slug: slug.toLowerCase().replace(/\s+/g, '-'),
+                plano
+            }
+        });
+
+        revalidatePath('/super-admin/igrejas'); // Ajuste para a rota onde o painel vai ficar
+        return { success: true, message: `Igreja atualizada com sucesso!` };
+
+    } catch (error) {
+        console.error("Erro ao atualizar igreja:", error);
+        return { error: 'Erro interno ao tentar atualizar a igreja.' };
+    }
+}

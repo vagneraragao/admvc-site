@@ -43,32 +43,52 @@ export default function EditarMembroClient({
         country: membro.country || 'Portugal'
     })
 
+    // 📍 MÁGICA DO CÓDIGO POSTAL (VERSÃO MELHORADA)
     const handleCodigoPostalChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Remove tudo o que não for número
         let valor = e.target.value.replace(/\D/g, '');
-        if (valor.length > 4) valor = valor.substring(0, 4) + '-' + valor.substring(4, 7);
-        setEndereco(prev => ({ ...prev, postal_code: valor }));
 
+        // Coloca o traço automaticamente (XXXX-XXX)
+        if (valor.length > 4) {
+            valor = valor.substring(0, 4) + '-' + valor.substring(4, 7);
+        }
+
+        // Atualiza visualmente o input enquanto o utilizador digita
+        setEndereco((prev: any) => ({ ...prev, postal_code: valor }));
+
+        // Quando tiver exatamente 8 caracteres (Ex: 1000-001), dispara o Fetch
         if (valor.length === 8) {
             setBuscandoCP(true);
             try {
                 const res = await fetch(`https://json.geoapi.pt/cp/${valor}`);
+
                 if (res.ok) {
                     const data = await res.json();
+
+                    // 👉 DICA DE OURO: Isto vai imprimir o resultado no F12 (Console)
+                    console.log("🔍 Dados recebidos do Código Postal:", data);
+
                     const info = Array.isArray(data) ? data[0] : data;
+
                     if (info && !info.erro) {
-                        setEndereco(prev => ({
+                        setEndereco((prev: any) => ({
                             ...prev,
-                            // A API geoapi.pt pode retornar 'Rua', 'rua', ou uma array 'ruas'
-                            address_1: info.Rua || info.rua || (info.ruas && info.ruas[0]) || prev.address_1,
+                            // A API usa 'ruas' (array) ou 'rua' (string)
+                            address_1: (info.ruas && info.ruas.length > 0) ? info.ruas[0] : (info.rua || prev.address_1),
+                            // A API usa 'Freguesia'
                             neighborhood: info.Freguesia || prev.neighborhood,
-                            city: info.Localidade || info.Município || info.Concelho || prev.city,
-                            state: info.Distrito || prev.state,
-                            country: 'Portugal' // Força Portugal pois a API é PT
+                            // A API usa 'Designacao' ou 'Município' para a Cidade
+                            city: info.Designacao || info.Município || info.Localidade || prev.city,
+                            country: "Portugal" // Força Portugal
                         }));
+                    } else {
+                        console.warn("⚠️ Código postal válido, mas não encontrado na base de dados da API.");
                     }
+                } else {
+                    console.error(`❌ Erro da API: Status ${res.status}`);
                 }
             } catch (error) {
-                console.error("Erro ao buscar Código Postal:", error);
+                console.error("❌ Falha crítica ao buscar Código Postal (Pode ser bloqueio de rede ou CORS):", error);
             } finally {
                 setBuscandoCP(false);
             }

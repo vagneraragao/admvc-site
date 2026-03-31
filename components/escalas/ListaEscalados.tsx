@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from 'react'
-import { CalendarDays, Clock, ShieldCheck, User, CheckCircle2, Trash2, Edit3, X, Save, Loader2, LayoutGrid, MessageCircle, ChevronDown } from 'lucide-react'
+import { CalendarDays, Clock, ShieldCheck, User, CheckCircle2, Trash2, Edit3, X, Save, Loader2, LayoutGrid, MessageCircle, ChevronDown, Music } from 'lucide-react'
 import { removerEscalaAction, atualizarEscalaAction } from '@/actions/admin-actions'
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 import BotaoApagarEvento from '@/components/admin/BotaoApagarEvento'
+import ModalRepertorio from '@/components/louvor/ModalRepertorio' // <-- Import do Modal
 
-// Adicionámos "membros" às propriedades para capturar as funções de cada um
-export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos: any[], isAdmin?: boolean, membros?: any[] }) {
+// Adicionámos "membros" às propriedades para capturar as funções de cada um e "isLouvor" para exibir o repertório
+export default function ListaEscalados({ eventos, isAdmin, membros, isLouvor }: { eventos: any[], isAdmin?: boolean, membros?: any[], isLouvor?: boolean }) {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [isPending, setIsPending] = useState(false);
 
@@ -26,13 +27,13 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
         setIsPending(false);
 
         if (res.ok) {
-            setEditingId(null); 
+            setEditingId(null);
         } else {
             alert(res.error);
         }
     }
 
-// Função para Partilhar via WhatsApp (Versão Bulletproof com Códigos Unicode)
+    // Função para Partilhar via WhatsApp (Versão Bulletproof com Códigos Unicode)
     function handlePartilharWhatsApp(evento: any, escalasAgrupadas: any) {
         const dataFormatada = new Intl.DateTimeFormat('pt-PT', {
             weekday: 'long', day: '2-digit', month: 'long'
@@ -40,26 +41,23 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
 
         const diaSemanaCapitalizado = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
-        // Códigos Unicode oficiais (À prova de erros de codificação)
-        const eEstrela = '\u2728';     // ✨
-        const eIgreja = '\u26EA';      // ⛪
-        const eCalendario = '\uD83D\uDCC5'; // 📅
-        const eAzul = '\uD83D\uDD39';  // 🔹
-        const ePessoa = '\uD83D\uDC64'; // 👤
-        const eRelogio = '\u23F0';     // ⏰
-        const eCheck = '\u2705';       // ✅
-        const eLivro = '\uD83D\uDCD6'; // 📖
-        const eMaos = '\uD83D\uDE4F';  // 🙏
+        const eEstrela = '\u2728';
+        const eIgreja = '\u26EA';
+        const eCalendario = '\uD83D\uDCC5';
+        const eAzul = '\uD83D\uDD39';
+        const ePessoa = '\uD83D\uDC64';
+        const eRelogio = '\u23F0';
+        const eCheck = '\u2705';
+        const eLivro = '\uD83D\uDCD6';
+        const eMaos = '\uD83D\uDE4F';
 
-        // CABEÇALHO DO EVENTO
         let texto = `${eEstrela} *ESCALA DE SERVIÇO* ${eEstrela}\n\n`;
         texto += `${eIgreja} *${evento.nome.toUpperCase()}*\n`;
         texto += `${eCalendario} _${diaSemanaCapitalizado}_\n\n`;
 
-        // LISTA AGRUPADA POR DEPARTAMENTO
         Object.entries(escalasAgrupadas).forEach(([deptoNome, escalas]: [string, any]) => {
             texto += `${eAzul} *${deptoNome.toUpperCase()}* ${eAzul}\n`;
-            
+
             escalas.forEach((esc: any) => {
                 const nome = `${esc.membro.first_name} ${esc.membro.last_name}`;
                 texto += `${ePessoa} ${nome}\n`;
@@ -68,16 +66,11 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
             texto += `\n`;
         });
 
-        // RODAPÉ E VERSÍCULO
         texto += `────────────────\n`;
         texto += `${eCheck} *Atenção:* Por favor, não se esqueçam de confirmar a vossa presença na plataforma!\n\n`;
-        
         texto += `${eLivro} _"Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens."_ \n— *Colossenses 3:23* ${eMaos}`;
 
-        // Codifica o texto para formato de URL de forma segura
         const textoEncoded = encodeURIComponent(texto);
-        
-        // Abre o WhatsApp usando a API mais estável
         window.open(`https://api.whatsapp.com/send?text=${textoEncoded}`, '_blank');
     }
 
@@ -105,14 +98,14 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                 }, {});
 
                 return (
-                    <details 
-                        key={evento.id} 
-                        open={index === 0} 
+                    <details
+                        key={evento.id}
+                        open={index === 0}
                         className="group bg-bg border border-soft rounded-[2.5rem] overflow-hidden shadow-sm transition-all duration-300"
                     >
                         {/* CABEÇALHO DO EVENTO */}
                         <summary className="list-none cursor-pointer bg-bg2 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 outline-none [&::-webkit-details-marker]:hidden hover:bg-soft/10 transition-colors group-open:border-b border-soft">
-                            
+
                             <div className="flex items-start sm:items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-soft/50 flex items-center justify-center text-muted group-open:bg-blue-500 group-open:text-white transition-colors shrink-0">
                                     <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
@@ -126,7 +119,7 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                                         <CalendarDays size={12} className="text-figueira" /> {dataFormatada}
                                     </p>
                                 </div>
-                                
+
                                 {isAdmin && (
                                     <div className="mt-1 sm:mt-0 flex gap-2" onClick={(e) => e.preventDefault()}>
                                         <ModalEditarEvento evento={evento} />
@@ -136,7 +129,7 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3" onClick={(e) => e.preventDefault()}>
-                                <button 
+                                <button
                                     onClick={() => handlePartilharWhatsApp(evento, escalasAgrupadasPorDepto)}
                                     className="bg-green-50 text-green-600 hover:bg-green-500 hover:text-white border border-green-200 transition-all text-[9px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 active:scale-95"
                                     title="Enviar Escala para o Grupo"
@@ -150,7 +143,7 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                             </div>
                         </summary>
 
-                        {/* LISTA AGRUPADA POR DEPARTAMENTO */}
+                        {/* LISTA AGRUPADA POR DEPARTAMENTO E MODAL DE REPERTÓRIO */}
                         <div className="flex flex-col animate-in slide-in-from-top-2 duration-300">
                             {Object.entries(escalasAgrupadasPorDepto).map(([deptoNome, escalasDoDepto]: any) => (
                                 <div key={deptoNome}>
@@ -168,26 +161,25 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                                         {escalasDoDepto.map((escala: any) => {
                                             const isEditing = editingId === escala.id;
 
-                                            // LÓGICA MÁGICA PARA DESCOBRIR AS FUNÇÕES DO MEMBRO
-                                            let funcoesDisponiveis = [escala.funcao]; // Garante que a função atual é sempre visível
-                                            
+                                            let funcoesDisponiveis = [escala.funcao];
+
                                             if (membros) {
                                                 const membroCompleto = membros.find((m: any) => m.id === escala.membro.id);
                                                 if (membroCompleto) {
                                                     const funcoesSet = new Set<string>();
-                                                    
-                                                    // Funções que o membro tem registadas neste departamento
+
                                                     membroCompleto.ministerios?.forEach((vinc: any) => {
-                                                        if (vinc.departamento_id === escala.departamento_id) {
-                                                            funcoesSet.add(vinc.funcao);
+                                                        if (vinc.departamento_id === escala.departamento_id && vinc.funcoes) {
+                                                            vinc.funcoes.forEach((f: any) => {
+                                                                if (f.funcao?.nome) funcoesSet.add(f.funcao.nome);
+                                                            });
                                                         }
                                                     });
-                                                    
-                                                    // Se for o líder oficial do departamento, garante a função "Líder"
+
                                                     const isLiderOficial = membroCompleto.departamentos_liderados?.some((d: any) => d.id === escala.departamento_id);
                                                     if (isLiderOficial) funcoesSet.add('Líder');
-                                                    
-                                                    funcoesSet.add(escala.funcao); // Proteção contra falhas
+
+                                                    funcoesSet.add(escala.funcao);
                                                     funcoesDisponiveis = Array.from(funcoesSet);
                                                 }
                                             }
@@ -235,7 +227,7 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                                                                 >
                                                                     <Edit3 size={14} />
                                                                 </button>
-                                                                
+
                                                                 <button
                                                                     onClick={() => handleRemover(escala.id)}
                                                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg border border-soft text-muted hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
@@ -297,6 +289,22 @@ export default function ListaEscalados({ eventos, isAdmin, membros }: { eventos:
                                     </div>
                                 </div>
                             ))}
+
+                            {/* 👇 O BOTÃO DE REPERTÓRIO ENTRA AQUI, NO FINAL DE CADA EVENTO SE FOR LOUVOR 👇 */}
+                            {isLouvor && (
+                                <div className="p-4 sm:p-6 bg-figueira/5 border-t border-figueira/10">
+                                    <div className="flex items-center gap-2 mb-3 px-1">
+                                        <Music size={14} className="text-figueira" />
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-fg">Gestão Musical</h4>
+                                    </div>
+                                    <ModalRepertorio
+                                        eventoId={evento.id}
+                                        repertorioInical={evento.repertorio || []}
+                                        podeEditar={true}
+                                    />
+                                </div>
+                            )}
+
                         </div>
                     </details>
                 )

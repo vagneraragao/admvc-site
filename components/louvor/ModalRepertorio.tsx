@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
-import { Music, Youtube, ChevronRight, Hash, GripVertical, Trash2, Loader2, X, Plus, CheckCircle2, ListMusic, MonitorUp, Search, RefreshCcw, TerminalSquare } from 'lucide-react'
+import { Music, Youtube, Save, ChevronRight, Hash, GripVertical, Trash2, Loader2, X, Plus, CheckCircle2, ListMusic, MonitorUp, Search, RefreshCcw, TerminalSquare } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -9,7 +9,8 @@ import {
     removerMusicaDoRepertorio,
     atualizarOrdemRepertorio,
     sincronizarAcervoLocal,
-    buscarMusicasLocalmente
+    buscarMusicasLocalmente,
+    adicionarMusicaManualAoEvento
 } from '@/actions/louvor-actions'
 import Portal from '@/components/ui/Portal'
 
@@ -40,6 +41,10 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
     const [tom, setTom] = useState('')
     const [erro, setErro] = useState('')
 
+    const [isAddingManual, setIsAddingManual] = useState(false)
+    const [tituloManual, setTituloManual] = useState('')
+    const [artistaManual, setArtistaManual] = useState('')
+
     // Estados Holyrics & Logs
     const [isSyncing, setIsSyncing] = useState(false)
     const [syncLogs, setSyncLogs] = useState<{ id: number, time: string, msg: string, type: string }[]>([])
@@ -48,6 +53,20 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
 
     const dragItem = useRef<number | null>(null)
     const dragOverItem = useRef<number | null>(null)
+
+    const handleAddManual = async () => {
+        if (!tituloManual.trim() || !tom.trim()) return setErro('Nome e tom são obrigatórios!')
+        setErro('')
+        startTransition(async () => {
+            const res = await adicionarMusicaManualAoEvento(eventoId, tituloManual, artistaManual, tom)
+            if (res.success) {
+                setTituloManual(''); setArtistaManual(''); setTom(''); setIsAddingManual(false);
+                router.refresh()
+            } else {
+                setErro(res.error || 'Erro ao adicionar música.')
+            }
+        })
+    }
 
     useEffect(() => {
         setLista([...repertorioInical].sort((a, b) => a.ordem - b.ordem))
@@ -68,29 +87,64 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
             alert('Conecte ao Holyrics primeiro no menu Ferramentas.')
             return
         }
-
+        if (!confirm('Deseja sincronizar a base de dados com o Holyrics? Esta ação pode demorar alguns instantes.')) {
+            return;
+        }
         setIsSyncing(true)
-        setSyncLogs([]) // Limpa logs anteriores
+        setSyncLogs([])
         addLog('A conectar ao Holyrics...', 'info')
 
         try {
+            // TENTATIVA 1: Pedir tudo de uma vez com um limite alto
             const res = await fetch(`${ip.replace(/\/$/, '')}/api/SearchSong?token=${token}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: "" })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: "", limit: 10000, size: 10000, max: 10000 })
             })
             const json = await res.json()
 
-            if (json.status === 'ok' && json.data) {
-                const total = json.data.length
-                addLog(`Encontradas ${total} músicas. Iniciando download...`, 'info')
+            let musicasParaSincronizar: any[] = []
 
-                // Define o tamanho do lote (Chunk)
+            if (json.status === 'ok' && json.data) {
+                musicasParaSincronizar = json.data;
+
+                // TENTATIVA 2: Se a API cortou a torneira exatamente nas 50 músicas, ativamos a Varredura Profunda
+                if (musicasParaSincronizar.length === 50) {
+                    addLog('O Holyrics limitou a 50 músicas. A iniciar Varredura Profunda (A-Z)...', 'info');
+
+                    const mapMusicas = new Map();
+                    musicasParaSincronizar.forEach((m: any) => mapMusicas.set(m.id, m));
+
+                    // Varremos o alfabeto para pescar o resto do banco de dados localmente
+                    const letras = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+                    for (const letra of letras) {
+                        const resLetra = await fetch(`${ip.replace(/\/$/, '')}/api/SearchSong?token=${token}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: letra, title: true, limit: 1000 })
+                        });
+                        const jsonLetra = await resLetra.json();
+
+                        if (jsonLetra.status === 'ok' && jsonLetra.data) {
+                            jsonLetra.data.forEach((m: any) => mapMusicas.set(m.id, m));
+                        }
+                    }
+
+                    // Converte o Mapa (sem duplicados) de volta para uma lista
+                    musicasParaSincronizar = Array.from(mapMusicas.values());
+                }
+
+                const total = musicasParaSincronizar.length
+                addLog(`Sucesso! Encontradas ${total} músicas no total. A iniciar gravação...`, 'info')
+
                 const chunkSize = 100
                 let totalInseridas = 0
                 let totalAtualizadas = 0
 
-                // Loop para processar 100 músicas de cada vez
+                // Guarda as músicas no nosso banco de dados em lotes para não travar o servidor
                 for (let i = 0; i < total; i += chunkSize) {
-                    const chunk = json.data.slice(i, i + chunkSize)
+                    const chunk = musicasParaSincronizar.slice(i, i + chunkSize)
                     addLog(`A processar lote ${Math.floor(i / chunkSize) + 1} de ${Math.ceil(total / chunkSize)}...`, 'info')
 
                     const syncRes = await sincronizarAcervoLocal(chunk)
@@ -103,8 +157,7 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
                     }
                 }
 
-                addLog(`Concluído! ${totalInseridas} músicas novas registadas.`, 'success')
-                addLog(`${totalAtualizadas} músicas atualizadas com sucesso.`, 'success')
+                addLog(`Concluído! ${totalInseridas} novas inseridas, ${totalAtualizadas} atualizadas.`, 'success')
             }
         } catch (error: any) {
             addLog(`Falha crítica: ${error.message || 'Erro na conexão.'}`, 'error')
@@ -241,34 +294,49 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    {podeEditar && lista.length > 0 && (
-                                        <button onClick={enviarParaHolyrics} disabled={isSendingToHolyrics} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50" title="Sincronizar Playlist no Telão">
-                                            {isSendingToHolyrics ? <Loader2 size={16} className="animate-spin" /> : <MonitorUp size={16} />}
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Enviar p/ Holyrics</span>
-                                        </button>
-                                    )}
                                     <button onClick={() => setIsOpen(false)} className="w-10 h-10 bg-soft/20 rounded-full flex items-center justify-center text-muted hover:bg-red-500 hover:text-white transition-all active:scale-95"><X size={20} /></button>
                                 </div>
                             </div>
 
                             <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
 
-                                {/* BLOCO DE SINCRONIZAÇÃO COM LOGS */}
+                                {/* BLOCO DE INTEGRAÇÃO HOLYRICS (DISCRETO) */}
                                 {podeEditar && (
-                                    <div className="bg-soft/10 border border-soft rounded-2xl p-4 mb-4">
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2">
-                                                <RefreshCcw size={14} className="text-muted" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-fg">Acervo Local</span>
+                                    <div className="mb-6">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-soft/5 border border-soft rounded-2xl p-3 shadow-sm">
+                                            <div className="flex items-center gap-2 px-2">
+                                                <MonitorUp size={14} className="text-muted" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-muted">Holyrics Sync</span>
                                             </div>
-                                            <button onClick={handleSyncAcervo} disabled={isSyncing} className="flex items-center gap-2 bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-muted hover:text-blue-500 transition-colors px-3 py-1.5 rounded-lg active:scale-95 disabled:opacity-50">
-                                                {isSyncing ? <Loader2 size={12} className="animate-spin" /> : 'Sincronizar Base'}
-                                            </button>
+
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {/* BOTÃO 1: SINCRONIZAR BASE */}
+                                                <button
+                                                    onClick={handleSyncAcervo}
+                                                    disabled={isSyncing}
+                                                    className="flex flex-1 sm:flex-none justify-center items-center gap-2 bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-muted hover:text-blue-500 transition-colors px-4 py-2.5 rounded-xl active:scale-95 disabled:opacity-50"
+                                                >
+                                                    {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCcw size={12} />}
+                                                    Sincronizar Base
+                                                </button>
+
+                                                {/* BOTÃO 2: ENVIAR PARA O TELÃO */}
+                                                {lista.length > 0 && (
+                                                    <button
+                                                        onClick={enviarParaHolyrics}
+                                                        disabled={isSendingToHolyrics}
+                                                        className="flex flex-1 sm:flex-none justify-center items-center gap-2 bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors px-4 py-2.5 rounded-xl active:scale-95 disabled:opacity-50"
+                                                    >
+                                                        {isSendingToHolyrics ? <Loader2 size={12} className="animate-spin" /> : <MonitorUp size={12} />}
+                                                        Enviar P/ Telão
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* TERMINAL DE LOGS VISUAL */}
+                                        {/* TERMINAL DE LOGS VISUAL (Aparece logo abaixo com uma animação suave se houver logs) */}
                                         {syncLogs.length > 0 && (
-                                            <div className="mt-4 p-3 bg-black/90 rounded-xl h-32 overflow-y-auto font-mono text-[10px] space-y-1 scrollbar-hide animate-in fade-in">
+                                            <div className="mt-2 p-3 bg-black/90 rounded-xl h-32 overflow-y-auto font-mono text-[10px] space-y-1 scrollbar-hide animate-in slide-in-from-top-2">
                                                 {syncLogs.map((log) => (
                                                     <div key={log.id} className="flex gap-2 border-b border-white/5 pb-1">
                                                         <span className="text-white/30 shrink-0">[{log.time}]</span>
@@ -282,14 +350,20 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
                                     </div>
                                 )}
 
-                                {/* RESTO DO MODAL: FORMULÁRIO DE ADICIONAR E LISTA */}
+                                {/* BOTÕES DE ADIÇÃO (ACERVO vs MANUAL) */}
                                 {podeEditar && (
                                     <div className="mb-6">
-                                        {!isAdding ? (
-                                            <button onClick={() => setIsAdding(true)} className="w-full py-4 border-2 border-dashed border-soft hover:border-figueira/50 rounded-2xl flex items-center justify-center gap-2 text-muted hover:text-figueira transition-colors text-[10px] font-black uppercase tracking-widest">
-                                                <Plus size={16} /> Buscar Música do Acervo
-                                            </button>
-                                        ) : (
+                                        {!isAdding && !isAddingManual ? (
+                                            <div className="flex flex-col sm:flex-row gap-3">
+                                                <button onClick={() => setIsAdding(true)} className="flex-1 py-4 border-2 border-dashed border-soft hover:border-figueira/50 rounded-2xl flex items-center justify-center gap-2 text-muted hover:text-figueira transition-colors text-[10px] font-black uppercase tracking-widest bg-bg2">
+                                                    <Search size={16} /> Buscar no Acervo
+                                                </button>
+                                                <button onClick={() => setIsAddingManual(true)} className="flex-1 py-4 border-2 border-dashed border-soft hover:border-blue-500/50 rounded-2xl flex items-center justify-center gap-2 text-muted hover:text-blue-500 transition-colors text-[10px] font-black uppercase tracking-widest bg-bg2">
+                                                    <Plus size={16} /> Nova (Manual)
+                                                </button>
+                                            </div>
+                                        ) : isAdding ? (
+                                            // --- FORMULÁRIO 1: BUSCAR NO ACERVO ---
                                             <div className="p-5 bg-bg2 border border-soft rounded-2xl space-y-4 animate-in slide-in-from-top-2 relative overflow-hidden">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <h4 className="text-[11px] font-black text-fg uppercase tracking-widest">Adicionar da Base</h4>
@@ -298,6 +372,7 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
 
                                                 {!musicaSelecionada ? (
                                                     <>
+                                                        {/* CAIXA DE TEXTO DA BUSCA VOLTOU AQUI! */}
                                                         <div className="flex gap-2 mb-4">
                                                             <input type="text" value={busca} onChange={(e) => setBusca(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleBuscarLocal()} className="flex-1 bg-bg border border-soft rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-figueira" placeholder="Pesquise por nome ou artista..." />
                                                             <button onClick={handleBuscarLocal} disabled={isPending || !busca} className="bg-figueira text-white px-4 rounded-xl hover:bg-figueira/90 transition-all disabled:opacity-50">
@@ -305,7 +380,7 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
                                                             </button>
                                                         </div>
                                                         {resultados.length > 0 && (
-                                                            <div className="max-h-40 overflow-y-auto bg-bg border border-soft rounded-xl p-1 shadow-inner">
+                                                            <div className="max-h-40 overflow-y-auto bg-bg border border-soft rounded-xl p-1 shadow-inner custom-scrollbar">
                                                                 {resultados.map(m => (
                                                                     <button key={m.id} onClick={() => setMusicaSelecionada(m)} className="w-full text-left p-3 hover:bg-soft/30 rounded-lg transition-colors flex justify-between items-center group">
                                                                         <div>
@@ -323,16 +398,99 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
                                                             <div><p className="text-[9px] text-muted font-bold uppercase tracking-widest">Selecionada</p><h4 className="text-sm font-black text-fg">{musicaSelecionada.titulo}</h4></div>
                                                             <button onClick={() => setMusicaSelecionada(null)} className="text-[9px] text-figueira uppercase font-black underline">Trocar</button>
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest mb-1 block">Tom Escolhido *</label>
-                                                            <input type="text" value={tom} onChange={(e) => setTom(e.target.value.toUpperCase())} maxLength={5} className="w-full bg-bg border border-soft rounded-xl px-3 py-3 text-sm font-black outline-none focus:border-figueira uppercase text-center" placeholder="Ex: G, C#m" />
+
+                                                        {/* TECLADO INTELIGENTE DE TONS */}
+                                                        <div className="space-y-2 animate-in slide-in-from-bottom-2">
+                                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest block flex items-center gap-1">
+                                                                <Hash size={12} className="text-figueira" /> Selecione o Tom *
+                                                            </label>
+                                                            <div className="bg-bg border border-soft p-1.5 rounded-2xl shadow-inner">
+                                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 mb-1.5">
+                                                                    {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'].map((nota) => {
+                                                                        const isSelected = tom.replace('m', '') === nota;
+                                                                        return (
+                                                                            <button key={nota} type="button" onClick={() => setTom(nota + (tom.endsWith('m') ? 'm' : ''))} className={`py-2.5 text-xs font-black rounded-xl transition-all border ${isSelected ? 'bg-figueira text-white border-figueira shadow-md scale-[1.02] z-10' : 'bg-bg text-muted border-soft hover:border-figueira/40 hover:text-fg'}`}>
+                                                                                {nota}
+                                                                            </button>
+                                                                        )
+                                                                    })}
+                                                                </div>
+                                                                <div className="flex gap-1.5 h-10">
+                                                                    <button type="button" onClick={() => setTom(tom.endsWith('m') ? tom.slice(0, -1) : tom + 'm')} className={`flex-1 text-[10px] font-black uppercase rounded-xl transition-all border flex items-center justify-center gap-1 ${tom.endsWith('m') ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-bg text-muted border-soft hover:bg-slate-100 hover:text-slate-800'}`}>
+                                                                        Menor (m)
+                                                                    </button>
+                                                                    <div className="flex-[1.5] relative">
+                                                                        <input type="text" value={tom} onChange={(e) => { let val = e.target.value; if (val.endsWith('M')) val = val.slice(0, -1) + 'm'; setTom(val.charAt(0).toUpperCase() + val.slice(1)); }} maxLength={7} className="w-full h-full bg-bg border border-soft rounded-xl px-3 text-sm font-black outline-none focus:border-figueira text-center shadow-sm" placeholder="Ou digite: G/B" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
+
                                                         {erro && <p className="text-[10px] text-red-500 font-bold uppercase text-center">{erro}</p>}
                                                         <button onClick={handleAdd} disabled={isPending || !tom} className="w-full bg-figueira hover:bg-figueira/90 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50">
                                                             {isPending ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Adicionar à Escala
                                                         </button>
                                                     </div>
                                                 )}
+                                            </div>
+                                        ) : (
+                                            // --- FORMULÁRIO 2: INSERÇÃO MANUAL (OFFLINE) ---
+                                            <div className="p-5 bg-bg2 border-2 border-blue-500/20 rounded-2xl space-y-4 animate-in slide-in-from-top-2 relative overflow-hidden">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                                        <h4 className="text-[11px] font-black text-fg uppercase tracking-widest">Nova (Manual)</h4>
+                                                    </div>
+                                                    <button onClick={() => setIsAddingManual(false)} className="text-muted hover:text-red-500"><X size={16} /></button>
+                                                </div>
+
+                                                <p className="text-[9px] font-bold text-muted uppercase tracking-widest leading-relaxed">
+                                                    Se a música não existe no Holyrics, adicione-a aqui. Depois, descarregue no Holyrics e clique em "Sincronizar Base".
+                                                </p>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-muted uppercase tracking-widest mb-1 block">Nome da Música *</label>
+                                                        <input type="text" value={tituloManual} onChange={(e) => setTituloManual(e.target.value)} className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-500 outline-none shadow-sm" placeholder="Nome exato" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-muted uppercase tracking-widest mb-1 block">Artista / Banda</label>
+                                                        <input type="text" value={artistaManual} onChange={(e) => setArtistaManual(e.target.value)} className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-xs font-bold focus:border-blue-500 outline-none shadow-sm" placeholder="Opcional" />
+                                                    </div>
+                                                </div>
+
+                                                {/* TECLADO INTELIGENTE DE TONS TAMBÉM NO MANUAL */}
+                                                <div className="space-y-2 animate-in slide-in-from-bottom-2">
+                                                    <label className="text-[9px] font-black text-muted uppercase tracking-widest block flex items-center gap-1">
+                                                        <Hash size={12} className="text-blue-500" /> Selecione o Tom *
+                                                    </label>
+                                                    <div className="bg-bg border border-soft p-1.5 rounded-2xl shadow-inner">
+                                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 mb-1.5">
+                                                            {['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'].map((nota) => {
+                                                                const isSelected = tom.replace('m', '') === nota;
+                                                                return (
+                                                                    <button key={nota} type="button" onClick={() => setTom(nota + (tom.endsWith('m') ? 'm' : ''))} className={`py-2.5 text-xs font-black rounded-xl transition-all border ${isSelected ? 'bg-blue-500 text-white border-blue-500 shadow-md scale-[1.02] z-10' : 'bg-bg text-muted border-soft hover:border-blue-500/40 hover:text-fg'}`}>
+                                                                        {nota}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                        <div className="flex gap-1.5 h-10">
+                                                            <button type="button" onClick={() => setTom(tom.endsWith('m') ? tom.slice(0, -1) : tom + 'm')} className={`flex-1 text-[10px] font-black uppercase rounded-xl transition-all border flex items-center justify-center gap-1 ${tom.endsWith('m') ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-bg text-muted border-soft hover:bg-slate-100 hover:text-slate-800'}`}>
+                                                                Menor (m)
+                                                            </button>
+                                                            <div className="flex-[1.5] relative">
+                                                                <input type="text" value={tom} onChange={(e) => { let val = e.target.value; if (val.endsWith('M')) val = val.slice(0, -1) + 'm'; setTom(val.charAt(0).toUpperCase() + val.slice(1)); }} maxLength={7} className="w-full h-full bg-bg border border-soft rounded-xl px-3 text-sm font-black outline-none focus:border-blue-500 text-center shadow-sm" placeholder="Ou digite: G/B" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {erro && <p className="text-[10px] text-red-500 font-bold uppercase text-center">{erro}</p>}
+
+                                                <button onClick={handleAddManual} disabled={isPending || !tituloManual || !tom} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm">
+                                                    {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Gravar Localmente
+                                                </button>
                                             </div>
                                         )}
                                     </div>

@@ -18,7 +18,12 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
         where: { id: deptoId },
         include: {
             integrantes: {
-                include: { membro: true },
+                include: { 
+                    membro: true,
+                    funcoes: {
+                        include: { funcao: true }
+                    }
+                },
                 orderBy: { membro: { first_name: 'asc' } }
             }
         }
@@ -29,7 +34,18 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
         where: {
             membro_id: membroId,
             departamento_id: deptoId,
-            funcao: { contains: 'Lider', mode: 'insensitive' }
+            OR: [
+                { pode_gerir_escalas: true },
+                {
+                    funcoes: {
+                        some: {
+                            funcao: {
+                                nome: { contains: 'Lider', mode: 'insensitive' }
+                            }
+                        }
+                    }
+                }
+            ]
         }
     });
 
@@ -90,7 +106,7 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
                                 {item.membro.first_name} {item.membro.last_name}
                             </h4>
                             <span className="text-[9px] font-black text-figueira uppercase tracking-widest block mb-2 italic">
-                                {item.funcao}
+                                {item.funcoes?.map((f: any) => f.funcao?.nome).join(', ') || 'Membro'}
                             </span>
 
                             {/* Contactos Rápidos */}

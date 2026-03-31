@@ -80,7 +80,7 @@ export async function loginUnificado(formData: FormData) {
 
     console.log(`🎉 LOGIN BEM SUCEDIDO! Role: ${usuario.role}`);
 
-    const sessionData = `id:${usuario.id}|role:${usuario.role}`;
+    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}`;
     const cookieStore = await cookies();
 
     cookieStore.set('admvc_session', sessionData, {
@@ -133,7 +133,7 @@ export async function loginAdmin(formData: FormData) {
         return { error: "Acesso negado ou credenciais inválidas." };
     }
 
-    const sessionData = `id:${membro.id}|role:${membro.role}`;
+    const sessionData = `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`;
     const cookieStore = await cookies();
 
     cookieStore.set('admvc_session', sessionData, {
@@ -191,7 +191,7 @@ export async function validarLoginGeral(email: string, pass: string, redirectPat
         }
 
         const cookieStore = await cookies();
-        cookieStore.set('admvc_session', `id:${membro.id}|role:${membro.role}`, {
+        cookieStore.set('admvc_session', `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 2, // 2 horas
