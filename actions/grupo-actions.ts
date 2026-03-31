@@ -1,7 +1,19 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+//import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getTenantClient } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { getSessionData } from '@/lib/auth-utils'
+
+
+async function getDb() {
+    const headersList = await headers()
+    const tenantId = headersList.get('x-tenant-id')
+    if (!tenantId) throw new Error('Tenant não identificado.')
+    return { db: getTenantClient(Number(tenantId)), tenantId: Number(tenantId) }
+}
+
 
 export async function registrarEncontroAction(formData: FormData, presentesIds: number[]) {
     try {
@@ -41,8 +53,6 @@ export async function registrarEncontroAction(formData: FormData, presentesIds: 
     }
 }
 
-
-
 export async function atualizarDadosGrupoAction(formData: FormData) {
     try {
         const id = Number(formData.get('grupo_id'));
@@ -57,12 +67,12 @@ export async function atualizarDadosGrupoAction(formData: FormData) {
 
         await prisma.grupo.update({
             where: { id },
-            data: { 
-                dia_semana, 
-                horario, 
-                endereco, 
+            data: {
+                dia_semana,
+                horario,
+                endereco,
                 numero,
-                bairro, 
+                bairro,
                 cidade,
                 estado,
                 pais
@@ -93,5 +103,110 @@ export async function gerirMembroGrupoAction(grupoId: number, membroId: number, 
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false, erro: "Erro ao processar membro." };
+    }
+}
+
+export async function registarEncontro(formData: FormData) {
+    try {
+        const session = await getSessionData()
+        if (!session) return { sucesso: false, error: 'Sessão expirada.' }
+
+        const { db, tenantId } = await getDb()
+
+        const grupo_id = Number(formData.get('grupo_id'))
+        const tema = formData.get('tema') as string
+        const data = new Date(formData.get('data') as string)
+        const foto_url = formData.get('foto_url') as string | null
+        const presentes_ids = formData.getAll('presentes_ids').map(Number).filter(Boolean)
+
+        console.log('🟡 [ACTION registarEncontro] grupo_id:', grupo_id)
+        console.log('🟡 [ACTION registarEncontro] tema:', tema)
+        console.log('🟡 [ACTION registarEncontro] data:', data)
+        console.log('🟡 [ACTION registarEncontro] foto_url:', foto_url)
+        console.log('🟡 [ACTION registarEncontro] presentes_ids:', presentes_ids)
+
+        if (!grupo_id || !tema || !data) {
+            console.error('❌ [ACTION registarEncontro] Dados incompletos')
+            return { sucesso: false, error: 'Dados incompletos.' }
+        }
+
+        if (session.role !== 'ADMIN') {
+            const grupo = await db.grupo.findFirst({
+                where: {
+                    id: grupo_id,
+                    tenant_id: tenantId,
+                    lideres: { some: { id: session.membroId } }
+                }
+            })
+            if (!grupo) {
+                console.error('❌ [ACTION registarEncontro] Sem permissão')
+                return { sucesso: false, error: 'Sem permissão para registar encontros neste grupo.' }
+            }
+        }
+
+        const encontro = await db.encontroGrupo.create({
+            data: {
+                grupo_id,
+                tenant_id: tenantId,
+                tema,
+                data,
+                // ✅ foto_url guardada corretamente
+                foto_url: foto_url || null,
+                ...(presentes_ids.length > 0 && {
+                    presentes: {
+                        connect: presentes_ids.map(id => ({ id }))
+                    }
+                })
+            }
+        })
+
+        console.log('✅ [ACTION registarEncontro] Encontro criado:', encontro.id, '| foto_url:', encontro.foto_url)
+
+        revalidatePath('/membros/dashboard')
+        return { sucesso: true }
+
+    } catch (error: any) {
+        console.error('❌ [ACTION registarEncontro] Exceção:', error?.message || error)
+        return { sucesso: false, error: 'Erro interno do servidor.' }
+    }
+}
+
+export async function atualizarHorarioGrupo(formData: FormData) {
+    try {
+        const session = await getSessionData()
+        if (!session) return { sucesso: false, error: 'Sessão expirada.' }
+
+        const { db, tenantId } = await getDb()
+
+        const grupo_id = Number(formData.get('grupo_id'))
+        const dia_semana = formData.get('dia_semana') as string
+        const horario = formData.get('horario') as string
+
+        if (!grupo_id || !dia_semana || !horario) {
+            return { sucesso: false, error: 'Dados incompletos.' }
+        }
+
+        if (session.role !== 'ADMIN') {
+            const grupo = await db.grupo.findFirst({
+                where: {
+                    id: grupo_id,
+                    tenant_id: tenantId,
+                    lideres: { some: { id: session.membroId } }
+                }
+            })
+            if (!grupo) return { sucesso: false, error: 'Sem permissão para editar este grupo.' }
+        }
+
+        await db.grupo.update({
+            where: { id: grupo_id },
+            data: { dia_semana, horario }
+        })
+
+        revalidatePath('/membros/dashboard')
+        return { sucesso: true }
+
+    } catch (error: any) {
+        console.error('❌ [ACTION atualizarHorarioGrupo] Exceção:', error?.message || error)
+        return { sucesso: false, error: 'Erro interno do servidor.' }
     }
 }

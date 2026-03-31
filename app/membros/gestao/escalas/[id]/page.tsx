@@ -5,7 +5,8 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
 import { ShieldCheck, Users, Award, Calendar, Activity } from 'lucide-react'
-// Repare que já nem precisamos importar o ModalRepertorio aqui, pois ele agora vive dentro do ListaEscalados
+//import RelatorioEscalasDepartamento from '@/components/escalas/RelatorioEscalasDepartamento'
+import ModalRelatorioEscalaLider from '@/components/escalas/ModalRelatorioEscalaLider'
 
 export default async function GestaoEscalaLider({ params }: { params: { id: string } }) {
     const { id } = await params;
@@ -78,6 +79,38 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
     // 3. IDENTIFICAR SE É LOUVOR
     const isLouvor = depto.nome.toLowerCase().includes('louvor') || depto.nome.toLowerCase().includes('música') || depto.nome.toLowerCase().includes('musica');
 
+    const historicoEscalas = await prisma.escala.findMany({
+        where: {
+            departamento_id: deptoId,
+            // Busca os últimos 6 meses + próximos 3 meses para ter contexto completo
+            evento: {
+                data: {
+                    gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
+                    lte: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+                }
+            }
+        },
+        include: {
+            membro: {
+                select: { id: true, first_name: true, last_name: true, avatar_file: true }
+            },
+            evento: {
+                select: { id: true, nome: true, data: true }
+            }
+        },
+        orderBy: { evento: { data: 'desc' } }
+    })
+
+    const historicoSerializado = historicoEscalas.map(e => ({
+        ...e,
+        motivo_recusa: (e as any).motivo_recusa ?? null,
+        evento: {
+            ...e.evento,
+            data: e.evento.data.toISOString()
+        }
+    }))
+
+
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
             <Breadcrumb items={[
@@ -95,6 +128,13 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                         Escalas: <span className="text-muted/30">{depto.nome}</span>
                     </h1>
                 </div>
+
+                {/* BOTÃO RELATÓRIO ESTRATÉGICO */}
+                <ModalRelatorioEscalaLider
+                    departamentoId={deptoId}
+                    departamentoNome={depto.nome}
+                    equipaDoDepartamento={equipaDoDepartamento}
+                />
             </header>
 
             {/* CARDS DE ESTATÍSTICAS */}
@@ -160,6 +200,16 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                         />
                     </div>
                 </section>
+
+                {/*
+                <section className="mt-8 border-t border-soft pt-8">
+                    <RelatorioEscalasDepartamento
+                        escalas={historicoSerializado}
+                        equipaDoDepartamento={equipaDoDepartamento}
+                    />
+                </section>
+*/}
+
             </div>
         </main>
     );

@@ -116,7 +116,7 @@ export default async function AdminDashboard() {
                         </summary>
 
                         <div className="absolute right-0 top-full mt-2 w-56 bg-bg border border-soft p-2 rounded-[1.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-1">
-                            <Link href="/admin/relatorios/loyverse" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
+                            <Link href="/admin/relatorios/loyverse/diagnostico" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">
                                 <CreditCard size={14} className="text-muted group-hover/link:text-figueira" /> Loyverse
                             </Link>
                             <Link href="/admin/relatorios/escalas" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 group/link">

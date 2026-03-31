@@ -1,95 +1,98 @@
 'use client'
 
 import { useState } from 'react'
-import { Wallet, CalendarDays, Target, Ticket, CheckCircle2, ChevronDown, EyeOff, Trophy, HeartHandshake } from 'lucide-react'
-import BotaoRelatorio from '@/components/membros/BotaoRelatorio'
+import {
+    HeartHandshake, Target, Ticket, ChevronDown,
+    EyeOff, Eye, Trophy, CalendarDays, CheckCircle2,
+    TrendingUp, Clock
+} from 'lucide-react'
 
-interface PainelFinanceiroProps {
-    objetivos: any[];
-    numerosRifa: any[];
-    contribuicoes?: any[];
+interface Props {
+    objetivos: any[]
+    numerosRifa: any[]
+    contribuicoes?: any[]
 }
 
 export default function PainelFinanceiroMembro({
     objetivos = [],
     numerosRifa = [],
     contribuicoes = []
-}: PainelFinanceiroProps) {
+}: Props) {
 
-    // ========================================================================
-    // LÓGICA DE AGRUPAMENTO
-    // ========================================================================
-
-    // 1. Agrupar Rifas por ID da Rifa
+    // ── AGRUPAMENTOS ─────────────────────────────────────────────────────────
     const rifasAgrupadas = numerosRifa.reduce((acc: any, curr: any) => {
         if (!acc[curr.rifa_id]) {
-            acc[curr.rifa_id] = {
-                rifa: curr.rifa,
-                numeros: [],
-                dataCompra: curr.createdAt
-            };
+            acc[curr.rifa_id] = { rifa: curr.rifa, numeros: [], dataCompra: curr.createdAt }
         }
-        acc[curr.rifa_id].numeros.push(curr.numero);
-        return acc;
-    }, {});
+        acc[curr.rifa_id].numeros.push(curr.numero)
+        return acc
+    }, {})
+    const rifasList = Object.values(rifasAgrupadas) as any[]
 
-    const rifasList = Object.values(rifasAgrupadas) as any[];
-
-    // 2. Agrupar Dízimos e Ofertas por Mês/Ano
     const contribuicoesAgrupadas = contribuicoes.reduce((acc: any, curr: any) => {
-        const data = new Date(curr.data || curr.createdAt);
-        const mesAnoCru = data.toLocaleString('pt-PT', { month: 'long', year: 'numeric' });
-        const chave = mesAnoCru.charAt(0).toUpperCase() + mesAnoCru.slice(1).replace(' de ', ' ');
+        const data = new Date(curr.data || curr.createdAt)
+        const raw = data.toLocaleString('pt-PT', { month: 'long', year: 'numeric' })
+        const chave = raw.charAt(0).toUpperCase() + raw.slice(1).replace(' de ', ' ')
+        if (!acc[chave]) acc[chave] = []
+        acc[chave].push(curr)
+        return acc
+    }, {})
 
-        if (!acc[chave]) acc[chave] = [];
-        acc[chave].push(curr);
-        return acc;
-    }, {});
+    const euro = (v: number) =>
+        new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v)
 
-    const euro = (valor: number) =>
-        new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(valor);
+    const totalContribuicoes = contribuicoes.reduce((s: number, c: any) => s + (c.valor || 0), 0)
 
-    // Se não houver dados financeiros, não mostra a secção
-    if (objetivos.length === 0 && rifasList.length === 0 && contribuicoes.length === 0) {
-        return null;
-    }
+    if (objetivos.length === 0 && rifasList.length === 0 && contribuicoes.length === 0) return null
 
     return (
-        <section className="space-y-6 scroll-mt-10 pb-20" id="meu-financeiro">
+        <div className="space-y-8">
 
-            {/* CABEÇALHO DA SECÇÃO COM BOTÃO PDF 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <Wallet size={20} className="text-figueira" />
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">
-                        O Meu Financeiro
-                    </h2>
-                </div>
-                <div className="no-print">
-                    <BotaoRelatorio />
-                </div>
+            {/* ── RESUMO RÁPIDO ─────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard
+                    label="Total Contribuído"
+                    value={euro(totalContribuicoes)}
+                    icon={<HeartHandshake size={14} />}
+                    color="text-emerald-600"
+                    bg="bg-emerald-500/8"
+                />
+                <StatCard
+                    label="Carnês Ativos"
+                    value={objetivos.filter(o => {
+                        const pago = o.lancamentos?.reduce((s: number, l: any) => s + l.valor_pago, 0) || 0
+                        return pago < o.valor_mensal * o.parcelas_total
+                    }).length}
+                    icon={<Target size={14} />}
+                    color="text-blue-600"
+                    bg="bg-blue-500/8"
+                />
+                <StatCard
+                    label="Rifas"
+                    value={rifasList.length}
+                    icon={<Ticket size={14} />}
+                    color="text-figueira"
+                    bg="bg-figueira/8"
+                />
+                <StatCard
+                    label="Meses Registados"
+                    value={Object.keys(contribuicoesAgrupadas).length}
+                    icon={<CalendarDays size={14} />}
+                    color="text-purple-600"
+                    bg="bg-purple-500/8"
+                />
             </div>
-            <div className="h-[1px] flex-1 bg-soft"></div>
-*/}
-            <div className="grid lg:grid-cols-2 gap-10">
 
-                {/* --- COLUNA 1: DÍZIMOS E OFERTAS --- */}
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[10px] font-black uppercase text-muted tracking-[0.3em] flex items-center gap-2">
-                            <HeartHandshake size={14} className="text-figueira" /> Dízimos e Ofertas
-                        </h3>
-                        <span className="text-[8px] font-bold uppercase text-muted/50 flex items-center gap-1">
-                            <EyeOff size={10} /> Privacidade Ativa
-                        </span>
-                    </div>
+            {/* ── GRID PRINCIPAL ────────────────────────────────────────── */}
+            <div className="grid lg:grid-cols-2 gap-6">
 
+                {/* DÍZIMOS E OFERTAS */}
+                <div className="space-y-3">
+                    <SectionLabel icon={<HeartHandshake size={12} />} label="Dízimos e Ofertas" />
                     {Object.keys(contribuicoesAgrupadas).length === 0 ? (
-                        <div className="bg-bg2 border border-dashed border-soft p-10 rounded-[2.5rem] text-center opacity-40">
-                            <p className="text-[10px] font-bold uppercase">Nenhuma contribuição registada</p>
-                        </div>
+                        <Empty label="Nenhuma contribuição registada" />
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             {Object.entries(contribuicoesAgrupadas).map(([mes, lista]: [string, any]) => (
                                 <GrupoContribuicao key={mes} mes={mes} lista={lista} euro={euro} />
                             ))}
@@ -97,16 +100,12 @@ export default function PainelFinanceiroMembro({
                     )}
                 </div>
 
-                {/* --- COLUNA 2: CARNÊS E RIFAS --- */}
-                <div className="space-y-10">
-
-                    {/* CARNÊS */}
+                {/* CARNÊS + RIFAS */}
+                <div className="space-y-6">
                     {objetivos.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black uppercase text-muted tracking-[0.3em] flex items-center gap-2 mb-6">
-                                <Target size={14} className="text-figueira" /> Meus Carnês
-                            </h3>
-                            <div className="grid gap-4">
+                        <div className="space-y-3">
+                            <SectionLabel icon={<Target size={12} />} label="Meus Carnês" />
+                            <div className="space-y-2">
                                 {objetivos.map(obj => (
                                     <CarneItem key={obj.id} obj={obj} euro={euro} />
                                 ))}
@@ -114,13 +113,10 @@ export default function PainelFinanceiroMembro({
                         </div>
                     )}
 
-                    {/* RIFAS */}
                     {rifasList.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black uppercase text-muted tracking-[0.3em] flex items-center gap-2 mb-6">
-                                <Ticket size={14} className="text-figueira" /> Minhas Rifas
-                            </h3>
-                            <div className="grid gap-4">
+                        <div className="space-y-3">
+                            <SectionLabel icon={<Ticket size={12} />} label="Minhas Rifas" />
+                            <div className="space-y-2">
                                 {rifasList.map((item: any, idx: number) => (
                                     <RifaItem key={idx} item={item} euro={euro} />
                                 ))}
@@ -128,242 +124,294 @@ export default function PainelFinanceiroMembro({
                         </div>
                     )}
                 </div>
-
             </div>
-        </section>
-    )
-}
-
-// ============================================================================
-// COMPONENTE INTERATIVO: GRUPO DE DÍZIMOS/OFERTAS (ACORDEÃO)
-// ============================================================================
-function GrupoContribuicao({ mes, lista, euro }: { mes: string, lista: any[], euro: (v: number) => string }) {
-    const [isOpen, setIsOpen] = useState(false);
-
-    // Soma o total do mês
-    const totalMes = lista.reduce((acc: number, curr: any) => acc + (curr.valor || 0), 0);
-
-    return (
-        <div className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden transition-all hover:border-figueira/30 shadow-sm">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-6 flex justify-between items-center hover:bg-soft/30 transition-all active:scale-[0.99]"
-            >
-                <div className="text-left">
-                    <h4 className="text-sm font-black uppercase tracking-tight text-fg flex items-center gap-2">
-                        {mes}
-                        <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                            <ChevronDown size={14} className={isOpen ? "text-figueira" : "text-muted"} />
-                        </div>
-                    </h4>
-                    <span className="text-[9px] font-bold text-muted uppercase tracking-widest">{lista.length} registos</span>
-                </div>
-
-                <div className="text-right">
-                    <p className={`text-base font-black italic transition-all ${isOpen ? 'text-fg' : 'text-fg opacity-60 tracking-widest'}`}>
-                        {isOpen ? euro(totalMes) : "••••••"}
-                    </p>
-                    <span className="text-[7px] font-black uppercase text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded-md border border-green-500/10">Confirmado</span>
-                </div>
-            </button>
-
-            {isOpen && (
-                <div className="p-6 pt-0 animate-in slide-in-from-top-2">
-                    <div className="space-y-3 pt-3 border-t border-soft/50">
-                        {lista.map((c: any) => (
-                            <div key={c.id} className="flex justify-between items-center group/item hover:bg-soft/20 p-2 -m-2 rounded-lg transition-colors">
-                                <div>
-                                    <span className="text-[9px] font-black text-figueira uppercase tracking-widest block mb-0.5">{c.tipo}</span>
-                                    <span className="text-[11px] font-bold text-fg uppercase tracking-tight">
-                                        <CalendarDays size={10} className="inline mr-1 text-muted" />
-                                        {new Date(c.data || c.createdAt).toLocaleDateString('pt-PT')}
-                                    </span>
-                                    {c.observacao && <p className="text-[9px] italic text-muted mt-0.5">{c.observacao}</p>}
-                                </div>
-                                <span className="text-xs font-black text-fg font-mono">{euro(c.valor)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
 
-// ============================================================================
-// COMPONENTE INTERATIVO: ITEM DO CARNÊ (COM LÓGICA DE MBWAY PENDENTE)
-// ============================================================================
-function CarneItem({ obj, euro }: { obj: any, euro: (v: number) => string }) {
-    const [isOpen, setIsOpen] = useState(false);
-
-    const lancamentosValidos = obj.lancamentos?.filter((l: any) => l.forma_pagamento !== 'MBWAY') || [];
-    const lancamentosPendentes = obj.lancamentos?.filter((l: any) => l.forma_pagamento === 'MBWAY') || [];
-
-    const totalPago = lancamentosValidos.reduce((sum: number, l: any) => sum + l.valor_pago, 0);
-    const valorPendente = lancamentosPendentes.reduce((sum: number, l: any) => sum + l.valor_pago, 0);
-
-    const metaTotal = obj.valor_mensal * obj.parcelas_total;
-    const porcentagem = Math.min((totalPago / metaTotal) * 100, 100);
-    const concluido = porcentagem >= 100;
-
-    const ultimaData = obj.lancamentos && obj.lancamentos.length > 0
-        ? new Date(obj.lancamentos[0].data_recebimento).toLocaleDateString('pt-PT')
-        : null;
-
+// ── STAT CARD ─────────────────────────────────────────────────────────────────
+function StatCard({ label, value, icon, color, bg }: any) {
     return (
-        <div className="bg-bg2 border border-soft rounded-3xl relative overflow-hidden shadow-sm transition-all hover:border-figueira/30">
-            <div className="absolute top-0 left-0 h-[3px] bg-figueira transition-all duration-1000 z-10" style={{ width: `${porcentagem}%` }}></div>
-
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full text-left flex justify-between items-center p-5 pt-6 hover:bg-soft/30 transition-colors active:scale-[0.99]"
-            >
-                <div>
-                    <h4 className="text-sm font-black uppercase tracking-tighter text-fg flex items-center gap-2">
-                        {obj.nome}
-                        {concluido && <CheckCircle2 size={14} className="text-green-500" />}
-                    </h4>
-                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
-                        Vence dia {obj.data_pagamento}
-                    </p>
-                </div>
-                <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                    <ChevronDown size={16} className={isOpen ? "text-figueira" : "text-muted"} />
-                </div>
-            </button>
-
-            {isOpen && (
-                <div className="relative border-t border-soft/50 bg-bg p-5 pt-4 animate-in slide-in-from-top-2 duration-200">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <span className="text-[8px] font-black text-muted uppercase tracking-widest block mb-1">Contribuição</span>
-                            <div className="flex items-center gap-2">
-                                <p className="text-sm font-black text-fg italic leading-none">
-                                    {euro(totalPago)} <span className="text-[9px] text-muted not-italic">/ {euro(metaTotal)}</span>
-                                </p>
-
-                                {valorPendente > 0 && (
-                                    <span className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md border border-orange-200 shadow-sm" title="A aguardar validação do tesoureiro">
-                                        +{euro(valorPendente)} em validação
-                                    </span>
-                                )}
-                            </div>
-
-                            {ultimaData && (
-                                <div className="flex items-center gap-1 text-muted mt-2">
-                                    <CalendarDays size={10} className="opacity-50" />
-                                    <span className="text-[8px] font-bold uppercase tracking-widest">Último pagamento: {ultimaData}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="text-right">
-                            <span className="text-[8px] font-black text-muted uppercase tracking-widest block mb-1">Parcelas</span>
-                            <p className="text-sm font-black text-figueira">{Math.floor(totalPago / obj.valor_mensal)} <span className="text-muted text-[10px]">de {obj.parcelas_total}</span></p>
-                        </div>
-                    </div>
-                </div>
-            )}
+        <div className={`${bg} rounded-2xl p-4 border border-soft space-y-2`}>
+            <div className={`${color} flex items-center gap-1.5`}>
+                {icon}
+                <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+            </div>
+            <p className={`text-xl font-black italic tracking-tighter ${color}`}>{value}</p>
         </div>
     )
 }
 
-// ============================================================================
-// COMPONENTE INTERATIVO: ITEM DA RIFA (COM LÓGICA DE VENCEDOR 👑)
-// ============================================================================
-function RifaItem({ item, euro }: { item: any, euro: (v: number) => string }) {
-    const [isOpen, setIsOpen] = useState(false);
+// ── SECTION LABEL ─────────────────────────────────────────────────────────────
+function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
+    return (
+        <div className="flex items-center gap-2 pb-1">
+            <span className="text-muted">{icon}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">{label}</span>
+            <div className="flex-1 h-px bg-soft" />
+        </div>
+    )
+}
 
-    const valorTotalRifa = item.numeros.length * (item.rifa?.valor_numero || 0);
-    const dataCompra = new Date(item.dataCompra).toLocaleDateString('pt-PT');
+// ── EMPTY STATE ───────────────────────────────────────────────────────────────
+function Empty({ label }: { label: string }) {
+    return (
+        <div className="py-8 border-2 border-dashed border-soft rounded-2xl text-center">
+            <p className="text-[9px] font-black text-muted uppercase tracking-widest">{label}</p>
+        </div>
+    )
+}
 
-    const numeroVencedor = item.rifa?.numero_sorteado;
-    const temNumeroVencedor = numeroVencedor && item.numeros.includes(numeroVencedor);
-    const isEncerrada = item.rifa?.status === 'FINALIZADA';
+// ── GRUPO DE CONTRIBUIÇÕES ────────────────────────────────────────────────────
+function GrupoContribuicao({ mes, lista, euro }: { mes: string; lista: any[]; euro: (v: number) => string }) {
+    const [aberto, setAberto] = useState(false)
+    const [mostrar, setMostrar] = useState(false)
+    const total = lista.reduce((s: number, c: any) => s + (c.valor || 0), 0)
 
     return (
-        <div className={`bg-bg2 border ${temNumeroVencedor ? 'border-figueira shadow-figueira/20 bg-figueira/5' : 'border-soft hover:border-figueira/30'} rounded-3xl relative overflow-hidden shadow-sm transition-all`}>
+        <div className={`bg-bg2 border rounded-2xl overflow-hidden transition-all ${aberto ? 'border-emerald-500/20' : 'border-soft hover:border-soft/80'}`}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full text-left flex justify-between items-center p-5 hover:bg-soft/30 transition-colors active:scale-[0.99]"
+                onClick={() => setAberto(!aberto)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-soft/20 transition-all"
             >
-                <div className="space-y-1">
-                    <h4 className="text-sm font-black uppercase tracking-tighter text-fg flex items-center gap-2">
-                        {item.rifa?.nome || "Rifa"}
-                        {temNumeroVencedor && <Trophy size={14} className="text-figueira animate-bounce" />}
-                    </h4>
-                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest">
-                        Prémio: {item.rifa?.premio || "---"}
-                    </p>
-                </div>
-
                 <div className="flex items-center gap-3">
-                    {temNumeroVencedor ? (
-                        <span className="text-[8px] font-black bg-figueira text-white px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-1">
-                            <Trophy size={10} /> Vencedor
+                    <div className={`w-2 h-2 rounded-full ${aberto ? 'bg-emerald-500' : 'bg-soft'}`} />
+                    <div className="text-left">
+                        <p className="text-[11px] font-black uppercase tracking-tight text-fg">{mes}</p>
+                        <p className="text-[8px] font-bold text-muted uppercase tracking-widest">{lista.length} registo{lista.length !== 1 ? 's' : ''}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <p className="text-sm font-black italic text-fg">
+                            {mostrar ? euro(total) : '••••••'}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); setMostrar(!mostrar) }}
+                            className="text-muted hover:text-fg transition-colors p-1"
+                        >
+                            {mostrar ? <EyeOff size={12} /> : <Eye size={12} />}
+                        </button>
+                    </div>
+                    <ChevronDown size={13} className={`text-muted transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`} />
+                </div>
+            </button>
+
+            {aberto && (
+                <div className="border-t border-soft px-5 py-3 space-y-2 animate-in slide-in-from-top-2 duration-200 bg-bg/50">
+                    {lista.map((c: any) => (
+                        <div key={c.id} className="flex items-center justify-between py-2 border-b border-soft/40 last:border-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                    <HeartHandshake size={12} className="text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-wide text-fg">{c.tipo}</p>
+                                    <p className="text-[8px] font-bold text-muted uppercase tracking-widest flex items-center gap-1">
+                                        <CalendarDays size={8} />
+                                        {new Date(c.data || c.createdAt).toLocaleDateString('pt-PT')}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-sm font-black text-fg">
+                                {mostrar ? euro(c.valor) : '•••'}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ── CARNÊ ─────────────────────────────────────────────────────────────────────
+function CarneItem({ obj, euro }: { obj: any; euro: (v: number) => string }) {
+    const [aberto, setAberto] = useState(false)
+
+    const validos = obj.lancamentos?.filter((l: any) => l.forma_pagamento !== 'MBWAY') || []
+    const pendentes = obj.lancamentos?.filter((l: any) => l.forma_pagamento === 'MBWAY') || []
+    const totalPago = validos.reduce((s: number, l: any) => s + l.valor_pago, 0)
+    const pendente = pendentes.reduce((s: number, l: any) => s + l.valor_pago, 0)
+    const meta = obj.valor_mensal * obj.parcelas_total
+    const pct = Math.min((totalPago / meta) * 100, 100)
+    const parcelas = Math.floor(totalPago / obj.valor_mensal)
+    const concluido = pct >= 100
+    const ultimaData = obj.lancamentos?.[0]
+        ? new Date(obj.lancamentos[0].data_recebimento).toLocaleDateString('pt-PT')
+        : null
+
+    return (
+        <div className={`bg-bg2 border rounded-2xl overflow-hidden transition-all ${concluido ? 'border-emerald-500/20' : aberto ? 'border-blue-500/20' : 'border-soft hover:border-soft/80'}`}>
+            {/* BARRA DE PROGRESSO TOPO */}
+            <div className="h-0.5 bg-soft">
+                <div
+                    className={`h-full transition-all duration-700 ${concluido ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+
+            <button
+                onClick={() => setAberto(!aberto)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-soft/20 transition-all"
+            >
+                <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${concluido ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                    <div className="text-left">
+                        <div className="flex items-center gap-2">
+                            <p className="text-[11px] font-black uppercase tracking-tight text-fg">{obj.nome}</p>
+                            {concluido && <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />}
+                        </div>
+                        <p className="text-[8px] font-bold text-muted uppercase tracking-widest">
+                            {parcelas}/{obj.parcelas_total} parcelas · Vence dia {obj.data_pagamento}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-[9px] font-black text-fg">{Math.round(pct)}%</p>
+                        <p className="text-[8px] text-muted font-bold">{euro(totalPago)}</p>
+                    </div>
+                    <ChevronDown size={13} className={`text-muted transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`} />
+                </div>
+            </button>
+
+            {aberto && (
+                <div className="border-t border-soft px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200 bg-bg/50">
+                    {/* PROGRESSO DETALHADO */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-muted">Progresso</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-fg">{euro(totalPago)} / {euro(meta)}</span>
+                        </div>
+                        <div className="h-2 bg-soft rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-700 ${concluido ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                style={{ width: `${pct}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-bg border border-soft rounded-xl p-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Valor Mensal</p>
+                            <p className="text-sm font-black text-fg mt-1">{euro(obj.valor_mensal)}</p>
+                        </div>
+                        <div className="bg-bg border border-soft rounded-xl p-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Parcelas</p>
+                            <p className="text-sm font-black text-fg mt-1">{parcelas} <span className="text-muted text-[10px]">de {obj.parcelas_total}</span></p>
+                        </div>
+                    </div>
+
+                    {pendente > 0 && (
+                        <div className="flex items-center gap-3 bg-orange-500/5 border border-orange-500/15 rounded-xl px-4 py-3">
+                            <Clock size={13} className="text-orange-500 shrink-0" />
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-orange-600">{euro(pendente)} em validação</p>
+                                <p className="text-[8px] text-muted font-bold uppercase tracking-widest">A aguardar confirmação do tesoureiro</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {ultimaData && (
+                        <p className="text-[8px] font-bold text-muted uppercase tracking-widest flex items-center gap-1.5">
+                            <CalendarDays size={10} /> Último pagamento: {ultimaData}
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ── RIFA ──────────────────────────────────────────────────────────────────────
+function RifaItem({ item, euro }: { item: any; euro: (v: number) => string }) {
+    const [aberto, setAberto] = useState(false)
+
+    const valorTotal = item.numeros.length * (item.rifa?.valor_numero || 0)
+    const dataCompra = new Date(item.dataCompra).toLocaleDateString('pt-PT')
+    const numeroVencedor = item.rifa?.numero_sorteado
+    const vencedor = numeroVencedor && item.numeros.includes(numeroVencedor)
+    const encerrada = item.rifa?.status === 'FINALIZADA'
+
+    return (
+        <div className={`bg-bg2 border rounded-2xl overflow-hidden transition-all
+            ${vencedor ? 'border-figueira/30 bg-figueira/3' : encerrada ? 'border-soft opacity-70' : 'border-soft hover:border-soft/80'}`}>
+            <button
+                onClick={() => setAberto(!aberto)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-soft/20 transition-all"
+            >
+                <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${vencedor ? 'bg-figueira' : encerrada ? 'bg-soft' : 'bg-orange-400'}`} />
+                    <div className="text-left">
+                        <div className="flex items-center gap-2">
+                            <p className="text-[11px] font-black uppercase tracking-tight text-fg">{item.rifa?.nome || 'Rifa'}</p>
+                            {vencedor && <Trophy size={12} className="text-figueira shrink-0" />}
+                        </div>
+                        <p className="text-[8px] font-bold text-muted uppercase tracking-widest">
+                            {item.numeros.length} número{item.numeros.length !== 1 ? 's' : ''} · {euro(valorTotal)}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {vencedor && (
+                        <span className="text-[7px] font-black uppercase tracking-widest bg-figueira text-white px-2 py-1 rounded-lg">
+                            Vencedor
                         </span>
-                    ) : isEncerrada ? (
-                        <span className="text-[8px] font-black bg-soft text-muted px-2 py-1 rounded-md uppercase tracking-widest">
+                    )}
+                    {encerrada && !vencedor && (
+                        <span className="text-[7px] font-black uppercase tracking-widest bg-soft text-muted px-2 py-1 rounded-lg">
                             Encerrada
                         </span>
-                    ) : null}
-
-                    <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                        <ChevronDown size={16} className={isOpen ? "text-figueira" : "text-muted"} />
-                    </div>
+                    )}
+                    <ChevronDown size={13} className={`text-muted transition-transform duration-200 ${aberto ? 'rotate-180' : ''}`} />
                 </div>
             </button>
 
-            {isOpen && (
-                <div className="border-t border-soft/50 bg-bg p-5 pt-4 animate-in slide-in-from-top-2 duration-200">
-                    <div className="space-y-4">
-
-                        {temNumeroVencedor && (
-                            <div className="bg-figueira/10 border border-figueira/20 p-4 rounded-2xl flex items-center gap-4 animate-in fade-in zoom-in-95">
-                                <div className="p-2 bg-figueira text-white rounded-xl">
-                                    <Trophy size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-figueira uppercase tracking-widest leading-tight">Parabéns!</p>
-                                    <p className="text-[9px] font-bold text-fg uppercase">O número <span className="font-black text-figueira">#{numeroVencedor}</span> foi sorteado.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-between items-end">
+            {aberto && (
+                <div className="border-t border-soft px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200 bg-bg/50">
+                    {vencedor && (
+                        <div className="flex items-center gap-3 bg-figueira/8 border border-figueira/15 rounded-xl px-4 py-3">
+                            <Trophy size={16} className="text-figueira shrink-0" />
                             <div>
-                                <span className="text-[8px] font-black text-muted uppercase tracking-widest block mb-2">Meus Números ({item.numeros.length})</span>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {item.numeros.sort((a: number, b: number) => a - b).map((num: number) => (
-                                        <span
-                                            key={num}
-                                            className={`text-[10px] font-black px-2.5 py-1 rounded-lg border flex items-center gap-1 transition-all ${num === numeroVencedor
-                                                ? 'bg-figueira text-white border-figueira shadow-md shadow-figueira/30'
-                                                : 'bg-soft/50 text-muted border-soft/50'
-                                                }`}
-                                        >
-                                            #{num}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="text-right shrink-0 ml-4">
-                                <span className="text-[8px] font-black text-muted uppercase tracking-widest block mb-1">Total Pago</span>
-                                <p className="text-sm font-black text-fg italic leading-none">{euro(valorTotalRifa)}</p>
-
-                                <div className="flex items-center gap-1 text-muted mt-2 justify-end">
-                                    <CalendarDays size={10} className="opacity-50" />
-                                    <span className="text-[8px] font-bold uppercase tracking-widest">{dataCompra}</span>
-                                </div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-figueira">Parabéns!</p>
+                                <p className="text-[9px] text-fg font-bold uppercase">O teu número <span className="font-black text-figueira">#{numeroVencedor}</span> foi sorteado.</p>
                             </div>
                         </div>
+                    )}
 
-                        {isEncerrada && !temNumeroVencedor && numeroVencedor && (
-                            <p className="text-[8px] font-bold text-center text-muted uppercase tracking-widest pt-3 border-t border-soft/50">
-                                O número sorteado nesta rifa foi o <span className="font-black">#{numeroVencedor}</span>.
-                            </p>
-                        )}
+                    <div>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-muted mb-2">
+                            Meus números ({item.numeros.length})
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {item.numeros.sort((a: number, b: number) => a - b).map((num: number) => (
+                                <span key={num} className={`text-[9px] font-black px-2.5 py-1 rounded-lg border
+                                    ${num === numeroVencedor
+                                        ? 'bg-figueira text-white border-figueira'
+                                        : 'bg-bg border-soft text-muted'}`}>
+                                    #{num}
+                                </span>
+                            ))}
+                        </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-bg border border-soft rounded-xl p-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Prémio</p>
+                            <p className="text-[10px] font-black text-fg mt-1">{item.rifa?.premio || '—'}</p>
+                        </div>
+                        <div className="bg-bg border border-soft rounded-xl p-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Data de Compra</p>
+                            <p className="text-[10px] font-black text-fg mt-1">{dataCompra}</p>
+                        </div>
+                    </div>
+
+                    {encerrada && !vencedor && numeroVencedor && (
+                        <p className="text-[8px] font-bold text-center text-muted uppercase tracking-widest pt-1">
+                            Número sorteado: <span className="font-black text-fg">#{numeroVencedor}</span>
+                        </p>
+                    )}
                 </div>
             )}
         </div>

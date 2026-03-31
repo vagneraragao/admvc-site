@@ -5,18 +5,14 @@ import ConfigForm from '@/components/ConfigForm'
 import DeptoItem from '@/components/DeptoItem'
 import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
-import { Plus, Briefcase, LayoutGrid, Users, ArrowLeft, ChevronRight, Settings2, Shield, ChevronDown } from 'lucide-react'
+import { Plus, Briefcase, LayoutGrid, Users, Settings2, ChevronDown, Shield, Hash } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+
 export const dynamic = 'force-dynamic'
 
 export default async function ConfiguracoesPage() {
-    // ========================================================================
-    // CONSULTAS AO PRISMA (SERVER-SIDE FETCHING)
-    // ========================================================================
     const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos] = await Promise.all([
         prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
-
-        // 👇 AQUI ESTÁ A MAGIA!
         prisma.departamento.findMany({
             include: {
                 lider: { select: { first_name: true, last_name: true } },
@@ -24,7 +20,6 @@ export default async function ConfiguracoesPage() {
                 integrantes: {
                     include: {
                         membro: { select: { id: true, first_name: true, last_name: true } },
-                        // 👇 Adicionámos a linha abaixo para trazer as múltiplas funções
                         funcoes: { include: { funcao: true } }
                     }
                 },
@@ -32,8 +27,6 @@ export default async function ConfiguracoesPage() {
             },
             orderBy: { nome: 'asc' }
         }),
-        // 👆 FIM DA MAGIA
-
         prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
         prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
         prisma.grupo.findMany({
@@ -45,143 +38,139 @@ export default async function ConfiguracoesPage() {
                 _count: { select: { membros: true } }
             }
         })
-    ]);
+    ])
 
     return (
-        <main className="max-w-6xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="min-h-screen bg-bg">
 
-            {/* BREADCRUMB PADRONIZADO */}
-            <Breadcrumb items={[
-                {
-                    label: "Painel Admin",
-                    href: "/admin/dashboard",
-                    isBackIcon: true
-                },
-                {
-                    label: "Sistema",
-                    hideOnMobile: true
-                },
-                {
-                    label: "Configurações Estruturais"
-                }
-            ]} />
-
-            {/* --- CABEÇALHO --- */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-2">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <Settings2 size={14} /> Módulo Administrativo
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Estrutura <span className="text-muted/30">&</span> Gestão.
-                    </h1>
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest pt-2">
-                        Configure os pilares, departamentos e grupos da sua igreja.
-                    </p>
+            {/* TOP BAR */}
+            <div className="border-b border-soft bg-bg/80 backdrop-blur-sm sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <Breadcrumb items={[
+                        { label: "Painel Admin", href: "/admin/dashboard", isBackIcon: true },
+                        { label: "Sistema", hideOnMobile: true },
+                        { label: "Configurações" }
+                    ]} />
+                    <div className="flex items-center gap-2">
+                        <span className="hidden sm:flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted bg-soft/50 px-3 py-1.5 rounded-lg border border-soft">
+                            <Settings2 size={11} /> Estrutural
+                        </span>
+                    </div>
                 </div>
-            </header>
+            </div>
 
-            {/* --- NAVEGAÇÃO INTERNA FIXA (STICKY SUB-NAV) --- */}
-            <nav className="sticky top-0 z-40 bg-bg/80 backdrop-blur-md border-y border-soft py-4 flex gap-8 overflow-x-auto custom-scrollbar shadow-sm">
-                <a href="#cargos" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <Briefcase size={14} /> Cargos Gerais
-                </a>
-                <a href="#departamentos" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-blue-500 transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <LayoutGrid size={14} /> Departamentos
-                </a>
-                <a href="#grupos" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-emerald-500 transition-colors flex items-center gap-2 whitespace-nowrap">
-                    <Users size={14} /> Grupos & PGs
-                </a>
-            </nav>
+            <div className="max-w-7xl mx-auto px-6 py-10 space-y-10 pb-32">
 
-            {/* --- 01. CARGOS GERAIS (CARD CONTRAÍVEL) --- */}
-            <section id="cargos" className="scroll-mt-24">
-                <details className="group bg-bg2 border border-soft rounded-[3.5rem] shadow-sm overflow-hidden transition-all duration-300">
-
-                    <summary className="list-none cursor-pointer p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors outline-none">
-                        <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center shrink-0 shadow-sm transition-transform group-open:scale-110">
-                                <Briefcase size={20} className="text-figueira" />
+                {/* HERO HEADER */}
+                <header className="pt-4 pb-2">
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                        <div className="space-y-3 max-w-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-8 bg-figueira rounded-full" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-figueira">
+                                    Módulo Administrativo
+                                </span>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                    Cargos Gerais
-                                    <span className="text-[9px] font-black bg-bg border border-soft px-3 py-1 rounded-md uppercase text-muted tracking-widest not-italic shadow-sm">{cargos.length}</span>
-                                </h2>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">Atribuições base disponíveis para os membros.</p>
-                            </div>
+                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-fg leading-[0.9]">
+                                Estrutura
+                                <br />
+                                <span className="text-muted/30">&amp;</span> Gestão
+                            </h1>
+                            <p className="text-sm text-muted font-medium leading-relaxed max-w-md">
+                                Configure os cargos, departamentos e grupos que formam a estrutura da sua igreja.
+                            </p>
                         </div>
-                        <div className="w-10 h-10 rounded-2xl bg-bg border border-soft flex items-center justify-center text-muted group-open:bg-figueira group-open:text-white group-open:border-figueira transition-all shadow-sm shrink-0">
-                            <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
-                        </div>
-                    </summary>
 
-                    {/* CONTEÚDO EXPANDIDO */}
-                    <div className="px-8 md:px-10 pb-10 border-t border-soft/50 pt-8 animate-in slide-in-from-top-4 fade-in duration-300">
-                        <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-fg">Lista de Cargos</h3>
+                        {/* STATS RÁPIDAS */}
+                        <div className="grid grid-cols-3 gap-3 lg:gap-4 shrink-0">
+                            {[
+                                { label: 'Cargos', value: cargos.length, color: 'text-figueira', bg: 'bg-figueira/8' },
+                                { label: 'Departamentos', value: deptos.length, color: 'text-blue-500', bg: 'bg-blue-500/8' },
+                                { label: 'Grupos', value: grupos.length, color: 'text-emerald-500', bg: 'bg-emerald-500/8' },
+                            ].map(stat => (
+                                <div key={stat.label} className={`${stat.bg} border border-soft rounded-2xl p-4 text-center min-w-[80px]`}>
+                                    <p className={`text-3xl font-black italic tracking-tighter ${stat.color}`}>{stat.value}</p>
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-muted mt-1">{stat.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </header>
+
+                {/* NAV ÂNCORAS */}
+                <nav className="flex gap-1 p-1 bg-bg2 border border-soft rounded-2xl w-fit">
+                    {[
+                        { href: '#cargos', label: 'Cargos', icon: <Briefcase size={12} />, color: 'text-figueira' },
+                        { href: '#departamentos', label: 'Departamentos', icon: <LayoutGrid size={12} />, color: 'text-blue-500' },
+                        { href: '#grupos', label: 'Grupos & PGs', icon: <Users size={12} />, color: 'text-emerald-500' },
+                    ].map(item => (
+                        <a key={item.href} href={item.href}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted hover:text-fg hover:bg-bg transition-all">
+                            <span className={item.color}>{item.icon}</span>
+                            {item.label}
+                        </a>
+                    ))}
+                </nav>
+
+                {/* ── 01. CARGOS ── */}
+                <section id="cargos" className="scroll-mt-20 space-y-4">
+                    <SectionHeader
+                        icon={<Briefcase size={18} />}
+                        iconBg="bg-figueira/10 text-figueira"
+                        title="Cargos Gerais"
+                        count={cargos.length}
+                        description="Atribuições base disponíveis para os membros"
+                        action={
                             <PopoverAdicionar
                                 titulo="Cargo"
                                 actionComponent={<ConfigForm action={criarCargo} placeholder="Ex: Diácono..." label="Novo Cargo" />}
                             />
-                        </div>
+                        }
+                    />
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {cargos.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                             {cargos.map(c => (
-                                <div key={c.id} className="group/item flex justify-between items-center p-4 bg-bg border border-soft rounded-2xl hover:border-figueira/40 hover:shadow-sm transition-all relative overflow-hidden">
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-figueira/20 group-hover/item:bg-figueira transition-colors"></div>
-                                    <span className="text-[10px] font-black uppercase truncate text-fg tracking-widest pl-2">{c.nome}</span>
-                                    <div className="opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div key={c.id} className="group/item relative flex items-center justify-between p-3.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/30 transition-all overflow-hidden">
+                                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-figueira/0 group-hover/item:bg-figueira/60 transition-all" />
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <Hash size={10} className="text-figueira/40 shrink-0" />
+                                        <span className="text-[10px] font-black uppercase truncate text-fg tracking-wide">{c.nome}</span>
+                                    </div>
+                                    <div className="opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0 ml-2">
                                         <BotaoExcluirCargo id={c.id} nome={c.nome} onExcluir={excluirCargo} />
                                     </div>
                                 </div>
                             ))}
-                            {cargos.length === 0 && (
-                                <div className="col-span-full py-10 text-center border-2 border-dashed border-soft rounded-3xl bg-bg">
-                                    <Shield size={24} className="mx-auto text-muted/30 mb-3" />
-                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Nenhum cargo registado.</p>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                </details>
-            </section>
+                    ) : (
+                        <EmptyState icon={<Shield size={28} />} message="Nenhum cargo registado." />
+                    )}
+                </section>
 
-            {/* --- 02. DEPARTAMENTOS (CARD CONTRAÍVEL) --- */}
-            <section id="departamentos" className="scroll-mt-24">
-                <details className="group bg-bg2 border border-soft rounded-[3.5rem] shadow-sm overflow-hidden transition-all duration-300">
+                {/* DIVIDER */}
+                <div className="border-t border-soft/50" />
 
-                    <summary className="list-none cursor-pointer p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors outline-none">
-                        <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center shrink-0 shadow-sm transition-transform group-open:scale-110">
-                                <LayoutGrid size={20} className="text-blue-500" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                    Departamentos
-                                    <span className="text-[9px] font-black bg-bg border border-soft px-3 py-1 rounded-md uppercase text-muted tracking-widest not-italic shadow-sm">{deptos.length}</span>
-                                </h2>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">Setores de atuação e as suas respetivas equipas.</p>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-2xl bg-bg border border-soft flex items-center justify-center text-muted group-open:bg-blue-600 group-open:text-white group-open:border-blue-600 transition-all shadow-sm shrink-0">
-                            <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
-                        </div>
-                    </summary>
-
-                    {/* CONTEÚDO EXPANDIDO */}
-                    <div className="px-8 md:px-10 pb-10 border-t border-soft/50 pt-8 animate-in slide-in-from-top-4 fade-in duration-300">
-                        <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-fg">Lista de Setores</h3>
+                {/* ── 02. DEPARTAMENTOS ── */}
+                <section id="departamentos" className="scroll-mt-20 space-y-4">
+                    <SectionHeader
+                        icon={<LayoutGrid size={18} />}
+                        iconBg="bg-blue-500/10 text-blue-500"
+                        title="Departamentos"
+                        count={deptos.length}
+                        description="Setores de atuação e as suas respetivas equipas"
+                        action={
                             <PopoverAdicionar
-                                titulo="Setor"
-                                buttonColor="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                                titulo="Departamento"
+                                buttonColor="bg-blue-600 text-white hover:bg-blue-700"
                                 highlightColor="bg-blue-600"
                                 actionComponent={<ConfigForm action={criarDepartamento} placeholder="Nome do setor..." label="Novo Setor" buttonColor="bg-blue-600" />}
                             />
-                        </div>
+                        }
+                    />
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {deptos.length > 0 ? (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {deptos.map(d => (
                                 <DeptoItem
                                     key={d.id}
@@ -190,74 +179,99 @@ export default async function ConfiguracoesPage() {
                                     onExcluir={excluirDepartamento}
                                 />
                             ))}
-                            {deptos.length === 0 && (
-                                <div className="col-span-full py-16 text-center border-2 border-dashed border-soft rounded-[3rem] bg-bg">
-                                    <LayoutGrid size={32} className="mx-auto text-muted/30 mb-3" />
-                                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Nenhum departamento registado.</p>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                </details>
-            </section>
+                    ) : (
+                        <EmptyState icon={<LayoutGrid size={28} />} message="Nenhum departamento registado." />
+                    )}
+                </section>
 
-            {/* --- 03. GRUPOS DE TRABALHO (CARD CONTRAÍVEL) --- */}
-            <section id="grupos" className="scroll-mt-24">
-                <details className="group bg-bg2 border border-soft rounded-[3.5rem] shadow-sm overflow-hidden transition-all duration-300">
+                {/* DIVIDER */}
+                <div className="border-t border-soft/50" />
 
-                    <summary className="list-none cursor-pointer p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors outline-none">
-                        <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 rounded-2xl bg-bg border border-soft flex items-center justify-center shrink-0 shadow-sm transition-transform group-open:scale-110">
-                                <Users size={20} className="text-emerald-500" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                    Grupos & PGs
-                                    <span className="text-[9px] font-black bg-bg border border-soft px-3 py-1 rounded-md uppercase text-muted tracking-widest not-italic shadow-sm">{grupos.length}</span>
-                                </h2>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">Faça a gestão dos grupos de trabalho e reuniões.</p>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-2xl bg-bg border border-soft flex items-center justify-center text-muted group-open:bg-emerald-500 group-open:text-white group-open:border-emerald-500 transition-all shadow-sm shrink-0">
-                            <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
-                        </div>
-                    </summary>
+                {/* ── 03. GRUPOS ── */}
+                <section id="grupos" className="scroll-mt-20 space-y-4">
+                    <SectionHeader
+                        icon={<Users size={18} />}
+                        iconBg="bg-emerald-500/10 text-emerald-500"
+                        title="Grupos & PGs"
+                        count={grupos.length}
+                        description="Grupos de trabalho, células e reuniões"
+                    />
+                    <GerenciadorGrupos
+                        grupos={grupos}
+                        departamentos={deptosParaSelect}
+                        membrosDisponiveis={membrosDisponiveis}
+                    />
+                </section>
 
-                    {/* CONTEÚDO EXPANDIDO */}
-                    <div className="px-8 md:px-10 pb-10 border-t border-soft/50 pt-8 animate-in slide-in-from-top-4 fade-in duration-300">
-                        {/* O GerenciadorGrupos já tem o seu próprio botão de "+ Criar Grupo", logo não precisamos do PopoverAdicionar aqui */}
-                        <GerenciadorGrupos
-                            grupos={grupos}
-                            departamentos={deptosParaSelect}
-                            membrosDisponiveis={membrosDisponiveis}
-                        />
-                    </div>
-                </details>
-            </section>
+            </div>
         </main>
     )
 }
 
-// ============================================================================
-// COMPONENTE AUXILIAR (POPOVER DE ADIÇÃO NO CANTO DIREITO)
-// ============================================================================
-function PopoverAdicionar({ titulo, actionComponent, buttonColor = "bg-fg text-bg hover:bg-figueira hover:text-white", highlightColor = "bg-figueira" }: any) {
+// ── COMPONENTE: CABEÇALHO DE SECÇÃO ──────────────────────────────────────────
+function SectionHeader({ icon, iconBg, title, count, description, action }: {
+    icon: React.ReactNode
+    iconBg: string
+    title: string
+    count: number
+    description: string
+    action?: React.ReactNode
+}) {
+    return (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>
+                    {icon}
+                </div>
+                <div>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">
+                            {title}
+                        </h2>
+                        <span className="text-[9px] font-black bg-bg2 border border-soft px-2.5 py-1 rounded-lg uppercase text-muted tracking-widest">
+                            {count}
+                        </span>
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted mt-1">{description}</p>
+                </div>
+            </div>
+            {action}
+        </div>
+    )
+}
+
+// ── COMPONENTE: ESTADO VAZIO ──────────────────────────────────────────────────
+function EmptyState({ icon, message }: { icon: React.ReactNode; message: string }) {
+    return (
+        <div className="py-16 text-center border-2 border-dashed border-soft rounded-3xl bg-bg2/50">
+            <div className="text-muted/30 flex justify-center mb-3">{icon}</div>
+            <p className="text-[10px] font-bold text-muted uppercase tracking-widest">{message}</p>
+        </div>
+    )
+}
+
+// ── COMPONENTE: POPOVER DE ADIÇÃO ─────────────────────────────────────────────
+function PopoverAdicionar({
+    titulo,
+    actionComponent,
+    buttonColor = "bg-fg text-bg hover:bg-figueira hover:text-white",
+    highlightColor = "bg-figueira"
+}: any) {
     return (
         <details className="group/pop relative z-30">
             <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden outline-none">
-                <div className={`${buttonColor} px-5 py-3 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] transition-all shadow-sm flex items-center gap-2 active:scale-95 group-open/pop:ring-2 ring-offset-2 ring-offset-bg2 ring-soft`}>
-                    <Plus size={14} className="group-open/pop:rotate-45 transition-transform" />
-                    Adicionar
+                <div className={`${buttonColor} px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 shadow-sm`}>
+                    <Plus size={13} className="group-open/pop:rotate-45 transition-transform duration-200" />
+                    Adicionar {titulo}
                 </div>
             </summary>
-
-            <div className="absolute right-0 top-full mt-3 w-[320px] sm:w-[360px] bg-bg border border-soft p-8 rounded-[2rem] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-                <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase text-muted tracking-widest border-b border-soft pb-3 mb-4 flex items-center gap-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${highlightColor}`}></span> Registar Novo(a) {titulo}
-                    </p>
-                    {actionComponent}
-                </div>
+            <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[340px] bg-bg border border-soft p-6 rounded-[1.5rem] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                <p className="text-[9px] font-black uppercase text-muted tracking-widest border-b border-soft pb-3 mb-4 flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${highlightColor}`} />
+                    Registar Novo(a) {titulo}
+                </p>
+                {actionComponent}
             </div>
         </details>
     )
