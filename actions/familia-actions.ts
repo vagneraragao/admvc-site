@@ -1,7 +1,15 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+import prisma, { getTenantClient } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
+
+async function getDb() {
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+    if (!tenantId) throw new Error("Sessão inválida. Igreja não identificada.");
+    return getTenantClient(Number(tenantId));
+}
 
 
 export async function criarNovaFamilia(formData: FormData) {
@@ -10,8 +18,12 @@ export async function criarNovaFamilia(formData: FormData) {
     if (!surname) return { erro: "Nome é obrigatório" };
 
     try {
-        await prisma.familia.create({
-            data: { surname: surname }
+        const db = await getDb();
+        await db.familia.create({
+            data: { 
+                surname: surname,
+                tenant_id: 0
+            }
         });
 
         revalidatePath('/admin/familias');
@@ -23,7 +35,8 @@ export async function criarNovaFamilia(formData: FormData) {
 
 export async function removerMembroDaFamilia(membroId: number) {
     try {
-        await prisma.membro.update({
+        const db = await getDb();
+        await db.membro.update({
             where: { id: membroId },
             data: {
                 familia_id: null,
@@ -45,7 +58,8 @@ export async function removerMembroDaFamilia(membroId: number) {
 export async function vincularMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
 
     try {
-        await prisma.membro.update({
+        const db = await getDb();
+        await db.membro.update({
             where: { id: membroId },
             data: {
                 familia_id: familiaId,
@@ -62,9 +76,10 @@ export async function vincularMembroAFamilia(membroId: number, familiaId: number
 export async function criarFamiliaAction(formData: FormData) {
     try {
         const surname = formData.get('surname') as string;
+        const db = await getDb();
 
         // 👇 1. A BARREIRA ANTI-DUPLICAÇÃO
-        const familiaExiste = await prisma.familia.findFirst({
+        const familiaExiste = await db.familia.findFirst({
             where: {
                 surname: {
                     equals: surname.trim(),
@@ -78,9 +93,10 @@ export async function criarFamiliaAction(formData: FormData) {
         }
 
         // 2. Se não existir, avança com a criação normal
-        const novaFamilia = await prisma.familia.create({
+        const novaFamilia = await db.familia.create({
             data: {
                 surname: surname.trim(),
+                tenant_id: 0
                 // ... restantes campos
             }
         });
@@ -94,8 +110,9 @@ export async function criarFamiliaAction(formData: FormData) {
 
 export async function excluirFamiliaAction(familiaId: number) {
     try {
+        const db = await getDb();
         // 1. Encontrar a família e verificar os membros
-        const familia = await prisma.familia.findUnique({
+        const familia = await db.familia.findUnique({
             where: { id: familiaId },
             include: { members: true }
         });
@@ -105,7 +122,7 @@ export async function excluirFamiliaAction(familiaId: number) {
         // 2. Se houver membros, removemos o vínculo deles com a família antes de a apagar
         // (Os membros continuam no sistema, apenas ficam "Sem Vínculo")
         if (familia.members.length > 0) {
-            await prisma.membro.updateMany({
+            await db.membro.updateMany({
                 where: { familia_id: familiaId },
                 data: {
                     familia_id: null,
@@ -115,7 +132,7 @@ export async function excluirFamiliaAction(familiaId: number) {
         }
 
         // 3. Exclui a família de vez
-        await prisma.familia.delete({
+        await db.familia.delete({
             where: { id: familiaId }
         });
 
@@ -131,7 +148,8 @@ export async function buscarMembrosSemFamiliaAction(query: string) {
     if (!query || query.length < 2) return [];
 
     try {
-        const membros = await prisma.membro.findMany({
+        const db = await getDb();
+        const membros = await db.membro.findMany({
             where: {
                 familia_id: null, // Só quem não tem família
                 OR: [
@@ -152,10 +170,10 @@ export async function buscarMembrosSemFamiliaAction(query: string) {
     }
 }
 
-// 2. AÇÃO DE SALVAR O VÍNCULO
 export async function vincularMembroFamiliaAction(membroId: string, familiaId: string, parentesco: string) {
     try {
-        await prisma.membro.update({
+        const db = await getDb();
+        await db.membro.update({
             where: { id: parseInt(membroId) },
             data: { familia_id: parseInt(familiaId), parentesco: parentesco }
         });

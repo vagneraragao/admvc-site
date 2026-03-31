@@ -14,8 +14,13 @@ export async function registarVisitante(formData: FormData) {
         const telefone = formData.get('telefone') as string;
         const pedido = formData.get('pedido_oracao') as string;
 
+        // Recupera o tenant padrão (já que é um formulário público)
+        const tenant = await prisma.tenant.findFirst();
+        if (!tenant) throw new Error("Tenant não configurado.");
+
         const novoVisitante = await prisma.visitante.create({
             data: {
+                tenant_id: tenant.id,
                 nome: nome,
                 telefone: telefone,
                 pedido_oracao: pedido,
@@ -45,6 +50,14 @@ export async function salvarRelatoRapido(formData: FormData) {
             return { ok: false, error: "Sessão expirada ou não autorizada." };
         }
 
+        const membro = await prisma.membro.findUnique({
+            where: { id: session.membroId }
+        });
+
+        if (!membro) {
+            return { ok: false, error: "Membro não encontrado." };
+        }
+
         // 2. Captura dos dados do formulário
         const visitante_id = Number(formData.get('visitante_id'));
         const relato = formData.get('relato') as string;
@@ -56,6 +69,7 @@ export async function salvarRelatoRapido(formData: FormData) {
         // 3. Gravação do Acompanhamento (Histórico)
         await prisma.acompanhamentoVisitante.create({
             data: {
+                tenant_id: membro.tenant_id,
                 visitante_id,
                 membro_id: session.membroId,
                 tipo_contacto: 'WHATSAPP', // Definimos como padrão para o relato rápido
@@ -91,6 +105,12 @@ export async function registarAcompanhamento(formData: FormData) {
         const session = await getSessionData();
         if (!session) return { error: "Sessão expirada." };
 
+        const membro = await prisma.membro.findUnique({
+            where: { id: session.membroId }
+        });
+
+        if (!membro) return { error: "Membro não encontrado." };
+
         const visitanteId = Number(formData.get('visitante_id'));
         const tipoContacto = formData.get('tipo_contacto') as string;
         const observacoes = formData.get('observacoes') as string;
@@ -100,6 +120,7 @@ export async function registarAcompanhamento(formData: FormData) {
         // 1. Grava o histórico
         await prisma.acompanhamentoVisitante.create({
             data: {
+                tenant_id: membro.tenant_id,
                 visitante_id: visitanteId,
                 membro_id: session.membroId,
                 tipo_contacto: tipoContacto,

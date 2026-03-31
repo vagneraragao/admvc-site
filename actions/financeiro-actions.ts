@@ -16,8 +16,18 @@ export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: 
         const parcelas_total = parseInt(formData.get('parcelas_total') as string);
         const data_pagamento = parseInt(formData.get('data_pagamento') as string);
 
+        const primeiroMembro = await prisma.membro.findUnique({
+            where: { id: membrosIds[0] },
+            select: { tenant_id: true }
+        });
+
+        if (!primeiroMembro) {
+            return { ok: false, error: 'Membro inválido ou não encontrado.' };
+        }
+
         // Cria o objetivo para CADA membro selecionado
         const dadosParaInserir = membrosIds.map(id => ({
+            tenant_id: primeiroMembro.tenant_id,
             nome,
             valor_mensal,
             parcelas_total,
@@ -57,9 +67,19 @@ export async function venderNumeroRifaAction(formData: FormData) {
             return { ok: false, error: 'Este número acabou de ser vendido!' };
         }
 
+        const rifa = await prisma.rifa.findUnique({
+            where: { id: rifa_id },
+            select: { tenant_id: true }
+        });
+
+        if (!rifa) {
+            return { ok: false, error: 'Rifa não encontrada.' };
+        }
+
         // 2. Regista a venda do número
         await prisma.rifaNumero.create({
             data: {
+                tenant_id: rifa.tenant_id,
                 rifa_id,
                 numero,
                 membro_id,
@@ -78,6 +98,16 @@ export async function venderNumeroRifaAction(formData: FormData) {
 
 export async function criarRifaAction(formData: FormData) {
     try {
+        const session = await getSessionData();
+        if (!session) return { ok: false, error: 'Sessão expirada.' };
+
+        const membroLogado = await prisma.membro.findUnique({
+            where: { id: session.membroId },
+            select: { tenant_id: true }
+        });
+
+        if (!membroLogado) return { ok: false, error: 'Utilizador não encontrado.' };
+
         const nome = formData.get('nome') as string;
         const premio = formData.get('premio') as string;
         const valor_numero = parseFloat(formData.get('valor_numero') as string);
@@ -86,6 +116,7 @@ export async function criarRifaAction(formData: FormData) {
         // Cria a rifa vazia, pronta a ser vendida
         await prisma.rifa.create({
             data: {
+                tenant_id: membroLogado.tenant_id,
                 nome,
                 premio,
                 valor_numero,
@@ -151,8 +182,18 @@ export async function venderNumerosRifaLoteAction(formData: FormData) {
             return { ok: false, error: `Os números ${numVendidos} já foram vendidos entretanto!` };
         }
 
+        const rifa = await prisma.rifa.findUnique({
+            where: { id: rifa_id },
+            select: { tenant_id: true }
+        });
+
+        if (!rifa) {
+            return { ok: false, error: 'Rifa não encontrada.' };
+        }
+
         // 2. Prepara os dados para inserir todos de uma vez
         const dadosParaInserir = numeros.map(num => ({
+            tenant_id: rifa.tenant_id,
             rifa_id,
             numero: num,
             membro_id,
@@ -214,10 +255,22 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
             return { ok: false, error: "Valor inválido. Por favor, verifique o montante." };
         }
 
+        const membroObj = await prisma.membro.findUnique({
+            where: { id: membroId },
+            select: { tenant_id: true }
+        });
+
+        if (!membroObj) {
+            console.error(`❌ [ERRO] Membro não encontrado no sistema.`);
+            console.log(`======================================================\n`);
+            return { ok: false, error: "Membro não encontrado." };
+        }
+
         // 2. GRAVAR COMO PENDENTE
         console.log(`💾 [PRISMA] A gravar o pedido na base de dados (Status: PENDENTE)...`);
         const novoPedido = await prisma.pedidoSaldoCantina.create({
             data: {
+                tenant_id: membroObj.tenant_id,
                 membro_id: membroId,
                 valor: valor,
                 forma_pagamento: formaPagamento,
@@ -480,6 +533,7 @@ export async function lancarPagamentoCarne(carneId: number, qtdParcelas: number)
         // 2. Lança a Transação
         await prisma.lancamentoFinanceiro.create({
             data: {
+                tenant_id: carne.tenant_id,
                 objetivo_id: carneId,
                 valor_pago: valorTotal,
                 data_recebimento: new Date(),
@@ -512,6 +566,7 @@ export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
         // Criar o lançamento financeiro
         await prisma.lancamentoFinanceiro.create({
             data: {
+                tenant_id: carne.tenant_id,
                 objetivo_id: carneId,
                 valor_pago: valorTotal,
                 data_recebimento: new Date(),
@@ -544,8 +599,18 @@ export async function lancarContribuicaoAction(formData: FormData) {
         const observacao = formData.get('observacao') as string;
         const data = formData.get('data') ? new Date(formData.get('data') as string) : new Date();
 
+        const membro = await prisma.membro.findUnique({
+            where: { id: membroId },
+            select: { tenant_id: true }
+        });
+
+        if (!membro) {
+            return { ok: false, error: "Membro não encontrado." };
+        }
+
         await prisma.contribuicao.create({
             data: {
+                tenant_id: membro.tenant_id,
                 membro_id: membroId,
                 tipo,
                 valor,
@@ -575,9 +640,19 @@ export async function registrarPagamentoCampanhaAction(formData: FormData) {
         const valor_pago = parseFloat(formData.get('valor_pago') as string);
         const forma_pagamento = formData.get('forma_pagamento') as string;
 
+        const objetivo = await prisma.objetivoFinanceiro.findUnique({
+            where: { id: objetivo_id },
+            select: { tenant_id: true }
+        });
+
+        if (!objetivo) {
+            return { ok: false, error: 'Campanha não encontrada.' };
+        }
+
         // 1. Regista a entrada do dinheiro
         await prisma.lancamentoFinanceiro.create({
             data: {
+                tenant_id: objetivo.tenant_id,
                 objetivo_id,
                 valor_pago,
                 forma_pagamento,
