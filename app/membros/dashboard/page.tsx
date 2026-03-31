@@ -33,6 +33,7 @@ import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import CardAniversariantesMes from '@/components/membros/CardAniversariantesMes'
 import ModalDetalhesEscala from '@/components/membros/ModalDetalhesEscalas'
+import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 
 export default async function DashboardMembro({
     searchParams
@@ -469,6 +470,9 @@ export default async function DashboardMembro({
                         )}
                         {/* DRAWER DE EDIÇÃO DE PERFIL */}
                         <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} />
+
+                        {/* MODAL DE INDISPONIBILIDADES */}
+                        <ModalIndisponibilidade />
 
                         <form action={logoutMembro} className="shrink-0">
                             <button type="submit" className="h-12 w-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm">

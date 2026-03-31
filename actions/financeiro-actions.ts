@@ -1,9 +1,23 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+//import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getSessionData } from '@/lib/auth-utils'
+import prismaGlobal, { getTenantClient } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
+import { put } from "@vercel/blob";
 
+
+
+
+async function getDb() {
+    const headersList = await headers();
+    const tenantId = headersList.get('x-tenant-id');
+    if (!tenantId) throw new Error("Sessão inválida. Igreja não identificada.");
+    return getTenantClient(Number(tenantId));
+}
 
 export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: number[]) {
     try {
@@ -595,7 +609,7 @@ export async function lancarContribuicaoAction(formData: FormData) {
     try {
         const membroId = Number(formData.get('membroId'));
         const valor = Number(formData.get('valor'));
-        const tipo = formData.get('tipo') as string; 
+        const tipo = formData.get('tipo') as string;
         const observacao = formData.get('observacao') as string;
         const data = formData.get('data') ? new Date(formData.get('data') as string) : new Date();
 
@@ -676,60 +690,7 @@ export async function registrarPagamentoCampanhaAction(formData: FormData) {
     }
 }
 
-export async function buscarExtratoFinanceiroMembro(membroId: number, ano: number, mes: number = 0) {
-    try {
-        let dataInicio, dataFim;
 
-        // Se escolheu um mês específico (1 a 12)
-        if (mes > 0) {
-            dataInicio = new Date(ano, mes - 1, 1); // Primeiro dia do mês
-            dataFim = new Date(ano, mes, 0, 23, 59, 59); // Último dia do mês
-        } else {
-            // Se escolheu 0 (Ano Inteiro)
-            dataInicio = new Date(ano, 0, 1);
-            dataFim = new Date(ano, 11, 31, 23, 59, 59);
-        }
-
-        // 1. Busca Dízimos e Ofertas
-        const contribuicoes = await prisma.contribuicao.findMany({
-            where: { membro_id: membroId, data: { gte: dataInicio, lte: dataFim } },
-            orderBy: { data: 'asc' }
-        });
-
-        // 2. Busca Pagamentos de Carnês/Campanhas
-        const lancamentos = await prisma.lancamentoFinanceiro.findMany({
-            where: {
-                objetivo: { membro_id: membroId },
-                data_recebimento: { gte: dataInicio, lte: dataFim }
-            },
-            include: { objetivo: true },
-            orderBy: { data_recebimento: 'asc' }
-        });
-
-        // 3. Unifica e ordena por data
-        const transacoes = [
-            ...contribuicoes.map((c: any) => ({
-                id: `contrib-${c.id}`,
-                data: c.data || c.createdAt,
-                tipo: c.tipo,
-                descricao: c.observacao || c.tipo,
-                valor: c.valor
-            })),
-            ...lancamentos.map((l: any) => ({
-                id: `carne-${l.id}`,
-                data: l.data_recebimento,
-                tipo: 'CAMPANHA',
-                descricao: `Campanha: ${l.objetivo.nome}`,
-                valor: l.valor_pago
-            }))
-        ].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
-
-        return { sucesso: true, transacoes };
-    } catch (error) {
-        console.error("Erro ao buscar extrato:", error);
-        return { sucesso: false, erro: "Falha ao carregar o relatório." };
-    }
-}
 
 export async function buscarRelatorioTesouraria(ano: number, mes: number, membroIdFiltro: string, tipoFiltro: string) {
     try {
@@ -748,7 +709,7 @@ export async function buscarRelatorioTesouraria(ano: number, mes: number, membro
         // 1. Busca Dízimos, Ofertas e Missões
         let whereContribuicoes: any = { data: { gte: dataInicio, lte: dataFim } };
         if (membroId) whereContribuicoes.membro_id = membroId;
-        
+
         // Se escolheu um tipo específico que não é CAMPANHA
         if (tipoFiltro !== 'TODOS' && tipoFiltro !== 'CAMPANHA') {
             whereContribuicoes.tipo = tipoFiltro;
@@ -765,10 +726,10 @@ export async function buscarRelatorioTesouraria(ano: number, mes: number, membro
         // 2. Busca Pagamentos de Carnês/Campanhas
         let whereLancamentos: any = { data_recebimento: { gte: dataInicio, lte: dataFim } };
         if (membroId) whereLancamentos.objetivo = { membro_id: membroId };
-        
+
         // Se escolheu um tipo específico que não é CAMPANHA, não trazemos os carnês
         if (tipoFiltro !== 'TODOS' && tipoFiltro !== 'CAMPANHA') {
-            whereLancamentos.id = -1; 
+            whereLancamentos.id = -1;
         }
 
         const lancamentos = await prisma.lancamentoFinanceiro.findMany({
@@ -801,5 +762,91 @@ export async function buscarRelatorioTesouraria(ano: number, mes: number, membro
     } catch (error) {
         console.error("Erro ao buscar relatório tesouraria:", error);
         return { sucesso: false, erro: "Falha ao carregar o relatório." };
+    }
+}
+
+
+
+// NOVOS
+// PATCH: actions/financeiro-actions.ts
+// Substitui a funcao buscarExtratoFinanceiroMembro por esta versao corrigida
+
+export async function buscarExtratoFinanceiroMembro(
+    membroId: number,
+    ano: number,
+    mes: number   // 0 = ano inteiro, 1-12 = mes especifico
+) {
+    try {
+        const inicio = mes === 0
+            ? new Date(ano, 0, 1)
+            : new Date(ano, mes - 1, 1)
+
+        const fim = mes === 0
+            ? new Date(ano, 11, 31, 23, 59, 59)
+            : new Date(ano, mes, 0, 23, 59, 59)
+
+        // CORRECAO: filtrar por createdAt (sempre preenchido) em vez de data (pode ser null)
+        // e remover o OR que causava conflito
+        const contribuicoes = await prisma.contribuicao.findMany({
+            where: {
+                membro_id: membroId,
+                createdAt: { gte: inicio, lte: fim }
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        const lancamentos = await prisma.lancamentoFinanceiro.findMany({
+            where: {
+                NOT: { forma_pagamento: 'MBWAY' },
+                objetivo: { membro_id: membroId },
+                data_recebimento: { gte: inicio, lte: fim }
+            },
+            include: {
+                objetivo: { select: { nome: true } }
+            },
+            orderBy: { data_recebimento: 'desc' }
+        })
+
+        const numerosRifa = await prisma.rifaNumero.findMany({
+            where: {
+                membro_id: membroId,
+                createdAt: { gte: inicio, lte: fim }
+            },
+            include: {
+                rifa: { select: { nome: true, valor_numero: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        const transacoes = [
+            ...contribuicoes.map(c => ({
+                id: `contrib-${c.id}`,
+                tipo: c.tipo,
+                valor: c.valor,
+                // usa data se existir, senao createdAt
+                data: (c.data ?? c.createdAt).toISOString(),
+                descricao: null
+            })),
+            ...lancamentos.map(l => ({
+                id: `carne-${l.id}`,
+                tipo: 'CARNE',
+                valor: l.valor_pago,
+                data: l.data_recebimento.toISOString(),
+                descricao: l.objetivo?.nome ?? null
+            })),
+            ...numerosRifa.map(n => ({
+                id: `rifa-${n.id}`,
+                tipo: 'RIFA',
+                valor: n.rifa.valor_numero,
+                data: n.createdAt.toISOString(),
+                descricao: n.rifa.nome
+            }))
+        ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+        console.log('ACTION recebeu:', { membroId, tipo: typeof membroId, ano, mes })
+
+        return { sucesso: true, transacoes }
+    } catch (error: any) {
+        console.error('Erro ao buscar extrato:', error)
+        return { sucesso: false, transacoes: [] }
     }
 }

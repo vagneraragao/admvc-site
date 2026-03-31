@@ -1,219 +1,468 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FileText, X, Printer, Download, Loader2, Building2 } from 'lucide-react'
-import { buscarExtratoFinanceiroMembro } from '@/actions/financeiro-actions' 
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import {
+    FileText, X, Printer, Loader2, MessageCircle,
+    ChevronLeft, ChevronRight, TrendingUp, Calendar,
+    HandCoins, Receipt, Heart, Ticket, CheckCircle2
+} from 'lucide-react'
+import { buscarExtratoFinanceiroMembro } from '@/actions/financeiro-actions'
+
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+const TIPO_CONFIG: Record<string, { label: string; cor: string; bg: string; border: string }> = {
+    DIZIMO: { label: 'Dízimo', cor: 'text-emerald-700', bg: 'bg-emerald-500/8', border: 'border-emerald-500/20' },
+    OFERTA: { label: 'Oferta', cor: 'text-blue-700', bg: 'bg-blue-500/8', border: 'border-blue-500/20' },
+    MISSAO: { label: 'Missão', cor: 'text-purple-700', bg: 'bg-purple-500/8', border: 'border-purple-500/20' },
+    CARNE: { label: 'Carnê', cor: 'text-figueira', bg: 'bg-figueira/8', border: 'border-figueira/20' },
+    RIFA: { label: 'Rifa', cor: 'text-orange-700', bg: 'bg-orange-500/8', border: 'border-orange-500/20' },
+}
+
+const tipoConfig = (tipo: string) =>
+    TIPO_CONFIG[tipo] ?? { label: tipo, cor: 'text-muted', bg: 'bg-soft', border: 'border-soft' }
+
+const euro = (v: number) =>
+    new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v)
 
 export default function ModalExtratoMembro({ membro }: { membro: any }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [transacoes, setTransacoes] = useState<any[]>([]);
-    
-    const dataAtual = new Date();
-    const anoAtual = dataAtual.getFullYear();
-    
-    // Filtros
-    const [anoSelecionado, setAnoSelecionado] = useState(anoAtual);
-    const [mesSelecionado, setMesSelecionado] = useState(0); // 0 = Ano Inteiro
+    const [aberto, setAberto] = useState(false)
+    const [mounted, setMounted] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [transacoes, setTransacoes] = useState<any[]>([])
+    const printRef = useRef<HTMLDivElement>(null)
 
-    const mesesNome = [
-        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ];
+    const hoje = new Date()
+    const [ano, setAno] = useState(hoje.getFullYear())
+    const [mes, setMes] = useState(0) // 0 = ano inteiro
+
+    useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
-        if (!isOpen || !membro) return;
+        if (!aberto || !membro) return
+        console.log('MEMBRO ID:', membro?.id, typeof membro?.id)
 
-        async function carregarDados() {
-            setLoading(true);
-            const res = await buscarExtratoFinanceiroMembro(membro.id, anoSelecionado, mesSelecionado);
-            if (res.sucesso) {
-                setTransacoes(res.transacoes);
-            }
-            setLoading(false);
-        }
-        carregarDados();
-    }, [isOpen, anoSelecionado, mesSelecionado, membro]);
+        carregar()
+    }, [aberto, ano, mes])
 
-    // Lógica para agrupar as transações por TIPO (Dízimos, Ofertas, Campanhas)
+    async function carregar() {
+        setLoading(true)
+        const res = await buscarExtratoFinanceiroMembro(membro.id, ano, mes)
+        if (res.sucesso) setTransacoes(res.transacoes)
+        setLoading(false)
+    }
+
+    // ── AGRUPAMENTOS ─────────────────────────────────────────────────────────
     const resumoPorTipo = transacoes.reduce((acc: any, t: any) => {
-        if (!acc[t.tipo]) acc[t.tipo] = 0;
-        acc[t.tipo] += t.valor;
-        return acc;
-    }, {});
+        if (!acc[t.tipo]) acc[t.tipo] = { total: 0, count: 0 }
+        acc[t.tipo].total += t.valor
+        acc[t.tipo].count++
+        return acc
+    }, {})
 
-    const totalGeral = transacoes.reduce((sum, t) => sum + t.valor, 0);
-    const euro = (v: number) => new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+    const totalGeral = transacoes.reduce((s, t) => s + t.valor, 0)
 
-    const handlePrint = () => {
-        window.print();
-    };
+    // Agrupa por mês para o gráfico de barras
+    const porMes = transacoes.reduce((acc: any, t: any) => {
+        const m = new Date(t.data).getMonth()
+        if (!acc[m]) acc[m] = 0
+        acc[m] += t.valor
+        return acc
+    }, {})
+    const maxMes = Math.max(...Object.values(porMes as Record<number, number>), 1)
 
-    // Título Dinâmico do Relatório
-    const tituloRelatorio = mesSelecionado === 0 
-        ? `Extrato Financeiro Anual • ${anoSelecionado}` 
-        : `Extrato Financeiro Mensal • ${mesesNome[mesSelecionado - 1]} ${anoSelecionado}`;
+    const titulo = mes === 0
+        ? `Extrato Financeiro — ${ano}`
+        : `Extrato Financeiro — ${MESES[mes - 1]} ${ano}`
+
+    // ── IMPRESSÃO ─────────────────────────────────────────────────────────────
+    const handleImprimir = () => {
+        const conteudo = printRef.current?.innerHTML
+        if (!conteudo) return
+        const janela = window.open('', '_blank')
+        if (!janela) return
+        janela.document.write(`
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>${titulo}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; background: #fff; padding: 32px 40px; font-size: 11px; }
+  
+  /* CABEÇALHO */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #111; margin-bottom: 24px; }
+  .header-left h1 { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; }
+  .header-left p { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .header-right { text-align: right; }
+  .header-right .nome { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+  .header-right p { font-size: 10px; color: #666; margin-top: 3px; }
+  
+  /* RESUMO */
+  .resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .resumo-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
+  .resumo-card.destaque { background: #f9f9f9; border: 2px solid #111; }
+  .resumo-card .label { font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #888; }
+  .resumo-card .valor { font-size: 18px; font-weight: 900; font-style: italic; margin-top: 4px; }
+  .resumo-card .count { font-size: 9px; color: #aaa; margin-top: 2px; }
+  
+  /* TABELA */
+  .section-title { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: #888; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #888; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+  td { padding: 10px 0; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .td-data { font-weight: 700; color: #444; width: 90px; }
+  .td-tipo { width: 100px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid #e5e7eb; }
+  .td-desc { color: #666; }
+  .td-valor { text-align: right; font-weight: 900; font-size: 13px; }
+  
+  /* TOTAL FINAL */
+  .total-row { background: #f9f9f9; }
+  .total-row td { padding: 14px 0; font-size: 14px; font-weight: 900; border-top: 2px solid #111; border-bottom: none; }
+  
+  /* RODAPÉ */
+  .footer { margin-top: 48px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .footer .assinatura { text-align: center; }
+  .footer .linha { width: 200px; height: 1px; background: #111; margin-bottom: 6px; }
+  .footer .assinatura p { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #555; }
+  .footer .emissao { font-size: 9px; color: #aaa; }
+  
+  @media print { body { padding: 20px 24px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Assembleia de Deus</h1>
+    <p>${titulo}</p>
+  </div>
+  <div class="header-right">
+    <div class="nome">${membro.first_name} ${membro.last_name}</div>
+    <p>${membro.email || ''}</p>
+    <p>Emitido em ${new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+  </div>
+</div>
+
+<div class="resumo">
+  ${Object.entries(resumoPorTipo).map(([tipo, stats]: any) => `
+    <div class="resumo-card">
+      <div class="label">${tipoConfig(tipo).label}</div>
+      <div class="valor">${euro(stats.total)}</div>
+      <div class="count">${stats.count} registo${stats.count !== 1 ? 's' : ''}</div>
+    </div>
+  `).join('')}
+  <div class="resumo-card destaque">
+    <div class="label">Total Geral</div>
+    <div class="valor">${euro(totalGeral)}</div>
+    <div class="count">${transacoes.length} transação${transacoes.length !== 1 ? 'ões' : ''}</div>
+  </div>
+</div>
+
+<div class="section-title">Detalhamento de Transações</div>
+
+${transacoes.length === 0 ? '<p style="color:#aaa;font-style:italic;padding:16px 0;">Nenhum registo no período selecionado.</p>' : `
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Data</th>
+      <th style="text-align:left">Categoria</th>
+      <th style="text-align:left">Descrição</th>
+      <th style="text-align:right">Valor</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${transacoes.map(t => `
+      <tr>
+        <td class="td-data">${new Date(t.data).toLocaleDateString('pt-PT')}</td>
+        <td class="td-tipo"><span class="badge">${tipoConfig(t.tipo).label}</span></td>
+        <td class="td-desc">${t.descricao || '—'}</td>
+        <td class="td-valor">${euro(t.valor)}</td>
+      </tr>
+    `).join('')}
+    <tr class="total-row">
+      <td colspan="3" style="font-weight:900;text-transform:uppercase;letter-spacing:0.1em">Total do Período</td>
+      <td class="td-valor">${euro(totalGeral)}</td>
+    </tr>
+  </tbody>
+</table>
+`}
+
+<div class="footer">
+  <div class="emissao">Documento gerado automaticamente — ${new Date().toLocaleDateString('pt-PT')}</div>
+  <div class="assinatura">
+    <div class="linha"></div>
+    <p>Departamento de Tesouraria</p>
+  </div>
+</div>
+
+</body>
+</html>`)
+        janela.document.close()
+        janela.focus()
+        setTimeout(() => { janela.print(); janela.close() }, 400)
+    }
+
+    // ── WHATSAPP ──────────────────────────────────────────────────────────────
+    const handleWhatsApp = () => {
+        let txt = `📊 *EXTRATO FINANCEIRO*\n`
+        txt += `👤 ${membro.first_name} ${membro.last_name}\n`
+        txt += `📅 _${titulo}_\n\n`
+
+        if (Object.keys(resumoPorTipo).length > 0) {
+            txt += `*Resumo por Categoria:*\n`
+            Object.entries(resumoPorTipo).forEach(([tipo, s]: any) => {
+                txt += `• ${tipoConfig(tipo).label}: ${euro(s.total)} (${s.count} registo${s.count !== 1 ? 's' : ''})\n`
+            })
+            txt += `\n💰 *Total: ${euro(totalGeral)}*\n`
+        } else {
+            txt += `_Nenhum registo no período selecionado._\n`
+        }
+
+        txt += `\n_Emitido em ${new Date().toLocaleDateString('pt-PT')}_`
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(txt)}`, '_blank')
+    }
+
+    // ── MODAL ─────────────────────────────────────────────────────────────────
+    const modal = (
+        <div
+            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            style={{ zIndex: 9999 }}
+            onClick={() => setAberto(false)}
+        >
+            <div
+                className="bg-bg w-full sm:max-w-3xl rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-soft shadow-2xl flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* HEADER */}
+                <div className="flex items-center justify-between p-5 border-b border-soft shrink-0 bg-bg2 rounded-t-[2.5rem]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center shrink-0">
+                            <FileText size={18} />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">
+                                Extrato Financeiro
+                            </h2>
+                            <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5">
+                                {membro.first_name} {membro.last_name}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleImprimir}
+                            className="h-9 px-3 flex items-center gap-1.5 bg-bg border border-soft text-muted hover:text-fg hover:bg-soft rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                        >
+                            <Printer size={13} /> Imprimir
+                        </button>
+                        <button
+                            onClick={handleWhatsApp}
+                            className="h-9 px-3 flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-600 hover:bg-green-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                        >
+                            <MessageCircle size={13} /> WhatsApp
+                        </button>
+                        <button
+                            onClick={() => setAberto(false)}
+                            className="w-9 h-9 flex items-center justify-center bg-bg border border-soft text-muted hover:bg-soft rounded-xl transition-all"
+                        >
+                            <X size={15} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* FILTROS */}
+                <div className="flex items-center gap-3 px-5 py-3 border-b border-soft shrink-0 bg-bg2/50">
+                    {/* NAV ANO */}
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => setAno(a => a - 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-bg border border-soft rounded-lg hover:bg-soft transition-all"
+                        >
+                            <ChevronLeft size={13} className="text-muted" />
+                        </button>
+                        <span className="text-sm font-black italic text-fg min-w-[40px] text-center">{ano}</span>
+                        <button
+                            onClick={() => setAno(a => a + 1)}
+                            disabled={ano >= hoje.getFullYear()}
+                            className="w-7 h-7 flex items-center justify-center bg-bg border border-soft rounded-lg hover:bg-soft transition-all disabled:opacity-30"
+                        >
+                            <ChevronRight size={13} className="text-muted" />
+                        </button>
+                    </div>
+
+                    <div className="h-5 w-px bg-soft" />
+
+                    {/* FILTRO MÊS */}
+                    <div className="flex gap-1 flex-wrap">
+                        <button
+                            onClick={() => setMes(0)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${mes === 0 ? 'bg-fg text-bg' : 'bg-bg border border-soft text-muted hover:bg-soft'}`}
+                        >
+                            Todos
+                        </button>
+                        {MESES.map((m, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setMes(i + 1)}
+                                className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${mes === i + 1 ? 'bg-fg text-bg' : 'bg-bg border border-soft text-muted hover:bg-soft'}`}
+                            >
+                                {m.slice(0, 3)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* CONTEÚDO */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-5" ref={printRef}>
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <Loader2 size={24} className="animate-spin text-figueira" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted">A carregar...</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* KPIs */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {Object.entries(resumoPorTipo).map(([tipo, stats]: any) => {
+                                    const cfg = tipoConfig(tipo)
+                                    return (
+                                        <div key={tipo} className={`p-4 rounded-2xl border ${cfg.bg} ${cfg.border} space-y-1.5`}>
+                                            <p className={`text-[8px] font-black uppercase tracking-widest ${cfg.cor} opacity-80`}>
+                                                {cfg.label}
+                                            </p>
+                                            <p className={`text-xl font-black italic tracking-tighter leading-none ${cfg.cor}`}>
+                                                {euro(stats.total)}
+                                            </p>
+                                            <p className="text-[8px] font-bold text-muted uppercase tracking-widest">
+                                                {stats.count} registo{stats.count !== 1 ? 's' : ''}
+                                            </p>
+                                        </div>
+                                    )
+                                })}
+                                <div className="p-4 rounded-2xl border border-figueira/20 bg-figueira/5 space-y-1.5">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-figueira opacity-80">Total</p>
+                                    <p className="text-xl font-black italic tracking-tighter leading-none text-figueira">{euro(totalGeral)}</p>
+                                    <p className="text-[8px] font-bold text-muted uppercase tracking-widest">{transacoes.length} transações</p>
+                                </div>
+                            </div>
+
+                            {/* GRÁFICO DE BARRAS POR MÊS (só no modo ano inteiro) */}
+                            {mes === 0 && Object.keys(porMes).length > 0 && (
+                                <div className="bg-bg2 border border-soft rounded-2xl p-5 space-y-3">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                                        <TrendingUp size={11} /> Evolução Mensal
+                                    </p>
+                                    <div className="flex items-end gap-1.5 h-20">
+                                        {MESES.map((m, i) => {
+                                            const val = (porMes as any)[i] ?? 0
+                                            const pct = val > 0 ? Math.max((val / maxMes) * 100, 8) : 0
+                                            return (
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                                                    <div className="w-full relative flex items-end" style={{ height: '64px' }}>
+                                                        <div
+                                                            className={`w-full rounded-t-lg transition-all duration-500 ${val > 0 ? 'bg-figueira/70 group-hover:bg-figueira' : 'bg-soft'}`}
+                                                            style={{ height: `${pct}%` }}
+                                                            title={val > 0 ? euro(val) : ''}
+                                                        />
+                                                    </div>
+                                                    <span className="text-[7px] font-black text-muted uppercase">{m.slice(0, 3)}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TABELA DETALHADA */}
+                            <div className="space-y-2">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2 pb-2 border-b border-soft">
+                                    <Receipt size={11} /> Detalhamento
+                                </p>
+
+                                {transacoes.length === 0 ? (
+                                    <div className="py-12 text-center border-2 border-dashed border-soft rounded-2xl">
+                                        <FileText size={28} className="mx-auto text-muted/30 mb-3" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                                            Nenhum registo no período selecionado
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {transacoes.map(t => {
+                                            const cfg = tipoConfig(t.tipo)
+                                            return (
+                                                <div key={t.id} className="flex items-center gap-3 px-4 py-3 bg-bg2 border border-soft rounded-2xl hover:border-figueira/20 transition-all group">
+                                                    {/* ÍCONE TIPO */}
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.bg} ${cfg.cor}`}>
+                                                        {t.tipo === 'DIZIMO' ? <HandCoins size={14} /> :
+                                                            t.tipo === 'CARNE' ? <Receipt size={14} /> :
+                                                                t.tipo === 'RIFA' ? <Ticket size={14} /> :
+                                                                    t.tipo === 'MISSAO' ? <Heart size={14} /> :
+                                                                        <CheckCircle2 size={14} />}
+                                                    </div>
+
+                                                    {/* DATA */}
+                                                    <div className="shrink-0 text-center min-w-[44px]">
+                                                        <p className="text-[7px] font-black uppercase text-muted leading-none">
+                                                            {new Date(t.data).toLocaleDateString('pt-PT', { month: 'short' })}
+                                                        </p>
+                                                        <p className="text-sm font-black italic text-fg leading-none mt-0.5">
+                                                            {new Date(t.data).toLocaleDateString('pt-PT', { day: '2-digit' })}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* DESCRIÇÃO */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${cfg.bg} ${cfg.border} ${cfg.cor}`}>
+                                                                {cfg.label}
+                                                            </span>
+                                                        </div>
+                                                        {t.descricao && (
+                                                            <p className="text-[9px] text-muted font-medium mt-0.5 truncate">
+                                                                {t.descricao}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* VALOR */}
+                                                    <p className="text-sm font-black text-fg shrink-0">{euro(t.valor)}</p>
+                                                </div>
+                                            )
+                                        })}
+
+                                        {/* TOTAL */}
+                                        <div className="flex items-center justify-between px-4 py-3 bg-figueira/5 border border-figueira/15 rounded-2xl mt-2">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-figueira">
+                                                Total do Período
+                                            </p>
+                                            <p className="text-base font-black italic text-figueira">{euro(totalGeral)}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
 
     return (
         <>
             <button
-                onClick={() => setIsOpen(true)}
-                className="bg-bg2 text-fg border border-soft hover:border-figueira hover:text-figueira transition-all text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2"
+                onClick={() => setAberto(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft text-muted hover:border-figueira hover:text-figueira rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-sm"
             >
-                <FileText size={14} /> Gerar Extrato
+                <FileText size={14} /> Extrato
             </button>
 
-            {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/90 backdrop-blur-sm print:bg-white print:p-0 animate-in fade-in">
-                    
-                    <div className="bg-bg2 w-full max-w-4xl border border-soft p-8 md:p-12 rounded-[3rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar print:max-h-none print:shadow-none print:border-none print:rounded-none print:p-8 print:w-full print:absolute print:top-0 print:left-0 print:bg-white print:text-black">
-                        
-                        {/* ========================================= */}
-                        {/* BARRA DE FERRAMENTAS (Escondida na Impressão) */}
-                        {/* ========================================= */}
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 print:hidden">
-                            
-                            {/* Filtros de Data Lado a Lado */}
-                            <div className="flex items-center gap-2 bg-bg p-1.5 rounded-2xl border border-soft shadow-sm w-full md:w-auto">
-                                
-                                <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-soft/30 rounded-xl transition-colors">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted">Ano:</span>
-                                    <select 
-                                        value={anoSelecionado}
-                                        onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-                                        className="bg-transparent text-xs font-black text-fg focus:outline-none cursor-pointer"
-                                    >
-                                        {[anoAtual, anoAtual - 1, anoAtual - 2, anoAtual - 3].map(a => (
-                                            <option key={a} value={a}>{a}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                <div className="w-[1px] h-6 bg-soft"></div> {/* Separador Visual */}
-
-                                <div className="flex items-center gap-2 px-3 py-1.5 hover:bg-soft/30 rounded-xl transition-colors">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted">Mês:</span>
-                                    <select 
-                                        value={mesSelecionado}
-                                        onChange={(e) => setMesSelecionado(Number(e.target.value))}
-                                        className="bg-transparent text-xs font-black text-fg focus:outline-none cursor-pointer"
-                                    >
-                                        <option value={0}>Todos (Ano Inteiro)</option>
-                                        {mesesNome.map((m, index) => (
-                                            <option key={index + 1} value={index + 1}>{m}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Botões de Ação */}
-                            <div className="flex items-center gap-2 self-end md:self-auto">
-                                <button onClick={handlePrint} className="bg-figueira text-white px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all flex items-center gap-2 shadow-sm">
-                                    <Printer size={14} /> Imprimir / PDF
-                                </button>
-                                <button onClick={() => setIsOpen(false)} className="bg-soft/50 text-muted p-3 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                                    <X size={16} strokeWidth={3} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* ========================================= */}
-                        {/* DOCUMENTO PARA IMPRESSÃO                  */}
-                        {/* ========================================= */}
-                        {loading ? (
-                            <div className="py-32 flex flex-col items-center justify-center text-figueira gap-4 print:hidden">
-                                <Loader2 size={40} className="animate-spin" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">A compilar relatório...</span>
-                            </div>
-                        ) : (
-                            <div id="extrato-print" className="space-y-10 print:text-black">
-                                
-                                {/* CABEÇALHO DO DOCUMENTO */}
-                                <div className="flex justify-between items-start border-b-2 border-soft print:border-gray-200 pb-8">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-figueira print:text-black">
-                                            <Building2 size={24} />
-                                            <h1 className="text-2xl font-black uppercase tracking-tighter">Assembleia de Deus</h1>
-                                        </div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted print:text-gray-500">
-                                            {tituloRelatorio}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs font-black uppercase text-fg print:text-black">{membro.first_name} {membro.last_name}</p>
-                                        <p className="text-[10px] font-bold text-muted print:text-gray-500 mt-1">Data de Emissão: {new Date().toLocaleDateString('pt-PT')}</p>
-                                    </div>
-                                </div>
-
-                                {/* RESUMO AGRUPADO (BOXES) */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:grid-cols-4">
-                                    {Object.entries(resumoPorTipo).map(([tipo, valor]: any) => (
-                                        <div key={tipo} className="bg-bg border border-soft rounded-2xl p-4 print:border-gray-300 print:bg-transparent">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted print:text-gray-500">{tipo}</p>
-                                            <p className="text-lg font-black text-fg mt-1 print:text-black">{euro(valor)}</p>
-                                        </div>
-                                    ))}
-                                    <div className="bg-figueira/10 border border-figueira/20 rounded-2xl p-4 print:border-black print:bg-gray-100">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-figueira print:text-black">Total Geral</p>
-                                        <p className="text-xl font-black text-figueira mt-1 print:text-black">{euro(totalGeral)}</p>
-                                    </div>
-                                </div>
-
-                                {/* LISTAGEM DETALHADA */}
-                                <div>
-                                    <h3 className="text-[11px] font-black uppercase tracking-widest text-muted print:text-gray-500 mb-4 border-b border-soft print:border-gray-200 pb-2">
-                                        Detalhamento de Entradas
-                                    </h3>
-                                    
-                                    {transacoes.length === 0 ? (
-                                        <p className="text-xs italic text-muted print:text-gray-500 py-4">Nenhum registo encontrado para o período selecionado.</p>
-                                    ) : (
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="border-b border-soft print:border-gray-300">
-                                                    <th className="py-3 text-[9px] font-black uppercase tracking-widest text-muted print:text-gray-500 w-24">Data</th>
-                                                    <th className="py-3 text-[9px] font-black uppercase tracking-widest text-muted print:text-gray-500 w-32">Categoria</th>
-                                                    <th className="py-3 text-[9px] font-black uppercase tracking-widest text-muted print:text-gray-500">Descrição</th>
-                                                    <th className="py-3 text-[9px] font-black uppercase tracking-widest text-muted print:text-gray-500 text-right">Valor</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-soft/50 print:divide-gray-200">
-                                                {transacoes.map((t) => (
-                                                    <tr key={t.id} className="hover:bg-soft/10 print:hover:bg-transparent">
-                                                        <td className="py-4 text-xs font-bold text-fg print:text-black">
-                                                            {new Date(t.data).toLocaleDateString('pt-PT')}
-                                                        </td>
-                                                        <td className="py-4">
-                                                            <span className="text-[9px] font-black uppercase tracking-widest bg-bg border border-soft px-2 py-1 rounded-md print:border-none print:p-0 print:text-black">
-                                                                {t.tipo}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 text-xs font-medium text-muted print:text-gray-700">
-                                                            {t.descricao}
-                                                        </td>
-                                                        <td className="py-4 text-sm font-black text-fg print:text-black text-right">
-                                                            {euro(t.valor)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    )}
-                                </div>
-
-                                {/* ASSINATURA */}
-                                <div className="pt-24 pb-8 flex justify-center hidden print:flex">
-                                    <div className="text-center">
-                                        <div className="w-64 h-[1px] bg-black mb-2"></div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-black">Departamento de Tesouraria</p>
-                                    </div>
-                                </div>
-
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            {mounted && aberto && createPortal(modal, document.body)}
         </>
     )
 }

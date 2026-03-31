@@ -31,35 +31,37 @@ model Musica {
 }
 
 model Tenant {
-  id                     Int                       @id @default(autoincrement())
-  slug                   String                    @unique
-  nome                   String
-  plano                  String                    @default("FREE")
-  createdAt              DateTime                  @default(now())
-  agendas                Agenda[]
-  avisosMural            AvisoMural[]
-  compromissos           Compromisso[]
-  congregacoes           Congregacao[]
-  contribuicoes          Contribuicao[]
-  departamentos          Departamento[]
-  encontros              EncontroGrupo[]
-  escalas                Escala[]
-  etapasObra             EtapaObra[]
-  eventos                Evento[]
-  familias               Familia[]
-  funcoesDepto           FuncaoDepartamento[]
-  grupos                 Grupo[]
-  integrantesDepto       IntegranteDepartamento[]
-  lancamentosFinanceiros LancamentoFinanceiro[]
-  objetivosFinanceiros   ObjetivoFinanceiro[]
-  pedidosCantina         PedidoSaldoCantina[]
-  projetosObra           ProjetoObra[]
-  repertorios            RepertorioEvento[]
-  rifas                  Rifa[]
-  rifaNumeros            RifaNumero[]
-  acompanhamentos        AcompanhamentoVisitante[]
-  membros                Membro[]
-  visitantes             Visitante[]
+  id                       Int                       @id @default(autoincrement())
+  slug                     String                    @unique
+  nome                     String
+  plano                    String                    @default("FREE")
+  createdAt                DateTime                  @default(now())
+  agendas                  Agenda[]
+  avisosMural              AvisoMural[]
+  compromissos             Compromisso[]
+  congregacoes             Congregacao[]
+  contribuicoes            Contribuicao[]
+  departamentos            Departamento[]
+  encontros                EncontroGrupo[]
+  escalas                  Escala[]
+  etapasObra               EtapaObra[]
+  eventos                  Evento[]
+  familias                 Familia[]
+  funcoesDepto             FuncaoDepartamento[]
+  grupos                   Grupo[]
+  integrantesDepto         IntegranteDepartamento[]
+  lancamentosFinanceiros   LancamentoFinanceiro[]
+  objetivosFinanceiros     ObjetivoFinanceiro[]
+  pedidosCantina           PedidoSaldoCantina[]
+  projetosObra             ProjetoObra[]
+  repertorios              RepertorioEvento[]
+  rifas                    Rifa[]
+  rifaNumeros              RifaNumero[]
+  acompanhamentos          AcompanhamentoVisitante[]
+  membros                  Membro[]
+  visitantes               Visitante[]
+  indisponibilidadeMembros IndisponibilidadeMembro[]
+  mensagemEventos          MensagemEvento[]
 }
 
 model Congregacao {
@@ -159,6 +161,8 @@ model Membro {
   lider_de_grupo             Grupo[]                   @relation("LideresGrupo")
   grupos                     Grupo[]                   @relation("MembrosGrupo")
   encontros_assistidos       EncontroGrupo[]           @relation("MembrosPresentes")
+  indisponibilidadeMembros   IndisponibilidadeMembro[]
+  mensagemEventos            MensagemEvento[]
 
   @@index([tenant_id])
   @@map("membros")
@@ -268,16 +272,17 @@ model EncontroGrupo {
 }
 
 model Evento {
-  id            Int                @id @default(autoincrement())
-  nome          String
-  data          DateTime
-  descricao     String?
-  criado_em     DateTime           @default(now())
-  atualizado_em DateTime           @updatedAt
-  tenant_id     Int
-  escalas       Escala[]
-  tenant        Tenant             @relation(fields: [tenant_id], references: [id])
-  repertorio    RepertorioEvento[]
+  id             Int                @id @default(autoincrement())
+  nome           String
+  data           DateTime
+  descricao      String?
+  criado_em      DateTime           @default(now())
+  atualizado_em  DateTime           @updatedAt
+  tenant_id      Int
+  escalas        Escala[]
+  tenant         Tenant             @relation(fields: [tenant_id], references: [id])
+  repertorio     RepertorioEvento[]
+  mensagemEvento MensagemEvento?
 
   @@index([tenant_id])
 }
@@ -558,4 +563,56 @@ enum Role {
   ADMIN
   FINANCE
   MANAGER
+}
+
+// NOVOS
+
+// PATCH: schema.prisma
+// Adiciona o model IndisponibilidadeMembro
+
+model IndisponibilidadeMembro {
+  id          Int       @id @default(autoincrement())
+  tenant_id   Int
+  membro_id   Int
+  tipo        String // 'DIA_SEMANA' | 'DATA_ESPECIFICA' | 'INTERVALO'
+  dia_semana  Int? // 0=Dom, 1=Seg, ..., 6=Sáb (para DIA_SEMANA)
+  data_inicio DateTime? // para DATA_ESPECIFICA e INTERVALO
+  data_fim    DateTime? // para INTERVALO (null em DATA_ESPECIFICA)
+  hora_inicio String? // ex: "08:00" — indisponível ANTES desta hora
+  hora_fim    String? // ex: "18:00" — indisponível DEPOIS desta hora
+  motivo      String?
+  criado_em   DateTime  @default(now())
+
+  membro Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([membro_id])
+  @@map("indisponibilidades_membro")
+}
+
+// No model Membro, adicionar:
+// indisponibilidades IndisponibilidadeMembro[]
+
+// Após editar o schema, correr:
+// npx prisma migrate dev --name add_indisponibilidade_membro
+
+model MensagemEvento {
+  id            Int      @id @default(autoincrement())
+  tenant_id     Int
+  evento_id     Int      @unique // um evento tem uma mensagem
+  pregador_id   Int?
+  titulo        String?
+  texto_biblico String? // ex: "João 3:16"
+  tema          String?
+  notas         String? // esboço livre
+  criado_em     DateTime @default(now())
+  atualizado_em DateTime @updatedAt
+
+  evento   Evento  @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  pregador Membro? @relation(fields: [pregador_id], references: [id])
+  tenant   Tenant  @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@map("mensagens_evento")
 }
