@@ -20,7 +20,14 @@ export default async function AcolhimentoDashboard() {
 
     const membroLogado = await prisma.membro.findUnique({
         where: { id: session.membroId },
-        include: { ministerios: { include: { departamento: true } } }
+        include: {
+            ministerios: {
+                include: {
+                    departamento: true,
+                    funcoes: { include: { funcao: true } }
+                }
+            }
+        }
     });
 
     if (!membroLogado) redirect('/membros/login');
@@ -28,7 +35,14 @@ export default async function AcolhimentoDashboard() {
     const isAdmin = session.role === 'ADMIN';
     const isEquipaAcolhimento = membroLogado.ministerios.some(vinculo => {
         const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
-        return nomeDepto.includes('acolhimento') || nomeDepto.includes('integração');
+        const pertenceAoSetor = nomeDepto.includes('acolhimento') || nomeDepto.includes('integração');
+
+        // Verifica se ele é líder oficial ou se delegamos acesso a ele
+        const ehLiderOuDelegado =
+            vinculo.departamento?.lider_id === membroLogado.id ||
+            vinculo.pode_gerir_escalas === true;
+
+        return pertenceAoSetor || ehLiderOuDelegado;
     });
 
     if (!isAdmin && !isEquipaAcolhimento) {
@@ -56,14 +70,14 @@ export default async function AcolhimentoDashboard() {
 
     const consolidados = await prisma.visitante.findMany({
 
-    where: { status: 'CONSOLIDADO' },
-    include: {
-        acompanhamentos: {
-            include: { membro: true }, // Isto é obrigatório para aparecer o nome de quem atendeu!
-            orderBy: { data_contacto: 'desc' }
+        where: { status: 'CONSOLIDADO' },
+        include: {
+            acompanhamentos: {
+                include: { membro: true }, // Isto é obrigatório para aparecer o nome de quem atendeu!
+                orderBy: { data_contacto: 'desc' }
+            }
         }
-    }
-});
+    });
 
 
 
@@ -79,19 +93,19 @@ export default async function AcolhimentoDashboard() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-{/* BREADCRUMB REUTILIZÁVEL */}
+            {/* BREADCRUMB REUTILIZÁVEL */}
             <Breadcrumb items={[
-                { 
-                    label: isAdmin ? "Painel Admin" : "Dashboard", 
-                    href: isAdmin ? "/admin/dashboard" : "/membros/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: isAdmin ? "Painel Admin" : "Dashboard",
+                    href: isAdmin ? "/admin/dashboard" : "/membros/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Ministérios", 
-                    hideOnMobile: true 
+                {
+                    label: "Ministérios",
+                    hideOnMobile: true
                 },
-                { 
-                    label: "Acolhimento" 
+                {
+                    label: "Acolhimento"
                 }
             ]} />
 

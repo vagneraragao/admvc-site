@@ -1,12 +1,12 @@
-import prisma from '@/lib/prisma'
-import EditarMembroClient from '@/components/membros/Client' // Confirma se o caminho está correto
+import prismaGlobal, { getTenantClient } from '@/lib/prisma' // 🔄 Importamos os dois clientes
+import { headers } from 'next/headers' // 🔄 Importamos os headers
+import EditarMembroClient from '@/components/membros/Client'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 
-// Nota: No Next 15, params é Promise. Se for Next 14, remove o await do params.
 export default async function EditarMembroPage({ params }: { params: Promise<{ id: string }> }) {
 
-    // --- 1. SEGURANÇA DE ACESSO ---
+    // --- 1. SEGURANÇA DE ACESSO (ROLE) ---
     const cookieStore = await cookies();
     const session = cookieStore.get('admvc_session');
 
@@ -16,19 +16,34 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
     const sessionValue = decodeURIComponent(session.value);
     const isAdmin = sessionValue.includes('role:ADMIN');
 
-    // Única verificação necessária
     if (!isAdmin) {
         redirect('/membros/login?error=Acesso restrito a administradores');
     }
 
-    // --- 2. BUSCA DE DADOS ---
-    const { id: idParam } = await params; // Aguarda os parâmetros da URL
+    // --- 2. SEGURANÇA MULTITENANT (IGREJA) ---
+    const headersList = await headers();
+    const tenantIdStr = headersList.get('x-tenant-id');
+
+    if (!tenantIdStr) {
+        redirect('/admin/login?error=Igreja não identificada.');
+    }
+
+    // Instancia o Prisma blindado para esta igreja
+    const db = getTenantClient(Number(tenantIdStr));
+
+    // --- 3. BUSCA DE DADOS ---
+    const { id: idParam } = await params;
     const id = Number(idParam);
 
     if (isNaN(id)) redirect('/admin/membros');
-    const escolaridades = await prisma.escolaridade.findMany({ orderBy: { id: 'asc' } });
-    const [membro, todosCargos, todosDeptos, todosGrupos] = await Promise.all([
-        prisma.membro.findUnique({
+
+    // DADOS GLOBAIS (Usam o prismaGlobal)
+    const escolaridades = await prismaGlobal.escolaridade.findMany({ orderBy: { id: 'asc' } });
+    const todosCargos = await prismaGlobal.cargo.findMany({ orderBy: { nome: 'asc' } });
+
+    // DADOS PRIVADOS DA IGREJA (Usam o db multitenant)
+    const [membro, todosDeptos, todosGrupos, familias] = await Promise.all([
+        db.membro.findFirst({ // 🔄 TROCADO: findUnique por findFirst
             where: { id },
             include: {
                 ministerios: { include: { departamento: true } },
@@ -37,11 +52,20 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
                 familia: true,
             }
         }),
-        prisma.cargo.findMany(),
-        prisma.departamento.findMany(),
-        prisma.grupo.findMany(),
+        db.departamento.findMany(),
+        db.grupo.findMany(),
+        db.familia.findMany({ // Agrupei a busca de famílias aqui no Promise.all para ficar mais rápido!
+            select: {
+                id: true,
+                surname: true,
+            },
+            orderBy: {
+                surname: 'asc'
+            }
+        })
     ]);
 
+    // Se o membro não existir ou pertencer a outra igreja, o findFirst retorna null
     if (!membro) redirect('/admin/membros');
 
     const rolesDisponiveis = [
@@ -50,18 +74,6 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
         { label: 'Financeiro / Tesouraria', value: 'FINANCE' },
         { label: 'Administrador Geral', value: 'ADMIN' },
     ];
-
-    const familias = await prisma.familia.findMany({
-        select: {
-            id: true,
-            surname: true,
-        },
-        orderBy: {
-            surname: 'asc'
-        }
-    });
-
-    if (!membro) return <div>Membro não encontrado</div>;
 
     return (
         <EditarMembroClient

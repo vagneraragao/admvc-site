@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Calendar as CalendarIcon, User, Star, Sparkles } from 'lucide-react'
 // Ajustei o import para o caminho que definimos anteriormente (membros em vez de admin)
-import { criarEscalaAction, deletarEscalaAction } from '@/app/admin/membros/gestao/escalas/actions'
+import { criarEscalaAction, deletarEscalaAction } from '@/actions/escalas-actions'
 
 export default function GerenciadorEscalaClient({ deptoId, integrantes, eventos, escalasIniciais }: any) {
     const [escalas, setEscalas] = useState(escalasIniciais);

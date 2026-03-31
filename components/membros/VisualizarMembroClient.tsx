@@ -13,7 +13,10 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 export default function VisualizarMembroClient({ membro }: any) {
     const [abaAtiva, setAbaAtiva] = useState(1);
 
-    const departamentos = membro.ministerios?.map((m: any) => ({ ...m.departamento, funcao: m.funcao })) || [];
+    const departamentos = membro.ministerios?.map((m: any) => ({ 
+        ...m.departamento, 
+        funcao: m.funcoes?.map((f: any) => f.funcao?.nome).join(', ') || 'Membro' 
+    })) || [];
     const grupos = membro.grupos || [];
     const gruposLiderados = membro.lider_de_grupo || [];
     const todosGrupos = [...gruposLiderados.map((g: any) => ({ ...g, isLider: true })), ...grupos];

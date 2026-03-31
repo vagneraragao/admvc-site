@@ -2,9 +2,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Upload, CheckCircle2, AlertTriangle, XCircle, ArrowRight, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { Download, Upload, CheckCircle2, ArrowRight, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { analisarCSV, exportarMembrosCSV, confirmarImportacao } from '@/actions/membro-actions'
-import Link from 'next/link'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export default function ImportExportPage() {
@@ -138,7 +137,7 @@ export default function ImportExportPage() {
                     <div>
                         <h3 className="text-lg font-black uppercase tracking-widest text-fg">Importar Membros</h3>
                         <p className="text-xs text-muted font-medium mt-2 max-w-xs">
-                            Envie um CSV com as colunas: <strong>Nome; Apelido; Email; Telefone</strong>
+                            Envie um CSV com as colunas corretas separadas por ponto-e-vírgula (;).
                         </p>
                     </div>
 
@@ -208,7 +207,6 @@ export default function ImportExportPage() {
                                     <th className="pb-3 px-2">Motivo / Aviso</th>
                                 </tr>
                             </thead>
-                            {/* Substitua o tbody antigo por este que lê de item.dados */}
                             <tbody>
                                 {analise.map((item, idx) => (
                                     <tr key={idx} className="border-b border-soft/50 hover:bg-soft/30 transition-colors">
@@ -225,7 +223,16 @@ export default function ImportExportPage() {
                                             {item.dados?.email || item.email}
                                         </td>
                                         <td className="py-3 px-2 text-[10px] text-muted italic">
-                                            {item.status === 'PRONTO' ? `Cidade: ${item.dados?.id_city || 'N/A'}` : item.motivo}
+                                            {item.status === 'PRONTO' ? (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span>Cargo: {item.dados?.church_role || 'Membro'}</span>
+                                                    <span className={item.dados?.congregacao_nome ? "text-figueira font-bold not-italic" : "text-orange-500/80"}>
+                                                        Unidade: {item.dados?.congregacao_nome || 'Sede/Geral'}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                item.motivo
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

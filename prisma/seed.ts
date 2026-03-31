@@ -11,15 +11,26 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool as any)
 const prisma = new PrismaClient({ adapter })
 
-//const prisma = new PrismaClient({ adapter })
-//const prisma = new PrismaClient()
-
-
 async function main() {
     console.log('🌱 Iniciando a Sementeira (Seed)...')
 
     // =====================================================================
-    // 1. CRIAR CARGOS INICIAIS
+    // 0. CRIAR A IGREJA (TENANT) - OBRIGATÓRIO NO MULTITENANT
+    // =====================================================================
+    console.log('🏢 A preparar a Igreja Principal (Tenant)...')
+    const tenant = await prisma.tenant.upsert({
+        where: { slug: 'sede-global' },
+        update: {},
+        create: {
+            nome: 'ADMVC Sede',
+            slug: 'sede-global',
+            plano: 'ENTERPRISE'
+        }
+    })
+    console.log(`✅ Tenant criado: ${tenant.nome} (ID: ${tenant.id})`)
+
+    // =====================================================================
+    // 1. CRIAR CARGOS INICIAIS (GLOBAIS)
     // =====================================================================
     const cargos = [
         { nome: 'Pastor(a)' },
@@ -42,29 +53,29 @@ async function main() {
     console.log('✅ Cargos criados.')
 
     // =====================================================================
-    // 2. CRIAR DEPARTAMENTOS (Inclui os de Gestão do Site)
+    // 2. CRIAR ESCOLARIDADES INICIAIS (GLOBAIS)
     // =====================================================================
-    const departamentos = [
-        { nome: 'Ministério de Diaconia', descricao: 'Serviço e ordem nos cultos' },
-        { nome: 'Ministério de Louvor', descricao: 'Música e adoração' },
-        { nome: 'Evangelismo e Missões', descricao: 'Expansão do reino e evangelismo' },
-        { nome: 'Mídia e Comunicação', descricao: 'Som, imagem, redes sociais e transmissões' },
-        { nome: 'Acolhimento e Integração', descricao: 'Receção e acompanhamento de visitantes' },
-        { nome: 'Cantina', descricao: 'Gestão da cafetaria e alimentação' },
-        { nome: 'Ação Social', descricao: 'Despensa, cabazes e assistência à comunidade' }
+    const escolaridades = [
+        { nome: 'Ensino Básico' },
+        { nome: 'Ensino Secundário' },
+        { nome: 'Ensino Profissional' },
+        { nome: 'Licenciatura' },
+        { nome: 'Mestrado' },
+        { nome: 'Doutoramento' },
+        { nome: 'Outro' }
     ]
 
-    for (const depto of departamentos) {
-        await prisma.departamento.upsert({
-            where: { nome: depto.nome },
+    for (const esc of escolaridades) {
+        await prisma.escolaridade.upsert({
+            where: { nome: esc.nome },
             update: {},
-            create: depto,
+            create: esc,
         })
     }
-    console.log('✅ Departamentos criados.')
+    console.log('✅ Escolaridades criadas.')
 
     // ========================================================================
-    // DEPARTAMENTOS E AS SUAS RESPETIVAS FUNÇÕES (CARGOS)
+    // 3. DEPARTAMENTOS E AS SUAS RESPETIVAS FUNÇÕES (VINCULADOS AO TENANT)
     // ========================================================================
     console.log('🌱 A semear Departamentos e Funções Ministeriais...');
 
@@ -136,13 +147,19 @@ async function main() {
     ];
 
     for (const depto of departamentosComFuncoes) {
-        // 1. Cria ou Atualiza o Departamento
+        // 1. Cria ou Atualiza o Departamento (Usando chave composta nome + tenant_id)
         const departamentoCriado = await prisma.departamento.upsert({
-            where: { nome: depto.nome },
-            update: { descricao: depto.descricao }, // Atualiza a descrição se já existir
+            where: {
+                nome_tenant_id: {
+                    nome: depto.nome,
+                    tenant_id: tenant.id
+                }
+            },
+            update: { descricao: depto.descricao },
             create: {
                 nome: depto.nome,
-                descricao: depto.descricao
+                descricao: depto.descricao,
+                tenant_id: tenant.id // Obrigatório!
             }
         });
 
@@ -150,45 +167,25 @@ async function main() {
         for (const nomeFuncao of depto.funcoes) {
             await prisma.funcaoDepartamento.upsert({
                 where: {
-                    nome_departamento_id: { // O nome gerado pelo Prisma para a sua regra @@unique
+                    nome_departamento_id: {
                         nome: nomeFuncao,
                         departamento_id: departamentoCriado.id
                     }
                 },
-                update: {}, // Não faz nada se a função já existir
+                update: {},
                 create: {
                     nome: nomeFuncao,
-                    departamento_id: departamentoCriado.id
+                    departamento: { connect: { id: departamentoCriado.id } },
+                    tenant: { connect: { id: tenant.id } }
                 }
             });
         }
     }
 
-    console.log(`✅ ${departamentosComFuncoes.length} Departamentos e as suas Funções foram semeados com sucesso!`);
-
-
-    // CRIAR ESCOLARIDADES INICIAIS
-    const escolaridades = [
-        { nome: 'Ensino Básico' },
-        { nome: 'Ensino Secundário' },
-        { nome: 'Ensino Profissional' },
-        { nome: 'Licenciatura' },
-        { nome: 'Mestrado' },
-        { nome: 'Doutoramento' },
-        { nome: 'Outro' }
-    ]
-
-    for (const esc of escolaridades) {
-        await prisma.escolaridade.upsert({
-            where: { nome: esc.nome },
-            update: {},
-            create: esc,
-        })
-    }
-    console.log('✅ Escolaridades criadas.')
+    console.log(`✅ ${departamentosComFuncoes.length} Departamentos e as suas Funções criados.`)
 
     // =====================================================================
-    // 3. CRIAR GRUPOS (SOMOS 1)
+    // 4. CRIAR GRUPOS "SOMOS 1" (VINCULADOS AO TENANT)
     // =====================================================================
     const gruposNomes = [
         'SOMOS 1 - HOMENS',
@@ -199,8 +196,13 @@ async function main() {
     ]
 
     for (const nomeGrupo of gruposNomes) {
-        // O modelo Grupo não tem @unique no nome, por isso usamos o findFirst para evitar duplicados
-        const exists = await prisma.grupo.findFirst({ where: { nome: nomeGrupo } })
+        // Verifica no tenant específico
+        const exists = await prisma.grupo.findFirst({
+            where: {
+                nome: nomeGrupo,
+                tenant_id: tenant.id
+            }
+        })
 
         if (!exists) {
             await prisma.grupo.create({
@@ -215,7 +217,8 @@ async function main() {
                     bairro: 'Centro',
                     cidade: 'Figueira da Foz',
                     estado: 'Coimbra',
-                    pais: 'Portugal'
+                    pais: 'Portugal',
+                    tenant_id: tenant.id // Obrigatório!
                 }
             })
         }
@@ -223,10 +226,11 @@ async function main() {
     console.log('✅ Grupos (SOMOS 1) criados.')
 
     // =====================================================================
-    // 4. CRIAR SUPER ADMIN INICIAL
+    // 5. CRIAR SUPER ADMIN INICIAL (VINCULADO AO TENANT)
     // =====================================================================
     const hashedAdminPassword = await bcrypt.hash('admin123', 10) // Mude após o primeiro login
 
+    // O E-mail é a única coisa que continua a ser 100% global no sistema
     await prisma.membro.upsert({
         where: { email: 'admin@admvc.com' },
         update: {},
@@ -240,7 +244,8 @@ async function main() {
             phone_1: '912345678',
             gender: 'Masculino',
             is_active: true,
-            termo_aceite: true // Já aceitou os termos para não ser barrado
+            termo_aceite: true, // Já aceitou os termos
+            tenant_id: tenant.id // Obrigatório! Ligamos o admin à Sede Global
         },
     })
     console.log('👑 Super Admin criado: admin@admvc.com / admin123')

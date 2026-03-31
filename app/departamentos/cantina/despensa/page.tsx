@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, HeartHandshake } from 'lucide-react'
 import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
-import DespensaManager from '@/components/despensa/DespensaManager'
+import DespensaManager from '@/components/cantina/DespensaManager'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
@@ -63,19 +63,19 @@ export default async function AdminDespensaPage() {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-{/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
+            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
             <Breadcrumb items={[
-                { 
-                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard", 
-                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard",
+                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Ministérios", 
-                    hideOnMobile: true 
+                {
+                    label: "Ministérios",
+                    hideOnMobile: true
                 },
-                { 
-                    label: "Ação Social & Despensa" 
+                {
+                    label: "Ação Social & Despensa"
                 }
             ]} />
 

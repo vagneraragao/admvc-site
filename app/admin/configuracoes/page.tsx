@@ -15,17 +15,25 @@ export default async function ConfiguracoesPage() {
     // ========================================================================
     const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos] = await Promise.all([
         prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
+
+        // 👇 AQUI ESTÁ A MAGIA!
         prisma.departamento.findMany({
             include: {
                 lider: { select: { first_name: true, last_name: true } },
                 funcoes: { orderBy: { nome: 'asc' } },
                 integrantes: {
-                    include: { membro: { select: { id: true, first_name: true, last_name: true } } }
+                    include: {
+                        membro: { select: { id: true, first_name: true, last_name: true } },
+                        // 👇 Adicionámos a linha abaixo para trazer as múltiplas funções
+                        funcoes: { include: { funcao: true } }
+                    }
                 },
                 _count: { select: { integrantes: true } }
             },
             orderBy: { nome: 'asc' }
         }),
+        // 👆 FIM DA MAGIA
+
         prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
         prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
         prisma.grupo.findMany({
@@ -42,19 +50,19 @@ export default async function ConfiguracoesPage() {
     return (
         <main className="max-w-6xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-{/* BREADCRUMB PADRONIZADO */}
+            {/* BREADCRUMB PADRONIZADO */}
             <Breadcrumb items={[
-                { 
-                    label: "Painel Admin", 
-                    href: "/admin/dashboard", 
-                    isBackIcon: true 
+                {
+                    label: "Painel Admin",
+                    href: "/admin/dashboard",
+                    isBackIcon: true
                 },
-                { 
-                    label: "Sistema", 
-                    hideOnMobile: true 
+                {
+                    label: "Sistema",
+                    hideOnMobile: true
                 },
-                { 
-                    label: "Configurações Estruturais" 
+                {
+                    label: "Configurações Estruturais"
                 }
             ]} />
 
