@@ -1,131 +1,162 @@
-# ⛪ ADMVC - Sistema Integrado de Acolhimento & Gestão
+# ADMVC - Plataforma de Gestao Integrada para Igrejas
 
-> **"Sê muito bem-vindo, fica para sempre!"** > Uma plataforma Fullstack de alta performance desenvolvida para a **Igreja ADMVC**, focada em transformar o primeiro contacto de um visitante numa jornada de cuidado, oração e integração ministerial.
-
----
-
-## 📖 Sobre o Projeto
-
-O **ADMVC Core** é o coração digital da nossa congregação. Ele serve como uma ponte inteligente entre o site público e a liderança, automatizando a captação de novos visitantes e oferecendo aos obreiros uma ferramenta de gestão em tempo real. 
-
-O sistema foi desenhado para que nenhum pedido de oração seja esquecido e que cada pessoa que cruza as nossas portas (físicas ou digitais) receba o devido acompanhamento.
-
-### 🌟 Diferenciais do Sistema
-* **Identidade Visual "Figueira":** Interface baseada na paleta institucional (#3F6B4F), unindo sobriedade e acolhimento.
-* **Comunicação em Tempo Real:** Notificações automáticas via e-mail (Resend) para a equipa interna.
-* **Foco no Cuidado (CRM Espiritual):** Gestão de status de visitantes e histórico de contactos.
-* **Transparência da Obra:** Visualização dinâmica do progresso da construção da nova sede.
+> **"Se muito bem-vindo, fica para sempre!"** — Plataforma Fullstack multi-tenant para gestao completa de igrejas, desenhada para a **ADMVC** e preparada para escalar como SaaS.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Sobre o Projeto
 
-O projeto utiliza as tecnologias mais modernas do ecossistema **TypeScript**:
+O **ADMVC** e uma plataforma completa de gestao de igrejas que cobre desde o acolhimento de visitantes ate ao controlo financeiro, escalas de servico, louvor e inventario. Cada funcionalidade e um modulo independente que pode ser activado ou desactivado por plano.
 
-* **Framework:** [Next.js 15+](https://nextjs.org/) (App Router & Server Actions).
-* **Base de Dados:** PostgreSQL (Hospedagem em nuvem).
-* **ORM:** [Prisma](https://www.prisma.io/) (Type-safety e modelagem relacional).
-* **Estilização:** Tailwind CSS & Lucide Icons.
-* **E-mails:** [Resend API](https://resend.com/) (Infraestrutura de alta entregabilidade).
-* **Animações:** `tailwindcss-animate` para transições suaves.
-
----
-
-## 🚀 Funcionalidades Detalhadas
-
-### 1. Portal de Captação (`/boasvindas` & `/contato`)
-* **Boas-Vindas:** Formulário otimizado para telemóveis, captando Nome, WhatsApp e Pedido de Oração.
-* **Página de Contacto:** Triagem de mensagens externas com integração direta à Dashboard de Acolhimento.
-* **Smart Labels:** O sistema prefixa automaticamente os contactos (`🌱 [VISITANTE]` ou `✉️ [CONTACTO SITE]`) para facilitar a triagem.
-
-### 2. Dashboard de Gestão do Acolhimento
-* **Visualização 360º:** Lista de visitantes com filtros por status (Novo, Em Contacto, Integrado).
-* **Relatos Rápidos:** Componente que permite registar conversas de WhatsApp sem sair da página principal.
-* **Modais de Acompanhamento:** Histórico detalhado de todas as interações passadas com o visitante.
-
-### 3. Monitorização da Construção (`Página Inicial`)
-* **Fé em Números:** Barra de progresso dinâmica que lê os valores da base de dados (`ProjetoObra`).
-* **Etapas da Sede:** Visualização percentual automática para:
-    1. Aquisição do Terreno
-    2. Estrutura e Alvenaria
-    3. Acabamentos e Mobiliário
-
-### 4. Automação de E-mail (Workflow)
-* **Notificações Internas:** Envio imediato para `admvcff@gmail.com` com:
-    * Dados completos do visitante.
-    * Botão direto para abrir conversa no **WhatsApp** (sem precisar de gravar o número).
-    * Link de acesso rápido à Dashboard de gestão.
+### Destaques
+- **Multi-tenant:** Multiplas igrejas isoladas na mesma plataforma
+- **Sistema de planos:** FREE, BASIC, PRO, ENTERPRISE com modulos configuraveis por igreja
+- **Super-Admin separado:** Administracao SaaS completamente independente do portal da igreja
+- **Seguranca:** Auth checks em todas as server actions, rate limiting, tenant isolation
 
 ---
 
-## 🏗️ Estrutura de Pastas (Arquitetura)
+## Stack Tecnologica
 
-```text
-├── actions/              # Server Actions (Lógica de DB e disparo de E-mails)
-├── app/                  # Rotas, Layouts e Páginas (App Router)
-├── components/           # Componentes UI (Cards, Modais, Progress Bars)
-│   └── acolhimento/      # Componentes específicos da gestão de pessoas
-├── lib/                  # Utilitários (Prisma Client, Resend Config, Auth)
-├── prisma/               # Schema.prisma e Migrações de BD
-└── public/               # Assets (Logos, Imagens do Hero, Favicons)
+| Camada | Tecnologia |
+|---|---|
+| Framework | Next.js 14+ (App Router, Server Actions) |
+| Linguagem | TypeScript |
+| Base de Dados | PostgreSQL |
+| ORM | Prisma 7.5 |
+| Estilizacao | Tailwind CSS + Lucide Icons |
+| Auth | Custom cookie-based (bcryptjs, sessoes separadas) |
+| Rate Limiting | Upstash Redis (Ratelimit) |
+| Email | Resend API |
+| Ficheiros | Vercel Blob Storage |
+| Integracoes | Loyverse (POS), Holyrics (Projeccao), Spotify/YouTube |
 
-## ⚙️ Configuração do Ambiente
+---
 
-### 1. **Clonar e Instalar:**
-```bash
-   git clone [https://github.com/teu-usuario/admvc-site.git](https://github.com/teu-usuario/admvc-site.git)
-   npm install
+## Arquitectura Modular
+
+Cada modulo e uma rota independente que pode ser habilitada/desabilitada pelo sistema de planos:
+
+```
+app/
+├── escalas/           Modulo: Escalas (admin + gestao + relatorios)
+├── grupos/            Modulo: Grupos/Celulas (admin + gestao)
+├── louvor/            Modulo: Louvor (holyrics + setlist)
+├── inventario/        Modulo: Inventario
+├── departamentos/
+│   ├── cantina/       Modulo: Cantina (Loyverse)
+│   ├── financeiro/    Modulo: Financeiro
+│   └── acolhimento/   Modulo: Acolhimento
+│
+├── admin/             Core: Painel administrativo (sempre disponivel)
+│   ├── dashboard/
+│   ├── membros/       Cadastro, importacao, edicao, visualizacao
+│   ├── familias/
+│   ├── congregacoes/
+│   ├── configuracoes/
+│   ├── auditoria/
+│   └── relatorios/
+│
+├── membros/           Core: Portal do membro (sempre disponivel)
+│   ├── dashboard/
+│   ├── login/         Login unificado para membros e admin
+│   ├── perfil/
+│   ├── mural/
+│   └── termos/
+│
+├── super-admin/       SaaS: Gestao da plataforma (auth independente)
+│   ├── login/         Login separado (tabela SuperAdmin)
+│   ├── dashboard/     Visao geral de todos os tenants
+│   ├── igrejas/       Gestao de igrejas
+│   └── igrejas/[id]/modulos/  Activar/desactivar modulos por igreja
+│
+└── api/               Endpoints REST
 ```
 
-### 2. Variáveis de Ambiente (.env.local):
-* **Crie um ficheiro na raiz do projeto e adicione as suas credenciais:
+---
 
-### Ligação à Base de Dados (PostgreSQL)
-DATABASE_URL="postgresql://utilizador:senha@localhost:5432/admvc"
+## Sistema de Planos
 
-### Chave de API do Resend para envios de E-mail
-RESEND_API_KEY="re_sua_chave_privada_aqui"
+| Plano | Modulos | Membros | Congregacoes |
+|---|---|---|---|
+| FREE | Mural | 50 | 1 |
+| BASIC | Escalas, Grupos, Mural, Acolhimento, Relatorios, Auditoria | 200 | 3 |
+| PRO | Todos | Ilimitado | 10 |
+| ENTERPRISE | Todos | Ilimitado | Ilimitado |
 
-### Segredo para Autenticação (NextAuth ou similar)
-NEXTAUTH_SECRET="um_codigo_aleatorio_e_seguro"
+Cada igreja pode ter overrides personalizados via campo `modulos_custom` (JSONB).
 
-Sincronizar Base de Dados:
+### Verificacao em 3 camadas
+1. **Middleware (Edge)** — verifica plano no cookie, bloqueia rotas de modulos desabilitados
+2. **Pages (Server)** — `checkModulo()` para mostrar/esconder UI condicionalmente
+3. **Actions (Server)** — `requireModulo()` para bloquear operacoes de dados
 
-### Gera o Cliente Prisma baseado no schema
-npx prisma generate  
+---
 
-### Aplica as tabelas na base de dados (Modo Desenvolvimento)
-npx prisma db push
+## Seguranca
 
-### Sincronização da Base de Dados:
+- **Auth checks** em ~120 server actions via `requireAuth()` / `requireRole()`
+- **Rate limiting** no login: 5 tentativas/email + 15 tentativas/IP por 15 min (Upstash Redis)
+- **Tenant isolation** via Prisma extensions (queries automaticamente filtradas por tenant_id)
+- **Super-Admin isolado** com cookie, tabela e login proprios (nao partilha sessao com membros)
+- **Headers de seguranca:** HSTS, X-Frame-Options: DENY, nosniff, strict referrer
+- **Error boundaries** no root, /admin e /membros
+- **APIs debug** bloqueadas em producao (retornam 404)
+- **Audit logging** para login, operacoes financeiras, alteracoes de dados
 
-### Gera o Cliente Prisma baseado no schema
-npx prisma generate  
+---
 
-### Aplica as tabelas na base de dados (Modo Desenvolvimento)
-npx prisma db push
+## Configuracao
 
-### Execução do Projeto:
+### 1. Instalar dependencias
+```bash
+npm install
+```
 
-* Inicia o servidor de desenvolvimento em http://localhost:3000
-npm run dev      
+### 2. Variaveis de ambiente
+Criar ficheiro `.env` na raiz (ver `.env.example` para referencia):
+```
+DATABASE_URL="postgresql://..."
+KV_REST_API_URL="https://..."
+KV_REST_API_TOKEN="..."
+RESEND_API_KEY="re_..."
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
+```
 
-* Para gerar a versão de produção
-npm run build
+### 3. Base de dados
+```bash
+npx prisma generate
+npx prisma migrate dev
+npm run db:fresh          # Seed com dados iniciais
+```
 
-## 🎨 Identidade Visual (Design System)
-* O projeto segue rigorosamente o manual de marca da congregação:
+### 4. Executar
+```bash
+npm run dev               # http://localhost:3000
+```
 
-* Primary (Figueira): #3F6B4F — Usado em botões de ação principal e cabeçalhos.
-* Secondary (Soft): #7FAE93 — Usado em estados de hover e elementos de suporte.
-* Tipografia: * Títulos: Black Italic (Uppercase) para um visual de impacto e modernidade.
-* Corpo: Sans-serif com tracking ajustado para máxima legibilidade.
-* Componentes: Cantos arredondados (rounded-[2rem]) para transmitir uma sensação de acolhimento e proximidade.
+### Credenciais padrao (seed)
+| Tipo | Email | Password |
+|---|---|---|
+| Super Admin | sa@admvc.com | superadmin123 |
+| Admin Igreja | admin@admvc.com | admin123 |
 
-## 📄 Licença e Propósito
-* Este software é de propriedade e uso exclusivo da Igreja Assembleia de Deus - Ministério Visão de Conquista (ADMVC).
+---
 
-* O código foi desenvolvido com o propósito de servir o Reino de Deus, utilizando a excelência tecnológica para potenciar o cuidado com o próximo.
+## Identidade Visual
 
-* Desenvolvido com ❤️ pela equipa de tecnologia ADMVC.
+| Elemento | Valor |
+|---|---|
+| Primary (Figueira) | `#3F6B4F` |
+| Secondary (Soft) | `#7FAE93` |
+| Titulos | Black Italic Uppercase |
+| Componentes | `rounded-[2rem]` |
+| Super-Admin | Dark theme (`#0A0A0A`) |
 
+---
+
+## Licenca
+
+Software de propriedade e uso exclusivo da Igreja Assembleia de Deus - Ministerio Visao de Conquista (ADMVC).
+
+Desenvolvido pela equipa de tecnologia ADMVC.
