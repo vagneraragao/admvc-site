@@ -12,6 +12,7 @@ export const MODULOS = {
     INVENTARIO: 'inventario',
     GABINETE: 'gabinete',
     MURAL: 'mural',
+    PERSONALIZACAO: 'personalizacao',
     RELATORIOS: 'relatorios',
     AUDITORIA: 'auditoria',
 } as const
@@ -78,6 +79,7 @@ export const PLANOS: Record<PlanoId, PlanoConfig> = {
             MODULOS.INVENTARIO,
             MODULOS.GABINETE,
             MODULOS.MURAL,
+            MODULOS.PERSONALIZACAO,
             MODULOS.RELATORIOS,
             MODULOS.AUDITORIA,
         ],
@@ -113,6 +115,7 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/inventario': MODULOS.INVENTARIO,
     '/gabinete': MODULOS.GABINETE,
     '/membros/mural': MODULOS.MURAL,
+    '/admin/personalizacao': MODULOS.PERSONALIZACAO,
     '/admin/auditoria': MODULOS.AUDITORIA,
 }
 

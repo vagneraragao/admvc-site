@@ -42,6 +42,10 @@ model Tenant {
   nome                     String
   plano                    String                    @default("FREE")
   modulos_custom           Json?                     // Override de módulos activos (array de strings). Se null, usa os do plano.
+  cor_primaria             String                    @default("#3F6B4F")
+  cor_secundaria           String                    @default("#7FAE93")
+  cor_fundo                String                    @default("#0b0d0c")
+  logo_url                 String?
   createdAt                DateTime                  @default(now())
   agendas                  Agenda[]
   avisosMural              AvisoMural[]
