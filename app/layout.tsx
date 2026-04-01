@@ -5,6 +5,8 @@ import "./globals.css";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
 import SiteHeader from "@/components/ui/site-header";
 import SiteFooter from "@/components/ui/site-footer";
+import BrandingProvider from "@/components/ui/BrandingProvider";
+import { getTenantBranding } from "@/lib/branding";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} | ${SITE_TAGLINE}`,
@@ -33,13 +35,17 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const branding = await getTenantBranding()
+
   return (
     <html lang="pt-PT" className="dark">
       <body className="min-h-dvh bg-bg text-fg antialiased">
-        <SiteHeader />
-        <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
-        <SiteFooter />
+        <BrandingProvider>
+          <SiteHeader logoUrl={branding.logoUrl} />
+          <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
+          <SiteFooter />
+        </BrandingProvider>
       </body>
     </html>
   );

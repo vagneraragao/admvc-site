@@ -9,7 +9,7 @@ import { MEMBERS_AREA_URL, SITE_NAME } from "@/lib/constants";
 
 type NavItem = { href: string; label: string };
 
-export default function SiteHeader() {
+export default function SiteHeader({ logoUrl }: { logoUrl?: string | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -38,7 +38,7 @@ export default function SiteHeader() {
         <Link href="/" className="flex items-center gap-3">
           <div className="relative h-12 w-12 md:h-14 md:w-14 overflow-hidden rounded-2xl border border-soft bg-bg2">
             <Image
-              src="/images/logo_admvc.png"
+              src={logoUrl || "/images/logo_admvc.png"}
               alt={`${SITE_NAME} — Logo`}
               fill
               sizes="(max-width: 768px) 48px, 56px"
