@@ -10,7 +10,7 @@ export default async function CongregacoesPage() {
     const tenantIdStr = headersList.get('x-tenant-id');
 
     if (!tenantIdStr) {
-        redirect('/admin/login?error=Igreja não identificada.');
+        redirect('/membros/login?error=Igreja não identificada.');
     }
 
     const db = getTenantClient(Number(tenantIdStr));

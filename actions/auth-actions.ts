@@ -123,7 +123,7 @@ export async function logoutGeral(tipo: 'admin' | 'membro') {
     revalidatePath('/', 'layout');
 
     if (tipo === 'admin') {
-        redirect('/admin/login');
+        redirect('/membros/login');
     } else {
         redirect('/membros/login');
     }

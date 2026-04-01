@@ -25,7 +25,7 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
     const tenantIdStr = headersList.get('x-tenant-id');
 
     if (!tenantIdStr) {
-        redirect('/admin/login?error=Igreja não identificada.');
+        redirect('/membros/login?error=Igreja não identificada.');
     }
 
     // Instancia o Prisma blindado para esta igreja

@@ -22,7 +22,7 @@ export default async function VisualizarMembroPage({
     const tenantIdStr = headersList.get('x-tenant-id');
 
     if (!tenantIdStr) {
-        return redirect('/admin/login?error=Igreja não identificada.');
+        return redirect('/membros/login?error=Igreja não identificada.');
     }
 
     const db = getTenantClient(Number(tenantIdStr));

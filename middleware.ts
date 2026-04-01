@@ -7,13 +7,14 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // 1. Defina as rotas
-    const isPublicRoute = pathname === '/membros/login' || pathname === '/admin/login'
+    const isPublicRoute = pathname === '/membros/login'
     const isMembrosProtected = pathname.startsWith('/membros/dashboard') || pathname.startsWith('/membros/termos')
-    const isAdminProtected = pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')
+    const isAdminProtected = pathname.startsWith('/admin')
+    const isModuleProtected = pathname.startsWith('/louvor')
 
-    // 2. Se a rota é protegida e não há sessão, redireciona
-    if ((isMembrosProtected || isAdminProtected) && !session) {
-        return NextResponse.redirect(new URL(isAdminProtected ? '/admin/login' : '/membros/login', request.url))
+    // 2. Se a rota é protegida e não há sessão, redireciona para login unificado
+    if ((isMembrosProtected || isAdminProtected || isModuleProtected) && !session) {
+        return NextResponse.redirect(new URL('/membros/login', request.url))
     }
 
     // 3. Se houver sessão, extraímos os dados multitenant
@@ -55,5 +56,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/membros/:path*', '/api/admin/:path*'],
+    matcher: ['/admin/:path*', '/membros/:path*', '/louvor/:path*', '/api/admin/:path*'],
 }
