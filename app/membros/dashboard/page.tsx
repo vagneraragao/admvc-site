@@ -109,6 +109,7 @@ export default async function DashboardMembro({
                 include: { departamento: true, funcoes: { include: { funcao: true } } }
             },
             familia: true,
+            congregacao: { select: { nome: true, cidade: true } },
             escalas: {
                 where: { evento: { data: { gte: new Date() } } },
                 orderBy: { evento: { data: 'asc' } },
@@ -433,6 +434,11 @@ export default async function DashboardMembro({
                                 <span className="text-[10px] font-black text-figueira bg-figueira/10 px-3 py-1 rounded-full uppercase tracking-widest border border-figueira/20">
                                     {permissoes.isLider ? 'Líder' : role === 'ADMIN' ? 'Administrador' : 'Membro'}
                                 </span>
+                                {membro.congregacao && (
+                                    <span className="text-[10px] font-bold text-muted bg-soft/30 px-3 py-1 rounded-full uppercase tracking-widest border border-soft">
+                                        {membro.congregacao.nome}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

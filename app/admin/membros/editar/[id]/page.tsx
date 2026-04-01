@@ -42,7 +42,7 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
     const todosCargos = await prismaGlobal.cargo.findMany({ orderBy: { nome: 'asc' } });
 
     // DADOS PRIVADOS DA IGREJA (Usam o db multitenant)
-    const [membro, todosDeptos, todosGrupos, familias] = await Promise.all([
+    const [membro, todosDeptos, todosGrupos, familias, congregacoes] = await Promise.all([
         db.membro.findFirst({ // 🔄 TROCADO: findUnique por findFirst
             where: { id },
             include: {
@@ -54,14 +54,13 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
         }),
         db.departamento.findMany(),
         db.grupo.findMany(),
-        db.familia.findMany({ // Agrupei a busca de famílias aqui no Promise.all para ficar mais rápido!
-            select: {
-                id: true,
-                surname: true,
-            },
-            orderBy: {
-                surname: 'asc'
-            }
+        db.familia.findMany({
+            select: { id: true, surname: true },
+            orderBy: { surname: 'asc' }
+        }),
+        db.congregacao.findMany({
+            select: { id: true, nome: true, cidade: true },
+            orderBy: { nome: 'asc' }
         })
     ]);
 
@@ -85,6 +84,7 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
             isAdmin={true}
             escolaridades={escolaridades}
             familias={familias}
+            congregacoes={congregacoes}
         />
     );
 }

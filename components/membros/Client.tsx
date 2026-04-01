@@ -17,7 +17,8 @@ export default function EditarMembroClient({
     roles = [],
     isAdmin = false,
     escolaridades = [],
-    familias = []
+    familias = [],
+    congregacoes = []
 }: any) {
     const router = useRouter()
     const [, startTransition] = useTransition()
@@ -380,6 +381,22 @@ export default function EditarMembroClient({
                             <Church size={14} className="text-figueira" /> Jornada Espiritual
                         </h4>
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Congregação */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Congregacao</label>
+                                <select
+                                    name="congregacao_id"
+                                    defaultValue={membro.congregacao_id || ''}
+                                    className="w-full bg-bg border border-soft rounded-3xl px-5 py-4 text-[11px] font-bold text-fg focus:border-figueira outline-none transition-all shadow-sm appearance-none"
+                                >
+                                    <option value="">Sem congregacao</option>
+                                    {congregacoes.map((c: any) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.nome}{c.cidade ? ` - ${c.cidade}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <Input label="Data de Entrada na Igreja" name="entry_date" type="date" defaultValue={formatDate(membro.entry_date)} />
                             <Input label="Data de Batismo" name="baptism_date" type="date" defaultValue={formatDate(membro.baptism_date)} />
                             <Input label="Data de Conversao" name="conversion_date" type="date" defaultValue={formatDate(membro.conversion_date)} />
