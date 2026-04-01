@@ -15,7 +15,7 @@ const NAV_PRINCIPAL = [
     { label: 'Membros', href: '/admin/membros', icon: Users },
     { label: 'Familias', href: '/admin/familias', icon: Home },
     { label: 'Congregacoes', href: '/admin/congregacoes', icon: Church },
-    { label: 'Departamentos', href: '/admin/configuracoes', icon: HeartHandshake },
+    { label: 'Estrutura', href: '/admin/configuracoes', icon: HeartHandshake },
 ]
 
 const NAV_MODULOS = [
@@ -27,7 +27,7 @@ const NAV_MODULOS = [
 
 const NAV_SISTEMA = [
     { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
-    { label: 'Configuracoes', href: '/admin/configuracoes', icon: Settings, adminOnly: false },
+    { label: 'Definicoes', href: '/admin/configuracoes', icon: Settings, adminOnly: true },
     { label: 'Auditoria', href: '/admin/auditoria', icon: Shield, adminOnly: false },
 ]
 
