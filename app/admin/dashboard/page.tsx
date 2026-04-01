@@ -13,9 +13,15 @@ import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const params = await searchParams
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
+
+    const congFilter = session.role === 'CONGREGATION_ADMIN' && session.congregacaoId
+        ? session.congregacaoId
+        : params.congregacao ? Number(params.congregacao) : undefined
+    const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
     const adminLogado = await prisma.membro.findUnique({
         where: { id: session.membroId },
@@ -30,12 +36,12 @@ export default async function AdminDashboard() {
         proximasEscalas, todosMembros, membrosPendentesDocs,
         escalasPendentesConfirmacao,
     ] = await Promise.all([
-        prisma.membro.count({ where: { status: statusAtivo } }),
-        prisma.membro.count({ where: { status: statusPendente } }),
-        prisma.membro.count({ where: { baptism_status: 'Batizado', status: statusAtivo } }),
+        prisma.membro.count({ where: { status: statusAtivo, ...congWhere } }),
+        prisma.membro.count({ where: { status: statusPendente, ...congWhere } }),
+        prisma.membro.count({ where: { baptism_status: 'Batizado', status: statusAtivo, ...congWhere } }),
         prisma.familia.count(),
         prisma.evento.findMany({
-            where: { data: { gte: new Date() } },
+            where: { data: { gte: new Date() }, ...congWhere },
             orderBy: { data: 'asc' },
             take: 6,
             include: {
@@ -46,11 +52,12 @@ export default async function AdminDashboard() {
             }
         }),
         prisma.membro.findMany({
-            where: { status: statusAtivo },
+            where: { status: statusAtivo, ...congWhere },
             select: { first_name: true, last_name: true, birthdate: true }
         }),
         prisma.membro.findMany({
             where: {
+                ...congWhere,
                 OR: [
                     { gdpr_aceite: false },
                     { permanecer_aceite: false },
@@ -66,7 +73,7 @@ export default async function AdminDashboard() {
             orderBy: { first_name: 'asc' }
         }),
         prisma.escala.count({
-            where: { confirmado: false, evento: { data: { gte: new Date() } } }
+            where: { confirmado: false, ...congWhere, evento: { data: { gte: new Date() } } }
         }),
     ])
 

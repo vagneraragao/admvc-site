@@ -10,7 +10,7 @@ import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
 import { audit, diffCampos, sanitizar } from '@/lib/audit'
 import { geocodificarComFallback } from '@/lib/geocode'
-import { requireRole } from '@/lib/auth-utils'
+import { requireAuth, requireRole } from '@/lib/auth-utils'
 
 async function getDb() {
     const headersList = await headers()
@@ -360,19 +360,37 @@ export async function removerFuncaoDoDepto(id: number) {
 
 export async function buscarEquipaPorDepartamentoId(deptoId: number) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
-        const { db, tenantId } = await getDb();
+        const session = await requireAuth()
+        const { db } = await getDb()
+        const eAdmin = ['ADMIN', 'CONGREGATION_ADMIN'].includes(session.role)
+
+        // Se nao e admin, verifica se e lider/delegado do departamento
+        let podVerFuncoes = eAdmin
+        if (!eAdmin) {
+            const vinculo = await db.integranteDepartamento.findFirst({
+                where: {
+                    membro_id: session.membroId,
+                    departamento_id: deptoId,
+                    OR: [
+                        { pode_gerir_escalas: true },
+                        { funcoes: { some: { funcao: { nome: { contains: 'Lider', mode: 'insensitive' as const } } } } }
+                    ]
+                }
+            })
+            podVerFuncoes = !!vinculo
+        }
+
         const integrantes = await db.integranteDepartamento.findMany({
             where: { departamento_id: deptoId },
             include: {
                 membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
-                funcoes: { include: { funcao: true } }
+                ...(podVerFuncoes ? { funcoes: { include: { funcao: true } } } : {}),
             },
             orderBy: { membro: { first_name: 'asc' } }
-        });
-        return { ok: true, data: integrantes };
+        })
+        return { ok: true, data: integrantes }
     } catch (error) {
-        return { ok: false, error: "Erro ao carregar a equipa." };
+        return { ok: false, error: "Erro ao carregar a equipa." }
     }
 }
 

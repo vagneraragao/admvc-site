@@ -365,6 +365,26 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
     }
 }
 
+export async function renovarDocumentoAction(membroId: number, tipo: 'GDPR' | 'PERMANECER') {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const hoje = new Date()
+        const validade = new Date()
+        validade.setMonth(validade.getMonth() + 12)
+
+        const data = tipo === 'GDPR'
+            ? { gdpr_aceite: true, gdpr_data_assinatura: hoje, gdpr_validade: validade }
+            : { permanecer_aceite: true, permanecer_data_assinatura: hoje, permanecer_validade: validade }
+
+        await prisma.membro.update({ where: { id: membroId }, data })
+        revalidatePath('/admin/dashboard')
+        revalidatePath('/admin/membros')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao renovar documento.' }
+    }
+}
+
 export async function buscarRelatorioEscalasAction(membroId: number, mes: number, ano: number) {
     try {
         await requireAuth()

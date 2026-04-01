@@ -1,5 +1,6 @@
 // app/grupos/admin/page.tsx
 import prisma from '@/lib/prisma'
+import { getSessionData } from '@/lib/auth-utils'
 import nextDynamic from 'next/dynamic'
 import Link from 'next/link'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -28,8 +29,15 @@ const COR_REGIAO: Record<string, string> = {
     Online: 'bg-soft text-muted border-soft',
 }
 
-export default async function AdminGruposPage() {
+export default async function AdminGruposPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const params = await searchParams
+    const session = await getSessionData()
+    const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
+        ? session.congregacaoId
+        : params.congregacao ? Number(params.congregacao) : undefined
+
     const grupos = await prisma.grupo.findMany({
+        where: congFilter ? { congregacaoId: congFilter } : undefined,
         include: {
             lideres: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },
             membros: { select: { id: true } },

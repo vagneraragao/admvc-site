@@ -17,9 +17,8 @@ async function verificarAcesso() {
 async function getDb() {
     const h = await headers()
     const tenantId = Number(h.get('x-tenant-id') || 0)
-    const congId = h.get('x-congregation-id') ? Number(h.get('x-congregation-id')) : undefined
     if (!tenantId) throw new Error('Igreja não identificada.')
-    return { db: getTenantClient(tenantId, congId), tenantId, congId }
+    return { db: getTenantClient(tenantId), tenantId }
 }
 
 // ── LISTAR ────────────────────────────────────────────────────────────────────

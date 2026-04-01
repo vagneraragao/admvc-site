@@ -33,6 +33,7 @@ export default async function VisualizarMembroPage({
         include: {
             familia: true,
             escolaridade: true,
+            congregacao: { select: { nome: true, cidade: true } },
             ministerios: {
                 include: {
                     departamento: true,
@@ -42,6 +43,7 @@ export default async function VisualizarMembroPage({
                 }
             },
             grupos: true,
+            lider_de_grupo: true,
             cargos: true
         }
     });

@@ -8,9 +8,8 @@ import { requireAuth, requireRole } from '@/lib/auth-utils'
 async function getDb() {
     const h = await headers()
     const tenantId = Number(h.get('x-tenant-id') || 0)
-    const congId = h.get('x-congregation-id') ? Number(h.get('x-congregation-id')) : undefined
     if (!tenantId) throw new Error('Igreja nao identificada.')
-    return getTenantClient(tenantId, congId)
+    return getTenantClient(tenantId)
 }
 
 // 1. BUSCAR O REPERTÓRIO DE UM EVENTO ESPECÍFICO

@@ -1,5 +1,6 @@
 // app/admin/escalas/page.tsx
 import prisma from '@/lib/prisma'
+import { getSessionData } from '@/lib/auth-utils'
 import { CalendarDays, Settings2, Users } from 'lucide-react'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
@@ -8,13 +9,21 @@ import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EscalasPage() {
+export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const params = await searchParams
+    const session = await getSessionData()
+    const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
+        ? session.congregacaoId
+        : params.congregacao ? Number(params.congregacao) : undefined
+
     const dataInicioMes = new Date()
     dataInicioMes.setDate(1)
 
+    const congWhere = congFilter ? { congregacao_id: congFilter } : {}
+
     const [eventos, departamentos, membrosComFuncoes] = await Promise.all([
         prisma.evento.findMany({
-            where: { data: { gte: dataInicioMes } },
+            where: { data: { gte: dataInicioMes }, ...congWhere },
             include: {
                 mensagemEvento: {
                     include: {
@@ -35,9 +44,14 @@ export default async function EscalasPage() {
             },
             orderBy: { data: 'asc' }
         }),
-        prisma.departamento.findMany({ orderBy: { nome: 'asc' } }),
+        prisma.departamento.findMany({
+            where: congFilter
+                ? { OR: [{ congregacaoId: congFilter }, { is_global: true }] }
+                : undefined,
+            orderBy: { nome: 'asc' }
+        }),
         prisma.membro.findMany({
-            where: { status: 'ATIVO' },
+            where: { status: 'ATIVO', ...congWhere },
             include: {
                 ministerios: {
                     select: {

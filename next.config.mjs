@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    transpilePackages: ['@react-pdf/renderer'],
     images: {
         remotePatterns: [
             {
@@ -22,7 +23,12 @@ const nextConfig = {
             {
                 source: '/api/public/:path*',
                 headers: [
-                    { key: 'Access-Control-Allow-Origin', value: '*' },
+                    {
+                        key: 'Access-Control-Allow-Origin',
+                        value: process.env.NODE_ENV === 'production'
+                            ? 'https://www.igrejaadmvc.org'
+                            : '*',
+                    },
                     { key: 'Access-Control-Allow-Methods', value: 'GET, POST, OPTIONS' },
                     { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
                 ],

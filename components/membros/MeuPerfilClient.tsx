@@ -36,6 +36,7 @@ export default function MeuPerfilClient({
         address_1: membro.address_1 || '',
         neighborhood: membro.neighborhood || '',
         city: membro.id_city || membro.city || '',
+        state: membro.state || '',
         country: membro.country || 'Portugal'
     })
 
@@ -57,7 +58,9 @@ export default function MeuPerfilClient({
                             ...prev,
                             address_1: info.rua || (info.ruas && info.ruas[0]) || prev.address_1,
                             neighborhood: info.Freguesia || prev.neighborhood,
-                            city: info.Localidade || info.Município || prev.city,
+                            city: info.Designacao || info.Municipio || info.Município || info.Localidade || prev.city,
+                            state: info.Distrito || prev.state,
+                            country: 'Portugal',
                         }))
                     }
                 }
@@ -304,7 +307,7 @@ export default function MeuPerfilClient({
                                 {buscandoCP && <Loader2 size={14} className="animate-spin text-figueira absolute right-4 top-[38px]" />}
                             </div>
                             <Input label="Cidade" name="id_city" value={endereco.city} onChange={(e: any) => setEndereco({ ...endereco, city: e.target.value })} />
-                            <Input label="Distrito / Estado" name="state" defaultValue={membro.state} />
+                            <Input label="Distrito / Estado" name="state" value={endereco.state} onChange={(e: any) => setEndereco({ ...endereco, state: e.target.value })} />
                             <Input label="País" name="country" value={endereco.country} onChange={(e: any) => setEndereco({ ...endereco, country: e.target.value })} />
                             <Input label="Freguesia / Bairro" name="neighborhood" value={endereco.neighborhood}
                                 onChange={(e: any) => setEndereco({ ...endereco, neighborhood: e.target.value })} className="md:col-span-2" />

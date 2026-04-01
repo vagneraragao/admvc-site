@@ -156,43 +156,24 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
         { id: 'bairro', label: 'Zonas e Bairros', icon: <MapPin size={20} /> },
         { id: 'gdpr', label: 'Compliance (GDPR)', icon: <FileSignature size={20} /> },
         { id: 'permissoes', label: 'Níveis de Acesso', icon: <ShieldCheck size={20} /> },
-        { id: 'escalas', label: 'Escalas', icon: <Calendar size={20} /> },
     ];
+
+    // Link direto para relatorio de escalas por membro
+    const linkEscalas = '/admin/relatorios/escalas';
 
     const relatorioAtual = relatoriosDisponiveis.find(r => r.id === relatorioAtivo);
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* HEADER (MANTIDO ESTRUTURALMENTE IGUAL) */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <BarChart3 size={14} /> Módulo Analítico
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Métricas & <span className="text-muted/30">Dados.</span>
-                    </h1>
-                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest pt-2">
-                        Selecione um relatório para visualizar a distribuição dos dados.
-                    </p>
-                </div>
+            {/* HEADER */}
+            <header className="space-y-1">
+                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Relatorios</h1>
+                <p className="text-xs text-muted">{membros.length} membros activos. Selecione um relatorio.</p>
             </header>
 
-            {/* --- CAIXA DE RELATÓRIOS (MEMBROS) --- */}
-            <section className="bg-bg2 border border-soft p-6 md:p-10 rounded-[3.5rem] shadow-sm">
-
-                <div className="flex items-center gap-5 border-b border-soft pb-6 mb-8">
-                    <div className="w-14 h-14 rounded-2xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0 shadow-inner border border-figueira/20">
-                        <Users size={24} />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg leading-none">Membresia Global</h2>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">
-                            Base de análise: <span className="text-figueira">{membros.length} membros ativos</span>
-                        </p>
-                    </div>
-                </div>
+            {/* RELATÓRIOS */}
+            <section className="bg-bg2 border border-soft p-5 md:p-6 rounded-2xl shadow-sm">
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {relatoriosDisponiveis.map(btn => (
@@ -209,6 +190,17 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
                             </span>
                         </button>
                     ))}
+                    <Link
+                        href={linkEscalas}
+                        className="group flex flex-col items-center justify-center gap-4 p-6 bg-bg border border-soft rounded-[2rem] hover:border-figueira/50 hover:bg-figueira/5 transition-all active:scale-95 text-center shadow-sm"
+                    >
+                        <div className="text-muted group-hover:text-figueira group-hover:-translate-y-1 transition-all duration-300">
+                            <Calendar size={20} />
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-fg leading-tight">
+                            Escalas / Membro
+                        </span>
+                    </Link>
                 </div>
             </section>
 

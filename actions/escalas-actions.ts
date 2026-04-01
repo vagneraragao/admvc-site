@@ -4,14 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
+import { enviarNotificacaoEscala } from '@/lib/email-escalas'
+import prisma from '@/lib/prisma'
 
 async function getDb() {
     const headersList = await headers()
     const tenantId = headersList.get('x-tenant-id')
-    const congId = headersList.get('x-congregation-id')
     if (!tenantId) throw new Error('Tenant nao identificado.')
     return {
-        db: getTenantClient(Number(tenantId), congId ? Number(congId) : undefined),
+        db: getTenantClient(Number(tenantId)),
         tenantId: Number(tenantId)
     }
 }
@@ -163,6 +164,9 @@ export async function confirmarEscala(ids: number[]) {
             data: { confirmado: true, motivo_recusa: null }
         })
 
+        // Notificar lider por email (fire-and-forget)
+        notificarLiderEscala(ids[0], session.membroId, 'CONFIRMADO').catch(() => {})
+
         revalidatePath('/membros/dashboard')
         return { sucesso: true }
     } catch (error: any) {
@@ -186,12 +190,45 @@ export async function recusarEscala(ids: number[], motivo: string) {
             data: { confirmado: false, motivo_recusa: motivo.trim() }
         })
 
+        // Notificar lider por email (fire-and-forget)
+        notificarLiderEscala(ids[0], session.membroId, 'RECUSADO', motivo.trim()).catch(() => {})
+
         revalidatePath('/membros/dashboard')
         return { sucesso: true }
     } catch (error: any) {
         console.error('Erro ao recusar escala:', error)
         return { sucesso: false, error: 'Erro interno.' }
     }
+}
+
+// ── HELPER: Notificar lider do departamento ─────────────────────────────────
+async function notificarLiderEscala(escalaId: number, membroId: number, tipo: 'CONFIRMADO' | 'RECUSADO', motivo?: string) {
+    const escala = await prisma.escala.findUnique({
+        where: { id: escalaId },
+        include: {
+            membro: { select: { first_name: true, last_name: true } },
+            evento: { select: { nome: true, data: true } },
+            departamento: {
+                select: {
+                    nome: true,
+                    lider: { select: { first_name: true, email: true } }
+                }
+            }
+        }
+    })
+    if (!escala?.departamento?.lider?.email) return
+
+    await enviarNotificacaoEscala({
+        membroNome: `${escala.membro.first_name} ${escala.membro.last_name}`,
+        eventoNome: escala.evento.nome,
+        eventoData: new Date(escala.evento.data).toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: 'short' }),
+        departamentoNome: escala.departamento.nome,
+        funcao: escala.funcao,
+        tipo,
+        motivo,
+        liderEmail: escala.departamento.lider.email,
+        liderNome: escala.departamento.lider.first_name,
+    })
 }
 
 // ── RELATÓRIO ESTRATÉGICO POR DEPARTAMENTO ────────────────────────────────────

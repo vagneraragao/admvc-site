@@ -82,6 +82,35 @@ export default async function EstruturaPage() {
 
             <div className="border-t border-soft/50" />
 
+            {/* CARGOS */}
+            <section id="cargos" className="scroll-mt-20 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Briefcase size={16} className="text-purple-500" />
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Cargos Eclesiasticos</h2>
+                        <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{cargos.length}</span>
+                    </div>
+                    <Popover titulo="Cargo" cor="figueira">
+                        <ConfigForm action={criarCargo} placeholder="Nome do cargo..." label="Novo Cargo" buttonColor="bg-purple-600" />
+                    </Popover>
+                </div>
+
+                {cargos.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {cargos.map((c: any) => (
+                            <div key={c.id} className="bg-bg2 border border-soft rounded-xl px-4 py-3 flex items-center justify-between gap-2 group hover:border-purple-500/30 transition-all">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-fg truncate">{c.nome}</span>
+                                <BotaoExcluirCargo id={c.id} nome={c.nome} onExcluir={excluirCargo} />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <Empty message="Nenhum cargo registado. Adicione cargos eclesiasticos." />
+                )}
+            </section>
+
+            <div className="border-t border-soft/50" />
+
             {/* GRUPOS */}
             <section id="grupos" className="scroll-mt-20 space-y-4">
                 <div className="flex items-center gap-3">

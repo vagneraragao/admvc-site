@@ -39,17 +39,17 @@ const PROTECTED_MODELS = [
     'IndisponibilidadeMembro', 'MensagemEvento',
 ]
 
-// Modelos que tambem filtram por congregacao_id (subset dos protegidos)
-const CONGREGATION_MODELS = [
+// Modelos que suportam congregacao_id (para filtro explicito na UI)
+export const CONGREGATION_MODELS = [
     'Membro', 'Departamento', 'Grupo',
     'Evento', 'Escala',
     'LancamentoFinanceiro',
     'ItemInventario', 'MovimentoInventario',
     'IndisponibilidadeMembro', 'MensagemEvento',
     'RepertorioEvento',
-]
+] as const
 
-export const getTenantClient = (tenantId: number, congregacaoId?: number) => {
+export const getTenantClient = (tenantId: number) => {
     return prisma.$extends({
         query: {
             $allModels: {
@@ -60,40 +60,29 @@ export const getTenantClient = (tenantId: number, congregacaoId?: number) => {
                     }
 
                     const anyArgs = args as any
-                    const applyCong = congregacaoId && CONGREGATION_MODELS.includes(model)
 
-                    // 1. Buscas e contagens
+                    // 1. Buscas e contagens — apenas tenant_id
                     if (['findMany', 'findFirst', 'count', 'aggregate', 'updateMany', 'deleteMany'].includes(operation)) {
                         anyArgs.where = { ...anyArgs.where, tenant_id: tenantId }
-                        if (applyCong) {
-                            anyArgs.where.congregacao_id = congregacaoId
-                        }
                     }
 
-                    // 2. Criacoes
+                    // 2. Criacoes — apenas tenant_id
                     if (['create', 'createMany'].includes(operation)) {
                         if (anyArgs.data) {
                             if (Array.isArray(anyArgs.data)) {
                                 anyArgs.data = anyArgs.data.map((item: any) => ({
                                     ...item,
                                     tenant_id: tenantId,
-                                    ...(applyCong && { congregacao_id: congregacaoId }),
                                 }))
                             } else {
                                 anyArgs.data.tenant_id = tenantId
-                                if (applyCong) {
-                                    anyArgs.data.congregacao_id = congregacaoId
-                                }
                             }
                         }
                     }
 
-                    // 3. Updates e Deletes singulares
+                    // 3. Updates e Deletes singulares — apenas tenant_id
                     if (['update', 'delete'].includes(operation)) {
                         anyArgs.where = { ...anyArgs.where, tenant_id: tenantId }
-                        if (applyCong) {
-                            anyArgs.where.congregacao_id = congregacaoId
-                        }
                     }
 
                     return query(anyArgs)

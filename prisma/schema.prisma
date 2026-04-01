@@ -208,6 +208,7 @@ model Departamento {
   lider_id         Int?
   compromissoId    Int?
   congregacaoId    Int?
+  is_global        Boolean                  @default(false)
   tenant_id        Int
   avisoMurals      AvisoMural[]
   congregacao      Congregacao?             @relation(fields: [congregacaoId], references: [id])

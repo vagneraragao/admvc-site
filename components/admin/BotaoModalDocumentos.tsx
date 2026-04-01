@@ -1,10 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { X, AlertTriangle, CheckCircle2, XCircle, Clock, FileSignature } from 'lucide-react'
+import { X, AlertTriangle, CheckCircle2, XCircle, Clock, FileSignature, RefreshCw, Loader2 } from 'lucide-react'
+import { renovarDocumentoAction } from '@/actions/membro-actions'
 
 export default function BotaoModalDocumentos({ membrosPendentes }: { membrosPendentes: any[] }) {
     const [aberto, setAberto] = useState(false);
+    const [renovando, setRenovando] = useState<string | null>(null);
+
+    async function handleRenovar(membroId: number, tipo: 'GDPR' | 'PERMANECER') {
+        const key = `${membroId}-${tipo}`
+        setRenovando(key)
+        await renovarDocumentoAction(membroId, tipo)
+        setRenovando(null)
+    }
 
     // Função inteligente para avaliar o estado de cada documento
     const avaliarStatus = (aceite: boolean, validade: Date | null) => {
@@ -85,9 +94,8 @@ export default function BotaoModalDocumentos({ membrosPendentes }: { membrosPend
                                             </div>
                                         </div>
 
-                                        {/* BADGES DOS DOCUMENTOS */}
-                                        <div className="flex items-center gap-2 sm:gap-3">
-                                            {/* Badge GDPR */}
+                                        {/* BADGES + RENOVAÇÃO */}
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${statusGDPR.bg} ${statusGDPR.cor}`}>
                                                 {statusGDPR.icon}
                                                 <div className="flex flex-col">
@@ -95,8 +103,17 @@ export default function BotaoModalDocumentos({ membrosPendentes }: { membrosPend
                                                     <span className="text-[9px] font-bold leading-none mt-0.5">{statusGDPR.texto}</span>
                                                 </div>
                                             </div>
+                                            {statusGDPR.texto !== 'Regular' && (
+                                                <button
+                                                    onClick={() => handleRenovar(membro.id, 'GDPR')}
+                                                    disabled={renovando === `${membro.id}-GDPR`}
+                                                    className="p-1.5 rounded-lg bg-figueira/10 text-figueira hover:bg-figueira hover:text-white transition-all disabled:opacity-50"
+                                                    title="Renovar GDPR"
+                                                >
+                                                    {renovando === `${membro.id}-GDPR` ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                                </button>
+                                            )}
 
-                                            {/* Badge Permanecer */}
                                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${statusPermanecer.bg} ${statusPermanecer.cor}`}>
                                                 {statusPermanecer.icon}
                                                 <div className="flex flex-col">
@@ -104,6 +121,16 @@ export default function BotaoModalDocumentos({ membrosPendentes }: { membrosPend
                                                     <span className="text-[9px] font-bold leading-none mt-0.5">{statusPermanecer.texto}</span>
                                                 </div>
                                             </div>
+                                            {statusPermanecer.texto !== 'Regular' && (
+                                                <button
+                                                    onClick={() => handleRenovar(membro.id, 'PERMANECER')}
+                                                    disabled={renovando === `${membro.id}-PERMANECER`}
+                                                    className="p-1.5 rounded-lg bg-figueira/10 text-figueira hover:bg-figueira hover:text-white transition-all disabled:opacity-50"
+                                                    title="Renovar Permanecer"
+                                                >
+                                                    {renovando === `${membro.id}-PERMANECER` ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                                </button>
+                                            )}
                                         </div>
 
                                     </div>

@@ -171,6 +171,9 @@ export default function AdminCadastroMembroPage() {
                 }
             })
 
+            // Campo separado do state
+            formData.set('has_children', temFilhos)
+
             // Foto — usa o estado fotoFile (nao o ref que pode estar desmontado)
             if (fotoFile) {
                 console.log(`[SUBMIT] A anexar foto: ${fotoFile.name} (${fotoFile.size} bytes)`)

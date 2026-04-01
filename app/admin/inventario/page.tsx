@@ -6,14 +6,20 @@ import InventarioClient from '@/components/inventario/InventarioClient'
 
 export const dynamic = 'force-dynamic'
 
-export default async function InventarioPage() {
+export default async function InventarioPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const params = await searchParams
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
-    if (!['ADMIN', 'FINANCE', 'LEADER'].includes(session.role)) redirect('/membros/dashboard')
+    if (!['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE', 'LEADER'].includes(session.role)) redirect('/membros/dashboard')
+
+    const congFilter = session.role === 'CONGREGATION_ADMIN' && session.congregacaoId
+        ? session.congregacaoId
+        : params.congregacao ? Number(params.congregacao) : undefined
+    const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
     const [itens, departamentos, grupos, membros] = await Promise.all([
         prisma.itemInventario.findMany({
-            where: { ativo: true },
+            where: { ativo: true, ...congWhere },
             include: {
                 dono_departamento: { select: { id: true, nome: true } },
                 dono_grupo: { select: { id: true, nome: true } },
@@ -22,10 +28,20 @@ export default async function InventarioPage() {
             },
             orderBy: [{ categoria: 'asc' }, { nome: 'asc' }]
         }),
-        prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
-        prisma.grupo.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
+        prisma.departamento.findMany({
+            where: congFilter
+                ? { OR: [{ congregacaoId: congFilter }, { is_global: true }] }
+                : undefined,
+            select: { id: true, nome: true },
+            orderBy: { nome: 'asc' }
+        }),
+        prisma.grupo.findMany({
+            where: congFilter ? { congregacaoId: congFilter } : undefined,
+            select: { id: true, nome: true },
+            orderBy: { nome: 'asc' }
+        }),
         prisma.membro.findMany({
-            where: { status: 'ATIVO' },
+            where: { status: 'ATIVO', ...congWhere },
             select: { id: true, first_name: true, last_name: true },
             orderBy: { first_name: 'asc' }
         }),

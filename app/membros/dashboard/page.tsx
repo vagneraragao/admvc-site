@@ -414,28 +414,28 @@ export default async function DashboardMembro({
             </Suspense>
 
             {/* CABEÇALHO DO PERFIL */}
-            <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[2.5rem] shadow-xl relative z-30">
+            <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-2xl shadow-sm relative z-30">
                 <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
-                    <div className="flex items-center gap-6">
-                        <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0">
+                    <div className="flex items-center gap-5">
+                        <div className="relative w-14 h-14 md:w-16 md:h-16 shrink-0">
                             {membro.avatar_file ? (
-                                <Image src={membro.avatar_file} alt="Perfil" fill className="rounded-3xl object-cover border-4 border-white shadow-lg" />
+                                <Image src={membro.avatar_file} alt="Perfil" fill className="rounded-2xl object-cover border-2 border-soft shadow-sm" />
                             ) : (
-                                <div className="w-full h-full rounded-3xl bg-fg text-bg flex items-center justify-center text-2xl font-black border-4 border-white shadow-lg">
+                                <div className="w-full h-full rounded-2xl bg-fg text-bg flex items-center justify-center text-lg font-black border-2 border-soft shadow-sm">
                                     {iniciais}
                                 </div>
                             )}
                         </div>
-                        <div className="space-y-1">
-                            <h1 className="text-3xl md:text-4xl font-black text-fg italic tracking-tighter uppercase leading-none">
-                                {membro.first_name} <span className="text-muted">{membro.last_name}</span>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black text-fg italic tracking-tighter uppercase leading-none">
+                                {membro.first_name} <span className="text-muted/40">{membro.last_name}</span>
                             </h1>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-[10px] font-black text-figueira bg-figueira/10 px-3 py-1 rounded-full uppercase tracking-widest border border-figueira/20">
-                                    {permissoes.isLider ? 'Líder' : isAdmin(role) ? 'Administrador' : 'Membro'}
+                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                <span className="text-[9px] font-black text-figueira bg-figueira/10 px-2.5 py-0.5 rounded-lg uppercase tracking-widest border border-figueira/20">
+                                    {permissoes.isLider ? 'Lider' : isAdmin(role) ? 'Admin' : 'Membro'}
                                 </span>
                                 {membro.congregacao && (
-                                    <span className="text-[10px] font-bold text-muted bg-soft/30 px-3 py-1 rounded-full uppercase tracking-widest border border-soft">
+                                    <span className="text-[9px] font-bold text-muted bg-soft/30 px-2.5 py-0.5 rounded-lg uppercase tracking-widest border border-soft">
                                         {membro.congregacao.nome}
                                     </span>
                                 )}
@@ -497,19 +497,19 @@ export default async function DashboardMembro({
                 </div>
 
                 {/* TABS */}
-                <div className="mt-8 pt-4 border-t border-soft flex gap-2 overflow-x-auto custom-scrollbar pb-2">
-                    <Link href="/membros/dashboard?tab=geral"
-                        className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentTab === 'geral' ? 'bg-fg text-bg shadow-md' : 'bg-transparent text-muted hover:bg-soft'}`}>
-                        <LayoutDashboard size={16} /> Visão Geral
-                    </Link>
-                    <Link href="/membros/dashboard?tab=departamentos"
-                        className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentTab === 'departamentos' ? 'bg-fg text-bg shadow-md' : 'bg-transparent text-muted hover:bg-soft'}`}>
-                        <Users size={16} /> Meus Departamentos
-                    </Link>
-                    <Link href="/membros/dashboard?tab=financeiro"
-                        className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${currentTab === 'financeiro' ? 'bg-fg text-bg shadow-md' : 'bg-transparent text-muted hover:bg-soft'}`}>
-                        <Wallet2 size={16} /> Finanças e Cantina
-                    </Link>
+                <div className="mt-6 pt-4 border-t border-soft flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                    {[
+                        { tab: 'geral', label: 'Visao Geral', icon: LayoutDashboard },
+                        { tab: 'departamentos', label: 'Departamentos', icon: Users },
+                        { tab: 'financeiro', label: 'Financas', icon: Wallet2 },
+                    ].map(({ tab, label, icon: Icon }) => (
+                        <Link key={tab} href={`/membros/dashboard?tab=${tab}`}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                currentTab === tab ? 'bg-fg text-bg shadow-sm' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                            }`}>
+                            <Icon size={14} /> {label}
+                        </Link>
+                    ))}
                 </div>
             </header>
 
@@ -535,11 +535,11 @@ export default async function DashboardMembro({
                 {/* ── ABA: GERAL ───────────────────────────────────────────── */}
                 {currentTab === 'geral' && (
                     <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-500">
-                        <section id="agenda-servico" className="space-y-6">
+                        <section id="agenda-servico" className="space-y-5">
                             <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
-                                        <LayoutDashboard className="text-figueira" /> Minhas Escalas
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-lg font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
+                                        <CalendarDays size={16} className="text-figueira" /> Minhas Escalas
                                     </h2>
                                     {(isAdmin(role) || membro.departamentos_liderados?.length > 0) && departamentoLouvorId && (
                                         <ModalHistoricoEscalas departamentoId={departamentoLouvorId} />
@@ -615,9 +615,9 @@ export default async function DashboardMembro({
 
                         <section className="grid lg:grid-cols-3 gap-6">
                             {/* AGENDA — 2/3 da largura */}
-                            <div className="lg:col-span-2 bg-bg2 border border-soft p-6 rounded-[2.5rem] shadow-sm">
-                                <h2 className="text-base font-black uppercase italic tracking-tighter text-fg mb-4 flex items-center gap-3">
-                                    <CalendarDays size={16} className="text-blue-500" /> Agenda da Igreja
+                            <div className="lg:col-span-2 bg-bg2 border border-soft p-5 rounded-2xl shadow-sm">
+                                <h2 className="text-sm font-black uppercase tracking-widest text-fg mb-4 flex items-center gap-2">
+                                    <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja
                                 </h2>
                                 <WidgetAgendaUnificada
                                     eventosIgreja={proximosEventos}

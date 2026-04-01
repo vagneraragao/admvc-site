@@ -86,54 +86,64 @@ export default function VisualizarMembroClient({ membro }: any) {
             </div>
 
 
-            {/* CABEÇALHO DO PERFIL (CARD PREMIUM) */}
-            <header className="bg-bg2 border border-soft p-8 md:p-12 rounded-[3.5rem] shadow-sm relative overflow-visible flex flex-col md:flex-row items-center md:items-start gap-8">
+            {/* CABEÇALHO DO PERFIL */}
+            <header className="bg-bg2 border border-soft p-6 md:p-8 rounded-2xl shadow-sm flex flex-col md:flex-row items-center md:items-start gap-6">
 
-                {/* FOTO E BADGES */}
-                <div className="relative shrink-0 flex flex-col items-center">
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl bg-soft relative z-10">
+                {/* FOTO */}
+                <div className="relative shrink-0">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 border-soft shadow-sm bg-soft">
                         {membro.avatar_file ? (
                             <Image src={membro.avatar_file} alt="Foto de Perfil" fill className="object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted bg-bg">
-                                <User size={48} strokeWidth={1.5} />
+                                <User size={32} strokeWidth={1.5} />
                             </div>
                         )}
-                    </div>
-                    {/* Badge Sobreposta */}
-                    <div className={`absolute -bottom-4 z-20 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 border-white shadow-lg ${membro.is_active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                        {membro.is_active ? 'Ativo' : 'Bloqueado'}
                     </div>
                 </div>
 
                 {/* DADOS PRINCIPAIS */}
-                <div className="text-center md:text-left space-y-4 flex-1 pt-2">
-                    <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-2">
-                        <span className="px-3 py-1 bg-figueira/10 text-figueira border border-figueira/20 text-[8px] font-black uppercase tracking-widest rounded-md">
-                            ID #{membro.id}
+                <div className="text-center md:text-left flex-1">
+                    <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 bg-figueira/10 text-figueira border border-figueira/20 text-[8px] font-black uppercase tracking-widest rounded-lg">
+                            #{membro.id}
                         </span>
-                        <span className="px-3 py-1 bg-soft text-muted border border-soft text-[8px] font-black uppercase tracking-widest rounded-md">
+                        <span className="px-2 py-0.5 bg-soft text-muted border border-soft text-[8px] font-black uppercase tracking-widest rounded-lg">
                             {membro.role || 'USER'}
                         </span>
-                        <span className="px-3 py-1 bg-soft text-muted border border-soft text-[8px] font-black uppercase tracking-widest rounded-md">
-                            {membro.status || 'PENDENTE'}
+                        <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-lg border ${membro.is_active ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                            {membro.is_active ? 'Activo' : 'Bloqueado'}
                         </span>
                     </div>
 
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        {membro.first_name} <span className="text-muted">{membro.last_name}</span>
+                    <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                        {membro.first_name} <span className="text-muted/40">{membro.last_name}</span>
                     </h1>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 text-[11px] font-bold text-muted uppercase tracking-widest pt-2">
                         <span className="flex items-center gap-2"><Mail size={14} className="text-figueira" /> {membro.email}</span>
                         <span className="hidden sm:inline w-1 h-1 rounded-full bg-soft"></span>
                         <span className="flex items-center gap-2"><Phone size={14} className="text-figueira" /> {membro.phone_1 || '---'}</span>
+                        {membro.phone_2 && (
+                            <>
+                                <span className="hidden sm:inline w-1 h-1 rounded-full bg-soft"></span>
+                                <span className="flex items-center gap-2"><Phone size={14} className="text-muted" /> {membro.phone_2}</span>
+                            </>
+                        )}
                     </div>
+                    {membro.congregacao && (
+                        <div className="flex items-center justify-center md:justify-start gap-2 pt-1">
+                            <Church size={14} className="text-figueira" />
+                            <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                                {membro.congregacao.nome} — {membro.congregacao.cidade}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </header>
 
             {/* BANNER FAMÍLIA E COMPLIANCE */}
-            <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2.5rem] flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center shadow-sm">
+            <div className="bg-bg2 border border-soft p-5 md:p-6 rounded-2xl flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${membro.familia ? 'bg-figueira text-white shadow-md' : 'bg-soft text-muted'}`}>
                         <Home size={24} />
@@ -160,12 +170,12 @@ export default function VisualizarMembroClient({ membro }: any) {
             </div>
 
             {/* NAVEGAÇÃO POR ABAS */}
-            <nav className="flex flex-wrap gap-2 border-b border-soft pb-4 sticky top-0 bg-bg/90 backdrop-blur-md z-30 pt-4">
+            <nav className="flex flex-wrap gap-1.5 border-b border-soft pb-3 sticky top-0 bg-bg/90 backdrop-blur-md z-30 pt-3">
                 {abas.map((aba) => (
                     <button
                         key={aba.id}
                         onClick={() => setAbaAtiva(aba.id)}
-                        className={`flex items-center gap-2 px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-[0.2em] transition-all ${abaAtiva === aba.id ? "bg-fg text-bg shadow-lg" : "bg-bg2 text-muted border border-soft hover:bg-soft hover:text-fg"}`}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${abaAtiva === aba.id ? "bg-fg text-bg shadow-sm" : "text-muted hover:bg-soft/30 hover:text-fg"}`}
                     >
                         {aba.icon} <span className="hidden sm:inline">{aba.label}</span>
                     </button>
@@ -173,7 +183,7 @@ export default function VisualizarMembroClient({ membro }: any) {
             </nav>
 
             {/* CONTEÚDO DAS ABAS */}
-            <div className="bg-bg2 border border-soft p-8 md:p-12 rounded-[3.5rem] shadow-sm min-h-[450px]">
+            <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-2xl shadow-sm min-h-[400px]">
 
                 {abaAtiva === 1 && (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -216,6 +226,8 @@ export default function VisualizarMembroClient({ membro }: any) {
                         <InfoGroup label="Tem Filhos?" value={membro.has_children ? 'Sim' : membro.has_children === false ? 'Não' : '---'} />
                         <InfoGroup label="Nº de Filhos" value={membro.children_number?.toString() || '0'} />
 
+                        <InfoGroup label="Parentesco na Familia" value={membro.parentesco} />
+
                         <div className="md:col-span-2 lg:col-span-3 pt-6 border-t border-soft grid md:grid-cols-2 gap-10">
                             <InfoGroup label="NIF / Identificação Fiscal" value={membro.tax_id} />
                             <InfoGroup label="Cartão de Cidadão / RG" value={membro.id_card_number} />
@@ -230,6 +242,8 @@ export default function VisualizarMembroClient({ membro }: any) {
                         <InfoGroup label="Data de Conversão" value={formatDate(membro.conversion_date)} />
 
                         <InfoGroup label="Data de Entrada (Membro)" value={formatDate(membro.entry_date)} />
+                        <InfoGroup label="Data de Admissao" value={formatDate(membro.data_admissao)} />
+                        <InfoGroup label="Aprovado Por" value={membro.aprovado_por} />
                         <InfoGroup label="Cargo Eclesiástico" value={membro.church_role} />
                         <InfoGroup label="Igreja Anterior" value={membro.previous_church} />
 

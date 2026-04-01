@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { excluirMembroAction } from '@/actions/admin-actions'
+import BotoesImpressao from '@/components/print/BotoesImpressao'
 
 interface Membro {
     id: number
@@ -246,24 +247,20 @@ export default function MembrosListClient({ membros, kpis }: Props) {
 
 
             {/* HEADER */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <Users size={14} /> Gestao de Registos
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Membros <span className="text-muted/30">ADMVC.</span>
-                    </h1>
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Membros</h1>
+                    <p className="text-xs text-muted">{kpis.total} registados · {kpis.ativos} activos</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-
+                    <BotoesImpressao membros={membrosFiltradosOrdenados} />
                     <Link href="/admin/membros/importar"
-                        className="flex items-center gap-2 bg-figueira text-white px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira/90 transition-all shadow-lg shadow-figueira/20 active:scale-95">
-                        <Download size={14} /> Exportar/Importar
+                        className="flex items-center gap-2 bg-bg2 border border-soft text-muted px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
+                        <Download size={13} /> Importar
                     </Link>
                     <Link href="/admin/membros/cadastro"
-                        className="flex items-center gap-2 bg-figueira text-white px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira/90 transition-all shadow-lg shadow-figueira/20 active:scale-95">
-                        <Plus size={14} /> Novo Membro
+                        className="flex items-center gap-2 bg-fg text-bg px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira transition-all shadow-sm active:scale-95">
+                        <Plus size={13} /> Novo Membro
                     </Link>
                 </div>
             </header>
