@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { criarNovaIgreja, atualizarIgreja } from '@/actions/super-admin-actions'
-import { PlusCircle, Loader2, CheckCircle2, Building, Edit3, ArrowLeft, Users, Church } from 'lucide-react'
+import { PlusCircle, Loader2, CheckCircle2, Building, Edit3, ArrowLeft, Users, Church, Settings2 } from 'lucide-react'
+import Link from 'next/link'
 
 export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasIniciais: any[] }) {
     // Estado para controlar a vista: 'lista', 'criar', ou 'editar'
@@ -110,9 +111,14 @@ export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasInicia
                                 </div>
                             </div>
 
-                            <button onClick={() => abrirEdicao(igreja)} className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted group-hover:bg-fg group-hover:text-bg transition-all">
-                                <Edit3 size={14} /> Editar Definições
-                            </button>
+                            <div className="mt-6 flex gap-2">
+                                <button onClick={() => abrirEdicao(igreja)} className="flex-1 flex items-center justify-center gap-2 py-3 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-fg hover:text-bg transition-all">
+                                    <Edit3 size={14} /> Editar
+                                </button>
+                                <Link href={`/super-admin/igrejas/${igreja.id}/modulos`} className="flex-1 flex items-center justify-center gap-2 py-3 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
+                                    <Settings2 size={14} /> Modulos
+                                </Link>
+                            </div>
                         </div>
                     ))}
                 </div>
