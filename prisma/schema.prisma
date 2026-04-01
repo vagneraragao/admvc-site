@@ -585,6 +585,18 @@ enum Role {
   MANAGER
 }
 
+// ── SUPER ADMIN (Plataforma SaaS — independente dos tenants) ────────────────
+model SuperAdmin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  nome      String
+  is_active Boolean  @default(true)
+  criado_em DateTime @default(now())
+
+  @@map("super_admins")
+}
+
 // NOVOS
 
 // PATCH: schema.prisma

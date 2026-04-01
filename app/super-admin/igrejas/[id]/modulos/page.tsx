@@ -1,15 +1,13 @@
 // app/super-admin/igrejas/[id]/modulos/page.tsx
 import prismaGlobal from '@/lib/prisma'
-import { notFound, redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { notFound } from 'next/navigation'
 import GestaoModulosClient from '@/components/superadmin/GestaoModulosClient'
+import { requireSAAuth } from '@/lib/sa-auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function GestaoModulosPage({ params }: { params: Promise<{ id: string }> }) {
-    const cookieStore = await cookies()
-    const session = cookieStore.get('admvc_session')
-    if (!session) redirect('/membros/login')
+    await requireSAAuth()
 
     const { id } = await params
     const igrejaId = Number(id)

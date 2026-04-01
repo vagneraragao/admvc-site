@@ -248,9 +248,24 @@ async function main() {
             tenant_id: tenant.id // Obrigatório! Ligamos o admin à Sede Global
         },
     })
-    console.log('👑 Super Admin criado: admin@admvc.com / admin123')
+    console.log('Admin da igreja criado: admin@admvc.com / admin123')
 
-    console.log('🚀 SEED CONCLUÍDO COM SUCESSO! A casa está limpa e arrumada.')
+    // =====================================================================
+    // SUPER ADMIN DA PLATAFORMA (tabela separada)
+    // =====================================================================
+    const hashedSaPassword = await bcrypt.hash('superadmin123', 10)
+    await prisma.superAdmin.upsert({
+        where: { email: 'sa@admvc.com' },
+        update: {},
+        create: {
+            email: 'sa@admvc.com',
+            password: hashedSaPassword,
+            nome: 'Super Administrador',
+        }
+    })
+    console.log('Super Admin da Plataforma criado: sa@admvc.com / superadmin123')
+
+    console.log('SEED CONCLUIDO COM SUCESSO!')
 }
 
 main()

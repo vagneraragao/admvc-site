@@ -3,11 +3,11 @@
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth-utils'
+import { requireSAAuth } from '@/lib/sa-auth'
 import { type PlanoId, type Modulo, PLANOS, MODULOS } from '@/lib/planos'
 
 export async function criarNovaIgreja(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireSAAuth()
 
     // 1. Dados da Igreja
     const nomeIgreja = formData.get('nomeIgreja') as string;
@@ -75,7 +75,7 @@ export async function criarNovaIgreja(formData: FormData) {
 // Adicione isto no final de @/actions/super-admin-actions.ts
 
 export async function atualizarIgreja(id: number, formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireSAAuth()
 
     const nome = formData.get('nomeIgreja') as string;
     const slug = formData.get('slug') as string;
@@ -110,7 +110,7 @@ export async function atualizarIgreja(id: number, formData: FormData) {
 // ── GESTÃO DE PLANOS E MÓDULOS ───────────────────────────────────────────────
 
 export async function buscarIgrejaComModulos(igrejaId: number) {
-    await requireRole(['ADMIN'])
+    await requireSAAuth()
 
     try {
         const igreja = await prisma.tenant.findUnique({
@@ -129,7 +129,7 @@ export async function buscarIgrejaComModulos(igrejaId: number) {
 }
 
 export async function atualizarPlanoIgreja(igrejaId: number, plano: string) {
-    await requireRole(['ADMIN'])
+    await requireSAAuth()
 
     try {
         if (!PLANOS[plano as PlanoId]) {
@@ -150,7 +150,7 @@ export async function atualizarPlanoIgreja(igrejaId: number, plano: string) {
 }
 
 export async function atualizarModulosCustom(igrejaId: number, modulos: string[]) {
-    await requireRole(['ADMIN'])
+    await requireSAAuth()
 
     try {
         // Valida que todos os módulos são válidos
