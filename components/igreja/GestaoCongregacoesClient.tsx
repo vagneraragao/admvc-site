@@ -107,7 +107,6 @@ export default function GestaoCongregacoesClient({
 
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in">
-            <Breadcrumb items={[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Congregacoes' }]} />
 
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-soft pb-8">
                 <div>

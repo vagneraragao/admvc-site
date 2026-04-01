@@ -168,13 +168,6 @@ export default function EditarMembroClient({
                 <input type="hidden" name="familia_id" value={familiaSelecionada} />
                 <input type="hidden" name="parentesco" value={parentescoSelecionado} />
 
-                <div className="mb-6">
-                    <Breadcrumb items={[
-                        { label: isAdmin ? "Voltar a Lista" : "Dashboard", href: isAdmin ? "/admin/membros" : "/membros/dashboard", isBackIcon: true },
-                        { label: isAdmin ? "Gestao de Membros" : "O Meu Perfil", hideOnMobile: true },
-                        { label: "Editar Perfil" }
-                    ]} />
-                </div>
 
                 {/* HEADER */}
                 <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-soft pb-8">

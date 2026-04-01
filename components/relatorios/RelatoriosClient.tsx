@@ -163,23 +163,6 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
-            <div className="mb-6">
-                <Breadcrumb items={[
-                    {
-                        label: "Dashboard Admin",
-                        href: "/admin/dashboard",
-                        isBackIcon: true
-                    },
-                    {
-                        label: "Módulo Analítico",
-                        hideOnMobile: true
-                    },
-                    {
-                        label: "Relatórios"
-                    }
-                ]} />
-            </div>
 
             {/* HEADER (MANTIDO ESTRUTURALMENTE IGUAL) */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">

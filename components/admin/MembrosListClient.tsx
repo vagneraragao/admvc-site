@@ -244,11 +244,6 @@ export default function MembrosListClient({ membros, kpis }: Props) {
                 </div>
             )}
 
-            <Breadcrumb items={[
-                { label: 'Dashboard', href: '/admin/dashboard', isBackIcon: true },
-                { label: 'Administracao', hideOnMobile: true },
-                { label: 'Membros' }
-            ]} />
 
             {/* HEADER */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">

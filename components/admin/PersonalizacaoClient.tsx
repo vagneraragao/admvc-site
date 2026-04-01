@@ -73,10 +73,6 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
 
     return (
         <main className="max-w-4xl mx-auto p-6 md:p-10 space-y-8 animate-in fade-in duration-700">
-            <Breadcrumb items={[
-                { label: 'Dashboard', href: '/admin/dashboard', isBackIcon: true },
-                { label: 'Personalizacao' }
-            ]} />
 
             <header>
                 <h1 className="text-2xl font-black italic uppercase tracking-tighter text-fg flex items-center gap-3">
