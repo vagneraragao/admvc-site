@@ -6,7 +6,7 @@ import {
     ArrowLeft, Building, CheckCircle2, Loader2, Save,
     Calendar, Users, Music, Wallet, Coffee, HeartHandshake,
     Package, BookOpen, MessageSquare, BarChart3, Shield,
-    Crown, Zap, Rocket, Globe, ToggleLeft, ToggleRight
+    Crown, Zap, Rocket, Globe, ToggleLeft, ToggleRight, Palette
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -37,6 +37,7 @@ const MODULOS_UI = [
     { id: 'gabinete', nome: 'Gabinete / Agenda', desc: 'Agenda pastoral e marcacoes publicas', icon: BookOpen, planos: ['PRO', 'ENTERPRISE'] },
     { id: 'mural', nome: 'Mural', desc: 'Avisos e comunicados internos', icon: MessageSquare, planos: ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'] },
     { id: 'relatorios', nome: 'Relatorios', desc: 'Relatorios de escalas e financeiros', icon: BarChart3, planos: ['BASIC', 'PRO', 'ENTERPRISE'] },
+    { id: 'personalizacao', nome: 'Personalizacao', desc: 'Cores, logotipo e identidade visual da igreja', icon: Palette, planos: ['PRO', 'ENTERPRISE'] },
     { id: 'auditoria', nome: 'Auditoria', desc: 'Logs de acoes e seguranca', icon: Shield, planos: ['BASIC', 'PRO', 'ENTERPRISE'] },
 ]
 
@@ -44,7 +45,7 @@ const MODULOS_UI = [
 const MODULOS_POR_PLANO: Record<string, string[]> = {
     FREE: ['mural'],
     BASIC: ['escalas', 'grupos', 'mural', 'acolhimento', 'relatorios', 'auditoria'],
-    PRO: ['escalas', 'grupos', 'louvor', 'financeiro', 'cantina', 'acolhimento', 'inventario', 'gabinete', 'mural', 'relatorios', 'auditoria'],
+    PRO: ['escalas', 'grupos', 'louvor', 'financeiro', 'cantina', 'acolhimento', 'inventario', 'gabinete', 'mural', 'personalizacao', 'relatorios', 'auditoria'],
     ENTERPRISE: MODULOS_UI.map(m => m.id),
 }
 
