@@ -110,7 +110,7 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/departamentos/financeiro': MODULOS.FINANCEIRO,
     '/departamentos/cantina': MODULOS.CANTINA,
     '/departamentos/acolhimento': MODULOS.ACOLHIMENTO,
-    '/admin/inventario': MODULOS.INVENTARIO,
+    '/inventario': MODULOS.INVENTARIO,
     '/gabinete': MODULOS.GABINETE,
     '/membros/mural': MODULOS.MURAL,
     '/admin/auditoria': MODULOS.AUDITORIA,

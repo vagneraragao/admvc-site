@@ -1,4 +1,4 @@
-// app/admin/inventario/page.tsx
+// app/inventario/page.tsx
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'

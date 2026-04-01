@@ -16,6 +16,7 @@ export function middleware(request: NextRequest) {
         || pathname.startsWith('/grupos')
         || pathname.startsWith('/departamentos')
         || pathname.startsWith('/gabinete')
+        || pathname.startsWith('/inventario')
 
     // 2. Sem sessão em rota protegida → login
     if ((isMembrosProtected || isAdminProtected || isModuleProtected) && !session) {
@@ -75,6 +76,7 @@ export const config = {
         '/grupos/:path*',
         '/departamentos/:path*',
         '/gabinete/:path*',
+        '/inventario/:path*',
         '/api/admin/:path*',
     ],
 }

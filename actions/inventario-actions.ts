@@ -151,7 +151,7 @@ export async function criarItemInventario(formData: FormData) {
             }
         })
 
-        revalidatePath('/admin/inventario')
+        revalidatePath('/inventario')
         return { ok: true, data: item }
     } catch (err: any) {
         if (err.code === 'P2002') return { ok: false, error: 'Código de património já existe.' }
@@ -202,7 +202,7 @@ export async function editarItemInventario(id: number, formData: FormData) {
             }
         })
 
-        revalidatePath('/admin/inventario')
+        revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {
         return { ok: false, error: err.message }
@@ -262,7 +262,7 @@ export async function registarMovimento(formData: FormData) {
             })
         ])
 
-        revalidatePath('/admin/inventario')
+        revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {
         return { ok: false, error: err.message }
@@ -274,7 +274,7 @@ export async function arquivarItemInventario(id: number) {
     try {
         await verificarAcesso()
         await prisma.itemInventario.update({ where: { id }, data: { ativo: false } })
-        revalidatePath('/admin/inventario')
+        revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {
         return { ok: false, error: err.message }
