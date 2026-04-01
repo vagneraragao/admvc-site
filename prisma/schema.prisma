@@ -69,6 +69,7 @@ model Tenant {
   indisponibilidadeMembros IndisponibilidadeMembro[]
   mensagemEventos          MensagemEvento[]
   audit_logs               AuditLog[]
+  itemInventarios          ItemInventario[]
 }
 
 model Congregacao {
@@ -170,6 +171,7 @@ model Membro {
   encontros_assistidos       EncontroGrupo[]           @relation("MembrosPresentes")
   indisponibilidadeMembros   IndisponibilidadeMembro[]
   mensagemEventos            MensagemEvento[]
+  itemInventarios            ItemInventario[]
 
   @@index([tenant_id])
   @@map("membros")
@@ -187,22 +189,23 @@ model Familia {
 }
 
 model Departamento {
-  id            Int                      @id @default(autoincrement())
-  nome          String
-  descricao     String?
-  lider_id      Int?
-  compromissoId Int?
-  congregacaoId Int?
-  tenant_id     Int
-  avisoMurals   AvisoMural[]
-  congregacao   Congregacao?             @relation(fields: [congregacaoId], references: [id])
-  lider         Membro?                  @relation("LiderDepartamento", fields: [lider_id], references: [id])
-  tenant        Tenant                   @relation(fields: [tenant_id], references: [id])
-  escalas       Escala[]
-  funcoes       FuncaoDepartamento[]
-  grupos        Grupo[]
-  integrantes   IntegranteDepartamento[]
-  compromissos  Compromisso[]            @relation("CompromissoDepartamentos")
+  id               Int                      @id @default(autoincrement())
+  nome             String
+  descricao        String?
+  lider_id         Int?
+  compromissoId    Int?
+  congregacaoId    Int?
+  tenant_id        Int
+  avisoMurals      AvisoMural[]
+  congregacao      Congregacao?             @relation(fields: [congregacaoId], references: [id])
+  lider            Membro?                  @relation("LiderDepartamento", fields: [lider_id], references: [id])
+  tenant           Tenant                   @relation(fields: [tenant_id], references: [id])
+  escalas          Escala[]
+  funcoes          FuncaoDepartamento[]
+  grupos           Grupo[]
+  integrantes      IntegranteDepartamento[]
+  compromissos     Compromisso[]            @relation("CompromissoDepartamentos")
+  itens_inventario ItemInventario[]
 
   @@unique([nome, tenant_id])
   @@index([tenant_id])
@@ -233,9 +236,9 @@ model FuncaoSelecionada {
 }
 
 model Grupo {
-  id              Int             @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   nome            String
-  data_abertura   DateTime        @default(now())
+  data_abertura   DateTime         @default(now())
   dia_semana      String
   horario         String
   perfil          String?
@@ -246,7 +249,7 @@ model Grupo {
   bairro          String
   cidade          String
   estado          String
-  pais            String          @default("Portugal")
+  pais            String           @default("Portugal")
   departamento_id Int?
   compromissoId   Int?
   congregacaoId   Int?
@@ -254,15 +257,16 @@ model Grupo {
   latitude        Float?
   longitude       Float?
   regiao          String? // Ex: "Norte", "Centro", "Sul", "Online"
-  publico         Boolean         @default(false) // aparece no site público?
+  publico         Boolean          @default(false) // aparece no site público?
   avisoMurals     AvisoMural[]
   encontros       EncontroGrupo[]
-  congregacao     Congregacao?    @relation(fields: [congregacaoId], references: [id])
-  departamento    Departamento?   @relation(fields: [departamento_id], references: [id])
-  tenant          Tenant          @relation(fields: [tenant_id], references: [id])
-  compromissos    Compromisso[]   @relation("CompromissoGrupos")
-  lideres         Membro[]        @relation("LideresGrupo")
-  membros         Membro[]        @relation("MembrosGrupo")
+  congregacao     Congregacao?     @relation(fields: [congregacaoId], references: [id])
+  departamento    Departamento?    @relation(fields: [departamento_id], references: [id])
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+  compromissos    Compromisso[]    @relation("CompromissoGrupos")
+  lideres         Membro[]         @relation("LideresGrupo")
+  membros         Membro[]         @relation("MembrosGrupo")
+  itemInventarios ItemInventario[]
 
   @@index([tenant_id])
 }
@@ -658,4 +662,119 @@ model AuditLog {
   @@index([categoria])
   @@index([criado_em])
   @@map("audit_logs")
+}
+
+enum InventarioCategoria {
+  ELETRONICO // equipamentos AV, microfones, computadores
+  INSTRUMENTO // guitarras, teclados, baterias
+  MOVEL // mesas, cadeiras, armários
+  VEICULO // carros, vans da igreja
+  FERRAMENTA // ferramentas de manutenção
+  VESTUARIO // roupas, fardamentos
+  LIVRO // bíblias, materiais didáticos
+  CONSUMIVEL // material de escritório, limpeza
+  OUTRO
+}
+
+enum InventarioEstado {
+  OTIMO // novo ou como novo
+  BOM // uso normal, sem danos
+  REGULAR // desgaste visível mas funcional
+  DANIFICADO // precisa de reparação
+  INUTILIZAVEL // fora de uso
+}
+
+enum MovimentoTipo {
+  ENTRADA // novo item adicionado
+  SAIDA // item retirado/descartado
+  EMPRESTIMO // saiu temporariamente
+  DEVOLUCAO // voltou de empréstimo
+  MANUTENCAO // entrou em manutenção
+  RETORNO_MANUTENCAO // voltou da manutenção
+  TRANSFERENCIA // mudou de dono/local
+  AJUSTE // correcção de stock
+}
+
+// ── MODEL PRINCIPAL ───────────────────────────────────────────────────────────
+
+model ItemInventario {
+  id                Int                 @id @default(autoincrement())
+  tenant_id         Int
+  nome              String
+  descricao         String?
+  categoria         InventarioCategoria @default(OUTRO)
+  estado            InventarioEstado    @default(BOM)
+  numero_serie      String?
+  codigo_patrimonio String?             @unique // código interno da igreja
+  marca             String?
+  modelo            String?
+  cor               String?
+
+  // Estoque
+  quantidade_total      Int @default(1)
+  quantidade_disponivel Int @default(1)
+
+  // Aquisição
+  data_aquisicao  DateTime?
+  valor_aquisicao Float?
+  fornecedor      String?
+  nota_fiscal     String?
+
+  // Garantia
+  tem_garantia      Boolean   @default(false)
+  garantia_validade DateTime?
+  garantia_info     String? // nome da assistência, contrato, etc.
+
+  // Localização física
+  localizacao String? // ex: "Sala de Louvor", "Armazém"
+
+  // Foto
+  foto_url String?
+
+  // Dono — pode ser departamento, grupo ou membro (apenas um)
+  dono_tipo            String? // "DEPARTAMENTO" | "GRUPO" | "MEMBRO" | "IGREJA"
+  dono_departamento_id Int?
+  dono_grupo_id        Int?
+  dono_membro_id       Int?
+
+  // Metadados
+  ativo      Boolean  @default(true)
+  notas      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relações
+  tenant            Tenant                @relation(fields: [tenant_id], references: [id])
+  dono_departamento Departamento?         @relation(fields: [dono_departamento_id], references: [id])
+  dono_grupo        Grupo?                @relation(fields: [dono_grupo_id], references: [id])
+  dono_membro       Membro?               @relation(fields: [dono_membro_id], references: [id])
+  movimentos        MovimentoInventario[]
+
+  @@index([tenant_id])
+  @@index([categoria])
+  @@index([dono_departamento_id])
+  @@index([dono_grupo_id])
+  @@index([dono_membro_id])
+  @@map("inventario_itens")
+}
+
+// ── MOVIMENTOS / HISTÓRICO ────────────────────────────────────────────────────
+
+model MovimentoInventario {
+  id                    Int           @id @default(autoincrement())
+  item_id               Int
+  tipo                  MovimentoTipo
+  quantidade            Int           @default(1)
+  data                  DateTime      @default(now())
+  responsavel           String? // nome ou ID de quem fez a movimentação
+  destino               String? // para empréstimos: nome/local de destino
+  data_retorno_prevista DateTime? // para empréstimos
+  data_retorno_real     DateTime? // quando voltou
+  observacao            String?
+  created_at            DateTime      @default(now())
+
+  item ItemInventario @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@index([item_id])
+  @@map("inventario_movimentos")
 }
