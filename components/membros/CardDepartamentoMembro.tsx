@@ -130,11 +130,11 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
                             <div className="grid grid-cols-1 gap-2 pt-1">
                                 {isGrupo ? (
                                     podeGerenciar ? (
-                                        <Link href={`/membros/gestao/grupo/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnPrimary}`}>
+                                        <Link href={`/grupos/gestao/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnPrimary}`}>
                                             <Edit3 size={14} /> Gerir Grupo
                                         </Link>
                                     ) : (
-                                        <Link href={`/membros/gestao/grupo/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 group/btn ${tema.btnSecondary}`}>
+                                        <Link href={`/grupos/gestao/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 group/btn ${tema.btnSecondary}`}>
                                             Acessar Grupo <ArrowRight size={14} className="opacity-50 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" />
                                         </Link>
                                     )
@@ -142,7 +142,7 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
                                     <div className={`grid ${temAcessoEscalas ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                                         {/* Botão Escalas: Visível para Líderes OU Delegados */}
                                         {temAcessoEscalas && (
-                                            <Link href={`/membros/gestao/escalas/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnSecondary} border-figueira/30 text-figueira`}>
+                                            <Link href={`/escalas/gestao/${depto.id}`} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${tema.btnSecondary} border-figueira/30 text-figueira`}>
                                                 <Calendar size={14} /> Escalas
                                             </Link>
                                         )}

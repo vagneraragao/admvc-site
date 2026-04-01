@@ -1,4 +1,4 @@
-// app/admin/grupos/page.tsx
+// app/grupos/admin/page.tsx
 import prisma from '@/lib/prisma'
 import nextDynamic from 'next/dynamic'
 import Link from 'next/link'

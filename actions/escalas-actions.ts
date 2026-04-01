@@ -34,7 +34,7 @@ export async function deletarEscalaAction(escalaId: number) {
             where: { id: escalaId }
         });
 
-        revalidatePath(`/membros/gestao/escalas/${escala.departamento_id}`);
+        revalidatePath(`/escalas/gestao/${escala.departamento_id}`);
         revalidatePath('/membros/dashboard');
 
         return { ok: true };
@@ -132,7 +132,7 @@ export async function criarEscalaAction(formData: FormData) {
         });
 
         // 5. ATUALIZAR CACHE
-        revalidatePath(`/membros/gestao/escalas/${deptoId}`);
+        revalidatePath(`/escalas/gestao/${deptoId}`);
         revalidatePath('/membros/dashboard');
 
         return { ok: true };
@@ -508,8 +508,8 @@ export async function salvarMensagemEventoAction(formData: FormData) {
             }
         })
 
-        revalidatePath('/admin/escalas')
-        revalidatePath('/membros/gestao/escalas/[id]', 'page')
+        revalidatePath('/escalas/admin')
+        revalidatePath('/escalas/gestao/[id]', 'page')
         revalidatePath('/membros/dashboard')
         return { sucesso: true }
     } catch (error: any) {
@@ -525,8 +525,8 @@ export async function removerMensagemEventoAction(eventoId: number) {
         await prisma.mensagemEvento.deleteMany({
             where: { evento_id: eventoId }
         })
-        revalidatePath('/admin/escalas')
-        revalidatePath('/membros/gestao/escalas/[id]', 'page')
+        revalidatePath('/escalas/admin')
+        revalidatePath('/escalas/gestao/[id]', 'page')
         return { sucesso: true }
     } catch (error: any) {
         console.error('Erro ao remover mensagem:', error)

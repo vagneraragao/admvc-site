@@ -11,6 +11,8 @@ export function middleware(request: NextRequest) {
     const isMembrosProtected = pathname.startsWith('/membros/dashboard') || pathname.startsWith('/membros/termos')
     const isAdminProtected = pathname.startsWith('/admin')
     const isModuleProtected = pathname.startsWith('/louvor')
+        || pathname.startsWith('/escalas')
+        || pathname.startsWith('/grupos')
 
     // 2. Se a rota é protegida e não há sessão, redireciona para login unificado
     if ((isMembrosProtected || isAdminProtected || isModuleProtected) && !session) {
@@ -56,5 +58,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/membros/:path*', '/louvor/:path*', '/api/admin/:path*'],
+    matcher: ['/admin/:path*', '/membros/:path*', '/louvor/:path*', '/escalas/:path*', '/grupos/:path*', '/api/admin/:path*'],
 }

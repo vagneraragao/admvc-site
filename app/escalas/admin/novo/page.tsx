@@ -1,4 +1,4 @@
-// app/admin/escalas/novo/page.tsx
+// app/escalas/admin/novo/page.tsx
 import prisma from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
