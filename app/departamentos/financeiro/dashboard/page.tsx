@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import FormLancamentoOferta from '@/components/financeiro/FormLancamentoOferta'
 import BotaoConfirmarMBWay from '@/components/financeiro/BotaoConfirmarMBWay'
 import ModalNovaCampanha from '@/components/financeiro/ModalNovaCampanha'
@@ -284,7 +284,7 @@ export default async function DashboardFinanceiro() {
                         </div>
                     </details>
 
-                    {session.role === 'ADMIN' && (
+                    {isAdmin(session.role) && (
                         <details className="group relative z-40">
                             <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
                                 <div className="h-11 w-11 bg-bg2 border border-soft text-muted rounded-2xl flex items-center justify-center hover:bg-soft transition-all">

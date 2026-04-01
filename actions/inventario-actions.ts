@@ -9,7 +9,7 @@ import { getSessionData } from '@/lib/auth-utils'
 async function verificarAcesso() {
     const session = await getSessionData()
     if (!session) throw new Error('Não autenticado.')
-    const rolesPermitidos = ['ADMIN', 'FINANCE', 'LEADER']
+    const rolesPermitidos = ['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE', 'LEADER']
     if (!rolesPermitidos.includes(session.role)) throw new Error('Sem permissão.')
     return session
 }

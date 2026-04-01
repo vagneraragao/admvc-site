@@ -132,7 +132,7 @@ export async function assinarTermosAction(membroId: number) {
 
 export async function definirResponsavelFamilia(membroId: number, familiaId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         // 1. Retirar o poder de todos daquela família primeiro
         await prisma.membro.updateMany({
             where: { familia_id: familiaId },
@@ -154,7 +154,7 @@ export async function definirResponsavelFamilia(membroId: number, familiaId: num
 
 export async function cadastrarMembroCompleto(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         // 1. Instanciamos o banco de dados blindado (Multitenant)
         const { db, tenantId } = await getContext();
 
@@ -432,7 +432,7 @@ export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: n
 // ── EXPORTAR ──────────────────────────────────────────────────────────────────
 export async function exportarMembrosCSV() {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
 
         const membros = await prisma.membro.findMany({
             orderBy: { first_name: 'asc' },
@@ -502,7 +502,7 @@ export async function exportarMembrosCSV() {
 // ── ANALISAR CSV ──────────────────────────────────────────────────────────────
 export async function analisarCSV(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
 
         const file = formData.get('file') as File
         if (!file) return { error: 'Nenhum ficheiro enviado.' }
@@ -600,7 +600,7 @@ export async function analisarCSV(formData: FormData) {
 // ── CONFIRMAR IMPORTACAO ──────────────────────────────────────────────────────
 export async function confirmarImportacao(membrosValidos: any[]) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getContext()
         const passwordPadrao = await bcrypt.hash('admvc123', 10)
 

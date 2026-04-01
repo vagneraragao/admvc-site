@@ -56,7 +56,7 @@ export async function buscarMusicasCatalogo(busca: string = '') {
 // 3. ADICIONAR MÚSICA AO EVENTO (Cria a ligação e define a ordem)
 export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: string, tomTocado: string) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         // 1. Descobrir o tenant_id do evento para manter a integridade multitenant
         const evento = await db.evento.findUnique({
@@ -101,7 +101,7 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
 // 4. REMOVER MÚSICA DO REPERTÓRIO
 export async function removerMusicaDoRepertorio(repertorioId: string) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         await db.repertorioEvento.delete({
             where: { id: repertorioId }
@@ -117,7 +117,7 @@ export async function removerMusicaDoRepertorio(repertorioId: string) {
 // Adicione esta função no seu actions/louvor-actions.ts
 export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: string, tom: string, link: string) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         // 1. Procura se a música já existe ou cria uma nova na hora
         let musica = await prisma.musica.findFirst({
@@ -175,7 +175,7 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
 // Adicione no final do arquivo actions/louvor-actions.ts
 export async function atualizarOrdemRepertorio(itens: { id: string, ordem: number }[]) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         // Usa uma transação para atualizar todas as ordens de uma vez com segurança
         await db.$transaction(
@@ -217,7 +217,7 @@ export async function buscarMusicasLocalmente(busca: string) {
 // 3. Adiciona a música na escala usando o ID do nosso banco
 export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: string, tom: string) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
@@ -311,7 +311,7 @@ export async function criarNovaMusica(
     link_audio?: string,
 ) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const novaMusica = await prisma.musica.create({
             data: {
                 titulo,
@@ -344,7 +344,7 @@ export async function adicionarMusicaManualAoEvento(
     bpm?: number,
 ) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const db = await getDb()
         const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
@@ -401,7 +401,7 @@ export async function atualizarLinksMusica(musicaId: string, dados: {
     }
 ) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const atualizada = await prisma.musica.update({
             where: { id: musicaId },
             data: {
@@ -424,7 +424,7 @@ export async function atualizarLinksMusica(musicaId: string, dados: {
 // ── SINCRONIZAR ACERVO (actualizado — preserva links existentes) ──────────────
 export async function sincronizarAcervoLocal(musicasHolyrics: any[]) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         let inseridas = 0
         let atualizadas = 0
 

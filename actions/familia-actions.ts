@@ -14,7 +14,7 @@ async function getDb() {
 
 
 export async function criarNovaFamilia(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const surname = formData.get('surname') as string;
 
     if (!surname) return { erro: "Nome é obrigatório" };
@@ -37,7 +37,7 @@ export async function criarNovaFamilia(formData: FormData) {
 
 export async function removerMembroDaFamilia(membroId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
@@ -60,7 +60,7 @@ export async function removerMembroDaFamilia(membroId: number) {
 
 export async function vincularMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
@@ -78,7 +78,7 @@ export async function vincularMembroAFamilia(membroId: number, familiaId: number
 
 export async function criarFamiliaAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const surname = formData.get('surname') as string;
         const { db, tenantId } = await getDb();
 
@@ -114,7 +114,7 @@ export async function criarFamiliaAction(formData: FormData) {
 
 export async function excluirFamiliaAction(familiaId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         // 1. Encontrar a família e verificar os membros
         const familia = await db.familia.findUnique({
@@ -150,7 +150,7 @@ export async function excluirFamiliaAction(familiaId: number) {
 }
 
 export async function buscarMembrosSemFamiliaAction(query: string) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     if (!query || query.length < 2) return [];
 
     try {
@@ -178,7 +178,7 @@ export async function buscarMembrosSemFamiliaAction(query: string) {
 
 export async function vincularMembroFamiliaAction(membroId: string, familiaId: string, parentesco: string) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
 
         const [membro, familia] = await Promise.all([

@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { 
     CalendarDays, Coffee, BookOpen, Users, 
@@ -48,7 +48,7 @@ export default async function AgendasDashboard() {
 
     // 1. Vai buscar as Agendas (Se for ADMIN vê todas, se for Líder vê só a dele)
     const agendas = await prisma.agenda.findMany({
-        where: session.role === 'ADMIN' ? {} : { 
+        where: isAdmin(session.role) ? {} : { 
             OR: [
                 { dono_id: session.membroId },
                 { gestores: { some: { id: session.membroId } } }

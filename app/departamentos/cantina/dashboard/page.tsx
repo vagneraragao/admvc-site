@@ -1,7 +1,7 @@
 //app/cantina/dashboard/page.tsx
 
 import prisma from '@/lib/prisma'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink, MonitorPlay, Smartphone, Coffee } from 'lucide-react'
@@ -21,7 +21,7 @@ export default async function GestaoCantinaPage() {
 
     if (!membroLogado) redirect('/membros/login');
 
-    const isAdmin = session.role === 'ADMIN';
+    const isAdmin = isAdminCheck(session.role);
     const isFinance = session.role === 'FINANCE';
 
     const isEquipaCantina = membroLogado.ministerios.some(vinculo => {

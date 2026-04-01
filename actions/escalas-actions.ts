@@ -531,7 +531,7 @@ export async function salvarMensagemEventoAction(formData: FormData) {
 // ── REMOVER MENSAGEM ──────────────────────────────────────────────────────────
 export async function removerMensagemEventoAction(eventoId: number) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const { db } = await getDb()
         await db.mensagemEvento.deleteMany({
             where: { evento_id: eventoId }

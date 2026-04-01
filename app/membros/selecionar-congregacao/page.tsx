@@ -1,6 +1,6 @@
 // app/membros/selecionar-congregacao/page.tsx
 import prisma from '@/lib/prisma'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import SelecionarCongregacaoClient from '@/components/membros/SelecionarCongregacaoClient'
@@ -35,7 +35,7 @@ export default async function SelecionarCongregacaoPage() {
         <SelecionarCongregacaoClient
             congregacoes={congregacoes}
             igrejaName={tenant?.nome || 'Igreja'}
-            adminNome={session.role === 'ADMIN' ? 'Administrador' : 'Lider'}
+            adminNome={isAdmin(session.role) ? 'Administrador' : 'Lider'}
         />
     )
 }

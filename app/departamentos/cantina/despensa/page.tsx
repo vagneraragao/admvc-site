@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, HeartHandshake } from 'lucide-react'
@@ -20,7 +20,7 @@ export default async function AdminDespensaPage() {
 
     if (!membroLogado) redirect('/membros/login');
 
-    const isAdmin = session.role === 'ADMIN';
+    const isAdmin = isAdminCheck(session.role);
     const isFinance = session.role === 'FINANCE';
 
     const isEquipaSocial = membroLogado.ministerios.some(vinculo => {

@@ -19,31 +19,33 @@ const NAV_PRINCIPAL = [
 ]
 
 const NAV_MODULOS = [
-    { label: 'Escalas', href: '/escalas/admin', icon: Calendar },
-    { label: 'Inventario', href: '/inventario', icon: Package },
-    { label: 'Relatorios', href: '/admin/relatorios', icon: BarChart3 },
-    { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard },
+    { label: 'Escalas', href: '/escalas/admin', icon: Calendar, adminOnly: false },
+    { label: 'Inventario', href: '/inventario', icon: Package, adminOnly: false },
+    { label: 'Relatorios', href: '/admin/relatorios', icon: BarChart3, adminOnly: false },
+    { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
 ]
 
 const NAV_SISTEMA = [
-    { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette },
-    { label: 'Configuracoes', href: '/admin/configuracoes', icon: Settings },
-    { label: 'Auditoria', href: '/admin/auditoria', icon: Shield },
+    { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
+    { label: 'Configuracoes', href: '/admin/configuracoes', icon: Settings, adminOnly: false },
+    { label: 'Auditoria', href: '/admin/auditoria', icon: Shield, adminOnly: false },
 ]
 
-function NavSection({ titulo, items, collapsed, pathname }: {
+function NavSection({ titulo, items, collapsed, pathname, isFullAdmin = true }: {
     titulo: string
-    items: typeof NAV_PRINCIPAL
+    items: { label: string; href: string; icon: any; adminOnly?: boolean }[]
     collapsed: boolean
     pathname: string
+    isFullAdmin?: boolean
 }) {
+    const filteredItems = items.filter(item => !item.adminOnly || isFullAdmin)
     return (
         <div className="space-y-1">
             {!collapsed && (
                 <p className="px-3 text-[8px] font-black uppercase tracking-[0.2em] text-muted mb-2">{titulo}</p>
             )}
             {collapsed && <div className="border-t border-soft my-2" />}
-            {items.map(item => {
+            {filteredItems.map(item => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
@@ -70,11 +72,13 @@ function NavSection({ titulo, items, collapsed, pathname }: {
     )
 }
 
-export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome }: {
+export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome, role = 'ADMIN' }: {
     adminNome?: string
     igrejaName?: string
     congregacaoNome?: string | null
+    role?: string
 }) {
+    const isFullAdmin = role === 'ADMIN'
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
 
@@ -133,9 +137,9 @@ export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome }:
 
             {/* NAV */}
             <nav className={`flex-1 overflow-y-auto space-y-4 ${collapsed ? 'p-1.5' : 'p-3'}`}>
-                <NavSection titulo="Igreja" items={NAV_PRINCIPAL} collapsed={collapsed} pathname={pathname} />
-                <NavSection titulo="Modulos" items={NAV_MODULOS} collapsed={collapsed} pathname={pathname} />
-                <NavSection titulo="Sistema" items={NAV_SISTEMA} collapsed={collapsed} pathname={pathname} />
+                <NavSection titulo="Igreja" items={NAV_PRINCIPAL} collapsed={collapsed} pathname={pathname} isFullAdmin={isFullAdmin} />
+                <NavSection titulo="Modulos" items={NAV_MODULOS} collapsed={collapsed} pathname={pathname} isFullAdmin={isFullAdmin} />
+                <NavSection titulo="Sistema" items={NAV_SISTEMA} collapsed={collapsed} pathname={pathname} isFullAdmin={isFullAdmin} />
             </nav>
 
             {/* FOOTER */}

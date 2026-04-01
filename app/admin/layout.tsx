@@ -8,7 +8,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const session = await getSessionData()
 
-    if (!session || session.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'CONGREGATION_ADMIN'].includes(session.role)) {
         redirect('/membros/dashboard?error=Acesso Restrito a Administradores')
     }
 
@@ -32,6 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 adminNome={admin?.first_name}
                 igrejaName={tenant?.nome}
                 congregacaoNome={admin?.congregacao?.nome}
+                role={session.role}
             />
             <main className="flex-1 overflow-y-auto">
                 {children}

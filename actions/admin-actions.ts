@@ -23,7 +23,7 @@ async function getDb() {
 
 
 export async function criarCargo(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const nome = formData.get('nome') as string;
     if (!nome) return;
     await prismaGlobal.cargo.create({ data: { nome } });
@@ -32,7 +32,7 @@ export async function criarCargo(formData: FormData) {
 
 export async function buscarCargos() {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         return await prismaGlobal.cargo.findMany({ orderBy: { nome: 'asc' } });
     } catch (error) {
         return [];
@@ -40,14 +40,14 @@ export async function buscarCargos() {
 }
 
 export async function excluirCargo(id: number) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     await prismaGlobal.cargo.delete({ where: { id } });
     revalidatePath('/admin/configuracoes');
 }
 
 export async function aprovarMembro(membroId: number, adminNome: string) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
@@ -63,7 +63,7 @@ export async function aprovarMembro(membroId: number, adminNome: string) {
 }
 
 export async function criarDepartamento(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const nome = formData.get('nome') as string;
     if (!nome) return;
 
@@ -73,7 +73,7 @@ export async function criarDepartamento(formData: FormData) {
 }
 
 export async function criarGrupo(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     const departamento_id = formData.get('departamento_id');
     const data_abertura = formData.get('data_abertura') as string;
@@ -107,7 +107,7 @@ export async function criarGrupo(formData: FormData) {
 
 export async function excluirGrupo(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.grupo.delete({ where: { id: id } });
         revalidatePath("/admin/configuracoes");
@@ -119,7 +119,7 @@ export async function excluirGrupo(id: number) {
 
 export async function vincularMembrosAoGrupo(grupoId: number, membrosIds: number[], lideresIds: number[]) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.grupo.update({
             where: { id: grupoId },
@@ -138,7 +138,7 @@ export async function vincularMembrosAoGrupo(grupoId: number, membrosIds: number
 
 export async function salvarEvento(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const id = formData.get("id") as string | null;
         const nome = formData.get("nome") as string;
@@ -167,7 +167,7 @@ export async function salvarEvento(formData: FormData) {
 
 export async function removerEscala(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
         revalidatePath("/escalas/admin");
@@ -178,7 +178,7 @@ export async function removerEscala(id: number) {
 }
 
 export async function gerarLinkWhatsapp(escalaId: number) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     const escala = await db.escala.findUnique({
         where: { id: escalaId },
@@ -206,7 +206,7 @@ export async function gerarLinkWhatsapp(escalaId: number) {
 
 export async function salvarGrupo(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
         const idRaw = formData.get('id')
         const id = idRaw ? Number(idRaw) : null
@@ -293,7 +293,7 @@ export async function salvarGrupo(formData: FormData) {
 
 export async function salvarEscala(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const membro_id = Number(formData.get("membro_id"));
         const evento_id = Number(formData.get("evento_id"));
@@ -312,7 +312,7 @@ export async function salvarEscala(formData: FormData) {
 }
 
 export async function removerFuncaoDoDepartamento(id: number) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     await db.funcaoDepartamento.delete({ where: { id } });
     revalidatePath("/admin/configuracoes");
@@ -320,7 +320,7 @@ export async function removerFuncaoDoDepartamento(id: number) {
 
 export async function atualizarDepartamento(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const id = Number(formData.get("id"));
         const nome = formData.get("nome") as string;
@@ -341,7 +341,7 @@ export async function atualizarDepartamento(formData: FormData) {
 }
 
 export async function adicionarFuncaoAoDepto(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     const nome = formData.get("nome") as string;
     const departamento_id = Number(formData.get("departamento_id"));
@@ -351,7 +351,7 @@ export async function adicionarFuncaoAoDepto(formData: FormData) {
 }
 
 export async function removerFuncaoDoDepto(id: number) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     await db.funcaoDepartamento.delete({ where: { id } });
     revalidatePath("/admin/configuracoes");
@@ -360,7 +360,7 @@ export async function removerFuncaoDoDepto(id: number) {
 
 export async function buscarEquipaPorDepartamentoId(deptoId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const integrantes = await db.integranteDepartamento.findMany({
             where: { departamento_id: deptoId },
@@ -378,7 +378,7 @@ export async function buscarEquipaPorDepartamentoId(deptoId: number) {
 
 export async function gerarEventosLoteAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const diaDaSemana = Number(formData.get('diaDaSemana'));
@@ -423,7 +423,7 @@ export async function gerarEventosLoteAction(formData: FormData) {
 
 export async function criarEventoUnificadoAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const tipo = formData.get('tipo') as string;
         const nome = formData.get('nome') as string;
@@ -483,7 +483,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
 
 export async function criarEscala(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const evento_id = Number(formData.get('evento_id'));
         const departamento_id = Number(formData.get('departamento_id'));
@@ -513,7 +513,7 @@ export async function criarEscala(formData: FormData) {
 
 export async function associarMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
@@ -528,7 +528,7 @@ export async function associarMembroAFamilia(membroId: number, familiaId: number
 
 export async function removerEscalaAction(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
         revalidatePath('/escalas/gestao');
@@ -540,7 +540,7 @@ export async function removerEscalaAction(id: number) {
 
 export async function atualizarEscalaAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const id = Number(formData.get('id'));
         const funcao = formData.get('funcao') as string;
@@ -559,7 +559,7 @@ export async function atualizarEscalaAction(formData: FormData) {
 
 export async function excluirDepartamento(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.departamento.delete({ where: { id } });
         revalidatePath('/admin/configuracoes');
@@ -572,7 +572,7 @@ export async function excluirDepartamento(id: number) {
 
 export async function vincularMembroDepartamento(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const membroId = Number(formData.get('membro_id'));
         const deptoId = Number(formData.get('departamento_id'));
 
@@ -653,7 +653,7 @@ export async function vincularMembroDepartamento(formData: FormData) {
 
 export async function removerMembroDepartamento(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.integranteDepartamento.delete({ where: { id } });
         revalidatePath("/admin/departamentos/gerenciar");
@@ -665,7 +665,7 @@ export async function removerMembroDepartamento(id: number) {
 
 export async function adicionarFuncaoAoDepartamento(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const nome = formData.get("nome") as string;
         const departamento_id = Number(formData.get("departamento_id"));
@@ -680,7 +680,7 @@ export async function adicionarFuncaoAoDepartamento(formData: FormData) {
 
 export async function buscarMembrosPorDepartamento(deptoId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const integrantes = await db.integranteDepartamento.findMany({
             where: { departamento_id: deptoId },
@@ -702,7 +702,7 @@ export async function buscarMembrosPorDepartamento(deptoId: number) {
 
 export async function salvarDepartamento(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const idRaw = formData.get("id");
         const id = idRaw ? Number(idRaw) : null;
@@ -774,7 +774,7 @@ export async function salvarDepartamento(formData: FormData) {
 
 export async function editarEscalaAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const id = Number(formData.get('id'));
         const funcao = formData.get('funcao') as string;
@@ -797,7 +797,7 @@ export async function editarEventoAction(formData: FormData) {
     console.log('id:', formData.get('id'))
     console.log('nome:', formData.get('nome'))
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         console.log('db obtido com sucesso')
 
@@ -824,7 +824,7 @@ export async function editarEventoAction(formData: FormData) {
 
 export async function apagarEventoAction(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.evento.delete({ where: { id } });
 
@@ -837,7 +837,7 @@ export async function apagarEventoAction(id: number) {
 
 export async function criarCongregacao(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const cidade = formData.get('cidade') as string;
@@ -864,7 +864,7 @@ export async function criarCongregacao(formData: FormData) {
 
 export async function atualizarCongregacao(id: number, formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const cidade = formData.get('cidade') as string;
@@ -886,7 +886,7 @@ export async function atualizarCongregacao(id: number, formData: FormData) {
 
 export async function excluirCongregacao(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.congregacao.delete({
             where: { id }
@@ -904,7 +904,7 @@ export async function excluirCongregacao(id: number) {
 }
 
 export async function buscarCongregacoes() {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
     return await db.congregacao.findMany({ orderBy: { nome: 'asc' } });
 }
@@ -919,7 +919,7 @@ async function getContext() {
 
 export async function exportarMembrosCSV() {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db } = await getContext();
         const membros = await db.membro.findMany({
             include: { congregacao: true, escolaridade: true }
@@ -963,7 +963,7 @@ export async function exportarMembrosCSV() {
 
 export async function analisarCSV(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db } = await getContext();
         const file = formData.get('file') as File;
         const text = await file.text();
@@ -1012,7 +1012,7 @@ export async function analisarCSV(formData: FormData) {
 
 export async function confirmarImportacao(membrosValidos: any[]) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getContext();
         const passwordPadrao = await bcrypt.hash("admvc123", 10);
 
@@ -1046,7 +1046,7 @@ export async function confirmarImportacao(membrosValidos: any[]) {
 
 export async function excluirMembroAction(id: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
         await db.membro.delete({
             where: { id }
@@ -1060,7 +1060,7 @@ export async function excluirMembroAction(id: number) {
 }
 
 export async function adicionarMembroAoDepto(membroId: number, deptoId: number, funcoesIds: number[]) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();
 
     await db.integranteDepartamento.create({
@@ -1079,7 +1079,7 @@ export async function adicionarMembroAoDepto(membroId: number, deptoId: number, 
 
 export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
 
         // Remove a função específica da tabela FuncaoSelecionada
@@ -1097,7 +1097,7 @@ export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
 
 export async function removerMembroTotal(membroId: number, departamentoId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb();
 
         await db.integranteDepartamento.delete({
@@ -1119,7 +1119,7 @@ export async function removerMembroTotal(membroId: number, departamentoId: numbe
 
 export async function alternarPermissaoEscala(integranteId: number, statusAtual: boolean) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const headersList = await headers();
         const tenantId = headersList.get('x-tenant-id');
         if (!tenantId) return { ok: false, error: 'Sessão inválida.' };
@@ -1142,7 +1142,7 @@ export async function alternarPermissaoEscala(integranteId: number, statusAtual:
 }
 
 export async function criarNovoMembroAction(formData: FormData) {
-    await requireRole(['ADMIN'])
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     console.log('\n========================================')
     console.log('[CRIAR MEMBRO] INICIO DO PROCESSO')
     console.log('========================================')
@@ -1316,7 +1316,7 @@ const parseDate = (val: any): Date | null => {
 // ── EDITAR MEMBRO ─────────────────────────────────────────────────────────────
 export async function atualizarMembroAdmin(membroId: number, formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
         const tenant_id = await getTenantId()
 
@@ -1492,7 +1492,7 @@ export async function atualizarMembroAdmin(membroId: number, formData: FormData)
 // ── APAGAR MEMBRO ─────────────────────────────────────────────────────────────
 export async function apagarMembroAction(membroId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
         const tenant_id = await getTenantId()
 
@@ -1540,7 +1540,7 @@ export async function apagarMembroAction(membroId: number) {
 // ── CRIAR / EDITAR GRUPO COM GEOCODIFICAÇÃO ───────────────────────────────────
 export async function salvarGrupoAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
         const idRaw = formData.get('id')
         const id = idRaw ? Number(idRaw) : null
@@ -1627,7 +1627,7 @@ export async function salvarGrupoAction(formData: FormData) {
 // Chamar uma única vez para preencher coordenadas em grupos já criados
 export async function geocodificarTodosGruposAction() {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db, tenantId } = await getDb()
 
         const grupos = await db.grupo.findMany({
@@ -1678,7 +1678,7 @@ export async function geocodificarTodosGruposAction() {
 // ── ASSOCIAR MEMBROS A CONGREGAÇÃO EM MASSA ──────────────────────────────────
 export async function associarMembrosACongregacao(congregacaoId: number, membrosIds: number[]) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db } = await getDb()
 
         await db.membro.updateMany({
@@ -1696,7 +1696,7 @@ export async function associarMembrosACongregacao(congregacaoId: number, membros
 
 export async function removerMembroDeCongregacao(membroId: number) {
     try {
-        await requireRole(['ADMIN'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
         const { db } = await getDb()
 
         await db.membro.update({

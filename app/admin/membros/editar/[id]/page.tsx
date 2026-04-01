@@ -69,7 +69,8 @@ export default async function EditarMembroPage({ params }: { params: Promise<{ i
 
     const rolesDisponiveis = [
         { label: 'Membro Comum', value: 'USER' },
-        { label: 'Líder de Ministério', value: 'LEADER' },
+        { label: 'Lider de Ministerio', value: 'LEADER' },
+        { label: 'Admin de Congregacao', value: 'CONGREGATION_ADMIN' },
         { label: 'Financeiro / Tesouraria', value: 'FINANCE' },
         { label: 'Administrador Geral', value: 'ADMIN' },
     ];

@@ -2,7 +2,7 @@
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import MeuPerfilClient from '@/components/membros/MeuPerfilClient'
 
 export default async function EditarMeuPerfilPage({
@@ -17,7 +17,7 @@ export default async function EditarMeuPerfilPage({
     const idParaEditar = Number(idParam)
 
     // Segurança: só o próprio membro ou ADMIN
-    const podeEditar = session.membroId === idParaEditar || session.role === 'ADMIN'
+    const podeEditar = session.membroId === idParaEditar || isAdmin(session.role)
     if (!podeEditar) {
         redirect('/membros/dashboard?error=Sem permissão para editar este perfil')
     }

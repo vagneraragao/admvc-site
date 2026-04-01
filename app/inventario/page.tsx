@@ -1,7 +1,7 @@
 // app/inventario/page.tsx
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import InventarioClient from '@/components/inventario/InventarioClient'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Package } from 'lucide-react'
@@ -86,7 +86,7 @@ export default async function InventarioPage() {
                 grupos={grupos}
                 membros={membros}
                 kpis={{ total, emprestados, emManutencao, garantiaExpirando, valorTotal }}
-                isAdmin={session.role === 'ADMIN'}
+                isAdmin={isAdmin(session.role)}
             />
         </main>
     )

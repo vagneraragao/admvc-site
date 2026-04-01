@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Phone, Mail, ArrowLeft, UserPlus } from 'lucide-react'
@@ -49,7 +49,7 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
         }
     });
 
-    const eAdmin = role === 'ADMIN';
+    const eAdmin = isAdmin(role);
     const eLiderModel = depto?.lider_id === membroId;
 
     if (!vinculoLider && !eAdmin && !eLiderModel) {

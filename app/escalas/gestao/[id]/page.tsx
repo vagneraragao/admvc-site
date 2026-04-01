@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
@@ -35,7 +35,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
         }
     });
 
-    const eAdmin = role === 'ADMIN';
+    const eAdmin = isAdmin(role);
     const eLiderModel = depto.lider_id === membroId;
 
     if (!vinculoLider && !eAdmin && !eLiderModel) {

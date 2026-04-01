@@ -68,8 +68,8 @@ export function middleware(request: NextRequest) {
             if (key === 'cong') congId = val
         })
 
-        // 3a. Proteção de role: USER não acede a /admin
-        if (isAdminProtected && userRole !== 'ADMIN') {
+        // 3a. Proteção de role: apenas ADMIN e CONGREGATION_ADMIN acedem a /admin
+        if (isAdminProtected && !['ADMIN', 'CONGREGATION_ADMIN'].includes(userRole)) {
             return NextResponse.redirect(new URL('/membros/dashboard', request.url))
         }
 

@@ -17,7 +17,7 @@ async function getDb() {
 
 export async function registrarEncontroAction(formData: FormData, presentesIds: number[]) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const grupo_id = Number(formData.get('grupo_id'));
         const data = new Date(formData.get('data') as string);
         const tema = formData.get('tema') as string;
@@ -56,7 +56,7 @@ export async function registrarEncontroAction(formData: FormData, presentesIds: 
 
 export async function atualizarDadosGrupoAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         const id = Number(formData.get('grupo_id'));
         const dia_semana = formData.get('dia_semana') as string;
         const horario = formData.get('horario') as string;
@@ -90,7 +90,7 @@ export async function atualizarDadosGrupoAction(formData: FormData) {
 
 export async function gerirMembroGrupoAction(grupoId: number, membroId: number, acao: 'ADICIONAR' | 'REMOVER') {
     try {
-        await requireRole(['ADMIN', 'LEADER'])
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
         if (acao === 'ADICIONAR') {
             await prisma.grupo.update({
                 where: { id: grupoId },

@@ -11,7 +11,14 @@ export interface SessionData {
     congregacaoId?: number;
 }
 
-export type Role = 'ADMIN' | 'LEADER' | 'USER' | 'FINANCE' | 'MANAGER'
+export type Role = 'ADMIN' | 'CONGREGATION_ADMIN' | 'LEADER' | 'USER' | 'FINANCE' | 'MANAGER'
+
+/**
+ * Verifica se o role tem permissoes de administracao (ADMIN ou CONGREGATION_ADMIN).
+ */
+export function isAdmin(role: string): boolean {
+    return role === 'ADMIN' || role === 'CONGREGATION_ADMIN'
+}
 
 /**
  * Requires an authenticated session. Throws if not authenticated.

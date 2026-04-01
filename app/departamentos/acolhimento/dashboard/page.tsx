@@ -2,7 +2,7 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import {
     HeartHandshake, Phone, MessageCircle, QrCode,
     AlertCircle, Clock, Target, CheckCircle2
@@ -38,7 +38,7 @@ export default async function AcolhimentoDashboard() {
         return inMin || inLid;
     };
 
-    const isAdmin = session.role === 'ADMIN';
+    const isAdmin = isAdminCheck(session.role);
     const isEquipaAcolhimento = checkDepto(['acolhimento', 'integração']);
 
     if (!isAdmin && !isEquipaAcolhimento) {

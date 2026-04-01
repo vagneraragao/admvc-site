@@ -6,7 +6,7 @@ import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { logoutMembro } from '@/actions/auth-actions'
 
 import {
@@ -151,7 +151,7 @@ export default async function DashboardMembro({
         isSocial: checkDepto(['social', 'despensa', 'assistência']),
         isLouvor: checkDepto(['louvor', 'música', 'musica', 'banda']),
         isLider: membro.departamentos_liderados?.length > 0 || membro.lider_de_grupo?.length > 0,
-        isAdminOrFinance: role === 'ADMIN' || role === 'FINANCE'
+        isAdminOrFinance: isAdmin(role) || role === 'FINANCE'
     };
 
     const mostraFerramentasExtra = permissoes.isAdminOrFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isSocial || permissoes.isMidia || permissoes.isLouvor;
@@ -165,7 +165,7 @@ export default async function DashboardMembro({
         ['louvor', 'música', 'musica'].some(t => d.nome.toLowerCase().includes(t))
     )?.id;
 
-    if (!departamentoLouvorId && role === 'ADMIN') {
+    if (!departamentoLouvorId && isAdmin(role)) {
         const depto = await db.departamento.findFirst({
             where: { nome: { contains: 'Louvor', mode: 'insensitive' } }
         });
@@ -195,7 +195,7 @@ export default async function DashboardMembro({
             orderBy: { data: 'asc' },
             take: 10
         }),
-        (role === 'ADMIN' || permissoes.isAcolhimento)
+        (isAdmin(role) || permissoes.isAcolhimento)
             ? db.visitante.count({ where: { status: 'NOVO' } })
             : Promise.resolve(0),
         db.avisoMural.findMany({
@@ -432,7 +432,7 @@ export default async function DashboardMembro({
                             </h1>
                             <div className="flex flex-wrap gap-2 mt-2">
                                 <span className="text-[10px] font-black text-figueira bg-figueira/10 px-3 py-1 rounded-full uppercase tracking-widest border border-figueira/20">
-                                    {permissoes.isLider ? 'Líder' : role === 'ADMIN' ? 'Administrador' : 'Membro'}
+                                    {permissoes.isLider ? 'Líder' : isAdmin(role) ? 'Administrador' : 'Membro'}
                                 </span>
                                 {membro.congregacao && (
                                     <span className="text-[10px] font-bold text-muted bg-soft/30 px-3 py-1 rounded-full uppercase tracking-widest border border-soft">
@@ -454,7 +454,7 @@ export default async function DashboardMembro({
                                 </summary>
                                 <div className="absolute right-0 top-full mt-2 w-56 bg-bg border border-soft p-2 rounded-[1.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-1 z-50">
                                     <p className="text-[9px] font-black uppercase text-figueira tracking-widest border-b border-soft/50 pb-2 mb-1 px-3 mt-1">Área de Serviço</p>
-                                    {role === 'ADMIN' && (
+                                    {isAdmin(role) && (
                                         <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
                                             <ShieldCheck size={14} className="text-figueira" /> Painel Geral
                                         </Link>
@@ -541,7 +541,7 @@ export default async function DashboardMembro({
                                     <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-3">
                                         <LayoutDashboard className="text-figueira" /> Minhas Escalas
                                     </h2>
-                                    {(role === 'ADMIN' || membro.departamentos_liderados?.length > 0) && departamentoLouvorId && (
+                                    {(isAdmin(role) || membro.departamentos_liderados?.length > 0) && departamentoLouvorId && (
                                         <ModalHistoricoEscalas departamentoId={departamentoLouvorId} />
                                     )}
                                 </div>
@@ -622,7 +622,7 @@ export default async function DashboardMembro({
                                 <WidgetAgendaUnificada
                                     eventosIgreja={proximosEventos}
                                     gruposMembro={membro.grupos || []}
-                                    isAdmin={role === 'ADMIN'}
+                                    isAdmin={isAdmin(role)}
                                 />
                             </div>
 
@@ -759,7 +759,7 @@ export default async function DashboardMembro({
                                                         encontros: grupo.encontros ?? [],
                                                     }}
                                                     membroId={membroId}
-                                                    isLider={grupo.isLider || role === 'ADMIN'}
+                                                    isLider={grupo.isLider || isAdmin(role)}
                                                 />
                                             </div>
                                         </div>

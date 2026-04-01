@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import GestaoGrupoClient from '@/components/membros/GestaoGrupoClient'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,7 @@ export default async function GestaoGrupoPage({ params }: { params: { id: string
     // VERIFICAÇÃO DE PAPÉIS
     const isLider = grupo.lideres.some((lider: any) => lider.id === session.membroId);
     const isMembro = grupo.membros.some((membro: any) => membro.id === session.membroId);
-    const isAdmin = session.role === 'ADMIN';
+    const isAdmin = isAdminCheck(session.role);
 
     // Se não for líder, nem membro, nem admin, é expulso
     if (!isLider && !isMembro && !isAdmin) {
