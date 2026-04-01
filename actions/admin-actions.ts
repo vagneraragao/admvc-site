@@ -10,18 +10,20 @@ import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
 import { audit, diffCampos, sanitizar } from '@/lib/audit'
 import { geocodificarComFallback } from '@/lib/geocode'
+import { requireRole } from '@/lib/auth-utils'
 
 async function getDb() {
     const headersList = await headers()
     const tenantId = headersList.get('x-tenant-id')
     if (!tenantId) throw new Error('Igreja nao identificada.')
-    return getTenantClient(Number(tenantId))
+    return { db: getTenantClient(Number(tenantId)), tenantId: Number(tenantId) }
 }
 
 
 
 
 export async function criarCargo(formData: FormData) {
+    await requireRole(['ADMIN'])
     const nome = formData.get('nome') as string;
     if (!nome) return;
     await prismaGlobal.cargo.create({ data: { nome } });
@@ -30,6 +32,7 @@ export async function criarCargo(formData: FormData) {
 
 export async function buscarCargos() {
     try {
+        await requireRole(['ADMIN'])
         return await prismaGlobal.cargo.findMany({ orderBy: { nome: 'asc' } });
     } catch (error) {
         return [];
@@ -37,13 +40,15 @@ export async function buscarCargos() {
 }
 
 export async function excluirCargo(id: number) {
+    await requireRole(['ADMIN'])
     await prismaGlobal.cargo.delete({ where: { id } });
     revalidatePath('/admin/configuracoes');
 }
 
 export async function aprovarMembro(membroId: number, adminNome: string) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
             data: { status: "ATIVO", data_admissao: new Date(), aprovado_por: adminNome }
@@ -58,16 +63,18 @@ export async function aprovarMembro(membroId: number, adminNome: string) {
 }
 
 export async function criarDepartamento(formData: FormData) {
+    await requireRole(['ADMIN'])
     const nome = formData.get('nome') as string;
     if (!nome) return;
 
-    const db = await getDb();
-    await db.departamento.create({ data: { nome, tenant_id: 0 } });
+    const { db, tenantId } = await getDb();
+    await db.departamento.create({ data: { nome, tenant_id: tenantId } });
     revalidatePath('/admin/configuracoes');
 }
 
 export async function criarGrupo(formData: FormData) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     const departamento_id = formData.get('departamento_id');
     const data_abertura = formData.get('data_abertura') as string;
     const lideresIds = formData.getAll('lideres_ids').map(Number);
@@ -76,7 +83,7 @@ export async function criarGrupo(formData: FormData) {
     await db.grupo.create({
         data: {
             nome: formData.get('nome') as string,
-            tenant_id: 0,
+            tenant_id: tenantId,
             dia_semana: formData.get('dia_semana') as string,
             horario: formData.get('horario') as string,
             perfil: formData.get('perfil') as string,
@@ -100,7 +107,8 @@ export async function criarGrupo(formData: FormData) {
 
 export async function excluirGrupo(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.grupo.delete({ where: { id: id } });
         revalidatePath("/admin/configuracoes");
         return { sucesso: true };
@@ -111,7 +119,8 @@ export async function excluirGrupo(id: number) {
 
 export async function vincularMembrosAoGrupo(grupoId: number, membrosIds: number[], lideresIds: number[]) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.grupo.update({
             where: { id: grupoId },
             data: {
@@ -129,7 +138,8 @@ export async function vincularMembrosAoGrupo(grupoId: number, membrosIds: number
 
 export async function salvarEvento(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const id = formData.get("id") as string | null;
         const nome = formData.get("nome") as string;
         const dataStr = formData.get("data") as string;
@@ -144,7 +154,7 @@ export async function salvarEvento(formData: FormData) {
             });
         } else {
             await db.evento.create({
-                data: { ...dados, tenant_id: 0 }
+                data: { ...dados, tenant_id: tenantId }
             });
         }
 
@@ -157,7 +167,8 @@ export async function salvarEvento(formData: FormData) {
 
 export async function removerEscala(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
         revalidatePath("/admin/escalas");
         return { sucesso: true };
@@ -167,7 +178,8 @@ export async function removerEscala(id: number) {
 }
 
 export async function gerarLinkWhatsapp(escalaId: number) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     const escala = await db.escala.findUnique({
         where: { id: escalaId },
         include: { membro: true, evento: true, departamento: true }
@@ -194,7 +206,8 @@ export async function gerarLinkWhatsapp(escalaId: number) {
 
 export async function salvarGrupo(formData: FormData) {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
         const idRaw = formData.get('id')
         const id = idRaw ? Number(idRaw) : null
 
@@ -260,7 +273,7 @@ export async function salvarGrupo(formData: FormData) {
             await db.grupo.create({
                 data: {
                     ...baseData,
-                    tenant_id: 0,
+                    tenant_id: tenantId,
                     lideres: { connect: lideresIds.map(id => ({ id })) },
                     membros: { connect: membrosIds.map(id => ({ id })) },
                 }
@@ -280,14 +293,15 @@ export async function salvarGrupo(formData: FormData) {
 
 export async function salvarEscala(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const membro_id = Number(formData.get("membro_id"));
         const evento_id = Number(formData.get("evento_id"));
         const departamento_id = Number(formData.get("departamento_id"));
         const funcao = formData.get("funcao") as string;
 
         await db.escala.create({
-            data: { membro_id, evento_id, departamento_id, funcao, tenant_id: 0, }
+            data: { membro_id, evento_id, departamento_id, funcao, tenant_id: tenantId, }
         });
 
         revalidatePath('/admin/escalas');
@@ -298,14 +312,16 @@ export async function salvarEscala(formData: FormData) {
 }
 
 export async function removerFuncaoDoDepartamento(id: number) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     await db.funcaoDepartamento.delete({ where: { id } });
     revalidatePath("/admin/configuracoes");
 }
 
 export async function atualizarDepartamento(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const id = Number(formData.get("id"));
         const nome = formData.get("nome") as string;
         const descricao = formData.get("descricao") as string;
@@ -325,16 +341,18 @@ export async function atualizarDepartamento(formData: FormData) {
 }
 
 export async function adicionarFuncaoAoDepto(formData: FormData) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     const nome = formData.get("nome") as string;
     const departamento_id = Number(formData.get("departamento_id"));
 
-    await db.funcaoDepartamento.create({ data: { nome, departamento_id, tenant_id: 0, } });
+    await db.funcaoDepartamento.create({ data: { nome, departamento_id, tenant_id: tenantId, } });
     revalidatePath("/admin/configuracoes");
 }
 
 export async function removerFuncaoDoDepto(id: number) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     await db.funcaoDepartamento.delete({ where: { id } });
     revalidatePath("/admin/configuracoes");
     return { ok: true };
@@ -342,7 +360,8 @@ export async function removerFuncaoDoDepto(id: number) {
 
 export async function buscarEquipaPorDepartamentoId(deptoId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const integrantes = await db.integranteDepartamento.findMany({
             where: { departamento_id: deptoId },
             include: {
@@ -359,7 +378,8 @@ export async function buscarEquipaPorDepartamentoId(deptoId: number) {
 
 export async function gerarEventosLoteAction(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const diaDaSemana = Number(formData.get('diaDaSemana'));
         const frequencia = formData.get('frequencia') as string;
@@ -403,7 +423,8 @@ export async function gerarEventosLoteAction(formData: FormData) {
 
 export async function criarEventoUnificadoAction(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const tipo = formData.get('tipo') as string;
         const nome = formData.get('nome') as string;
         const horario = formData.get('horario') as string;
@@ -414,7 +435,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
             const dataEvento = new Date(dataString);
             dataEvento.setHours(Number(horas), Number(minutos), 0, 0);
 
-            await db.evento.create({ data: { nome, data: dataEvento, tenant_id: 0, } });
+            await db.evento.create({ data: { nome, data: dataEvento, tenant_id: tenantId, } });
             revalidatePath('/admin/escalas');
             return { ok: true, totalCriado: 1 };
         }
@@ -462,7 +483,8 @@ export async function criarEventoUnificadoAction(formData: FormData) {
 
 export async function criarEscala(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const evento_id = Number(formData.get('evento_id'));
         const departamento_id = Number(formData.get('departamento_id'));
         const membro_id = Number(formData.get('membro_id'));
@@ -476,7 +498,7 @@ export async function criarEscala(formData: FormData) {
         if (jaEscalado) return { error: "Este voluntário já está escalado para este departamento neste evento." };
 
         await db.escala.create({
-            data: { evento_id, departamento_id, membro_id, funcao, horario, confirmado: false, tenant_id: 0, }
+            data: { evento_id, departamento_id, membro_id, funcao, horario, confirmado: false, tenant_id: tenantId, }
         });
 
         revalidatePath(`/membros/gestao/escalas/${evento_id}`);
@@ -491,7 +513,8 @@ export async function criarEscala(formData: FormData) {
 
 export async function associarMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
             data: { familia_id: familiaId, parentesco: parentesco }
@@ -505,7 +528,8 @@ export async function associarMembroAFamilia(membroId: number, familiaId: number
 
 export async function removerEscalaAction(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
         revalidatePath('/membros/gestao/escalas');
         return { ok: true };
@@ -516,7 +540,8 @@ export async function removerEscalaAction(id: number) {
 
 export async function atualizarEscalaAction(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const id = Number(formData.get('id'));
         const funcao = formData.get('funcao') as string;
         const horario = formData.get('horario') as string;
@@ -534,7 +559,8 @@ export async function atualizarEscalaAction(formData: FormData) {
 
 export async function excluirDepartamento(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.departamento.delete({ where: { id } });
         revalidatePath('/admin/configuracoes');
         return { ok: true };
@@ -546,6 +572,7 @@ export async function excluirDepartamento(id: number) {
 
 export async function vincularMembroDepartamento(formData: FormData) {
     try {
+        await requireRole(['ADMIN'])
         const membroId = Number(formData.get('membro_id'));
         const deptoId = Number(formData.get('departamento_id'));
 
@@ -557,7 +584,7 @@ export async function vincularMembroDepartamento(formData: FormData) {
             return { error: "Dados incompletos. Selecione membro e cargos." };
         }
 
-        const db = await getDb(); // ou prisma
+        const { db } = await getDb(); // ou prisma
 
         // 1. OBTER O TENANT_ID DO DEPARTAMENTO (Correção P2003)
         // Precisamos saber a que tenant este departamento pertence para colocar o membro no mesmo tenant.
@@ -626,7 +653,8 @@ export async function vincularMembroDepartamento(formData: FormData) {
 
 export async function removerMembroDepartamento(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.integranteDepartamento.delete({ where: { id } });
         revalidatePath("/admin/departamentos/gerenciar");
         return { ok: true };
@@ -637,11 +665,12 @@ export async function removerMembroDepartamento(id: number) {
 
 export async function adicionarFuncaoAoDepartamento(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const nome = formData.get("nome") as string;
         const departamento_id = Number(formData.get("departamento_id"));
 
-        await db.funcaoDepartamento.create({ data: { nome, departamento_id, tenant_id: 0, } });
+        await db.funcaoDepartamento.create({ data: { nome, departamento_id, tenant_id: tenantId, } });
         revalidatePath("/admin/configuracoes");
         return { ok: true };
     } catch (error) {
@@ -651,7 +680,8 @@ export async function adicionarFuncaoAoDepartamento(formData: FormData) {
 
 export async function buscarMembrosPorDepartamento(deptoId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const integrantes = await db.integranteDepartamento.findMany({
             where: { departamento_id: deptoId },
             include: {
@@ -672,7 +702,8 @@ export async function buscarMembrosPorDepartamento(deptoId: number) {
 
 export async function salvarDepartamento(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const idRaw = formData.get("id");
         const id = idRaw ? Number(idRaw) : null;
         const nome = formData.get("nome") as string;
@@ -700,13 +731,13 @@ export async function salvarDepartamento(formData: FormData) {
                 }
                 await tx.departamento.update({ where: { id }, data: { nome, descricao, lider_id: novoLiderId } });
             } else {
-                const novoDepto = await tx.departamento.create({ data: { nome, descricao, lider_id: novoLiderId, tenant_id: 0, } });
+                const novoDepto = await tx.departamento.create({ data: { nome, descricao, lider_id: novoLiderId, tenant_id: tenantId, } });
                 currentDeptId = novoDepto.id;
             }
 
             if (novoLiderId && currentDeptId) {
                 const funcaoLider = await tx.funcaoDepartamento.findFirst({ where: { departamento_id: currentDeptId, nome: 'Líder' } });
-                if (!funcaoLider) await tx.funcaoDepartamento.create({ data: { nome: 'Líder', tenant_id: 0, departamento_id: currentDeptId } });
+                if (!funcaoLider) await tx.funcaoDepartamento.create({ data: { nome: 'Líder', tenant_id: tenantId, departamento_id: currentDeptId } });
 
                 // Verifica se o membro já é integrante do departamento
                 let integrante = await tx.integranteDepartamento.findFirst({
@@ -715,7 +746,7 @@ export async function salvarDepartamento(formData: FormData) {
 
                 if (!integrante) {
                     integrante = await tx.integranteDepartamento.create({
-                        data: { departamento_id: currentDeptId, membro_id: novoLiderId, tenant_id: 0 }
+                        data: { departamento_id: currentDeptId, membro_id: novoLiderId, tenant_id: tenantId }
                     });
                 }
 
@@ -743,7 +774,8 @@ export async function salvarDepartamento(formData: FormData) {
 
 export async function editarEscalaAction(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const id = Number(formData.get('id'));
         const funcao = formData.get('funcao') as string;
         const horario = formData.get('horario') as string;
@@ -765,7 +797,8 @@ export async function editarEventoAction(formData: FormData) {
     console.log('id:', formData.get('id'))
     console.log('nome:', formData.get('nome'))
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         console.log('db obtido com sucesso')
 
         const id = formData.get('id') as string;
@@ -791,7 +824,8 @@ export async function editarEventoAction(formData: FormData) {
 
 export async function apagarEventoAction(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.evento.delete({ where: { id } });
 
         revalidatePath('/admin/escalas');
@@ -803,7 +837,8 @@ export async function apagarEventoAction(id: number) {
 
 export async function criarCongregacao(formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const cidade = formData.get('cidade') as string;
         const endereco = formData.get('endereco') as string;
@@ -815,7 +850,7 @@ export async function criarCongregacao(formData: FormData) {
                 nome,
                 cidade,
                 endereco,
-                tenant_id: 0 // O TypeScript pede, a nossa extensão substitui!
+                tenant_id: tenantId // O TypeScript pede, a nossa extensão substitui!
             }
         });
 
@@ -829,7 +864,8 @@ export async function criarCongregacao(formData: FormData) {
 
 export async function atualizarCongregacao(id: number, formData: FormData) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         const nome = formData.get('nome') as string;
         const cidade = formData.get('cidade') as string;
         const endereco = formData.get('endereco') as string;
@@ -838,7 +874,7 @@ export async function atualizarCongregacao(id: number, formData: FormData) {
 
         await db.congregacao.update({
             where: { id },
-            data: { nome, cidade, endereco } // No update não precisamos do tenant_id: 0
+            data: { nome, cidade, endereco } // No update não precisamos do tenant_id
         });
 
         revalidatePath('/admin/congregacoes');
@@ -850,7 +886,8 @@ export async function atualizarCongregacao(id: number, formData: FormData) {
 
 export async function excluirCongregacao(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.congregacao.delete({
             where: { id }
         });
@@ -867,7 +904,8 @@ export async function excluirCongregacao(id: number) {
 }
 
 export async function buscarCongregacoes() {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
     return await db.congregacao.findMany({ orderBy: { nome: 'asc' } });
 }
 
@@ -881,6 +919,7 @@ async function getContext() {
 
 export async function exportarMembrosCSV() {
     try {
+        await requireRole(['ADMIN'])
         const { db } = await getContext();
         const membros = await db.membro.findMany({
             include: { congregacao: true, escolaridade: true }
@@ -924,6 +963,7 @@ export async function exportarMembrosCSV() {
 
 export async function analisarCSV(formData: FormData) {
     try {
+        await requireRole(['ADMIN'])
         const { db } = await getContext();
         const file = formData.get('file') as File;
         const text = await file.text();
@@ -972,6 +1012,7 @@ export async function analisarCSV(formData: FormData) {
 
 export async function confirmarImportacao(membrosValidos: any[]) {
     try {
+        await requireRole(['ADMIN'])
         const { db, tenantId } = await getContext();
         const passwordPadrao = await bcrypt.hash("admvc123", 10);
 
@@ -988,7 +1029,7 @@ export async function confirmarImportacao(membrosValidos: any[]) {
                 church_role: d.church_role,
                 status: d.status,
                 birthdate: d.birthdate ? new Date(d.birthdate) : null,
-                tenant_id: 0, // A extensão substitui
+                tenant_id: tenantId, // A extensão substitui
                 is_active: true
             };
         });
@@ -1005,7 +1046,8 @@ export async function confirmarImportacao(membrosValidos: any[]) {
 
 export async function excluirMembroAction(id: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.membro.delete({
             where: { id }
         });
@@ -1018,13 +1060,14 @@ export async function excluirMembroAction(id: number) {
 }
 
 export async function adicionarMembroAoDepto(membroId: number, deptoId: number, funcoesIds: number[]) {
-    const db = await getDb();
+    await requireRole(['ADMIN'])
+    const { db, tenantId } = await getDb();
 
     await db.integranteDepartamento.create({
         data: {
             membro_id: membroId,
             departamento_id: deptoId,
-            tenant_id: 0,
+            tenant_id: tenantId,
             funcoes: {
                 create: funcoesIds.map(id => ({
                     funcao_id: id
@@ -1036,7 +1079,8 @@ export async function adicionarMembroAoDepto(membroId: number, deptoId: number, 
 
 export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
 
         // Remove a função específica da tabela FuncaoSelecionada
         await db.funcaoSelecionada.delete({
@@ -1053,7 +1097,8 @@ export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
 
 export async function removerMembroTotal(membroId: number, departamentoId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
 
         await db.integranteDepartamento.delete({
             where: {
@@ -1074,6 +1119,7 @@ export async function removerMembroTotal(membroId: number, departamentoId: numbe
 
 export async function alternarPermissaoEscala(integranteId: number, statusAtual: boolean) {
     try {
+        await requireRole(['ADMIN'])
         const headersList = await headers();
         const tenantId = headersList.get('x-tenant-id');
         if (!tenantId) return { ok: false, error: 'Sessão inválida.' };
@@ -1096,6 +1142,7 @@ export async function alternarPermissaoEscala(integranteId: number, statusAtual:
 }
 
 export async function criarNovoMembroAction(formData: FormData) {
+    await requireRole(['ADMIN'])
     console.log('\n========================================')
     console.log('[CRIAR MEMBRO] INICIO DO PROCESSO')
     console.log('========================================')
@@ -1171,7 +1218,7 @@ export async function criarNovoMembroAction(formData: FormData) {
 
     // ── CRIAR MEMBRO NA BD ────────────────────────────────────────────────────
     try {
-        const db = await getDb()
+        const { db, tenantId } = await getDb()
 
         const escolaridadeId = formData.get('escolaridade_id') ? Number(formData.get('escolaridade_id')) : null
         const congregacaoId = formData.get('congregacao_id') ? Number(formData.get('congregacao_id')) : null
@@ -1227,7 +1274,7 @@ export async function criarNovoMembroAction(formData: FormData) {
                 avatar_file: avatarUrl,
 
                 is_active: true,
-                tenant_id: 0,
+                tenant_id: tenantId,
 
                 escolaridade_id: escolaridadeId,
                 congregacao_id: congregacaoId,
@@ -1269,7 +1316,8 @@ const parseDate = (val: any): Date | null => {
 // ── EDITAR MEMBRO ─────────────────────────────────────────────────────────────
 export async function atualizarMembroAdmin(membroId: number, formData: FormData) {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
         const tenant_id = await getTenantId()
 
         // Snapshot ANTES para calcular diff
@@ -1443,7 +1491,8 @@ export async function atualizarMembroAdmin(membroId: number, formData: FormData)
 // ── APAGAR MEMBRO ─────────────────────────────────────────────────────────────
 export async function apagarMembroAction(membroId: number) {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
         const tenant_id = await getTenantId()
 
         // Busca dados ANTES de apagar (obrigatorio para GDPR)
@@ -1490,7 +1539,8 @@ export async function apagarMembroAction(membroId: number) {
 // ── CRIAR / EDITAR GRUPO COM GEOCODIFICAÇÃO ───────────────────────────────────
 export async function salvarGrupoAction(formData: FormData) {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
         const idRaw = formData.get('id')
         const id = idRaw ? Number(idRaw) : null
 
@@ -1554,7 +1604,7 @@ export async function salvarGrupoAction(formData: FormData) {
             await db.grupo.create({
                 data: {
                     ...baseData,
-                    tenant_id: 0,
+                    tenant_id: tenantId,
                     lideres: liderId ? { connect: [{ id: liderId }] } : undefined,
                     membros: liderId ? { connect: [{ id: liderId }] } : undefined
                 }
@@ -1576,7 +1626,8 @@ export async function salvarGrupoAction(formData: FormData) {
 // Chamar uma única vez para preencher coordenadas em grupos já criados
 export async function geocodificarTodosGruposAction() {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
 
         const grupos = await db.grupo.findMany({
             where: {

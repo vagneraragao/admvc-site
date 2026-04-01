@@ -2,7 +2,7 @@
 
 //import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, requireRole, requireAuth } from '@/lib/auth-utils'
 import prismaGlobal, { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { redirect } from "next/navigation";
@@ -28,6 +28,7 @@ const euro = (val: number) =>
 
 export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: number[]) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         if (membrosIds.length === 0) {
             return { ok: false, error: 'Selecione pelo menos um membro.' };
         }
@@ -71,6 +72,7 @@ export async function criarCampanhaEmLoteAction(formData: FormData, membrosIds: 
 
 export async function atualizarCompradorRifaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const venda_id = parseInt(formData.get('venda_id') as string);
         const membro_id_str = formData.get('membro_id') as string;
         const nome_externo = formData.get('nome_externo') as string;
@@ -95,6 +97,7 @@ export async function atualizarCompradorRifaAction(formData: FormData) {
 
 export async function venderNumerosRifaLoteAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const rifa_id = parseInt(formData.get('rifa_id') as string);
         const numerosStr = formData.get('numeros') as string;
         const numeros = JSON.parse(numerosStr) as number[]; // Transforma o texto de volta num Array
@@ -152,6 +155,7 @@ export async function venderNumerosRifaLoteAction(formData: FormData) {
 
 export async function finalizarRifaAction(rifaId: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         await prisma.rifa.update({
             where: { id: rifaId },
             data: { status: 'FINALIZADA' }
@@ -171,6 +175,7 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
     console.log(`⏰ Data/Hora: ${new Date().toISOString()}`);
 
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const membroId = Number(formData.get('membro_id'));
         const valorCru = String(formData.get('valor'));
         const formaPagamento = formData.get('forma_pagamento') as string;
@@ -237,6 +242,7 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
     console.log(`-> Valor a carregar: €${valor}`);
 
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         if (!loyverseId || loyverseId.trim() === '' || loyverseId === 'null') {
             console.error(`[ERRO CRÍTICO] O loyverseId está vazio ou nulo!`);
             throw new Error("O membro não tem um ID do Loyverse associado.");
@@ -349,6 +355,7 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
 
 export async function setVencedorRifaAction(rifaId: number, numero: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         await prisma.rifa.update({
             where: { id: rifaId },
             data: {
@@ -364,6 +371,7 @@ export async function setVencedorRifaAction(rifaId: number, numero: number) {
 }
 
 export async function getHistoricoComprasLoyverse(loyverseId: string) {
+    await requireRole(['ADMIN', 'FINANCE'])
     if (!loyverseId) {
         throw new Error("O membro não tem um ID do Loyverse associado.");
     }
@@ -397,6 +405,7 @@ export async function getHistoricoComprasLoyverse(loyverseId: string) {
 
 export async function lancarPagamentoCarne(carneId: number, qtdParcelas: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const carne = await prisma.objetivoFinanceiro.findUnique({
             where: { id: carneId }
         });
@@ -438,6 +447,7 @@ export async function lancarPagamentoCarne(carneId: number, qtdParcelas: number)
 
 export async function registrarPagamentoCampanhaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const session = await getSessionData();
         if (!session) return { ok: false, error: 'Sessão expirada.' };
 
@@ -483,6 +493,7 @@ export async function registrarPagamentoCampanhaAction(formData: FormData) {
 
 export async function buscarRelatorioTesouraria(ano: number, mes: number, membroIdFiltro: string, tipoFiltro: string) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         let dataInicio, dataFim;
 
         if (mes > 0) {
@@ -560,6 +571,7 @@ export async function buscarExtratoFinanceiroMembro(
     mes: number   // 0 = ano inteiro, 1-12 = mes especifico
 ) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const inicio = mes === 0
             ? new Date(ano, 0, 1)
             : new Date(ano, mes - 1, 1)
@@ -642,6 +654,7 @@ export async function atribuirNumeroRifaAction(
     numero: number
 ) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const db = await getDb()
         const tenant_id = await getTenantId()
 
@@ -686,6 +699,7 @@ export async function atribuirNumeroRifaAction(
 // ── CONFIRMAR PAGAMENTO DE NUMERO RIFA ───────────────────────────────────────
 export async function confirmarPagamentoRifaAction(rifaNumeroId: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const db = await getDb()
         const tenant_id = await getTenantId()
 
@@ -725,6 +739,7 @@ export async function confirmarPagamentoRifaAction(rifaNumeroId: number) {
 // ── EXPORTAR RELATORIO ────────────────────────────────────────────────────────
 export async function registarExportacaoRelatorio(tipo: string, parametros?: Record<string, any>) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const tenant_id = await getTenantId()
 
         await audit({
@@ -753,6 +768,7 @@ export async function registarExportacaoRelatorio(tipo: string, parametros?: Rec
 // Confirmar = mudar forma_pagamento para 'MBWAY (Validado)'
 export async function confirmarMBWayCarneAction(lancamentoId: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const db = await getDb()
         const tenant_id = await getTenantId()
 
@@ -805,6 +821,7 @@ export async function confirmarMBWayCarneAction(lancamentoId: number) {
 // Cria LancamentoFinanceiro + incrementa parcelas_pagas no ObjetivoFinanceiro
 export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const session = await getSessionData()
         if (!session) return { ok: false, error: 'Sessao expirada.' }
 
@@ -872,6 +889,7 @@ export async function lancarPagamentoCarneAction(carneId: number, qtd: number) {
 // Cria registo em Contribuicao (dizimo, oferta, missoes, etc.)
 export async function lancarContribuicaoAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const session = await getSessionData()
         if (!session) return { ok: false, error: 'Sessao expirada.' }
 
@@ -931,6 +949,7 @@ export async function lancarContribuicaoAction(formData: FormData) {
 // Rifa: nome, premio, valor_numero, total_numeros, status
 export async function criarRifaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const session = await getSessionData()
         if (!session) return { ok: false, error: 'Sessao expirada.' }
 
@@ -987,6 +1006,7 @@ export async function criarRifaAction(formData: FormData) {
 // RifaNumero: numero, rifa_id, membro_id, nome_externo, pago, tenant_id
 export async function venderNumeroRifaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const tenant_id = await getTenantId()
 
         const rifa_id = parseInt(formData.get('rifa_id') as string)
@@ -1057,6 +1077,7 @@ export async function venderNumeroRifaAction(formData: FormData) {
 // ── DECLARAR VENCEDOR RIFA ────────────────────────────────────────────────────
 export async function setVencedoresRifaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const tenant_id = await getTenantId()
 
         const rifa_id = parseInt(formData.get('rifa_id') as string)
@@ -1113,6 +1134,7 @@ export async function registarAuditAprovacaoCantina(
     valor: number,
     tenantId: number
 ) {
+    await requireRole(['ADMIN', 'FINANCE'])
     await audit({
         tenant_id: tenantId,
         categoria: 'CANTINA',
@@ -1132,6 +1154,7 @@ export async function registarAuditAprovacaoCantina(
 // Chamar manualmente nos botoes de exportar PDF/Excel/CSV
 export async function registarExportacaoFinanceiro(tipo: string, parametros?: Record<string, any>) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const tenant_id = await getTenantId()
         await audit({
             tenant_id,

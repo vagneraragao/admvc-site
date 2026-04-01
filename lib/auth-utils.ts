@@ -9,6 +9,30 @@ export interface SessionData {
     email?: string;
 }
 
+export type Role = 'ADMIN' | 'LEADER' | 'USER' | 'FINANCE' | 'MANAGER'
+
+/**
+ * Requires an authenticated session. Throws if not authenticated.
+ * Use in any server action that needs a logged-in user.
+ */
+export async function requireAuth(): Promise<SessionData> {
+    const session = await getSessionData()
+    if (!session) throw new Error('Não autenticado. Faça login para continuar.')
+    return session
+}
+
+/**
+ * Requires an authenticated session with one of the specified roles.
+ * Throws if not authenticated or role is not allowed.
+ */
+export async function requireRole(rolesPermitidos: Role[]): Promise<SessionData> {
+    const session = await requireAuth()
+    if (!rolesPermitidos.includes(session.role as Role)) {
+        throw new Error('Sem permissão para esta ação.')
+    }
+    return session
+}
+
 /**
  * Retrieves and parses session data from the 'admvc_session' cookie.
  * 

@@ -2,10 +2,12 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireAuth, requireRole } from '@/lib/auth-utils'
 
 // 1. BUSCAR O REPERTÓRIO DE UM EVENTO ESPECÍFICO
 export async function getRepertorioByEvento(eventoId: number) {
     try {
+        await requireAuth()
         const repertorio = await prisma.repertorioEvento.findMany({
             where: { evento_id: eventoId },
             include: {
@@ -24,6 +26,7 @@ export async function getRepertorioByEvento(eventoId: number) {
 // 2. BUSCAR MÚSICAS NO CATÁLOGO (Para a barra de pesquisa ao adicionar)
 export async function buscarMusicasCatalogo(busca: string = '') {
     try {
+        await requireAuth()
         const musicas = await prisma.musica.findMany({
             where: {
                 OR: [
@@ -43,6 +46,7 @@ export async function buscarMusicasCatalogo(busca: string = '') {
 // 3. ADICIONAR MÚSICA AO EVENTO (Cria a ligação e define a ordem)
 export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: string, tomTocado: string) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         // 1. Descobrir o tenant_id do evento para manter a integridade multitenant
         const evento = await prisma.evento.findUnique({
             where: { id: eventoId },
@@ -86,6 +90,7 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
 // 4. REMOVER MÚSICA DO REPERTÓRIO
 export async function removerMusicaDoRepertorio(repertorioId: string) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         await prisma.repertorioEvento.delete({
             where: { id: repertorioId }
         });
@@ -100,6 +105,7 @@ export async function removerMusicaDoRepertorio(repertorioId: string) {
 // Adicione esta função no seu actions/louvor-actions.ts
 export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: string, tom: string, link: string) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         // 1. Procura se a música já existe ou cria uma nova na hora
         let musica = await prisma.musica.findFirst({
             where: { titulo: { equals: titulo, mode: 'insensitive' } }
@@ -156,6 +162,7 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
 // Adicione no final do arquivo actions/louvor-actions.ts
 export async function atualizarOrdemRepertorio(itens: { id: string, ordem: number }[]) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         // Usa uma transação para atualizar todas as ordens de uma vez com segurança
         await prisma.$transaction(
             itens.map(item =>
@@ -176,6 +183,7 @@ export async function atualizarOrdemRepertorio(itens: { id: string, ordem: numbe
 // 2. Busca músicas APENAS no nosso banco de dados (Offline, super rápido)
 export async function buscarMusicasLocalmente(busca: string) {
     try {
+        await requireAuth()
         const musicas = await prisma.musica.findMany({
             where: {
                 OR: [
@@ -195,6 +203,7 @@ export async function buscarMusicasLocalmente(busca: string) {
 // 3. Adiciona a música na escala usando o ID do nosso banco
 export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: string, tom: string) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const eventoReq = await prisma.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
@@ -228,6 +237,7 @@ export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: s
 
 export async function getEstatisticasEscalas(departamentoId: number) {
     try {
+        await requireAuth()
         const trintaDiasAtras = new Date();
         trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
 
@@ -286,6 +296,7 @@ export async function criarNovaMusica(
     link_audio?: string,
 ) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const novaMusica = await prisma.musica.create({
             data: {
                 titulo,
@@ -318,6 +329,7 @@ export async function adicionarMusicaManualAoEvento(
     bpm?: number,
 ) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const eventoReq = await prisma.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
@@ -362,9 +374,7 @@ export async function adicionarMusicaManualAoEvento(
 }
 
 // ── ACTUALIZAR LINKS DE UMA MÚSICA EXISTENTE ──────────────────────────────────
-export async function atualizarLinksMusica(
-    musicaId: string,
-    dados: {
+export async function atualizarLinksMusica(musicaId: string, dados: {
         link_video?: string | null
         link_letra?: string | null
         link_cifra?: string | null
@@ -375,6 +385,7 @@ export async function atualizarLinksMusica(
     }
 ) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const atualizada = await prisma.musica.update({
             where: { id: musicaId },
             data: {
@@ -397,6 +408,7 @@ export async function atualizarLinksMusica(
 // ── SINCRONIZAR ACERVO (actualizado — preserva links existentes) ──────────────
 export async function sincronizarAcervoLocal(musicasHolyrics: any[]) {
     try {
+        await requireRole(['ADMIN'])
         let inseridas = 0
         let atualizadas = 0
 
@@ -435,6 +447,7 @@ export async function sincronizarAcervoLocal(musicasHolyrics: any[]) {
 // ── BUSCAR MÚSICA POR ID (para o modal de edição de links) ───────────────────
 export async function buscarMusicaPorId(musicaId: string) {
     try {
+        await requireAuth()
         const musica = await prisma.musica.findUnique({ where: { id: musicaId } })
         return { success: true, data: musica }
     } catch (error: any) {
