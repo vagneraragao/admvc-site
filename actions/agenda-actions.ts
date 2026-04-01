@@ -4,12 +4,14 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend';
 import { EmailConfirmacaoAgenda } from '@/components/emails/EmailConfirmacaoAgenda';
+import { requireRole } from '@/lib/auth-utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 export async function criarAgendaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const nome = formData.get('nome') as string;
         const slug = (formData.get('slug') as string).toLowerCase().replace(/\s+/g, '-'); // Garante que fica formato-link
         const dono_id = Number(formData.get('dono_id'));
@@ -56,6 +58,7 @@ export async function criarAgendaAction(formData: FormData) {
 
 export async function editarAgendaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const id = Number(formData.get('id'));
         const nome = formData.get('nome') as string;
         const slug = (formData.get('slug') as string).toLowerCase().replace(/\s+/g, '-');
@@ -91,6 +94,7 @@ export async function editarAgendaAction(formData: FormData) {
 
 export async function apagarAgendaAction(id: number) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         await prisma.agenda.delete({
             where: { id }
         });
@@ -105,6 +109,7 @@ export async function apagarAgendaAction(id: number) {
 
 export async function criarCompromissoAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const agenda_id = Number(formData.get('agenda_id'));
         const titulo = formData.get('titulo') as string;
         const categoria = formData.get('categoria') as string;
@@ -163,6 +168,7 @@ export async function criarCompromissoAction(formData: FormData) {
 // MUDAR STATUS DO COMPROMISSO (Aprovar ou Cancelar)
 export async function alterarStatusCompromisso(id: number, status: 'AGENDADO' | 'CANCELADO') {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         // 1. Atualiza o status E vai buscar os dados de quem vai à reunião
         const comp = await prisma.compromisso.update({
             where: { id },
@@ -229,6 +235,7 @@ export async function alterarStatusCompromisso(id: number, status: 'AGENDADO' | 
 // APAGAR COMPROMISSO (Definitivo)
 export async function apagarCompromisso(id: number) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         await prisma.compromisso.delete({ where: { id } });
         const { revalidatePath } = await import('next/cache');
         revalidatePath('/gabinete');
@@ -241,6 +248,7 @@ export async function apagarCompromisso(id: number) {
 // EDITAR COMPROMISSO 
 export async function editarCompromissoAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         const id = Number(formData.get('id'));
         const titulo = formData.get('titulo') as string;
         const categoria = formData.get('categoria') as string;

@@ -2,9 +2,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { requireRole } from '@/lib/auth-utils'
 
 export async function cadastrarItemLoyverse(formData: FormData) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const LOYVERSE_TOKEN = process.env.LOYVERSE_ACCESS_TOKEN;
         const nome = formData.get('nome') as string;
         const categoriaId = formData.get('categoria_id') as string;
@@ -49,6 +51,7 @@ export async function cadastrarItemLoyverse(formData: FormData) {
 
 export async function atualizarStockLoyverseAction(variantId: string, novoStock: number) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const token = process.env.LOYVERSE_ACCESS_TOKEN;
 
         // 1. Descobrir o ID da Loja
@@ -100,6 +103,7 @@ export async function atualizarPropriedadesItemLoyverse(
     trackStock?: boolean
 ) {
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const token = process.env.LOYVERSE_ACCESS_TOKEN;
 
         // 1. Puxar TODOS os items (Isto garante que temos a versão completa do item, com todas as variantes)
@@ -164,6 +168,7 @@ export async function atualizarPropriedadesItemLoyverse(
 export async function salvarItemLoyverseAction(formData: FormData) {
     const inicio = Date.now();
     try {
+        await requireRole(['ADMIN', 'FINANCE'])
         const token = process.env.LOYVERSE_ACCESS_TOKEN;
         const id = formData.get('id') as string;
         const nome = formData.get('nome') as string;

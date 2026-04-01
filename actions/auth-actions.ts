@@ -18,18 +18,28 @@ const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN!,
 });
 
-const ratelimit = new Ratelimit({
+// Rate limit por email: 5 tentativas em 15 minutos
+const ratelimitPorEmail = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(5, "15 m"), // 5 tentativas em 15 minutos
+    limiter: Ratelimit.slidingWindow(5, "15 m"),
+    prefix: "rl:login:email",
+    analytics: true,
+});
+
+// Rate limit por IP: 15 tentativas em 15 minutos (mais permissivo, cobre múltiplos users)
+const ratelimitPorIp = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(15, "15 m"),
+    prefix: "rl:login:ip",
     analytics: true,
 });
 
 export async function validarLoginGeral(email: string, pass: string, redirectPath: string = '/membros/dashboard') {
     console.log(`\n=============================================`);
-    console.log(`🚪 [LOGIN GERAL CUSTOMIZADO] Tentativa: ${email}`);
+    console.log(`[LOGIN GERAL] Tentativa: ${email}`);
 
     // 🛡️ VERIFICAR RATE LIMIT ANTES DA BASE DE DADOS
-    const rateLimit = await verificarRateLimit();
+    const rateLimit = await verificarRateLimit(email);
     if (!rateLimit.permitido) return { autorizado: false, erro: rateLimit.erro };
 
     let logado = false;
@@ -85,7 +95,7 @@ export async function validarLoginGeral(email: string, pass: string, redirectPat
 
 export async function validarLoginMembro(email: string, pass: string) {
     // 🛡️ VERIFICAR RATE LIMIT ANTES DA BASE DE DADOS
-    const rateLimit = await verificarRateLimit();
+    const rateLimit = await verificarRateLimit(email);
     if (!rateLimit.permitido) return { autorizado: false, erro: rateLimit.erro };
 
     try {
@@ -121,9 +131,50 @@ export async function logoutGeral(tipo: 'admin' | 'membro') {
 
 export async function logoutMembro() { return logoutGeral('membro'); }
 
-async function verificarRateLimit() {
-    // Implementacao existente — mantem igual
-    return { permitido: true, erro: null }
+async function verificarRateLimit(email: string): Promise<{ permitido: boolean; erro: string | null }> {
+    try {
+        // 1. Obter IP do request
+        const headersList = await headers()
+        const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || headersList.get('x-real-ip')
+            || 'unknown'
+
+        // 2. Verificar rate limit por IP (proteção global)
+        const ipResult = await ratelimitPorIp.limit(ip)
+        if (!ipResult.success) {
+            await audit({
+                tenant_id: 0,
+                categoria: 'ACESSO',
+                acao: 'LOGIN_FALHOU',
+                descricao: `IP bloqueado por excesso de tentativas: ${ip}`,
+            })
+            return {
+                permitido: false,
+                erro: 'Demasiadas tentativas de login. Aguarde 15 minutos antes de tentar novamente.',
+            }
+        }
+
+        // 3. Verificar rate limit por email (proteção por conta)
+        const emailResult = await ratelimitPorEmail.limit(email.toLowerCase().trim())
+        if (!emailResult.success) {
+            await audit({
+                tenant_id: 0,
+                categoria: 'ACESSO',
+                acao: 'LOGIN_FALHOU',
+                descricao: `Email bloqueado por excesso de tentativas: ${email}`,
+            })
+            return {
+                permitido: false,
+                erro: 'Demasiadas tentativas para esta conta. Aguarde 15 minutos antes de tentar novamente.',
+            }
+        }
+
+        return { permitido: true, erro: null }
+    } catch (error) {
+        // Se o Redis falhar, permitimos o login (fail-open) para não bloquear o sistema
+        console.error('[RATE LIMIT] Erro ao verificar rate limit:', error)
+        return { permitido: true, erro: null }
+    }
 }
 
 // ── LOGIN UNIFICADO ───────────────────────────────────────────────────────────
@@ -134,7 +185,7 @@ export async function loginUnificado(formData: FormData) {
     console.log(`\n=============================================`)
     console.log(`[LOGIN UNIFICADO] Tentativa: ${email}`)
 
-    const rateLimit = await verificarRateLimit()
+    const rateLimit = await verificarRateLimit(email)
     if (!rateLimit.permitido) return { error: rateLimit.erro }
 
     const usuario = await prisma.membro.findUnique({
@@ -223,7 +274,7 @@ export async function loginAdmin(formData: FormData) {
     console.log(`\n=============================================`)
     console.log(`[LOGIN ADMIN] Tentativa: ${email}`)
 
-    const rateLimit = await verificarRateLimit()
+    const rateLimit = await verificarRateLimit(email)
     if (!rateLimit.permitido) return { error: rateLimit.erro }
 
     const membro = await prisma.membro.findFirst({

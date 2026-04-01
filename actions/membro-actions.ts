@@ -5,7 +5,7 @@ import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs' // Recomendo bcryptjs para evitar problemas de compilação em Edge Runtime
 import { put } from '@vercel/blob' // <-- Importação do Blob Storage
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 
 
 // ============================================================================
@@ -101,6 +101,7 @@ export async function atualizarDadosMembroAction(id: number, formData: FormData)
 
 export async function confirmarPresenca(escalaId: number, status: boolean) {
     try {
+        await requireAuth()
         await prisma.escala.update({
             where: { id: escalaId },
             data: { confirmado: status }
@@ -114,6 +115,7 @@ export async function confirmarPresenca(escalaId: number, status: boolean) {
 
 export async function assinarTermosAction(membroId: number) {
     try {
+        await requireAuth()
         await prisma.membro.update({
             where: { id: membroId },
             data: {
@@ -130,6 +132,7 @@ export async function assinarTermosAction(membroId: number) {
 
 export async function definirResponsavelFamilia(membroId: number, familiaId: number) {
     try {
+        await requireRole(['ADMIN'])
         // 1. Retirar o poder de todos daquela família primeiro
         await prisma.membro.updateMany({
             where: { familia_id: familiaId },
@@ -151,8 +154,9 @@ export async function definirResponsavelFamilia(membroId: number, familiaId: num
 
 export async function cadastrarMembroCompleto(formData: FormData) {
     try {
+        await requireRole(['ADMIN'])
         // 1. Instanciamos o banco de dados blindado (Multitenant)
-        const db = await getDb();
+        const { db, tenantId } = await getContext();
 
         const passwordRaw = (formData.get('password') as string) || "membro123";
         const hashedPassword = await bcrypt.hash(passwordRaw, 10);
@@ -200,7 +204,7 @@ export async function cadastrarMembroCompleto(formData: FormData) {
                 congregacao_id: congregacao_id,
 
                 // MULTITENANT: Obrigatório para o TypeScript, a extensão substitui pelo ID real!
-                tenant_id: 0
+                tenant_id: tenantId
             }
         });
 
@@ -220,6 +224,7 @@ export async function cadastrarMembroCompleto(formData: FormData) {
 
 export async function atualizarDadosMembro(membroId: number, formData: FormData) {
     try {
+        await requireAuth()
         console.log(`\n=============================================`);
         console.log(`👤 [DEBUG EDIÇÃO PERFIL] O membro ID ${membroId} está a atualizar os próprios dados`);
 
@@ -308,6 +313,7 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
 
 export async function alternarConfirmacaoEscala(escalaIds: number[], statusConfirmacao: boolean) {
     try {
+        await requireAuth()
         await prisma.escala.updateMany({
             where: {
                 id: { in: escalaIds } // Atualiza todas as escalas deste array
@@ -325,6 +331,7 @@ export async function alternarConfirmacaoEscala(escalaIds: number[], statusConfi
 
 export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'PERMANECER') {
     try {
+        await requireAuth()
         const hoje = new Date();
 
         // Define a validade (Ex: 12 meses a partir de hoje)
@@ -360,6 +367,7 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
 
 export async function buscarRelatorioEscalasAction(membroId: number, mes: number, ano: number) {
     try {
+        await requireAuth()
         // Define o primeiro e o último dia do mês escolhido
         const dataInicio = new Date(ano, mes - 1, 1);
         const dataFim = new Date(ano, mes, 0, 23, 59, 59);
@@ -394,6 +402,7 @@ export async function buscarRelatorioEscalasAction(membroId: number, mes: number
 const formatDate = (date: Date | null) => date ? date.toISOString().split('T')[0] : '';
 
 export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: number) {
+    await requireAuth()
     const db = await getDb();
 
     // Procura integrantes que tenham a função selecionada vinculada
@@ -423,8 +432,7 @@ export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: n
 // ── EXPORTAR ──────────────────────────────────────────────────────────────────
 export async function exportarMembrosCSV() {
     try {
-        const session = await getSessionData()
-        if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' }
+        await requireRole(['ADMIN'])
 
         const membros = await prisma.membro.findMany({
             orderBy: { first_name: 'asc' },
@@ -494,8 +502,7 @@ export async function exportarMembrosCSV() {
 // ── ANALISAR CSV ──────────────────────────────────────────────────────────────
 export async function analisarCSV(formData: FormData) {
     try {
-        const session = await getSessionData()
-        if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' }
+        await requireRole(['ADMIN'])
 
         const file = formData.get('file') as File
         if (!file) return { error: 'Nenhum ficheiro enviado.' }
@@ -593,6 +600,7 @@ export async function analisarCSV(formData: FormData) {
 // ── CONFIRMAR IMPORTACAO ──────────────────────────────────────────────────────
 export async function confirmarImportacao(membrosValidos: any[]) {
     try {
+        await requireRole(['ADMIN'])
         const { db, tenantId } = await getContext()
         const passwordPadrao = await bcrypt.hash('admvc123', 10)
 
@@ -612,7 +620,7 @@ export async function confirmarImportacao(membrosValidos: any[]) {
                 : 'PENDENTE'
 
             return {
-                tenant_id: 0, // A extensao multitenant substitui pelo tenant real
+                tenant_id: tenantId,
                 first_name: d.first_name || '',
                 last_name: d.last_name || '',
                 email: d.email.toLowerCase(),

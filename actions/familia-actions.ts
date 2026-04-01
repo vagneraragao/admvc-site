@@ -3,26 +3,28 @@
 import prisma, { getTenantClient } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
+import { requireRole } from '@/lib/auth-utils'
 
 async function getDb() {
     const headersList = await headers();
     const tenantId = headersList.get('x-tenant-id');
     if (!tenantId) throw new Error("Sessão inválida. Igreja não identificada.");
-    return getTenantClient(Number(tenantId));
+    return { db: getTenantClient(Number(tenantId)), tenantId: Number(tenantId) };
 }
 
 
 export async function criarNovaFamilia(formData: FormData) {
+    await requireRole(['ADMIN'])
     const surname = formData.get('surname') as string;
 
     if (!surname) return { erro: "Nome é obrigatório" };
 
     try {
-        const db = await getDb();
+        const { db, tenantId } = await getDb();
         await db.familia.create({
             data: {
                 surname: surname,
-                tenant_id: 0
+                tenant_id: tenantId
             }
         });
 
@@ -35,7 +37,8 @@ export async function criarNovaFamilia(formData: FormData) {
 
 export async function removerMembroDaFamilia(membroId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
             data: {
@@ -56,9 +59,9 @@ export async function removerMembroDaFamilia(membroId: number) {
 }
 
 export async function vincularMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
-
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         await db.membro.update({
             where: { id: membroId },
             data: {
@@ -75,8 +78,9 @@ export async function vincularMembroAFamilia(membroId: number, familiaId: number
 
 export async function criarFamiliaAction(formData: FormData) {
     try {
+        await requireRole(['ADMIN'])
         const surname = formData.get('surname') as string;
-        const db = await getDb();
+        const { db, tenantId } = await getDb();
 
         // 👇 1. A BARREIRA ANTI-DUPLICAÇÃO
         const familiaExiste = await db.familia.findFirst({
@@ -96,7 +100,7 @@ export async function criarFamiliaAction(formData: FormData) {
         const novaFamilia = await db.familia.create({
             data: {
                 surname: surname.trim(),
-                tenant_id: 0
+                tenant_id: tenantId
                 // ... restantes campos
             }
         });
@@ -110,7 +114,8 @@ export async function criarFamiliaAction(formData: FormData) {
 
 export async function excluirFamiliaAction(familiaId: number) {
     try {
-        const db = await getDb();
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb();
         // 1. Encontrar a família e verificar os membros
         const familia = await db.familia.findUnique({
             where: { id: familiaId },
@@ -145,10 +150,11 @@ export async function excluirFamiliaAction(familiaId: number) {
 }
 
 export async function buscarMembrosSemFamiliaAction(query: string) {
+    await requireRole(['ADMIN'])
     if (!query || query.length < 2) return [];
 
     try {
-        const db = await getDb();
+        const { db, tenantId } = await getDb();
         const membros = await db.membro.findMany({
             where: {
                 familia_id: null, // Só quem não tem família
@@ -172,7 +178,8 @@ export async function buscarMembrosSemFamiliaAction(query: string) {
 
 export async function vincularMembroFamiliaAction(membroId: string, familiaId: string, parentesco: string) {
     try {
-        const db = await getDb()
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
 
         const [membro, familia] = await Promise.all([
             db.membro.findUnique({ where: { id: parseInt(membroId) }, select: { first_name: true, last_name: true, tenant_id: true } }),

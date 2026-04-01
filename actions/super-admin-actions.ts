@@ -3,8 +3,11 @@
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
+import { requireRole } from '@/lib/auth-utils'
 
 export async function criarNovaIgreja(formData: FormData) {
+    await requireRole(['ADMIN'])
+
     // 1. Dados da Igreja
     const nomeIgreja = formData.get('nomeIgreja') as string;
     const slug = formData.get('slug') as string; // Ex: 'assembleia-central'
@@ -71,6 +74,8 @@ export async function criarNovaIgreja(formData: FormData) {
 // Adicione isto no final de @/actions/super-admin-actions.ts
 
 export async function atualizarIgreja(id: number, formData: FormData) {
+    await requireRole(['ADMIN'])
+
     const nome = formData.get('nomeIgreja') as string;
     const slug = formData.get('slug') as string;
     const plano = formData.get('plano') as string || 'FREE';

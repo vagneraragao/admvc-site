@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 
 async function getDb() {
     const headersList = await headers()
@@ -375,6 +375,7 @@ export async function verificarIndisponibilidade(
     dataEvento: string   // ISO string
 ): Promise<{ bloqueado: boolean; motivo: string | null }> {
     try {
+        await requireAuth()
         const { db } = await getDb()
         const data = new Date(dataEvento)
         const diaSemana = data.getDay()          // 0-6
@@ -438,6 +439,7 @@ const fmtData = (d: Date) =>
 // ── BUSCAR MENSAGEM DE UM EVENTO ──────────────────────────────────────────────
 export async function buscarMensagemEventoAction(eventoId: number) {
     try {
+        await requireAuth()
         const mensagem = await prisma.mensagemEvento.findUnique({
             where: { evento_id: eventoId },
             include: {
@@ -519,6 +521,7 @@ export async function salvarMensagemEventoAction(formData: FormData) {
 // ── REMOVER MENSAGEM ──────────────────────────────────────────────────────────
 export async function removerMensagemEventoAction(eventoId: number) {
     try {
+        await requireRole(['ADMIN', 'LEADER'])
         await prisma.mensagemEvento.deleteMany({
             where: { evento_id: eventoId }
         })
