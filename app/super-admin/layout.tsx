@@ -37,8 +37,8 @@ export default function SuperAdminLayout({
                             <Building size={16} /> Tenants (Igrejas)
                         </Link>
 
-                        <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-600 cursor-not-allowed">
-                            <CreditCard size={16} /> Planos & Faturação
+                        <Link href="/super-admin/igrejas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
+                            <CreditCard size={16} /> Planos & Modulos
                         </Link>
 
                         <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-600 cursor-not-allowed">

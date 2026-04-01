@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth-utils'
+import { type PlanoId, type Modulo, PLANOS, MODULOS } from '@/lib/planos'
 
 export async function criarNovaIgreja(formData: FormData) {
     await requireRole(['ADMIN'])
@@ -103,5 +104,71 @@ export async function atualizarIgreja(id: number, formData: FormData) {
     } catch (error) {
         console.error("Erro ao atualizar igreja:", error);
         return { error: 'Erro interno ao tentar atualizar a igreja.' };
+    }
+}
+
+// ── GESTÃO DE PLANOS E MÓDULOS ───────────────────────────────────────────────
+
+export async function buscarIgrejaComModulos(igrejaId: number) {
+    await requireRole(['ADMIN'])
+
+    try {
+        const igreja = await prisma.tenant.findUnique({
+            where: { id: igrejaId },
+            include: {
+                _count: { select: { membros: true, congregacoes: true, departamentos: true } }
+            }
+        })
+
+        if (!igreja) return { error: 'Igreja não encontrada.' }
+
+        return { ok: true, data: igreja }
+    } catch (error) {
+        return { error: 'Erro ao buscar dados da igreja.' }
+    }
+}
+
+export async function atualizarPlanoIgreja(igrejaId: number, plano: string) {
+    await requireRole(['ADMIN'])
+
+    try {
+        if (!PLANOS[plano as PlanoId]) {
+            return { error: 'Plano inválido.' }
+        }
+
+        await prisma.tenant.update({
+            where: { id: igrejaId },
+            data: { plano, modulos_custom: null } // Reset custom ao mudar de plano
+        })
+
+        revalidatePath('/super-admin/igrejas')
+        revalidatePath(`/super-admin/igrejas/${igrejaId}/modulos`)
+        return { ok: true }
+    } catch (error) {
+        return { error: 'Erro ao atualizar plano.' }
+    }
+}
+
+export async function atualizarModulosCustom(igrejaId: number, modulos: string[]) {
+    await requireRole(['ADMIN'])
+
+    try {
+        // Valida que todos os módulos são válidos
+        const modulosValidos = Object.values(MODULOS) as string[]
+        const invalidos = modulos.filter(m => !modulosValidos.includes(m))
+        if (invalidos.length > 0) {
+            return { error: `Módulos inválidos: ${invalidos.join(', ')}` }
+        }
+
+        await prisma.tenant.update({
+            where: { id: igrejaId },
+            data: { modulos_custom: modulos.length > 0 ? modulos : null }
+        })
+
+        revalidatePath('/super-admin/igrejas')
+        revalidatePath(`/super-admin/igrejas/${igrejaId}/modulos`)
+        return { ok: true }
+    } catch (error) {
+        return { error: 'Erro ao atualizar módulos.' }
     }
 }
