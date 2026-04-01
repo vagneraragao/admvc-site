@@ -1,50 +1,34 @@
-// app/layout.tsx
+// app/layout.tsx — ADMVC Cloud (plataforma SaaS)
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
-import SiteHeader from "@/components/ui/site-header";
-import SiteFooter from "@/components/ui/site-footer";
+import { SITE_NAME } from "@/lib/constants";
 import BrandingProvider from "@/components/ui/BrandingProvider";
-import { getTenantBranding } from "@/lib/branding";
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-  description:
-    "Assembleia de Deus – Ministério Visão de Conquista. Uma igreja acolhedora, comunitária e centrada na Palavra de Deus.",
-
-  // ✅ Ajusta para o teu domínio atual (provisório) – troca depois para https://www.igrejaadmvc.org
-  metadataBase: new URL("https://admvc-site.vercel.app"),
-
-  // ✅ Favicons + Apple icon + PWA
-  manifest: "/site.webmanifest",
-  // themeColor: "#3f6b4f",
+  title: `${SITE_NAME} Cloud`,
+  description: "Plataforma de gestao integrada para igrejas.",
+  metadataBase: new URL("https://app.igrejaadmvc.org"),
   icons: {
     icon: [
       { url: "/images/favicon.ico" },
       { url: "/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/images/favicon-16x16.png", sizes: "16x16", type: "image/png" }
     ],
-    apple: [{ url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
   }
 };
 
 export const viewport = {
-  themeColor: '#000000', // ou a cor figueira
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const branding = await getTenantBranding()
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-PT" className="dark">
       <body className="min-h-dvh bg-bg text-fg antialiased">
         <BrandingProvider>
-          <SiteHeader logoUrl={branding.logoUrl} />
-          <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
-          <SiteFooter />
+          {children}
         </BrandingProvider>
       </body>
     </html>
