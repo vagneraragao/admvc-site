@@ -47,7 +47,8 @@ export default function MeuPerfilClient({
         if (valor.length === 8) {
             setBuscandoCP(true)
             try {
-                const res = await fetch(`https://json.geoapi.pt/cp/${valor}`)
+                // const res = await fetch(`https://json.geoapi.pt/cp/${valor}`)
+                const res = await fetch(`/api/codigo-postal?cp=${valor}`)
                 if (res.ok) {
                     const data = await res.json()
                     const info = Array.isArray(data) ? data[0] : data

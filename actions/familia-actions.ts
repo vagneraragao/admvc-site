@@ -20,7 +20,7 @@ export async function criarNovaFamilia(formData: FormData) {
     try {
         const db = await getDb();
         await db.familia.create({
-            data: { 
+            data: {
                 surname: surname,
                 tenant_id: 0
             }
@@ -172,16 +172,32 @@ export async function buscarMembrosSemFamiliaAction(query: string) {
 
 export async function vincularMembroFamiliaAction(membroId: string, familiaId: string, parentesco: string) {
     try {
-        const db = await getDb();
+        const db = await getDb()
+
+        const [membro, familia] = await Promise.all([
+            db.membro.findUnique({ where: { id: parseInt(membroId) }, select: { first_name: true, last_name: true, tenant_id: true } }),
+            db.familia.findUnique({ where: { id: parseInt(familiaId) }, select: { surname: true } })
+        ])
+
         await db.membro.update({
             where: { id: parseInt(membroId) },
-            data: { familia_id: parseInt(familiaId), parentesco: parentesco }
-        });
+            data: { familia_id: parseInt(familiaId), parentesco }
+        })
 
-        const { revalidatePath } = await import('next/cache');
-        revalidatePath('/admin/familias');
-        return { ok: true };
+        const { audit } = await import('@/lib/audit')
+        await audit({
+            tenant_id: membro!.tenant_id,
+            categoria: 'FAMILIAS',
+            acao: 'VINCULAR',
+            alvo_id: parseInt(membroId),
+            alvo_nome: `${membro?.first_name} ${membro?.last_name}`,
+            alvo_tipo: 'MEMBRO',
+            descricao: `Membro vinculado a Familia ${familia?.surname} como "${parentesco}"`,
+        })
+
+        revalidatePath('/admin/familias')
+        return { ok: true }
     } catch (error: any) {
-        return { ok: false, error: 'Erro ao vincular membro.' };
+        return { ok: false, error: 'Erro ao vincular membro.' }
     }
 }

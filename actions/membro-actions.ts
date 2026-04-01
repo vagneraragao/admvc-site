@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs' // Recomendo bcryptjs para evitar problemas de com
 import { put } from '@vercel/blob' // <-- Importação do Blob Storage
 import { getSessionData } from '@/lib/auth-utils'
 
+
 // ============================================================================
 // 🛠️ FUNÇÕES AUXILIARES PARA MULTITENANT
 // ============================================================================
@@ -18,12 +19,26 @@ async function getDb() {
 }
 
 async function getContext() {
-    const headersList = await headers();
-    const tenantId = Number(headersList.get('x-tenant-id'));
-    if (!tenantId) throw new Error("Igreja não identificada.");
-    const db = getTenantClient(tenantId);
-    return { db, tenantId };
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id'))
+    if (!tenantId) throw new Error('Igreja nao identificada.')
+    const db = getTenantClient(tenantId)
+    return { db, tenantId }
 }
+
+// Formata data para CSV (YYYY-MM-DD ou vazio)
+const fmtData = (d: Date | null | undefined) =>
+    d ? new Date(d).toISOString().split('T')[0] : ''
+
+// Converte string CSV para Date ou null
+const parseData = (s: string): Date | null => {
+    if (!s || s.trim() === '') return null
+    const d = new Date(s.trim())
+    return isNaN(d.getTime()) ? null : d
+}
+
+
+
 
 /*
 export async function atualizarDadosMembroAction(id: number, formData: FormData) {
@@ -378,156 +393,6 @@ export async function buscarRelatorioEscalasAction(membroId: number, mes: number
 // Auxiliar para formatar datas para o CSV
 const formatDate = (date: Date | null) => date ? date.toISOString().split('T')[0] : '';
 
-// 1. EXPORTAR: Agora com todos os 23 campos solicitados
-export async function exportarMembrosCSV() {
-    const session = await getSessionData();
-    if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' };
-
-    const membros = await prisma.membro.findMany({
-        include: { escolaridade: true }
-    });
-
-    const cabecalho = [
-        "First Name", "Last Name", "Email", "Phone 1", "Role", "Status", "Gender",
-        "Address 1", "Address 2", "Number", "Postal Code", "City", "State", "Country",
-        "Birthdate", "Marital Status", "Scholarity", "Spouse Name", "Conversion Date",
-        "Baptism Status", "Baptism Date", "Avatar URL", "Created At"
-    ].join(';');
-
-    const linhas = membros.map(m => [
-        m.first_name, m.last_name, m.email, m.phone_1, m.role, m.status, m.gender || '',
-        m.address_1 || '', m.address_2 || '', m.address_number || '', m.postal_code || '',
-        m.id_city || '', m.state || '', m.country || 'Portugal',
-        formatDate(m.birthdate), m.marital_status || '', m.escolaridade?.nome || '',
-        m.spouse_name || '', formatDate(m.conversion_date),
-        m.baptism_status || '', formatDate(m.baptism_date), m.avatar_file || '',
-        formatDate(m.created_at)
-    ].join(';')).join('\n');
-
-    return { csv: cabecalho + '\n' + linhas };
-}
-
-// 2. ANALISAR: Com lógica para converter nome da Escolaridade em ID
-export async function analisarCSV(formData: FormData) {
-    const session = await getSessionData();
-    if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' };
-
-    const file = formData.get('file') as File;
-    if (!file) return { error: 'Nenhum ficheiro enviado.' };
-
-    const text = await file.text();
-    const linhas = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-    // Busca tabelas auxiliares para validação
-    const membrosAtuais = await prisma.membro.findMany({ select: { email: true } });
-    const escolaridadesValidas = await prisma.escolaridade.findMany();
-
-    const emailsNaDB = new Set(membrosAtuais.map(m => m.email.toLowerCase()));
-    const mapaEscolaridade = new Map(escolaridadesValidas.map(e => [e.nome.toLowerCase(), e.id]));
-
-    const resultados = [];
-    const emailsNoFicheiro = new Set();
-
-    for (let i = 1; i < linhas.length; i++) {
-        const col = linhas[i].split(';');
-        const email = col[2]?.trim().toLowerCase();
-
-        if (!col[0] || !email) {
-            resultados.push({ linha: i + 1, status: 'ERRO', motivo: 'Nome e Email são obrigatórios.' });
-            continue;
-        }
-
-        if (emailsNaDB.has(email) || emailsNoFicheiro.has(email)) {
-            resultados.push({ linha: i + 1, email, nome: col[0], status: 'DUPLICADO', motivo: 'Email já existe ou está repetido no ficheiro.' });
-            continue;
-        }
-
-        emailsNoFicheiro.add(email);
-
-        // Tenta encontrar o ID da escolaridade pelo nome
-        const escNome = col[16]?.trim().toLowerCase();
-        const escId = mapaEscolaridade.get(escNome) || null;
-
-        resultados.push({
-            linha: i + 1,
-            status: 'PRONTO',
-            dados: {
-                first_name: col[0], last_name: col[1], email: email, phone_1: col[3],
-                role: (col[4] as any) || 'USER', status: col[5] || 'ATIVO', gender: col[6],
-                address_1: col[7], address_2: col[8], address_number: col[9], postal_code: col[10],
-                id_city: col[11], state: col[12], country: col[13] || 'Portugal',
-                birthdate: col[14] ? new Date(col[14]) : null,
-                marital_status: col[15], escolaridade_id: escId, spouse_name: col[17],
-                conversion_date: col[18] ? new Date(col[18]) : null,
-                baptism_status: col[19], baptism_date: col[20] ? new Date(col[20]) : null,
-                avatar_file: col[21]
-            }
-        });
-    }
-
-    return { resultados };
-}
-
-// --- CONFIRMAR E GRAVAR COM LOOKUP DE CONGREGAÇÃO ---
-export async function confirmarImportacao(membrosValidos: any[]) {
-    try {
-        const { db, tenantId } = await getContext();
-        const passwordPadrao = await bcrypt.hash("admvc123", 10);
-
-        // 1. Buscar todas as congregações desta igreja para mapear Nome -> ID
-        const congregacoesExistentes = await db.congregacao.findMany({
-            select: { id: true, nome: true }
-        });
-
-        // Criar um mapa simples: { "Sede": 1, "Porto": 5, ... }
-        // Usamos toLowerCase() para evitar erros de digitação (ex: "sede" vs "Sede")
-        const mapaCongregacoes = new Map(
-            congregacoesExistentes.map(c => [c.nome.toLowerCase().trim(), c.id])
-        );
-
-        // 2. Preparar os dados para o Prisma
-        const criacoes = membrosValidos.map(item => {
-            const d = item.dados;
-
-            // Tentar encontrar o ID da congregação pelo nome enviado no CSV
-            const nomeNoCsv = d.congregacao_nome?.toLowerCase().trim();
-            const congregacaoIdEncontrado = nomeNoCsv ? mapaCongregacoes.get(nomeNoCsv) : null;
-
-            return {
-                first_name: d.first_name,
-                last_name: d.last_name,
-                email: d.email,
-                password: passwordPadrao,
-                phone_1: d.phone_1 || "",
-                id_city: d.id_city || "",
-                church_role: d.church_role || "Membro",
-                status: d.status || "ATIVO",
-                birthdate: d.birthdate ? new Date(d.birthdate) : null,
-
-                // Se achou a congregação, usa o ID. Se não, fica null (Sede/Geral)
-                congregacao_id: congregacaoIdEncontrado,
-
-                tenant_id: 0, // A extensão Multitenant trata do resto
-                is_active: true
-            };
-        });
-
-        // 3. Gravação em massa (Transaction implicita)
-        await db.membro.createMany({
-            data: criacoes as any,
-            skipDuplicates: true // Segurança extra
-        });
-
-        revalidatePath('/admin/membros');
-        return { ok: true, message: `${membrosValidos.length} membros importados com sucesso!` };
-
-    } catch (e) {
-        console.error("ERRO IMPORTAÇÃO:", e);
-        return { error: "Erro crítico ao gravar membros. Verifique se os dados do CSV são válidos." };
-    }
-}
-
-
 export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: number) {
     const db = await getDb();
 
@@ -549,3 +414,254 @@ export async function buscarMembrosPorFuncao(departamentoId: number, funcaoId: n
     return qualificados.map(q => q.membro);
 }
 
+
+
+// PATCH: actions/membro-actions.ts (ou admin-actions.ts dependendo do teu projecto)
+// Substitui as funcoes: exportarMembrosCSV, analisarCSV, confirmarImportacao
+
+
+// ── EXPORTAR ──────────────────────────────────────────────────────────────────
+export async function exportarMembrosCSV() {
+    try {
+        const session = await getSessionData()
+        if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' }
+
+        const membros = await prisma.membro.findMany({
+            orderBy: { first_name: 'asc' },
+            include: { escolaridade: true, congregacao: true, familia: true },
+        })
+
+        // Cabeçalho — exactamente os mesmos campos do CABECALHOS_CSV da página
+        const cabecalho = [
+            'first_name', 'last_name', 'email', 'phone_1',
+            'gender', 'birthdate', 'marital_status', 'nationality',
+            'profession', 'tax_id', 'id_card_number',
+            'address_1', 'address_number', 'address_2', 'postal_code',
+            'neighborhood', 'id_city', 'state', 'country',
+            'baptism_status', 'baptism_date', 'conversion_date', 'entry_date',
+            'church_role', 'ministry', 'previous_church',
+            'status', 'role',
+            'spouse_name', 'wedding_date',
+            'father_name', 'mother_name',
+            'notes', 'avatar_file',
+        ].join(';')
+
+        const linhas = membros.map(m => [
+            m.first_name,
+            m.last_name,
+            m.email,
+            m.phone_1 || '',
+            m.gender || '',
+            fmtData(m.birthdate),
+            m.marital_status || '',
+            m.nationality || '',
+            m.profession || '',
+            m.tax_id || '',
+            m.id_card_number || '',
+            m.address_1 || '',
+            m.address_number || '',
+            m.address_2 || '',
+            m.postal_code || '',
+            m.neighborhood || '',
+            m.id_city || '',
+            m.state || '',
+            m.country || 'Portugal',
+            m.baptism_status || 'Nao Batizado',
+            fmtData(m.baptism_date),
+            fmtData(m.conversion_date),
+            fmtData(m.entry_date),
+            m.church_role || 'Membro',
+            m.ministry || '',
+            m.previous_church || '',
+            m.status || 'ATIVO',
+            m.role || 'USER',
+            m.spouse_name || '',
+            fmtData(m.wedding_date),
+            m.father_name || '',
+            m.mother_name || '',
+            // Sanitizar notas (remover ; e newlines para nao partir o CSV)
+            (m.notes || '').replace(/;/g, ',').replace(/\n/g, ' '),
+            m.avatar_file || '',
+        ].join(';'))
+
+        return { csv: cabecalho + '\n' + linhas.join('\n') }
+    } catch (err: any) {
+        console.error('[EXPORTAR CSV] Erro:', err.message)
+        return { error: 'Erro ao exportar membros.' }
+    }
+}
+
+// ── ANALISAR CSV ──────────────────────────────────────────────────────────────
+export async function analisarCSV(formData: FormData) {
+    try {
+        const session = await getSessionData()
+        if (!session || session.role !== 'ADMIN') return { error: 'Acesso negado.' }
+
+        const file = formData.get('file') as File
+        if (!file) return { error: 'Nenhum ficheiro enviado.' }
+
+        const texto = await file.text()
+        // Suporta \r\n (Windows) e \n (Unix)
+        const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0)
+
+        if (linhas.length < 2) return { error: 'Ficheiro vazio ou sem dados alem do cabecalho.' }
+
+        // Lê o cabeçalho da primeira linha
+        const cabecalho = linhas[0].split(';').map(c => c.trim())
+
+        // Busca emails ja existentes para verificar duplicados
+        const membrosActuais = await prisma.membro.findMany({ select: { email: true } })
+        const emailsExistentes = new Set(membrosActuais.map(m => m.email.toLowerCase()))
+        const emailsNoFicheiro = new Set<string>()
+
+        const resultados = []
+
+        for (let i = 1; i < linhas.length; i++) {
+            const colunas = linhas[i].split(';')
+
+            // Mapeia as colunas usando o cabeçalho da primeira linha
+            const dados: Record<string, string> = {}
+            cabecalho.forEach((campo, idx) => {
+                dados[campo] = (colunas[idx] || '').trim()
+            })
+
+            const email = dados.email?.toLowerCase()
+            const firstName = dados.first_name
+            const lastName = dados.last_name
+            const phone1 = dados.phone_1
+
+            // Validação de campos obrigatórios
+            if (!firstName || !email) {
+                resultados.push({
+                    linha: i + 1,
+                    status: 'ERRO' as const,
+                    motivo: 'first_name e email sao obrigatorios',
+                    dados
+                })
+                continue
+            }
+
+            // Email inválido
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                resultados.push({
+                    linha: i + 1,
+                    status: 'ERRO' as const,
+                    motivo: `Email invalido: "${email}"`,
+                    dados
+                })
+                continue
+            }
+
+            // Email duplicado (na BD)
+            if (emailsExistentes.has(email)) {
+                resultados.push({
+                    linha: i + 1,
+                    status: 'DUPLICADO' as const,
+                    motivo: 'Email ja registado na base de dados',
+                    dados: { ...dados, email }
+                })
+                continue
+            }
+
+            // Email duplicado (no mesmo ficheiro)
+            if (emailsNoFicheiro.has(email)) {
+                resultados.push({
+                    linha: i + 1,
+                    status: 'DUPLICADO' as const,
+                    motivo: 'Email repetido no ficheiro CSV',
+                    dados: { ...dados, email }
+                })
+                continue
+            }
+
+            emailsNoFicheiro.add(email)
+
+            resultados.push({
+                linha: i + 1,
+                status: 'PRONTO' as const,
+                dados: { ...dados, email }
+            })
+        }
+
+        return { resultados }
+    } catch (err: any) {
+        console.error('[ANALISAR CSV] Erro:', err.message)
+        return { error: 'Erro ao processar o ficheiro.' }
+    }
+}
+
+// ── CONFIRMAR IMPORTACAO ──────────────────────────────────────────────────────
+export async function confirmarImportacao(membrosValidos: any[]) {
+    try {
+        const { db, tenantId } = await getContext()
+        const passwordPadrao = await bcrypt.hash('admvc123', 10)
+
+        const dados = membrosValidos.map(item => {
+            const d = item.dados as Record<string, string>
+
+            // Normaliza role para enum válido
+            const roleValidos = ['USER', 'ADMIN', 'FINANCE', 'LEADER']
+            const role = roleValidos.includes((d.role || '').toUpperCase())
+                ? (d.role.toUpperCase() as any)
+                : 'USER'
+
+            // Normaliza status
+            const statusValidos = ['ATIVO', 'INATIVO', 'PENDENTE', 'VISITANTE', 'ARQUIVADO']
+            const status = statusValidos.includes((d.status || '').toUpperCase())
+                ? d.status.toUpperCase()
+                : 'PENDENTE'
+
+            return {
+                tenant_id: 0, // A extensao multitenant substitui pelo tenant real
+                first_name: d.first_name || '',
+                last_name: d.last_name || '',
+                email: d.email.toLowerCase(),
+                password: passwordPadrao,
+                phone_1: d.phone_1 || '',
+                gender: d.gender || null,
+                birthdate: parseData(d.birthdate),
+                marital_status: d.marital_status || null,
+                nationality: d.nationality || 'Portuguesa',
+                profession: d.profession || null,
+                tax_id: d.tax_id || null,
+                id_card_number: d.id_card_number || null,
+                address_1: d.address_1 || null,
+                address_number: d.address_number || null,
+                address_2: d.address_2 || null,
+                postal_code: d.postal_code || null,
+                neighborhood: d.neighborhood || null,
+                id_city: d.id_city || null,
+                state: d.state || null,
+                country: d.country || 'Portugal',
+                baptism_status: d.baptism_status || 'Nao Batizado',
+                baptism_date: parseData(d.baptism_date),
+                conversion_date: parseData(d.conversion_date),
+                entry_date: parseData(d.entry_date) || new Date(),
+                church_role: d.church_role || 'Membro',
+                ministry: d.ministry || 'Geral',
+                previous_church: d.previous_church || null,
+                status,
+                role,
+                spouse_name: d.spouse_name || null,
+                wedding_date: parseData(d.wedding_date),
+                father_name: d.father_name || null,
+                mother_name: d.mother_name || null,
+                notes: d.notes || null,
+                avatar_file: d.avatar_file || null,
+                is_active: status === 'ATIVO',
+            }
+        })
+
+        await db.membro.createMany({
+            data: dados as any,
+            skipDuplicates: true,
+        })
+
+        revalidatePath('/admin/membros')
+        return { ok: true, count: dados.length }
+
+    } catch (err: any) {
+        console.error('[CONFIRMAR IMPORTACAO] Erro:', err.message)
+        return { ok: false, error: 'Erro ao gravar membros. Verifique se os dados estao correctos.' }
+    }
+}

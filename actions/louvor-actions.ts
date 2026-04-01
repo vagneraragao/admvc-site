@@ -97,23 +97,6 @@ export async function removerMusicaDoRepertorio(repertorioId: string) {
     }
 }
 
-// 5. CADASTRAR UMA MÚSICA NOVA NO BANCO (Caso não exista no catálogo)
-export async function criarNovaMusica(titulo: string, artista?: string, bpm?: number, link_video?: string) {
-    try {
-        const novaMusica = await prisma.musica.create({
-            data: {
-                titulo,
-                artista,
-                bpm,
-                link_video
-            }
-        });
-        return { success: true, data: novaMusica };
-    } catch (error: any) {
-        return { success: false, error: 'Erro ao criar música no catálogo: ' + error.message };
-    }
-}
-
 // Adicione esta função no seu actions/louvor-actions.ts
 export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: string, tom: string, link: string) {
     try {
@@ -243,35 +226,6 @@ export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: s
     }
 }
 
-
-export async function sincronizarAcervoLocal(musicasHolyrics: any[]) {
-    try {
-        let inseridas = 0;
-        let atualizadas = 0;
-
-        for (const m of musicasHolyrics) {
-            const existe = await prisma.musica.findUnique({ where: { holyrics_id: m.id } });
-
-            if (existe) {
-                await prisma.musica.update({
-                    where: { id: existe.id },
-                    data: { titulo: m.title, artista: m.artist || null }
-                });
-                atualizadas++;
-            } else {
-                await prisma.musica.create({
-                    data: { holyrics_id: m.id, titulo: m.title, artista: m.artist || null }
-                });
-                inseridas++;
-            }
-        }
-        // ATUALIZADO: Agora devolve as variáveis soltas para o frontend usar
-        return { success: true, inseridas, atualizadas };
-    } catch (error: any) {
-        return { success: false, error: 'Erro ao sincronizar acervo: ' + error.message };
-    }
-}
-
 export async function getEstatisticasEscalas(departamentoId: number) {
     try {
         const trintaDiasAtras = new Date();
@@ -320,33 +274,76 @@ export async function getEstatisticasEscalas(departamentoId: number) {
     }
 }
 
-export async function adicionarMusicaManualAoEvento(eventoId: number, titulo: string, artista: string, tom: string) {
+// ── CRIAR MÚSICA MANUAL (com todos os campos) ─────────────────────────────────
+export async function criarNovaMusica(
+    titulo: string,
+    artista?: string,
+    bpm?: number,
+    tom?: string,
+    link_video?: string,
+    link_letra?: string,
+    link_cifra?: string,
+    link_audio?: string,
+) {
     try {
-        // 1. Descobrir o tenant_id do evento
-        const eventoReq = await prisma.evento.findUnique({
-            where: { id: eventoId },
-            select: { tenant_id: true }
-        });
-
-        if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
-
-        // 2. Criar a música no nosso banco (offline, sem holyrics_id)
         const novaMusica = await prisma.musica.create({
             data: {
                 titulo,
                 artista: artista || null,
-                holyrics_id: null // Fica nulo até o próximo Sync
+                bpm: bpm || null,
+                tom: tom || null,
+                link_video: link_video || null,
+                link_letra: link_letra || null,
+                link_cifra: link_cifra || null,
+                link_audio: link_audio || null,
             }
-        });
+        })
+        return { success: true, data: novaMusica }
+    } catch (error: any) {
+        return { success: false, error: 'Erro ao criar música: ' + error.message }
+    }
+}
 
-        // 3. Descobrir a ordem para colocar no final da lista
+// ── ADICIONAR MÚSICA MANUAL AO EVENTO (com todos os campos) ──────────────────
+export async function adicionarMusicaManualAoEvento(
+    eventoId: number,
+    titulo: string,
+    artista: string,
+    tom: string,
+    link_video?: string,
+    link_letra?: string,
+    link_cifra?: string,
+    link_audio?: string,
+    tomOriginal?: string,
+    bpm?: number,
+) {
+    try {
+        const eventoReq = await prisma.evento.findUnique({
+            where: { id: eventoId },
+            select: { tenant_id: true }
+        })
+        if (!eventoReq) return { success: false, error: 'Evento não encontrado.' }
+
+        const novaMusica = await prisma.musica.create({
+            data: {
+                titulo,
+                artista: artista || null,
+                holyrics_id: null,
+                tom: tomOriginal || null,
+                bpm: bpm || null,
+                link_video: link_video || null,
+                link_letra: link_letra || null,
+                link_cifra: link_cifra || null,
+                link_audio: link_audio || null,
+            }
+        })
+
         const ultimaMusica = await prisma.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
-        });
-        const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
+        })
+        const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1
 
-        // 4. Adicionar à escala
         await prisma.repertorioEvento.create({
             data: {
                 tenant_id: eventoReq.tenant_id,
@@ -355,11 +352,92 @@ export async function adicionarMusicaManualAoEvento(eventoId: number, titulo: st
                 tom_tocado: tom,
                 ordem: proximaOrdem
             }
-        });
+        })
 
-        revalidatePath('/membros/dashboard');
-        return { success: true };
+        revalidatePath('/membros/dashboard')
+        return { success: true, data: novaMusica }
     } catch (error: any) {
-        return { success: false, error: 'Erro ao criar música manual: ' + error.message };
+        return { success: false, error: 'Erro ao criar música manual: ' + error.message }
+    }
+}
+
+// ── ACTUALIZAR LINKS DE UMA MÚSICA EXISTENTE ──────────────────────────────────
+export async function atualizarLinksMusica(
+    musicaId: string,
+    dados: {
+        link_video?: string | null
+        link_letra?: string | null
+        link_cifra?: string | null
+        link_audio?: string | null
+        tom?: string | null
+        bpm?: number | null
+        artista?: string | null
+    }
+) {
+    try {
+        const atualizada = await prisma.musica.update({
+            where: { id: musicaId },
+            data: {
+                link_video: dados.link_video ?? undefined,
+                link_letra: dados.link_letra ?? undefined,
+                link_cifra: dados.link_cifra ?? undefined,
+                link_audio: dados.link_audio ?? undefined,
+                tom: dados.tom ?? undefined,
+                bpm: dados.bpm ?? undefined,
+                artista: dados.artista ?? undefined,
+            }
+        })
+        revalidatePath('/membros/dashboard')
+        return { success: true, data: atualizada }
+    } catch (error: any) {
+        return { success: false, error: 'Erro ao actualizar links: ' + error.message }
+    }
+}
+
+// ── SINCRONIZAR ACERVO (actualizado — preserva links existentes) ──────────────
+export async function sincronizarAcervoLocal(musicasHolyrics: any[]) {
+    try {
+        let inseridas = 0
+        let atualizadas = 0
+
+        for (const m of musicasHolyrics) {
+            const existe = await prisma.musica.findUnique({ where: { holyrics_id: m.id } })
+
+            if (existe) {
+                // Actualiza titulo e artista MAS preserva os links que o admin preencheu
+                await prisma.musica.update({
+                    where: { id: existe.id },
+                    data: {
+                        titulo: m.title,
+                        artista: m.artist || null,
+                        // NÃO sobrescreve link_letra, link_cifra, link_audio, link_video, tom, bpm
+                    }
+                })
+                atualizadas++
+            } else {
+                await prisma.musica.create({
+                    data: {
+                        holyrics_id: m.id,
+                        titulo: m.title,
+                        artista: m.artist || null,
+                    }
+                })
+                inseridas++
+            }
+        }
+
+        return { success: true, inseridas, atualizadas }
+    } catch (error: any) {
+        return { success: false, error: 'Erro ao sincronizar acervo: ' + error.message }
+    }
+}
+
+// ── BUSCAR MÚSICA POR ID (para o modal de edição de links) ───────────────────
+export async function buscarMusicaPorId(musicaId: string) {
+    try {
+        const musica = await prisma.musica.findUnique({ where: { id: musicaId } })
+        return { success: true, data: musica }
+    } catch (error: any) {
+        return { success: false, error: error.message }
     }
 }

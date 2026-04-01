@@ -8,20 +8,18 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
+import { audit, diffCampos, sanitizar } from '@/lib/audit'
+import { geocodificarComFallback } from '@/lib/geocode'
 
-// ============================================================================
-// 🛠️ FUNÇÃO AUXILIAR: PEGAR O BANCO DE DADOS DA IGREJA ATUAL
-// ============================================================================
 async function getDb() {
-    const headersList = await headers();
-    const tenantId = headersList.get('x-tenant-id');
-    if (!tenantId) throw new Error("Sessão inválida. Igreja não identificada.");
-    return getTenantClient(Number(tenantId));
+    const headersList = await headers()
+    const tenantId = headersList.get('x-tenant-id')
+    if (!tenantId) throw new Error('Igreja nao identificada.')
+    return getTenantClient(Number(tenantId))
 }
 
-// ============================================================================
-// 🌍 AÇÕES GLOBAIS (Não precisam de tenant_id)
-// ============================================================================
+
+
 
 export async function criarCargo(formData: FormData) {
     const nome = formData.get('nome') as string;
@@ -42,11 +40,6 @@ export async function excluirCargo(id: number) {
     await prismaGlobal.cargo.delete({ where: { id } });
     revalidatePath('/admin/configuracoes');
 }
-
-
-// ============================================================================
-// 🏢 AÇÕES MULTITENANT (Blindadas por Igreja)
-// ============================================================================
 
 export async function aprovarMembro(membroId: number, adminNome: string) {
     try {
@@ -201,30 +194,58 @@ export async function gerarLinkWhatsapp(escalaId: number) {
 
 export async function salvarGrupo(formData: FormData) {
     try {
-        const db = await getDb();
-        const idRaw = formData.get("id");
-        const id = idRaw ? Number(idRaw) : null;
+        const db = await getDb()
+        const idRaw = formData.get('id')
+        const id = idRaw ? Number(idRaw) : null
 
-        const lideresIds = formData.getAll("lideres_ids").map(Number).filter(id => id > 0);
-        const membrosIds = formData.getAll("membros_ids").map(Number).filter(id => id > 0);
-        const deptoIdRaw = formData.get("departamento_id");
-        const deptoId = deptoIdRaw ? Number(deptoIdRaw) : null;
+        const cidade = formData.get('cidade') as string || null
+        const endereco = formData.get('endereco') as string || null
+        const numero = formData.get('numero') as string || null
+        const pais = formData.get('pais') as string || 'Portugal'
+        const regiao = formData.get('regiao') as string || null
+        const publico = formData.get('publico') === 'on' || formData.get('publico') === 'true'
 
-        const baseData = {
-            nome: formData.get("nome") as string,
-            categoria: formData.get("categoria") as string,
-            dia_semana: formData.get("dia_semana") as string,
-            horario: formData.get("horario") as string,
-            perfil: formData.get("perfil") as string,
-            endereco: formData.get("endereco") as string,
-            numero: formData.get("numero") as string,
-            bairro: formData.get("bairro") as string,
-            cidade: formData.get("cidade") as string,
-            estado: formData.get("estado") as string,
-            pais: formData.get("pais") as string || "Portugal",
-            descricao: formData.get("descricao") as string,
-            departamento_id: deptoId,
-        };
+        // ── GEOCODIFICAÇÃO ──
+        let latitude: number | null = null
+        let longitude: number | null = null
+
+        if (cidade) {
+            try {
+                const { geocodificarComFallback } = await import('@/lib/geocode')
+                const moradaCompleta = [endereco, numero].filter(Boolean).join(' ') || null
+                const coords = await geocodificarComFallback(moradaCompleta, cidade, pais)
+                if (coords) {
+                    latitude = coords.latitude
+                    longitude = coords.longitude
+                    console.log(`[GRUPO] Geocodificado: ${latitude}, ${longitude}`)
+                }
+            } catch (err: any) {
+                console.error('[GRUPO] Erro geocode:', err.message)
+                // Nao bloqueia o save
+            }
+        }
+
+        const lideresIds = formData.getAll('lideres_ids').map(Number).filter(id => id > 0)
+        const membrosIds = formData.getAll('membros_ids').map(Number).filter(id => id > 0)
+
+        const baseData: any = {
+            nome: formData.get('nome') as string,
+            categoria: formData.get('categoria') as string || null,
+            dia_semana: formData.get('dia_semana') as string || null,
+            horario: formData.get('horario') as string || null,
+            perfil: formData.get('perfil') as string || null,
+            endereco,
+            numero,
+            bairro: formData.get('bairro') as string || null,
+            cidade,
+            estado: formData.get('estado') as string || null,
+            pais,
+            descricao: formData.get('descricao') as string || null,
+            regiao,
+            publico,
+            ...(latitude !== null && { latitude }),
+            ...(longitude !== null && { longitude }),
+        }
 
         if (id) {
             await db.grupo.update({
@@ -232,24 +253,28 @@ export async function salvarGrupo(formData: FormData) {
                 data: {
                     ...baseData,
                     lideres: { set: lideresIds.map(id => ({ id })) },
-                    membros: { set: membrosIds.map(id => ({ id })) }
+                    membros: { set: membrosIds.map(id => ({ id })) },
                 }
-            });
+            })
         } else {
             await db.grupo.create({
                 data: {
                     ...baseData,
                     tenant_id: 0,
                     lideres: { connect: lideresIds.map(id => ({ id })) },
-                    membros: { connect: membrosIds.map(id => ({ id })) }
+                    membros: { connect: membrosIds.map(id => ({ id })) },
                 }
-            });
+            })
         }
 
-        revalidatePath('/admin/configuracoes');
-        return { sucesso: true };
+        revalidatePath('/admin/configuracoes')
+        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos')
+        return { sucesso: true }
+
     } catch (error: any) {
-        return { sucesso: false, erro: error.message || "Erro interno." };
+        console.error('[SALVAR GRUPO] Erro:', error.message)
+        return { sucesso: false, error: error.message }
     }
 }
 
@@ -464,134 +489,6 @@ export async function criarEscala(formData: FormData) {
     }
 }
 
-export async function atualizarMembroAdmin(id: number, formData: FormData) {
-    try {
-        const db = await getDb();
-        const membroId = Number(id);
-        const deptoIds = formData.getAll('deptos').map(id => Number(id));
-        const grupoIds = formData.getAll('grupos').map(id => Number(id));
-
-        const escolaridadeRaw = formData.get('escolaridade_id');
-        const escolaridade_id = escolaridadeRaw ? Number(escolaridadeRaw) : null;
-
-        const familiaIdRaw = formData.get('familia_id') as string;
-        const parentescoRaw = formData.get('parentesco') as string;
-        const familiaUpdate = familiaIdRaw ? { connect: { id: Number(familiaIdRaw) } } : { disconnect: true };
-
-        const conversion_date = formData.get('conversion_date') ? new Date(formData.get('conversion_date') as string) : null;
-        const entry_date = formData.get('entry_date') ? new Date(formData.get('entry_date') as string) : null;
-        const baptism_date = formData.get('baptism_date') ? new Date(formData.get('baptism_date') as string) : null;
-        const birthdate = formData.get('birthdate') ? new Date(formData.get('birthdate') as string) : null;
-        const wedding_date = formData.get('wedding_date') ? new Date(formData.get('wedding_date') as string) : null;
-
-        const isActiveMarcado = formData.get('is_active') === 'on' || formData.get('is_active') === 'true';
-        const isSpouseChristian = formData.get('spouse_christian') === 'true';
-        const hasChildren = formData.get('has_children') === 'true';
-
-        const loyverseIdRaw = formData.get('loyverse_id') as string;
-        const loyverseIdTratado = loyverseIdRaw && loyverseIdRaw.trim() !== '' ? loyverseIdRaw.trim() : null;
-
-        const dataToUpdate: any = {
-
-            first_name: formData.get('first_name') as string,
-            last_name: formData.get('last_name') as string,
-            email: (formData.get('email') as string).toLowerCase().trim(),
-            phone_1: formData.get('phone_1') as string,
-            birthdate: birthdate,
-            gender: formData.get('gender') as string,
-            profession: formData.get('profession') as string,
-            father_name: formData.get('father_name') as string,
-            mother_name: formData.get('mother_name') as string,
-            escolaridade: escolaridade_id ? { connect: { id: escolaridade_id } } : { disconnect: true },
-
-            postal_code: formData.get('postal_code') as string,
-            address_1: formData.get('address_1') as string,
-            address_2: formData.get('address_2') as string,
-            address_number: formData.get('address_number') as string,
-            neighborhood: formData.get('neighborhood') as string,
-            id_city: formData.get('id_city') as string,
-            state: formData.get('state') as string,
-            country: formData.get('country') as string || 'Portugal',
-
-            marital_status: formData.get('marital_status') as string,
-            nationality: formData.get('nationality') as string,
-            tax_id: formData.get('tax_id') as string,
-            id_card_number: formData.get('id_card_number') as string,
-            lang: formData.get('lang') as string,
-            spouse_name: formData.get('spouse_name') as string,
-            spouse_christian: isSpouseChristian,
-            wedding_date: wedding_date,
-            has_children: hasChildren,
-            children_number: parseInt(formData.get('children_number') as string || "0"),
-
-            entry_date: entry_date,
-            baptism_date: baptism_date,
-            conversion_date: conversion_date,
-            notes: formData.get('notes') as string,
-            previous_church: formData.get('previous_church') as string,
-            church_role: formData.get('church_role') as string,
-            ministry: formData.get('ministry') as string,
-
-            is_active: isActiveMarcado,
-            role: formData.get('role') as any,
-            status: formData.get('status') as string,
-            loyverse_id: loyverseIdTratado,
-            familia: familiaUpdate,
-            parentesco: familiaIdRaw ? (parentescoRaw || null) : null,
-            grupos: { set: grupoIds.map(gid => ({ id: gid })) }
-        };
-
-        const avatarFile = formData.get('avatar') as File | null;
-        if (avatarFile && avatarFile.size > 0) {
-            const extension = avatarFile.name.split('.').pop();
-            const fileName = `avatars/membro-${membroId}-${Date.now()}.${extension}`;
-            try {
-                const blob = await put(fileName, avatarFile, { access: 'public', addRandomSuffix: false });
-                dataToUpdate.avatar_file = blob.url;
-            } catch (blobError) {
-                console.error("Erro no Blob:", blobError);
-            }
-        }
-
-        const novaSenha = formData.get('nova_senha') as string;
-        if (novaSenha && novaSenha.trim() !== '') {
-            dataToUpdate.password = await bcrypt.hash(novaSenha.trim(), 10);
-        }
-
-        await db.membro.update({ where: { id: membroId }, data: dataToUpdate });
-
-        await db.integranteDepartamento.deleteMany({ where: { membro_id: membroId } });
-        for (const dId of deptoIds) {
-            // Garante que a função "Membro" existe para este departamento
-            let fMembro = await db.funcaoDepartamento.findFirst({ where: { departamento_id: dId, nome: 'Membro' } });
-            if (!fMembro) fMembro = await db.funcaoDepartamento.create({ data: { nome: 'Membro', tenant_id: 0, departamento_id: dId } });
-
-            await db.integranteDepartamento.create({
-                data: {
-                    membro_id: membroId,
-                    departamento_id: dId,
-                    tenant_id: 0,
-                    funcoes: {
-                        create: { funcao_id: fMembro.id }
-                    }
-                }
-            });
-        }
-
-        revalidatePath('/admin/membros');
-        revalidatePath(`/admin/membros/editar/${id}`);
-        return { ok: true };
-    } catch (error: any) {
-        if (error.code === 'P2002') {
-            const target = error.meta?.target?.[0] || 'campo';
-            if (target === 'loyverse_id') return { ok: false, error: "Erro: Este ID do Loyverse já está atribuído!" };
-            if (target === 'email') return { ok: false, error: "Erro: Este E-mail já está em uso!" };
-            return { ok: false, error: `Erro de duplicação: Já existe um registo com este ${target}.` };
-        }
-        return { ok: false, error: "Ocorreu um erro ao guardar." };
-    }
-}
-
 export async function associarMembroAFamilia(membroId: number, familiaId: number, parentesco: string) {
     try {
         const db = await getDb();
@@ -773,94 +670,6 @@ export async function buscarMembrosPorDepartamento(deptoId: number) {
     }
 }
 
-export async function criarNovoMembroAction(formData: FormData) {
-    const email = (formData.get("email") as string).toLowerCase().trim();
-    const password = formData.get("password") as string;
-
-    // Verificação Global (O E-mail é único em todo o sistema)
-    const existe = await prismaGlobal.membro.findUnique({ where: { email } });
-    if (existe) return { error: "Este e-mail já está registado em outro membro." };
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const parseDate = (dateString: any) => {
-        if (!dateString || dateString.trim() === "") return null;
-        const d = new Date(dateString);
-        return isNaN(d.getTime()) ? null : d;
-    };
-
-    try {
-        const db = await getDb();
-
-        // 1. Extrair os IDs para as relações (se existirem)
-        const escolaridadeId = formData.get("escolaridade_id") ? Number(formData.get("escolaridade_id")) : null;
-        const congregacaoId = formData.get("congregacao_id") ? Number(formData.get("congregacao_id")) : null;
-
-        const novoMembro = await db.membro.create({
-            data: {
-                // DADOS PESSOAIS
-                first_name: formData.get("first_name") as string,
-                last_name: formData.get("last_name") as string,
-                email: email,
-                password: hashedPassword,
-                phone_1: formData.get("phone_1") as string,
-                gender: formData.get("gender") as string,
-                marital_status: formData.get("marital_status") as string,
-                birthdate: parseDate(formData.get("birthdate")),
-                profession: formData.get("profession") as string || null,
-                father_name: formData.get("father_name") as string || null,
-                mother_name: formData.get("mother_name") as string || null,
-
-                // 🌟 OS CAMPOS NOVOS QUE FALTAVAM
-                tax_id: formData.get("tax_id") as string || null,
-                nationality: (formData.get("nationality") as string) || "Portuguesa",
-                gdpr_aceite: formData.get("gdpr_aceite") === "true",
-                permanecer_aceite: formData.get("permanecer_aceite") === "true",
-                conversion_date: parseDate(formData.get("conversion_date")),
-
-                // MORADA
-                address_1: formData.get("address_1") as string || null,
-                address_number: formData.get("address_number") as string || null,
-                postal_code: formData.get("postal_code") as string || null,
-                neighborhood: formData.get("neighborhood") as string || null,
-                id_city: formData.get("city") as string || null,
-                state: formData.get("state") as string || null,
-                country: (formData.get("country") as string) || "Portugal",
-
-                // ECLESIÁSTICO & SISTEMA
-                role: (formData.get("role") as any) || "USER",
-                status: (formData.get("status") as string) || "ATIVO",
-                loyverse_id: formData.get("loyverse_id") as string || null,
-                church_role: formData.get("church_role") as string || "Membro",
-                baptism_date: parseDate(formData.get("baptism_date")),
-                data_admissao: parseDate(formData.get("admission_date")),
-                notes: formData.get("notes") as string || null,
-
-                // FAMÍLIA
-                spouse_name: formData.get("spouse_name") as string || null,
-                children_number: Number(formData.get("children_count")) || 0,
-
-                is_active: true,
-                tenant_id: 0, // A extensão trata de substituir pelo ID da Igreja
-
-                // 🌟 RELAÇÕES (Usamos scalar IDs para satisfazer o UncheckedCreateInput e aceitar tenant_id: 0)
-                escolaridade_id: escolaridadeId,
-                congregacao_id: congregacaoId,
-            }
-        });
-
-        // Atualiza a cache da página de lista de membros
-        revalidatePath("/admin/membros");
-
-        // Devolve o sucesso para o Frontend acionar o redirecionamento com o Toast!
-        return { sucesso: true, id: novoMembro.id };
-
-    } catch (error: any) {
-        console.error("Erro na criação:", error);
-        if (error.code === 'P2002') return { error: "Erro de Conflito: O E-mail ou o ID Loyverse já existem no sistema." };
-        return { error: "Não foi possível gravar o membro na base de dados." };
-    }
-}
-
 export async function salvarDepartamento(formData: FormData) {
     try {
         const db = await getDb();
@@ -932,52 +741,6 @@ export async function salvarDepartamento(formData: FormData) {
     }
 }
 
-export async function salvarGrupoAction(formData: FormData) {
-    try {
-        const db = await getDb();
-        const idRaw = formData.get("id");
-        const id = idRaw ? Number(idRaw) : null;
-
-        const nome = formData.get("nome") as string;
-        const dia_semana = formData.get("dia_semana") as string;
-        const horario = formData.get("horario") as string;
-        const endereco = formData.get("endereco") as string;
-        const bairro = formData.get("bairro") as string;
-        const cidade = formData.get("cidade") as string;
-        const estado = formData.get("estado") as string;
-        const categoria = formData.get("categoria") as string || null;
-        const perfil = formData.get("perfil") as string || null;
-        const liderInput = formData.get("lider_id");
-        const liderId = liderInput && Number(liderInput) !== 0 ? Number(liderInput) : null;
-
-        if (id) {
-            await db.grupo.update({
-                where: { id },
-                data: {
-                    nome, dia_semana, horario, endereco, bairro, cidade, estado, categoria, perfil,
-                    lideres: liderId ? { set: [{ id: liderId }] } : { set: [] },
-                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
-                }
-            });
-        } else {
-            await db.grupo.create({
-                data: {
-                    nome, dia_semana, horario, endereco, bairro, cidade, estado, categoria, perfil,
-                    tenant_id: 0,
-                    lideres: liderId ? { connect: [{ id: liderId }] } : undefined,
-                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
-                }
-            });
-        }
-
-        revalidatePath("/admin/grupos");
-        revalidatePath("/membros/dashboard");
-        return { ok: true };
-    } catch (error) {
-        return { ok: false, error: "Ocorreu um erro ao gravar o grupo." };
-    }
-}
-
 export async function editarEscalaAction(formData: FormData) {
     try {
         const db = await getDb();
@@ -1037,7 +800,6 @@ export async function apagarEventoAction(id: number) {
         return { ok: false, error: "Erro ao remover o evento. Verifica se existem escalas dependentes." };
     }
 }
-// Adicione no ficheiro @/actions/admin-actions.ts
 
 export async function criarCongregacao(formData: FormData) {
     try {
@@ -1109,9 +871,6 @@ export async function buscarCongregacoes() {
     return await db.congregacao.findMany({ orderBy: { nome: 'asc' } });
 }
 
-
-
-// Função auxiliar para pegar o DB e o TenantID
 async function getContext() {
     const headersList = await headers();
     const tenantId = Number(headersList.get('x-tenant-id'));
@@ -1120,7 +879,6 @@ async function getContext() {
     return { db, tenantId };
 }
 
-// --- EXPORTAR ---
 export async function exportarMembrosCSV() {
     try {
         const { db } = await getContext();
@@ -1164,7 +922,6 @@ export async function exportarMembrosCSV() {
     }
 }
 
-// --- ANALISAR CSV ---
 export async function analisarCSV(formData: FormData) {
     try {
         const { db } = await getContext();
@@ -1213,7 +970,6 @@ export async function analisarCSV(formData: FormData) {
     }
 }
 
-// --- CONFIRMAR E GRAVAR ---
 export async function confirmarImportacao(membrosValidos: any[]) {
     try {
         const { db, tenantId } = await getContext();
@@ -1247,8 +1003,6 @@ export async function confirmarImportacao(membrosValidos: any[]) {
     }
 }
 
-
-
 export async function excluirMembroAction(id: number) {
     try {
         const db = await getDb();
@@ -1280,8 +1034,6 @@ export async function adicionarMembroAoDepto(membroId: number, deptoId: number, 
     });
 }
 
-
-// 1. Apaga apenas UMA função de um membro (O clique no X da tag)
 export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
     try {
         const db = await getDb();
@@ -1299,13 +1051,10 @@ export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
     }
 }
 
-// 2. Apaga o MEMBRO INTEIRO do departamento (O clique no botão Remover Membro)
 export async function removerMembroTotal(membroId: number, departamentoId: number) {
     try {
         const db = await getDb();
 
-        // Como a tabela tem onDelete: Cascade, ao apagar o IntegranteDepartamento, 
-        // todas as "FuncoesSelecionadas" dele neste departamento serão apagadas automaticamente!
         await db.integranteDepartamento.delete({
             where: {
                 membro_id_departamento_id: {
@@ -1322,9 +1071,6 @@ export async function removerMembroTotal(membroId: number, departamentoId: numbe
         return { error: "Não foi possível remover o membro do departamento." };
     }
 }
-
-
-
 
 export async function alternarPermissaoEscala(integranteId: number, statusAtual: boolean) {
     try {
@@ -1346,5 +1092,533 @@ export async function alternarPermissaoEscala(integranteId: number, statusAtual:
     } catch (error) {
         console.error("Erro ao delegar permissão:", error);
         return { ok: false, error: "Não foi possível alterar as permissões." };
+    }
+}
+
+export async function criarNovoMembroAction(formData: FormData) {
+    console.log('\n========================================')
+    console.log('[CRIAR MEMBRO] INICIO DO PROCESSO')
+    console.log('========================================')
+
+    // LOG DE TODOS OS CAMPOS RECEBIDOS
+    console.log('[CRIAR MEMBRO] Campos recebidos no FormData:')
+    for (const [key, value] of formData.entries()) {
+        if (key === 'password') {
+            console.log(`  ${key}: [OCULTO]`)
+        } else if (key === 'avatar') {
+            const f = value as File
+            console.log(`  ${key}: File(name=${f.name}, size=${f.size}, type=${f.type})`)
+        } else {
+            console.log(`  ${key}: "${value}"`)
+        }
+    }
+
+    const email = (formData.get('email') as string)?.toLowerCase().trim()
+    const password = formData.get('password') as string
+
+    if (!email || !password) {
+        console.error('[CRIAR MEMBRO] ERRO: Email ou password em falta')
+        return { error: 'Email e password sao obrigatorios.' }
+    }
+
+    console.log(`[CRIAR MEMBRO] Email: ${email}`)
+
+    // Verificacao de email duplicado
+    const existe = await prismaGlobal.membro.findUnique({ where: { email } })
+    if (existe) {
+        console.warn(`[CRIAR MEMBRO] BLOQUEADO: Email ja existe (id=${existe.id})`)
+        return { error: 'Este e-mail ja esta registado em outro membro.' }
+    }
+
+    console.log('[CRIAR MEMBRO] Email disponivel, a continuar...')
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const parseDate = (val: any): Date | null => {
+        if (!val || String(val).trim() === '') return null
+        const d = new Date(val)
+        return isNaN(d.getTime()) ? null : d
+    }
+
+    // ── UPLOAD DA FOTO ────────────────────────────────────────────────────────
+    let avatarUrl: string | null = null
+    const avatarFile = formData.get('avatar') as File | null
+
+    console.log('[CRIAR MEMBRO] A verificar foto...')
+    console.log(`  avatarFile existe: ${!!avatarFile}`)
+    console.log(`  avatarFile size: ${avatarFile?.size ?? 0}`)
+    console.log(`  avatarFile type: ${avatarFile?.type ?? 'N/A'}`)
+    console.log(`  avatarFile name: ${avatarFile?.name ?? 'N/A'}`)
+
+    if (avatarFile && avatarFile.size > 0) {
+        try {
+            console.log('[CRIAR MEMBRO] A fazer upload para Vercel Blob...')
+            const { put } = await import('@vercel/blob')
+            const nomeSeguro = `avatares/${Date.now()}-${avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+            console.log(`[CRIAR MEMBRO] Caminho do blob: ${nomeSeguro}`)
+
+            const blob = await put(nomeSeguro, avatarFile, { access: 'public' })
+            avatarUrl = blob.url
+            console.log(`[CRIAR MEMBRO] Upload OK! URL: ${avatarUrl}`)
+        } catch (err: any) {
+            console.error('[CRIAR MEMBRO] ERRO no upload da foto:', err.message)
+            console.error(err)
+            // Nao bloqueia o processo — continua sem foto
+        }
+    } else {
+        console.log('[CRIAR MEMBRO] Sem foto para fazer upload.')
+    }
+
+    // ── CRIAR MEMBRO NA BD ────────────────────────────────────────────────────
+    try {
+        const db = await getDb()
+
+        const escolaridadeId = formData.get('escolaridade_id') ? Number(formData.get('escolaridade_id')) : null
+        const congregacaoId = formData.get('congregacao_id') ? Number(formData.get('congregacao_id')) : null
+
+        console.log('[CRIAR MEMBRO] A criar registo na base de dados...')
+        console.log(`  avatar_file: ${avatarUrl ?? '(sem foto)'}`)
+        console.log(`  escolaridade_id: ${escolaridadeId}`)
+        console.log(`  role: ${formData.get('role') ?? 'USER'}`)
+        console.log(`  status: ${formData.get('status') ?? 'ATIVO'}`)
+
+        const novoMembro = await db.membro.create({
+            data: {
+                first_name: formData.get('first_name') as string,
+                last_name: formData.get('last_name') as string,
+                email,
+                password: hashedPassword,
+                phone_1: formData.get('phone_1') as string || null,
+                gender: formData.get('gender') as string || null,
+                marital_status: formData.get('marital_status') as string || null,
+                birthdate: parseDate(formData.get('birthdate')),
+                profession: formData.get('profession') as string || null,
+                father_name: formData.get('father_name') as string || null,
+                mother_name: formData.get('mother_name') as string || null,
+                tax_id: formData.get('tax_id') as string || null,
+                nationality: formData.get('nationality') as string || 'Portuguesa',
+                gdpr_aceite: formData.get('gdpr_aceite') === 'true',
+                permanecer_aceite: formData.get('permanecer_aceite') === 'true',
+                conversion_date: parseDate(formData.get('conversion_date')),
+
+                // MORADA
+                address_1: formData.get('address_1') as string || null,
+                address_number: formData.get('address_number') as string || null,
+                postal_code: formData.get('postal_code') as string || null,
+                neighborhood: formData.get('neighborhood') as string || null,
+                id_city: formData.get('city') as string || null,
+                state: formData.get('state') as string || null,
+                country: formData.get('country') as string || 'Portugal',
+
+                // ECLESIASTICO
+                role: (formData.get('role') as any) || 'USER',
+                status: formData.get('status') as string || 'ATIVO',
+                loyverse_id: formData.get('loyverse_id') as string || null,
+                church_role: formData.get('church_role') as string || 'Membro',
+                baptism_date: parseDate(formData.get('baptism_date')),
+                data_admissao: parseDate(formData.get('admission_date')),
+                notes: formData.get('notes') as string || null,
+
+                // FAMILIA
+                spouse_name: formData.get('spouse_name') as string || null,
+                children_number: Number(formData.get('children_count')) || 0,
+
+                // FOTO — campo corrigido
+                avatar_file: avatarUrl,
+
+                is_active: true,
+                tenant_id: 0,
+
+                escolaridade_id: escolaridadeId,
+                congregacao_id: congregacaoId,
+            }
+        })
+
+        console.log(`[CRIAR MEMBRO] SUCESSO! Membro criado com id=${novoMembro.id}`)
+        console.log(`[CRIAR MEMBRO] avatar_file guardado: ${novoMembro.avatar_file ?? '(sem foto)'}`)
+        console.log('========================================\n')
+
+        revalidatePath('/admin/membros')
+        return { sucesso: true, id: novoMembro.id }
+
+    } catch (error: any) {
+        console.error('[CRIAR MEMBRO] ERRO na base de dados:', error.message)
+        console.error('[CRIAR MEMBRO] Codigo de erro:', error.code)
+        console.error(error)
+        console.log('========================================\n')
+
+        if (error.code === 'P2002') {
+            return { error: 'Conflito: E-mail ou ID Loyverse ja existem.' }
+        }
+        return { error: 'Nao foi possivel gravar o membro na base de dados.' }
+    }
+}
+
+async function getTenantId(): Promise<number> {
+    const headersList = await headers()
+    const tenantId = headersList.get('x-tenant-id')
+    return Number(tenantId || 0)
+}
+
+const parseDate = (val: any): Date | null => {
+    if (!val || String(val).trim() === '') return null
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? null : d
+}
+
+// ── EDITAR MEMBRO ─────────────────────────────────────────────────────────────
+export async function atualizarMembroAdmin(membroId: number, formData: FormData) {
+    try {
+        const db = await getDb()
+        const tenant_id = await getTenantId()
+
+        // Snapshot ANTES para calcular diff
+        const membroAntes = await db.membro.findUnique({
+            where: { id: membroId },
+            select: {
+                first_name: true, last_name: true, email: true,
+                phone_1: true, role: true, status: true,
+                is_active: true, loyverse_id: true,
+                familia_id: true, parentesco: true,
+            }
+        })
+
+        if (!membroAntes) return { ok: false, error: 'Membro nao encontrado.' }
+
+        // Upload de foto se existir
+        let avatarUrl: string | undefined = undefined
+        const avatarFile = formData.get('avatar') as File | null
+        if (avatarFile && avatarFile.size > 0) {
+            try {
+                const nomeSeguro = `avatares/${Date.now()}-${avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+                const blob = await put(nomeSeguro, avatarFile, { access: 'public' })
+                avatarUrl = blob.url
+            } catch (err: any) {
+                console.error('[EDITAR MEMBRO] Erro no upload da foto:', err.message)
+            }
+        }
+
+        // Campos a actualizar
+        const novaFamiliaId = formData.get('familia_id') ? Number(formData.get('familia_id')) : null
+        const novoParentesco = (formData.get('parentesco') as string) || null
+        const novaSenha = formData.get('nova_senha') as string
+        const novoRole = formData.get('role') as string
+        const novoStatus = formData.get('status') as string
+        const novoIsActive = formData.get('is_active') === 'on' || formData.get('is_active') === 'true'
+
+        const dataUpdate: any = {
+            first_name: formData.get('first_name') as string,
+            last_name: formData.get('last_name') as string,
+            email: (formData.get('email') as string)?.toLowerCase().trim(),
+            phone_1: formData.get('phone_1') as string || null,
+            gender: formData.get('gender') as string || null,
+            marital_status: formData.get('marital_status') as string || null,
+            birthdate: parseDate(formData.get('birthdate')),
+            profession: formData.get('profession') as string || null,
+            father_name: formData.get('father_name') as string || null,
+            mother_name: formData.get('mother_name') as string || null,
+            nationality: formData.get('nationality') as string || null,
+            tax_id: formData.get('tax_id') as string || null,
+            id_card_number: formData.get('id_card_number') as string || null,
+            spouse_name: formData.get('spouse_name') as string || null,
+            spouse_christian: formData.get('spouse_christian') === 'true',
+            wedding_date: parseDate(formData.get('wedding_date')),
+            has_children: formData.get('has_children') === 'true',
+            children_number: Number(formData.get('children_number')) || 0,
+            lang: formData.get('lang') as string || null,
+            address_1: formData.get('address_1') as string || null,
+            address_number: formData.get('address_number') as string || null,
+            address_2: formData.get('address_2') as string || null,
+            postal_code: formData.get('postal_code') as string || null,
+            neighborhood: formData.get('neighborhood') as string || null,
+            id_city: formData.get('id_city') as string || null,
+            state: formData.get('state') as string || null,
+            country: formData.get('country') as string || 'Portugal',
+            notes: formData.get('notes') as string || null,
+            entry_date: parseDate(formData.get('entry_date')),
+            baptism_date: parseDate(formData.get('baptism_date')),
+            conversion_date: parseDate(formData.get('conversion_date')),
+            previous_church: formData.get('previous_church') as string || null,
+            church_role: formData.get('church_role') as string || null,
+            ministry: formData.get('ministry') as string || null,
+            role: novoRole as any,
+            status: novoStatus as any,
+            loyverse_id: formData.get('loyverse_id') as string || null,
+            is_active: novoIsActive,
+            familia_id: novaFamiliaId,
+            parentesco: novoParentesco,
+        }
+
+        if (avatarUrl) dataUpdate.avatar_file = avatarUrl
+
+        // Actualiza senha apenas se preenchida
+        if (novaSenha && novaSenha.trim().length > 0) {
+            dataUpdate.password = await bcrypt.hash(novaSenha, 10)
+        }
+
+        const membroAtualizado = await db.membro.update({
+            where: { id: membroId },
+            data: dataUpdate
+        })
+
+        // ── AUDIT GERAL (campos alterados) ──
+        const camposComparar = {
+            first_name: membroAntes.first_name, last_name: membroAntes.last_name,
+            email: membroAntes.email, phone_1: membroAntes.phone_1,
+            role: membroAntes.role, status: membroAntes.status,
+            is_active: membroAntes.is_active, familia_id: membroAntes.familia_id,
+        }
+        const camposDepois = {
+            first_name: membroAtualizado.first_name, last_name: membroAtualizado.last_name,
+            email: membroAtualizado.email, phone_1: membroAtualizado.phone_1,
+            role: membroAtualizado.role, status: membroAtualizado.status,
+            is_active: membroAtualizado.is_active, familia_id: membroAtualizado.familia_id,
+        }
+
+        const diff = diffCampos(camposComparar, camposDepois)
+
+        if (diff) {
+            await audit({
+                tenant_id,
+                categoria: 'MEMBROS',
+                acao: 'EDITAR',
+                alvo_id: membroId,
+                alvo_nome: `${membroAtualizado.first_name} ${membroAtualizado.last_name}`,
+                alvo_tipo: 'MEMBRO',
+                descricao: `Perfil editado — campos: ${Object.keys(diff.depois).join(', ')}`,
+                dados_antes: diff.antes,
+                dados_apos: diff.depois,
+            })
+        }
+
+        // ── AUDIT ESPECIFICO: mudanca de role ──
+        if (membroAntes.role !== membroAtualizado.role) {
+            await audit({
+                tenant_id,
+                categoria: 'MEMBROS',
+                acao: 'ALTERAR_ROLE',
+                alvo_id: membroId,
+                alvo_nome: `${membroAtualizado.first_name} ${membroAtualizado.last_name}`,
+                alvo_tipo: 'MEMBRO',
+                descricao: `Role alterado: "${membroAntes.role}" → "${membroAtualizado.role}"`,
+            })
+        }
+
+        // ── AUDIT ESPECIFICO: mudanca de status ──
+        if (membroAntes.status !== membroAtualizado.status) {
+            await audit({
+                tenant_id,
+                categoria: 'MEMBROS',
+                acao: 'ALTERAR_STATUS',
+                alvo_id: membroId,
+                alvo_nome: `${membroAtualizado.first_name} ${membroAtualizado.last_name}`,
+                alvo_tipo: 'MEMBRO',
+                descricao: `Status alterado: "${membroAntes.status}" → "${membroAtualizado.status}"`,
+            })
+        }
+
+        // ── AUDIT ESPECIFICO: reset de senha ──
+        if (novaSenha && novaSenha.trim().length > 0) {
+            await audit({
+                tenant_id,
+                categoria: 'MEMBROS',
+                acao: 'RESET_SENHA',
+                alvo_id: membroId,
+                alvo_nome: `${membroAtualizado.first_name} ${membroAtualizado.last_name}`,
+                alvo_tipo: 'MEMBRO',
+                descricao: `Senha redefinida pelo administrador`,
+            })
+        }
+
+        revalidatePath('/admin/membros')
+        revalidatePath(`/admin/membros/editar/${membroId}`)
+        return { ok: true }
+
+    } catch (error: any) {
+        console.error('[EDITAR MEMBRO] Erro:', error.message)
+        return { ok: false, error: error.message || 'Erro ao actualizar membro.' }
+    }
+}
+
+// ── APAGAR MEMBRO ─────────────────────────────────────────────────────────────
+export async function apagarMembroAction(membroId: number) {
+    try {
+        const db = await getDb()
+        const tenant_id = await getTenantId()
+
+        // Busca dados ANTES de apagar (obrigatorio para GDPR)
+        const membro = await db.membro.findUnique({
+            where: { id: membroId },
+            select: {
+                first_name: true, last_name: true, email: true,
+                role: true, status: true, tenant_id: true,
+                gdpr_aceite: true, data_admissao: true,
+            }
+        })
+
+        if (!membro) return { ok: false, error: 'Membro nao encontrado.' }
+
+        // Regista ANTES de apagar (pode nao ser possivel depois)
+        await audit({
+            tenant_id: tenant_id || membro.tenant_id,
+            categoria: 'MEMBROS',
+            acao: 'APAGAR',
+            alvo_id: membroId,
+            alvo_nome: `${membro.first_name} ${membro.last_name}`,
+            alvo_tipo: 'MEMBRO',
+            descricao: `Membro removido do sistema — Email: ${membro.email} — Role: ${membro.role}`,
+            dados_antes: sanitizar({
+                email: membro.email,
+                role: membro.role,
+                status: membro.status,
+                gdpr_aceite: membro.gdpr_aceite,
+                data_admissao: membro.data_admissao,
+            }),
+        })
+
+        await db.membro.delete({ where: { id: membroId } })
+
+        revalidatePath('/admin/membros')
+        return { ok: true }
+
+    } catch (error: any) {
+        console.error('[APAGAR MEMBRO] Erro:', error.message)
+        return { ok: false, error: 'Nao foi possivel remover o membro.' }
+    }
+}
+
+// ── CRIAR / EDITAR GRUPO COM GEOCODIFICAÇÃO ───────────────────────────────────
+export async function salvarGrupoAction(formData: FormData) {
+    try {
+        const db = await getDb()
+        const idRaw = formData.get('id')
+        const id = idRaw ? Number(idRaw) : null
+
+        const nome = formData.get('nome') as string
+        const dia_semana = formData.get('dia_semana') as string
+        const horario = formData.get('horario') as string
+        const endereco = formData.get('endereco') as string || null
+        const numero = formData.get('numero') as string || null
+        const bairro = formData.get('bairro') as string || null
+        const cidade = formData.get('cidade') as string || null
+        const estado = formData.get('estado') as string || null
+        const pais = formData.get('pais') as string || 'Portugal'
+        const categoria = formData.get('categoria') as string || null
+        const perfil = formData.get('perfil') as string || null
+        const descricao = formData.get('descricao') as string || null
+        const regiao = formData.get('regiao') as string || null
+        const publico = formData.get('publico') === 'on' || formData.get('publico') === 'true'
+        const liderInput = formData.get('lider_id')
+        const liderId = liderInput && Number(liderInput) !== 0 ? Number(liderInput) : null
+
+        // ── GEOCODIFICAÇÃO AUTOMÁTICA ──
+        // Só geocodifica se a morada ou cidade mudou
+        let latitude: number | null = null
+        let longitude: number | null = null
+
+        if (cidade || endereco) {
+            console.log(`[GRUPO] A geocodificar: ${endereco}, ${cidade}`)
+            const coords = await geocodificarComFallback(
+                endereco ? `${endereco} ${numero || ''}`.trim() : null,
+                cidade,
+                pais
+            )
+            if (coords) {
+                latitude = coords.latitude
+                longitude = coords.longitude
+                console.log(`[GRUPO] Coordenadas: ${latitude}, ${longitude}`)
+            } else {
+                console.warn('[GRUPO] Geocodificacao falhou — sem coordenadas')
+            }
+        }
+
+        const baseData: any = {
+            nome, dia_semana, horario, endereco, numero, bairro,
+            cidade, estado, pais, categoria, perfil, descricao,
+            regiao, publico,
+            // Só actualiza coordenadas se obteve resultado
+            ...(latitude !== null && { latitude }),
+            ...(longitude !== null && { longitude }),
+        }
+
+        if (id) {
+            await db.grupo.update({
+                where: { id },
+                data: {
+                    ...baseData,
+                    lideres: liderId ? { set: [{ id: liderId }] } : { set: [] },
+                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
+                }
+            })
+        } else {
+            await db.grupo.create({
+                data: {
+                    ...baseData,
+                    tenant_id: 0,
+                    lideres: liderId ? { connect: [{ id: liderId }] } : undefined,
+                    membros: liderId ? { connect: [{ id: liderId }] } : undefined
+                }
+            })
+        }
+
+        revalidatePath('/admin/configuracoes')
+        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos') // página pública
+        return { ok: true }
+
+    } catch (error: any) {
+        console.error('[SALVAR GRUPO] Erro:', error.message)
+        return { ok: false, error: 'Erro ao guardar o grupo.' }
+    }
+}
+
+// ── GEOCODIFICAR GRUPOS EXISTENTES (acção de manutenção) ─────────────────────
+// Chamar uma única vez para preencher coordenadas em grupos já criados
+export async function geocodificarTodosGruposAction() {
+    try {
+        const db = await getDb()
+
+        const grupos = await db.grupo.findMany({
+            where: {
+                OR: [
+                    { latitude: null },
+                    { longitude: null }
+                ]
+            },
+            select: { id: true, endereco: true, numero: true, cidade: true, pais: true }
+        })
+
+        console.log(`[GEOCODE LOTE] ${grupos.length} grupos sem coordenadas`)
+
+        let sucesso = 0
+        let falhou = 0
+
+        for (const grupo of grupos) {
+            // Pausa de 1.1s entre pedidos para respeitar rate limit do Nominatim
+            await new Promise(r => setTimeout(r, 1100))
+
+            const coords = await geocodificarComFallback(
+                grupo.endereco ? `${grupo.endereco} ${grupo.numero || ''}`.trim() : null,
+                grupo.cidade,
+                grupo.pais || 'Portugal'
+            )
+
+            if (coords) {
+                await db.grupo.update({
+                    where: { id: grupo.id },
+                    data: { latitude: coords.latitude, longitude: coords.longitude }
+                })
+                sucesso++
+            } else {
+                falhou++
+            }
+        }
+
+        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos')
+
+        return { ok: true, sucesso, falhou }
+    } catch (err: any) {
+        return { ok: false, error: err.message }
     }
 }

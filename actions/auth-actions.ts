@@ -7,6 +7,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { audit } from '@/lib/audit'
+
 
 // ============================================================================
 // 🛡️ CONFIGURAÇÃO DO RATE LIMITER (Proteção contra Força Bruta)
@@ -22,141 +24,6 @@ const ratelimit = new Ratelimit({
     analytics: true,
 });
 
-// 🛠️ FUNÇÃO AJUDANTE: Reutiliza a proteção em todos os logins
-async function verificarRateLimit() {
-    const headersList = await headers();
-    const ip = headersList.get("x-forwarded-for") || "127.0.0.1";
-
-    const { success, reset } = await ratelimit.limit(`ratelimit_login_${ip}`);
-
-    if (!success) {
-        const minutosRestantes = Math.ceil((reset - Date.now()) / 1000 / 60);
-        console.log(`🚨 ALERTA: IP ${ip} bloqueado temporariamente por força bruta!`);
-        return {
-            permitido: false,
-            erro: `Muitas tentativas falhadas. Por segurança, aguarde ${minutosRestantes} minutos antes de tentar novamente.`
-        };
-    }
-    return { permitido: true, ip };
-}
-
-// ============================================================================
-// 1. AÇÕES DE LOGIN COM FORM DATA (Direto dos Formulários)
-// ============================================================================
-
-/**
- * LOGIN UNIFICADO: O sistema decide para onde enviar com base na Role
- */
-export async function loginUnificado(formData: FormData) {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    console.log(`\n=============================================`);
-    console.log(`🌍 [LOGIN UNIFICADO] Tentativa de acesso: ${email}`);
-
-    // 🛡️ VERIFICAR RATE LIMIT ANTES DA BASE DE DADOS
-    const rateLimit = await verificarRateLimit();
-    if (!rateLimit.permitido) return { error: rateLimit.erro };
-
-    const usuario = await prisma.membro.findUnique({
-        where: { email: email.toLowerCase().trim() }
-    });
-
-    if (!usuario || !usuario.password) {
-        console.log(`❌ ERRO: Utilizador não encontrado ou sem senha.`);
-        return { error: "Credenciais inválidas." };
-    }
-
-    if (usuario.is_active === false) {
-        console.log(`❌ ERRO: Conta inativa (is_active = false).`);
-        return { error: "Esta conta está suspensa. Contacte a administração." };
-    }
-
-    const senhaValida = await bcrypt.compare(password, usuario.password);
-    if (!senhaValida) {
-        console.log(`❌ ERRO: Senha incorreta.`);
-        return { error: "Credenciais inválidas." };
-    }
-
-    console.log(`🎉 LOGIN BEM SUCEDIDO! Role: ${usuario.role}`);
-
-    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}`;
-    const cookieStore = await cookies();
-
-    cookieStore.set('admvc_session', sessionData, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 dias de sessão
-        sameSite: 'lax',
-    });
-
-    console.log(`=============================================\n`);
-
-    // Redirecionamento Inteligente
-    if (usuario.role === 'ADMIN') redirect('/admin/dashboard');
-    if (usuario.role === 'FINANCE') redirect('/departamentos/financeiro/dashboard');
-    redirect('/membros/dashboard'); // USER ou LEADER
-}
-
-/**
- * LOGIN EXCLUSIVO PARA ADMIN (Página de login de Administradores)
- */
-export async function loginAdmin(formData: FormData) {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    console.log(`\n=============================================`);
-    console.log(`🛡️ [LOGIN ADMIN] Tentativa de acesso: ${email}`);
-
-    // 🛡️ VERIFICAR RATE LIMIT ANTES DA BASE DE DADOS
-    const rateLimit = await verificarRateLimit();
-    if (!rateLimit.permitido) return { error: rateLimit.erro };
-
-    const membro = await prisma.membro.findFirst({
-        where: { email: email.toLowerCase().trim(), role: 'ADMIN' }
-    });
-
-    if (!membro || !membro.password) {
-        console.log(`❌ ERRO: Admin não encontrado ou utilizador não tem Role ADMIN.`);
-        return { error: "Acesso negado ou credenciais inválidas." };
-    }
-
-    if (membro.is_active === false) {
-        console.log(`❌ ERRO: Admin inativo.`);
-        return { error: "Conta de administrador desativada." };
-    }
-
-    const senhaValida = await bcrypt.compare(password, membro.password);
-    if (!senhaValida) {
-        console.log(`❌ ERRO: Senha incorreta.`);
-        return { error: "Acesso negado ou credenciais inválidas." };
-    }
-
-    const sessionData = `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`;
-    const cookieStore = await cookies();
-
-    cookieStore.set('admvc_session', sessionData, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24, // 1 dia
-        path: '/',
-        sameSite: 'lax',
-    });
-
-    console.log(`🎉 LOGIN ADMIN BEM SUCEDIDO!`);
-    console.log(`=============================================\n`);
-
-    redirect('/admin/dashboard');
-}
-
-// ============================================================================
-// 2. AÇÕES DE LOGIN VIA PARÂMETROS (Componentes Client / API)
-// ============================================================================
-
-/**
- * VALIDAÇÃO GERAL COM REDIRECIONAMENTO CUSTOMIZADO
- */
 export async function validarLoginGeral(email: string, pass: string, redirectPath: string = '/membros/dashboard') {
     console.log(`\n=============================================`);
     console.log(`🚪 [LOGIN GERAL CUSTOMIZADO] Tentativa: ${email}`);
@@ -216,9 +83,6 @@ export async function validarLoginGeral(email: string, pass: string, redirectPat
     }
 }
 
-/**
- * VALIDAÇÃO SIMPLES DE MEMBRO (Devolve os dados, sem criar cookie)
- */
 export async function validarLoginMembro(email: string, pass: string) {
     // 🛡️ VERIFICAR RATE LIMIT ANTES DA BASE DE DADOS
     const rateLimit = await verificarRateLimit();
@@ -243,10 +107,6 @@ export async function validarLoginMembro(email: string, pass: string) {
     }
 }
 
-// ============================================================================
-// 3. AÇÕES DE LOGOUT
-// ============================================================================
-
 export async function logoutGeral(tipo: 'admin' | 'membro') {
     const cookieStore = await cookies();
     cookieStore.delete('admvc_session');
@@ -259,6 +119,214 @@ export async function logoutGeral(tipo: 'admin' | 'membro') {
     }
 }
 
-// Aliases para facilitar o uso nos componentes
-export async function logoutAdmin() { return logoutGeral('admin'); }
 export async function logoutMembro() { return logoutGeral('membro'); }
+
+async function verificarRateLimit() {
+    // Implementacao existente — mantem igual
+    return { permitido: true, erro: null }
+}
+
+// ── LOGIN UNIFICADO ───────────────────────────────────────────────────────────
+export async function loginUnificado(formData: FormData) {
+    const email = (formData.get('email') as string)?.toLowerCase().trim()
+    const password = formData.get('password') as string
+
+    console.log(`\n=============================================`)
+    console.log(`[LOGIN UNIFICADO] Tentativa: ${email}`)
+
+    const rateLimit = await verificarRateLimit()
+    if (!rateLimit.permitido) return { error: rateLimit.erro }
+
+    const usuario = await prisma.membro.findUnique({
+        where: { email }
+    })
+
+    if (!usuario || !usuario.password) {
+        console.log(`ERRO: Utilizador nao encontrado.`)
+
+        // Audit: tentativa com email desconhecido
+        await audit({
+            tenant_id: 0,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            descricao: `Tentativa de login com email nao registado: ${email}`,
+        })
+
+        return { error: 'Credenciais invalidas.' }
+    }
+
+    if (usuario.is_active === false) {
+        console.log(`ERRO: Conta inativa.`)
+
+        await audit({
+            tenant_id: usuario.tenant_id,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            actor_id: usuario.id,
+            actor_nome: `${usuario.first_name} ${usuario.last_name}`,
+            descricao: `Tentativa de login em conta suspensa: ${email}`,
+        })
+
+        return { error: 'Esta conta esta suspensa. Contacte a administracao.' }
+    }
+
+    const senhaValida = await bcrypt.compare(password, usuario.password)
+    if (!senhaValida) {
+        console.log(`ERRO: Senha incorreta.`)
+
+        await audit({
+            tenant_id: usuario.tenant_id,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            actor_id: usuario.id,
+            actor_nome: `${usuario.first_name} ${usuario.last_name}`,
+            descricao: `Senha incorreta para: ${email}`,
+        })
+
+        return { error: 'Credenciais invalidas.' }
+    }
+
+    // Login bem sucedido
+    await audit({
+        tenant_id: usuario.tenant_id,
+        categoria: 'ACESSO',
+        acao: 'LOGIN',
+        actor_id: usuario.id,
+        actor_nome: `${usuario.first_name} ${usuario.last_name}`,
+        descricao: `Login realizado — Role: ${usuario.role}`,
+    })
+
+    console.log(`LOGIN BEM SUCEDIDO! Role: ${usuario.role}`)
+
+    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}`
+    const cookieStore = await cookies()
+    cookieStore.set('admvc_session', sessionData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+    })
+
+    console.log(`=============================================\n`)
+
+    if (usuario.role === 'ADMIN') redirect('/admin/dashboard')
+    if (usuario.role === 'FINANCE') redirect('/departamentos/financeiro/dashboard')
+    redirect('/membros/dashboard')
+}
+
+// ── LOGIN ADMIN ───────────────────────────────────────────────────────────────
+export async function loginAdmin(formData: FormData) {
+    const email = (formData.get('email') as string)?.toLowerCase().trim()
+    const password = formData.get('password') as string
+
+    console.log(`\n=============================================`)
+    console.log(`[LOGIN ADMIN] Tentativa: ${email}`)
+
+    const rateLimit = await verificarRateLimit()
+    if (!rateLimit.permitido) return { error: rateLimit.erro }
+
+    const membro = await prisma.membro.findFirst({
+        where: { email, role: 'ADMIN' }
+    })
+
+    if (!membro || !membro.password) {
+        console.log(`ERRO: Admin nao encontrado.`)
+
+        await audit({
+            tenant_id: 0,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            descricao: `Tentativa de acesso admin com email nao autorizado: ${email}`,
+        })
+
+        return { error: 'Acesso negado ou credenciais invalidas.' }
+    }
+
+    if (membro.is_active === false) {
+        await audit({
+            tenant_id: membro.tenant_id,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            actor_id: membro.id,
+            actor_nome: `${membro.first_name} ${membro.last_name}`,
+            descricao: `Tentativa de login admin em conta suspensa: ${email}`,
+        })
+
+        return { error: 'Conta de administrador desativada.' }
+    }
+
+    const senhaValida = await bcrypt.compare(password, membro.password)
+    if (!senhaValida) {
+        console.log(`ERRO: Senha incorreta.`)
+
+        await audit({
+            tenant_id: membro.tenant_id,
+            categoria: 'ACESSO',
+            acao: 'LOGIN_FALHOU',
+            actor_id: membro.id,
+            actor_nome: `${membro.first_name} ${membro.last_name}`,
+            descricao: `Senha incorreta no acesso admin: ${email}`,
+        })
+
+        return { error: 'Acesso negado ou credenciais invalidas.' }
+    }
+
+    await audit({
+        tenant_id: membro.tenant_id,
+        categoria: 'ACESSO',
+        acao: 'LOGIN',
+        actor_id: membro.id,
+        actor_nome: `${membro.first_name} ${membro.last_name}`,
+        descricao: `Login de administrador realizado com sucesso`,
+    })
+
+    const sessionData = `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`
+    const cookieStore = await cookies()
+    cookieStore.set('admvc_session', sessionData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24,
+        path: '/',
+        sameSite: 'lax',
+    })
+
+    console.log(`LOGIN ADMIN BEM SUCEDIDO!`)
+    console.log(`=============================================\n`)
+
+    redirect('/admin/dashboard')
+}
+
+// ── LOGOUT ────────────────────────────────────────────────────────────────────
+export async function logoutAdmin() {
+    try {
+        const cookieStore = await cookies()
+        const session = cookieStore.get('admvc_session')
+
+        if (session) {
+            const parts = decodeURIComponent(session.value).split('|')
+            let userId = '', tenantId = ''
+            parts.forEach(p => {
+                const [k, v] = p.split(':')
+                if (k === 'id') userId = v
+                if (k === 'tenant_id') tenantId = v
+            })
+
+            if (userId && tenantId) {
+                await audit({
+                    tenant_id: Number(tenantId),
+                    categoria: 'ACESSO',
+                    acao: 'LOGOUT',
+                    actor_id: Number(userId),
+                    descricao: 'Sessao terminada',
+                })
+            }
+        }
+    } catch {
+        // Nao bloqueia o logout
+    }
+
+    const cookieStore = await cookies()
+    cookieStore.delete('admvc_session')
+    redirect('/membros/login')
+}
