@@ -1,13 +1,9 @@
 import prismaGlobal from '@/lib/prisma'
 import SuperAdminDashboardClient from '@/components/superadmin/SuperAdminDashboardClient'
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { requireSAAuth } from '@/lib/sa-auth'
 
 export default async function SuperAdminPage() {
-    // 1. Proteção Básica 
-    const cookieStore = await cookies();
-    const session = cookieStore.get('admvc_session');
-    if (!session) redirect('/membros/login');
+    await requireSAAuth()
 
     // 2. Busca de Dados Globais da Plataforma
     const igrejas = await prismaGlobal.tenant.findMany({

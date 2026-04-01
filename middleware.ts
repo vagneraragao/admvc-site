@@ -4,11 +4,38 @@ import type { NextRequest } from 'next/server'
 import { getModuloDaRota, moduloIncluidoNoPlano } from '@/lib/planos'
 
 export function middleware(request: NextRequest) {
-    const session = request.cookies.get('admvc_session')
     const { pathname } = request.nextUrl
 
+    // ═══════════════════════════════════════════════════════════════════
+    // SUPER-ADMIN: auth completamente separada (cookie próprio)
+    // ═══════════════════════════════════════════════════════════════════
+    if (pathname.startsWith('/super-admin')) {
+        const saSession = request.cookies.get('admvc_sa_session')
+        const isSALogin = pathname === '/super-admin/login'
+
+        // Login page: se já autenticado, vai para dashboard
+        if (isSALogin) {
+            if (saSession) {
+                return NextResponse.redirect(new URL('/super-admin/dashboard', request.url))
+            }
+            return NextResponse.next()
+        }
+
+        // Todas as outras rotas SA exigem cookie SA
+        if (!saSession) {
+            return NextResponse.redirect(new URL('/super-admin/login', request.url))
+        }
+
+        // SA autenticado — permitir (sem headers de tenant)
+        return NextResponse.next()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PORTAL DA IGREJA: auth de membros (cookie admvc_session)
+    // ═══════════════════════════════════════════════════════════════════
+    const session = request.cookies.get('admvc_session')
+
     // 1. Classificação de rotas
-    const isPublicRoute = pathname === '/membros/login'
     const isMembrosProtected = pathname.startsWith('/membros/dashboard') || pathname.startsWith('/membros/termos')
     const isAdminProtected = pathname.startsWith('/admin')
     const isModuleProtected = pathname.startsWith('/louvor')
@@ -69,6 +96,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
+        '/super-admin/:path*',
         '/admin/:path*',
         '/membros/:path*',
         '/louvor/:path*',
