@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Endpoint indisponível.' }, { status: 404 })
+    }
+
     try {
         const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
 
-        // Busca os clientes do Loyverse (limitado aos primeiros 250)
         const res = await fetch(`https://api.loyverse.com/v1.0/customers?limit=250`, {
             headers: { 'Authorization': `Bearer ${loyverseToken}` }
         });
@@ -13,18 +16,17 @@ export async function GET() {
 
         const data = await res.json();
 
-        // Mapeia apenas o que nos interessa para o terminal
         const listaSimplificada = data.customers.map((c: any) => ({
             nome: c.name,
             email: c.email,
-            id_real_uuid: c.id, // ESTE É O QUE PRECISAS
+            id_real_uuid: c.id,
             codigo_antigo: c.customer_code
         }));
 
-        console.table(listaSimplificada); // Imprime uma tabela linda no teu terminal
+        console.table(listaSimplificada);
 
         return NextResponse.json({
-            message: "Verifica o teu terminal (consola do VS Code/CMD)",
+            message: "Verifica o teu terminal",
             total: listaSimplificada.length
         });
     } catch (error: any) {
