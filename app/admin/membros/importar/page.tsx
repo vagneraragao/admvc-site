@@ -176,12 +176,6 @@ export default function ImportExportPage() {
     return (
         <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
 
-            <Breadcrumb items={[
-                { label: 'Painel Admin', href: '/admin/dashboard', isBackIcon: true },
-                { label: 'Gestao de Membros', hideOnMobile: true },
-                { label: 'Importar / Exportar' }
-            ]} />
-
             {/* HEADER */}
             <header className="flex flex-col gap-2 pb-6 border-b border-soft">
                 <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">

@@ -42,12 +42,6 @@ export default async function AdminFamiliasPage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
 
-            <Breadcrumb items={[
-                { label: 'Painel Admin', href: '/admin/dashboard', isBackIcon: true },
-                { label: 'Comunidade', hideOnMobile: true },
-                { label: 'Famílias' }
-            ]} />
-
             {/* ── HEADER ───────────────────────────────────────────────────── */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">
                 <div className="space-y-2">

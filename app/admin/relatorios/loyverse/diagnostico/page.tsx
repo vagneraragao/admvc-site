@@ -51,12 +51,6 @@ export default async function DiagnosticoLoyversePage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
 
-            <Breadcrumb items={[
-                { label: 'Painel Admin', href: '/admin/dashboard', isBackIcon: true },
-                { label: 'Cantina', hideOnMobile: true },
-                { label: 'Diagnóstico Loyverse' }
-            ]} />
-
             {/* HEADER */}
             <header className="flex flex-col md:flex-row justify-between md:items-end gap-6 pb-6 border-b border-soft">
                 <div>

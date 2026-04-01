@@ -211,11 +211,6 @@ export default function AdminCadastroMembroPage() {
     return (
         <main className="max-w-5xl mx-auto space-y-8 py-10 px-4 sm:px-6 animate-in fade-in pb-32">
 
-            <Breadcrumb items={[
-                { label: 'Membros', href: '/admin/membros', isBackIcon: true },
-                { label: 'Novo Registo' }
-            ]} />
-
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-soft pb-6 gap-6">
                 <div className="space-y-2">
                     <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
