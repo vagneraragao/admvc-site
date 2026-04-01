@@ -1,22 +1,27 @@
 // app/admin/layout.tsx
 import { redirect } from 'next/navigation'
+import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
+import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-    // 1. Busca a sessão do utilizador
-    const session = await getSessionData();
+    const session = await getSessionData()
 
-    // 🚨 O SEGURANÇA À PORTA DO PRÉDIO ADMINISTRATIVO 🚨
-    // Se não estiver logado OU se a role não for estritamente 'ADMIN', recambia logo!
     if (!session || session.role !== 'ADMIN') {
-        // Redireciona o engraçadinho para o dashboard normal dele
-        redirect('/membros/dashboard?error=Acesso Restrito a Administradores');
+        redirect('/membros/dashboard?error=Acesso Restrito a Administradores')
     }
 
-    // Se passou na verificação, o Next.js carrega a página que ele pediu (dashboard, lista de membros, etc)
+    const admin = await prisma.membro.findUnique({
+        where: { id: session.membroId },
+        select: { first_name: true }
+    })
+
     return (
-        <div className="admin-wrapper">
-            {children}
+        <div className="min-h-screen bg-bg flex flex-col md:flex-row">
+            <AdminSidebar adminNome={admin?.first_name} />
+            <main className="flex-1 overflow-y-auto">
+                {children}
+            </main>
         </div>
-    );
+    )
 }

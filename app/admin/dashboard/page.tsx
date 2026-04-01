@@ -2,16 +2,16 @@
 
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
-import { logoutAdmin } from '@/actions/auth-actions'
+// logoutAdmin is now in the sidebar layout
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import {
-    Calendar, Users, Home, BarChart3, LogOut, Shield,
+    Calendar, Users, Home, BarChart3, Shield,
     ShieldCheck, HeartHandshake, AlertTriangle,
-    CreditCard, ArrowUpRight, Settings, BookOpen,
-    TrendingUp, Clock, CheckCircle2, XCircle
+    ArrowUpRight, BookOpen,
+    Clock, CheckCircle2
 } from 'lucide-react'
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -94,58 +94,17 @@ export default async function AdminDashboard() {
     const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
-
-            <Breadcrumb items={[
-                { label: 'Dashboard Global', href: '/membros/dashboard', isBackIcon: true },
-                { label: 'Administração', hideOnMobile: true },
-                { label: 'Painel Admin' }
-            ]} />
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-20">
 
             {/* ── HEADER ───────────────────────────────────────────────────── */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <ShieldCheck size={14} /> Centro de Comando
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        {saudacao}, <span className="text-muted/20">{adminLogado?.first_name || 'Admin'}.</span>
-                    </h1>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                    <form action={logoutAdmin}>
-                        <button
-                            type="submit"
-                            className="h-10 w-10 flex items-center justify-center bg-red-50 border border-red-100 text-red-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
-                            title="Terminar sessão"
-                        >
-                            <LogOut size={15} strokeWidth={3} />
-                        </button>
-                    </form>
-                </div>
+            <header className="space-y-2">
+                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <ShieldCheck size={14} /> Centro de Comando
+                </span>
+                <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                    {saudacao}, {adminLogado?.first_name || 'Admin'}.
+                </h1>
             </header>
-
-            {/* ── NAVEGAÇÃO RÁPIDA ─────────────────────────────────────────── */}
-            <nav className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {[
-                    { title: 'Eventos', href: '/escalas/admin', icon: <Calendar size={16} /> },
-                    { title: 'Membros', href: '/admin/membros', icon: <Users size={16} /> },
-                    { title: 'Famílias', href: '/admin/familias', icon: <Home size={16} /> },
-                    { title: 'Departamentos', href: '/admin/configuracoes', icon: <HeartHandshake size={16} /> },
-                    { title: 'Relatórios', href: '/admin/relatorios', icon: <BarChart3 size={16} /> },
-                    { title: 'Loyverse', href: '/admin/relatorios/loyverse/diagnostico', icon: <CreditCard size={16} /> },
-                ].map(item => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className="flex flex-col items-center gap-2 p-4 bg-bg2 border border-soft rounded-2xl hover:bg-fg hover:text-bg hover:border-fg transition-all group shadow-sm"
-                    >
-                        <div className="text-muted group-hover:text-bg transition-colors">{item.icon}</div>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-center leading-tight">{item.title}</span>
-                    </Link>
-                ))}
-            </nav>
 
             {/* ── ALERTA COMPLIANCE ────────────────────────────────────────── */}
             {membrosPendentesDocs.length > 0 && (
@@ -313,33 +272,6 @@ export default async function AdminDashboard() {
                         </div>
                     </section>
 
-                    {/* ACESSO RÁPIDO */}
-                    <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
-                        <div className="px-6 py-5 border-b border-soft">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-3">
-                                <Settings size={16} className="text-muted" /> Acesso Rápido
-                            </h3>
-                        </div>
-                        <div className="p-3 space-y-1">
-                            {[
-                                { label: 'Importar Membros', href: '/admin/membros/importar', icon: <Users size={13} /> },
-                                { label: 'Relatório Escalas', href: '/escalas/relatorios', icon: <BarChart3 size={13} /> },
-                                { label: 'Diagnóstico Loyverse', href: '/admin/relatorios/loyverse/diagnostico', icon: <CreditCard size={13} /> },
-                                { label: 'Configurações', href: '/admin/configuracoes', icon: <Settings size={13} /> },
-                                { label: 'Auditoria', href: '/admin/auditoria', icon: <Shield size={16} /> },
-                            ].map(item => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-soft/50 transition-all group text-muted hover:text-fg"
-                                >
-                                    <div className="group-hover:text-figueira transition-colors">{item.icon}</div>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest flex-1">{item.label}</span>
-                                    <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-figueira" />
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
                 </div>
             </div>
         </main>
