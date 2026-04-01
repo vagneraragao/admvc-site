@@ -25,9 +25,15 @@ model Musica {
   titulo      String
   artista     String?
   bpm         Int?
-  link_video  String?
+  tom         String? // Tom original da musica (Ex: "G", "Am", "F#")
+  link_video  String? // YouTube
+  link_letra  String? // letras.mus.br, letras.com
+  link_cifra  String? // cifraclub.com.br, ultimate-guitar.com
+  link_audio  String? // Spotify, SoundCloud, YouTube Music
   holyrics_id String?            @unique
   eventos     RepertorioEvento[]
+
+  @@map("musicas")
 }
 
 model Tenant {
@@ -62,6 +68,7 @@ model Tenant {
   visitantes               Visitante[]
   indisponibilidadeMembros IndisponibilidadeMembro[]
   mensagemEventos          MensagemEvento[]
+  audit_logs               AuditLog[]
 }
 
 model Congregacao {
@@ -244,6 +251,10 @@ model Grupo {
   compromissoId   Int?
   congregacaoId   Int?
   tenant_id       Int
+  latitude        Float?
+  longitude       Float?
+  regiao          String? // Ex: "Norte", "Centro", "Sul", "Online"
+  publico         Boolean         @default(false) // aparece no site público?
   avisoMurals     AvisoMural[]
   encontros       EncontroGrupo[]
   congregacao     Congregacao?    @relation(fields: [congregacaoId], references: [id])
@@ -267,6 +278,10 @@ model EncontroGrupo {
   grupo     Grupo    @relation(fields: [grupo_id], references: [id], onDelete: Cascade)
   tenant    Tenant   @relation(fields: [tenant_id], references: [id])
   presentes Membro[] @relation("MembrosPresentes")
+  latitude  Float?
+  longitude Float?
+  regiao    String? // Ex: "Norte", "Centro", "Sul", "Online"
+  publico   Boolean  @default(false) // aparece no site público?
 
   @@index([tenant_id])
 }
@@ -615,4 +630,32 @@ model MensagemEvento {
 
   @@index([tenant_id])
   @@map("mensagens_evento")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  tenant_id   Int
+  actor_id    Int? // quem executou a accao (admin/membro logado)
+  actor_nome  String? // nome snapshot (para manter historico se membro for apagado)
+  alvo_id     Int? // sobre quem recaiu a accao
+  alvo_nome   String? // nome snapshot do alvo
+  alvo_tipo   String? // 'MEMBRO' | 'FAMILIA' | 'ESCALA' | 'FINANCEIRO' | 'SISTEMA'
+  acao        String // 'CRIAR' | 'EDITAR' | 'APAGAR' | 'LOGIN' | 'LOGOUT' | 'EXPORT' | 'VINCULAR' | 'DESASSOCIAR'
+  categoria   String // 'MEMBROS' | 'FAMILIAS' | 'ESCALAS' | 'FINANCEIRO' | 'ACESSO' | 'DOCUMENTOS'
+  descricao   String? // texto legivel: "Alterou email de Joao Silva de X para Y"
+  dados_antes String? // JSON snapshot antes da alteracao (campos alterados)
+  dados_apos  String? // JSON snapshot apos a alteracao
+  ip          String?
+  user_agent  String?
+  criado_em   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([actor_id])
+  @@index([alvo_id])
+  @@index([acao])
+  @@index([categoria])
+  @@index([criado_em])
+  @@map("audit_logs")
 }

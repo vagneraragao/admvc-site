@@ -34,6 +34,7 @@ import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import CardAniversariantesMes from '@/components/membros/CardAniversariantesMes'
 import ModalDetalhesEscala from '@/components/membros/ModalDetalhesEscalas'
 import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
+import BotaoSetlistPalco from '@/components/louvor/BotaoSetlistPalco'
 
 export default async function DashboardMembro({
     searchParams
@@ -576,7 +577,10 @@ export default async function DashboardMembro({
 
                                             {/* REPERTÓRIO (louvor) */}
                                             {(esc.departamento.nome.toLowerCase().includes('louvor') || esc.departamento.nome.toLowerCase().includes('música')) && (
-                                                <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
+                                                <>
+                                                    <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
+                                                    <BotaoSetlistPalco eventoId={esc.evento.id} totalMusicas={esc.evento.repertorio?.length || 0} />
+                                                </>
                                             )}
 
                                             {/* BOTÃO DETALHES */}

@@ -13,9 +13,9 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 export default function VisualizarMembroClient({ membro }: any) {
     const [abaAtiva, setAbaAtiva] = useState(1);
 
-    const departamentos = membro.ministerios?.map((m: any) => ({ 
-        ...m.departamento, 
-        funcao: m.funcoes?.map((f: any) => f.funcao?.nome).join(', ') || 'Membro' 
+    const departamentos = membro.ministerios?.map((m: any) => ({
+        ...m.departamento,
+        funcao: m.funcoes?.map((f: any) => f.funcao?.nome).join(', ') || 'Membro'
     })) || [];
     const grupos = membro.grupos || [];
     const gruposLiderados = membro.lider_de_grupo || [];
@@ -147,7 +147,7 @@ export default function VisualizarMembroClient({ membro }: any) {
                         ) : (
                             <>
                                 <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">FAMÍLIA ADMVC</h3>
-                                <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-1">Nenhum vínculo registado</p>
+                                <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-1">Nenhum vínculo registrado</p>
                             </>
                         )}
                     </div>

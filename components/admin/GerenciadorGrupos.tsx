@@ -343,6 +343,29 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                 <input name="pais" defaultValue={grupoAtual?.pais || 'Portugal'} required
                                     className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-emerald-500 outline-none" />
                             </div>
+                            {/* REGIÃO */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase text-muted tracking-widest">Regiao</label>
+                                <select name="regiao" defaultValue={grupoAtual?.regiao || ''}
+                                    className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-[11px] font-bold text-fg focus:border-figueira outline-none appearance-none cursor-pointer">
+                                    <option value="">Selecione...</option>
+                                    <option value="Norte">Norte</option>
+                                    <option value="Centro">Centro</option>
+                                    <option value="Sul">Sul</option>
+                                    <option value="Lisboa">Lisboa</option>
+                                    <option value="Online">Online</option>
+                                </select>
+                            </div>
+
+                            {/* VISÍVEL NO SITE PÚBLICO */}
+                            <label className="flex items-center gap-3 cursor-pointer bg-bg border border-soft px-4 py-3 rounded-2xl hover:border-figueira/30 transition-all">
+                                <input type="checkbox" name="publico"
+                                    defaultChecked={grupoAtual?.publico ?? false}
+                                    className="w-4 h-4 accent-figueira" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-fg">
+                                    Mostrar no site publico (/grupos)
+                                </span>
+                            </label>
                         </div>
                     </div>
 

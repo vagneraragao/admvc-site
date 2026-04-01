@@ -82,7 +82,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                 <div>
                     <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Nova Escala</h2>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">
-                        Alocação rápida de voluntários
+                        Alocação Rápida
                     </p>
                 </div>
             </div>
