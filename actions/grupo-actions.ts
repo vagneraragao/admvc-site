@@ -46,7 +46,7 @@ export async function registrarEncontroAction(formData: FormData, presentesIds: 
             }
         });
 
-        revalidatePath(`/membros/gestao/grupo/${grupo_id}`);
+        revalidatePath(`/grupos/gestao/${grupo_id}`);
         return { sucesso: true };
     } catch (error: any) {
         console.error("Erro ao registar encontro:", error);
@@ -81,7 +81,7 @@ export async function atualizarDadosGrupoAction(formData: FormData) {
             }
         });
 
-        revalidatePath(`/membros/gestao/grupo/${id}`);
+        revalidatePath(`/grupos/gestao/${id}`);
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false, erro: "Erro ao atualizar dados." };
@@ -102,7 +102,7 @@ export async function gerirMembroGrupoAction(grupoId: number, membroId: number, 
                 data: { membros: { disconnect: { id: membroId } } }
             });
         }
-        revalidatePath(`/membros/gestao/grupo/${grupoId}`);
+        revalidatePath(`/grupos/gestao/${grupoId}`);
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false, erro: "Erro ao processar membro." };

@@ -1,4 +1,4 @@
-// app/admin/escalas/page.tsx
+// app/escalas/admin/page.tsx
 import prisma from '@/lib/prisma'
 import { CalendarDays, Settings2, Users } from 'lucide-react'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'

@@ -158,7 +158,7 @@ export async function salvarEvento(formData: FormData) {
             });
         }
 
-        revalidatePath("/admin/escalas");
+        revalidatePath("/escalas/admin");
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false };
@@ -170,7 +170,7 @@ export async function removerEscala(id: number) {
         await requireRole(['ADMIN'])
         const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
-        revalidatePath("/admin/escalas");
+        revalidatePath("/escalas/admin");
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false };
@@ -281,7 +281,7 @@ export async function salvarGrupo(formData: FormData) {
         }
 
         revalidatePath('/admin/configuracoes')
-        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos/admin')
         revalidatePath('/grupos')
         return { sucesso: true }
 
@@ -304,7 +304,7 @@ export async function salvarEscala(formData: FormData) {
             data: { membro_id, evento_id, departamento_id, funcao, tenant_id: tenantId, }
         });
 
-        revalidatePath('/admin/escalas');
+        revalidatePath('/escalas/admin');
         return { ok: true };
     } catch (error) {
         return { ok: false, error: "Erro ao salvar" };
@@ -414,7 +414,7 @@ export async function gerarEventosLoteAction(formData: FormData) {
         }
 
         await db.evento.createMany({ data: eventosParaCriar });
-        revalidatePath('/admin/escalas');
+        revalidatePath('/escalas/admin');
         return { ok: true, totalCriado: eventosParaCriar.length };
     } catch (error: any) {
         return { ok: false, error: error.message };
@@ -436,7 +436,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
             dataEvento.setHours(Number(horas), Number(minutos), 0, 0);
 
             await db.evento.create({ data: { nome, data: dataEvento, tenant_id: tenantId, } });
-            revalidatePath('/admin/escalas');
+            revalidatePath('/escalas/admin');
             return { ok: true, totalCriado: 1 };
         }
 
@@ -472,7 +472,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
             }
 
             await db.evento.createMany({ data: eventosParaCriar });
-            revalidatePath('/admin/escalas');
+            revalidatePath('/escalas/admin');
             return { ok: true, totalCriado: eventosParaCriar.length };
         }
         return { ok: false, error: "Tipo de evento inválido." };
@@ -501,8 +501,8 @@ export async function criarEscala(formData: FormData) {
             data: { evento_id, departamento_id, membro_id, funcao, horario, confirmado: false, tenant_id: tenantId, }
         });
 
-        revalidatePath(`/membros/gestao/escalas/${evento_id}`);
-        revalidatePath(`/admin/escalas`);
+        revalidatePath(`/escalas/gestao/${evento_id}`);
+        revalidatePath(`/escalas/admin`);
         revalidatePath(`/membros/dashboard`);
         return { ok: true };
     } catch (error: any) {
@@ -531,7 +531,7 @@ export async function removerEscalaAction(id: number) {
         await requireRole(['ADMIN'])
         const { db, tenantId } = await getDb();
         await db.escala.delete({ where: { id } });
-        revalidatePath('/membros/gestao/escalas');
+        revalidatePath('/escalas/gestao');
         return { ok: true };
     } catch (error) {
         return { error: "Erro ao remover voluntário." };
@@ -550,7 +550,7 @@ export async function atualizarEscalaAction(formData: FormData) {
             where: { id },
             data: { funcao, horario }
         });
-        revalidatePath('/membros/gestao/escalas');
+        revalidatePath('/escalas/gestao');
         return { ok: true };
     } catch (error) {
         return { error: "Erro ao atualizar a escala." };
@@ -785,7 +785,7 @@ export async function editarEscalaAction(formData: FormData) {
             data: { funcao: funcao, horario: horario || null }
         });
 
-        revalidatePath('/admin/escalas');
+        revalidatePath('/escalas/admin');
         return { ok: true };
     } catch (error) {
         return { ok: false, error: "Ocorreu um erro ao guardar as alterações." };
@@ -814,7 +814,7 @@ export async function editarEventoAction(formData: FormData) {
             data: { nome, data: dataCompleta, descricao: descricao || null }
         });
 
-        revalidatePath('/admin/escalas');
+        revalidatePath('/escalas/admin');
         revalidatePath('/membros/dashboard');
         return { ok: true };
     } catch (error: any) {
@@ -828,7 +828,7 @@ export async function apagarEventoAction(id: number) {
         const { db, tenantId } = await getDb();
         await db.evento.delete({ where: { id } });
 
-        revalidatePath('/admin/escalas');
+        revalidatePath('/escalas/admin');
         return { ok: true };
     } catch (error) {
         return { ok: false, error: "Erro ao remover o evento. Verifica se existem escalas dependentes." };
@@ -1612,7 +1612,7 @@ export async function salvarGrupoAction(formData: FormData) {
         }
 
         revalidatePath('/admin/configuracoes')
-        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos/admin')
         revalidatePath('/grupos') // página pública
         return { ok: true }
 
@@ -1665,7 +1665,7 @@ export async function geocodificarTodosGruposAction() {
             }
         }
 
-        revalidatePath('/admin/grupos')
+        revalidatePath('/grupos/admin')
         revalidatePath('/grupos')
 
         return { ok: true, sucesso, falhou }

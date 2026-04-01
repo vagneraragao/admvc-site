@@ -129,7 +129,7 @@ export default async function AdminDashboard() {
             {/* ── NAVEGAÇÃO RÁPIDA ─────────────────────────────────────────── */}
             <nav className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {[
-                    { title: 'Eventos', href: '/admin/escalas', icon: <Calendar size={16} /> },
+                    { title: 'Eventos', href: '/escalas/admin', icon: <Calendar size={16} /> },
                     { title: 'Membros', href: '/admin/membros', icon: <Users size={16} /> },
                     { title: 'Famílias', href: '/admin/familias', icon: <Home size={16} /> },
                     { title: 'Departamentos', href: '/admin/configuracoes', icon: <HeartHandshake size={16} /> },
@@ -188,7 +188,7 @@ export default async function AdminDashboard() {
                             <h2 className="text-sm font-black uppercase tracking-widest text-fg">Próximos Eventos</h2>
                         </div>
                         <Link
-                            href="/admin/escalas"
+                            href="/escalas/admin"
                             className="text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center gap-1"
                         >
                             Ver todos <ArrowUpRight size={12} />
@@ -210,7 +210,7 @@ export default async function AdminDashboard() {
                             return (
                                 <Link
                                     key={ev.id}
-                                    href="/admin/escalas"
+                                    href="/escalas/admin"
                                     className="flex items-center gap-4 px-6 py-4 hover:bg-soft/20 transition-all group"
                                 >
                                     {/* DATA */}
@@ -323,7 +323,7 @@ export default async function AdminDashboard() {
                         <div className="p-3 space-y-1">
                             {[
                                 { label: 'Importar Membros', href: '/admin/membros/importar', icon: <Users size={13} /> },
-                                { label: 'Relatório Escalas', href: '/admin/relatorios/escalas', icon: <BarChart3 size={13} /> },
+                                { label: 'Relatório Escalas', href: '/escalas/relatorios', icon: <BarChart3 size={13} /> },
                                 { label: 'Diagnóstico Loyverse', href: '/admin/relatorios/loyverse/diagnostico', icon: <CreditCard size={13} /> },
                                 { label: 'Configurações', href: '/admin/configuracoes', icon: <Settings size={13} /> },
                                 { label: 'Auditoria', href: '/admin/auditoria', icon: <Shield size={16} /> },

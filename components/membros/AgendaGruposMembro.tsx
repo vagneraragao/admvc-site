@@ -97,7 +97,7 @@ export default function AgendaGruposMembro({ gruposMembro }: { gruposMembro: any
                             </div>
 
                             <div className="mt-5 pt-3 border-t border-soft">
-                                <Link href={`/membros/gestao/grupo/${grupo.id}`} className="flex items-center justify-between group-hover:text-blue-600 transition-colors">
+                                <Link href={`/grupos/gestao/${grupo.id}`} className="flex items-center justify-between group-hover:text-blue-600 transition-colors">
                                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-fg group-hover:text-blue-600 transition-colors">
                                         Acessar Grupo
                                     </span>
