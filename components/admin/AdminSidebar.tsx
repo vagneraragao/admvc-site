@@ -19,8 +19,8 @@ const NAV_PRINCIPAL = [
 ]
 
 const NAV_MODULOS = [
-    { label: 'Escalas', href: '/escalas/admin', icon: Calendar, adminOnly: false },
-    { label: 'Inventario', href: '/inventario', icon: Package, adminOnly: false },
+    { label: 'Escalas', href: '/admin/escalas', icon: Calendar, adminOnly: false },
+    { label: 'Inventario', href: '/admin/inventario', icon: Package, adminOnly: false },
     { label: 'Relatorios', href: '/admin/relatorios', icon: BarChart3, adminOnly: false },
     { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
 ]
