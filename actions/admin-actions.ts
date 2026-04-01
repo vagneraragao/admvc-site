@@ -1395,6 +1395,7 @@ export async function atualizarMembroAdmin(membroId: number, formData: FormData)
             is_active: novoIsActive,
             familia_id: novaFamiliaId,
             parentesco: novoParentesco,
+            congregacao_id: formData.get('congregacao_id') ? Number(formData.get('congregacao_id')) : null,
         }
 
         if (avatarUrl) dataUpdate.avatar_file = avatarUrl
@@ -1669,6 +1670,42 @@ export async function geocodificarTodosGruposAction() {
         revalidatePath('/grupos')
 
         return { ok: true, sucesso, falhou }
+    } catch (err: any) {
+        return { ok: false, error: err.message }
+    }
+}
+
+// ── ASSOCIAR MEMBROS A CONGREGAÇÃO EM MASSA ──────────────────────────────────
+export async function associarMembrosACongregacao(congregacaoId: number, membrosIds: number[]) {
+    try {
+        await requireRole(['ADMIN'])
+        const { db } = await getDb()
+
+        await db.membro.updateMany({
+            where: { id: { in: membrosIds } },
+            data: { congregacao_id: congregacaoId }
+        })
+
+        revalidatePath('/admin/congregacoes')
+        revalidatePath('/admin/membros')
+        return { ok: true }
+    } catch (err: any) {
+        return { ok: false, error: err.message }
+    }
+}
+
+export async function removerMembroDeCongregacao(membroId: number) {
+    try {
+        await requireRole(['ADMIN'])
+        const { db } = await getDb()
+
+        await db.membro.update({
+            where: { id: membroId },
+            data: { congregacao_id: null }
+        })
+
+        revalidatePath('/admin/congregacoes')
+        return { ok: true }
     } catch (err: any) {
         return { ok: false, error: err.message }
     }

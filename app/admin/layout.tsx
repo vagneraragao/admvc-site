@@ -1,22 +1,41 @@
 // app/admin/layout.tsx
 import { redirect } from 'next/navigation'
+import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
+import { headers } from 'next/headers'
+import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-    // 1. Busca a sessão do utilizador
-    const session = await getSessionData();
+    const session = await getSessionData()
 
-    // 🚨 O SEGURANÇA À PORTA DO PRÉDIO ADMINISTRATIVO 🚨
-    // Se não estiver logado OU se a role não for estritamente 'ADMIN', recambia logo!
     if (!session || session.role !== 'ADMIN') {
-        // Redireciona o engraçadinho para o dashboard normal dele
-        redirect('/membros/dashboard?error=Acesso Restrito a Administradores');
+        redirect('/membros/dashboard?error=Acesso Restrito a Administradores')
     }
 
-    // Se passou na verificação, o Next.js carrega a página que ele pediu (dashboard, lista de membros, etc)
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+
+    const [admin, tenant] = await Promise.all([
+        prisma.membro.findUnique({
+            where: { id: session.membroId },
+            select: { first_name: true, congregacao: { select: { nome: true } } }
+        }),
+        tenantId ? prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { nome: true }
+        }) : null,
+    ])
+
     return (
-        <div className="admin-wrapper">
-            {children}
+        <div className="min-h-screen bg-bg flex flex-col md:flex-row">
+            <AdminSidebar
+                adminNome={admin?.first_name}
+                igrejaName={tenant?.nome}
+                congregacaoNome={admin?.congregacao?.nome}
+            />
+            <main className="flex-1 overflow-y-auto">
+                {children}
+            </main>
         </div>
-    );
+    )
 }
