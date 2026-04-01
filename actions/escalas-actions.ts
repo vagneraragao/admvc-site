@@ -1,6 +1,5 @@
 'use server'
 
-import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
@@ -9,8 +8,12 @@ import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 async function getDb() {
     const headersList = await headers()
     const tenantId = headersList.get('x-tenant-id')
-    if (!tenantId) throw new Error('Tenant não identificado.')
-    return { db: getTenantClient(Number(tenantId)), tenantId: Number(tenantId) }
+    const congId = headersList.get('x-congregation-id')
+    if (!tenantId) throw new Error('Tenant nao identificado.')
+    return {
+        db: getTenantClient(Number(tenantId), congId ? Number(congId) : undefined),
+        tenantId: Number(tenantId)
+    }
 }
 
 
@@ -19,8 +22,10 @@ export async function deletarEscalaAction(escalaId: number) {
         const session = await getSessionData();
         if (!session) return { ok: false };
 
+        const { db } = await getDb()
+
         // Buscamos a escala para saber de qual depto ela é e validar a permissão
-        const escala = await prisma.escala.findUnique({
+        const escala = await db.escala.findUnique({
             where: { id: escalaId },
             select: { departamento_id: true }
         });
@@ -30,7 +35,7 @@ export async function deletarEscalaAction(escalaId: number) {
         // Validação de segurança (mesma lógica acima)
         // ... (pode ser simplificada aqui para brevidade, mas o ideal é repetir a checagem)
 
-        await prisma.escala.delete({
+        await db.escala.delete({
             where: { id: escalaId }
         });
 
@@ -62,8 +67,10 @@ export async function criarEscalaAction(formData: FormData) {
             return { ok: false, error: 'Dados incompletos para a escala.' };
         }
 
+        const { db } = await getDb()
+
         // 2. SEGURANÇA E TENANT: Buscar o líder e o Tenant real do departamento
-        const depto = await prisma.departamento.findUnique({
+        const depto = await db.departamento.findUnique({
             where: { id: deptoId },
             select: {
                 lider_id: true,
@@ -75,7 +82,7 @@ export async function criarEscalaAction(formData: FormData) {
             return { ok: false, error: 'Erro de integridade: Departamento sem Tenant associado.' };
         }
 
-        const vinculoLider = await prisma.integranteDepartamento.findFirst({
+        const vinculoLider = await db.integranteDepartamento.findFirst({
             where: {
                 membro_id: liderLogadoId,
                 departamento_id: deptoId,
@@ -99,7 +106,7 @@ export async function criarEscalaAction(formData: FormData) {
         }
 
         // 3. 🛡️ VALIDAÇÃO EXTRA: Evitar escala duplicada no mesmo evento
-        const jaEscalado = await prisma.escala.findFirst({
+        const jaEscalado = await db.escala.findFirst({
             where: {
                 evento_id: eventoId,
                 membro_id: membroEscaladoId,
@@ -114,12 +121,12 @@ export async function criarEscalaAction(formData: FormData) {
 
         // 4. CRIAR A ESCALA NO PRISMA (Com o Tenant Correto)
         // Buscamos o nome da função para manter compatibilidade com o campo 'funcao' (string) que ainda é obrigatório no schema
-        const funcaoRef = await prisma.funcaoDepartamento.findUnique({
+        const funcaoRef = await db.funcaoDepartamento.findUnique({
             where: { id: funcaoId },
             select: { nome: true }
         });
 
-        await prisma.escala.create({
+        await db.escala.create({
             data: {
                 evento_id: eventoId,
                 membro_id: membroEscaladoId,
@@ -440,7 +447,8 @@ const fmtData = (d: Date) =>
 export async function buscarMensagemEventoAction(eventoId: number) {
     try {
         await requireAuth()
-        const mensagem = await prisma.mensagemEvento.findUnique({
+        const { db } = await getDb()
+        const mensagem = await db.mensagemEvento.findUnique({
             where: { evento_id: eventoId },
             include: {
                 pregador: {
@@ -482,13 +490,15 @@ export async function salvarMensagemEventoAction(formData: FormData) {
 
         if (!evento_id) return { sucesso: false, error: 'Evento invalido.' }
 
-        const evento = await prisma.evento.findUnique({
+        const { db } = await getDb()
+
+        const evento = await db.evento.findUnique({
             where: { id: evento_id },
             select: { tenant_id: true }
         })
         if (!evento) return { sucesso: false, error: 'Evento nao encontrado.' }
 
-        await prisma.mensagemEvento.upsert({
+        await db.mensagemEvento.upsert({
             where: { evento_id },
             create: {
                 tenant_id: evento.tenant_id,
@@ -522,7 +532,8 @@ export async function salvarMensagemEventoAction(formData: FormData) {
 export async function removerMensagemEventoAction(eventoId: number) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
-        await prisma.mensagemEvento.deleteMany({
+        const { db } = await getDb()
+        await db.mensagemEvento.deleteMany({
             where: { evento_id: eventoId }
         })
         revalidatePath('/escalas/admin')

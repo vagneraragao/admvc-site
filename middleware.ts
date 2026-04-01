@@ -57,6 +57,7 @@ export function middleware(request: NextRequest) {
         let userRole = ''
         let tenantId = ''
         let plano = ''
+        let congId = ''
 
         parts.forEach(part => {
             const [key, val] = part.split(':')
@@ -64,6 +65,7 @@ export function middleware(request: NextRequest) {
             if (key === 'role') userRole = val
             if (key === 'tenant_id') tenantId = val
             if (key === 'plano') plano = val
+            if (key === 'cong') congId = val
         })
 
         // 3a. Proteção de role: USER não acede a /admin
@@ -86,6 +88,7 @@ export function middleware(request: NextRequest) {
         requestHeaders.set('x-user-role', userRole)
         requestHeaders.set('x-tenant-id', tenantId)
         requestHeaders.set('x-tenant-plano', plano)
+        if (congId) requestHeaders.set('x-congregation-id', congId)
 
         return NextResponse.next({
             request: { headers: requestHeaders },

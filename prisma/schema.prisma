@@ -75,6 +75,7 @@ model Tenant {
   mensagemEventos          MensagemEvento[]
   audit_logs               AuditLog[]
   itemInventarios          ItemInventario[]
+  movimentosInventario     MovimentoInventario[]
 }
 
 model Congregacao {
@@ -84,11 +85,18 @@ model Congregacao {
   endereco      String
   tenant_id     Int
   createdAt     DateTime               @default(now())
-  tenant        Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  departamentos Departamento[]
-  grupos        Grupo[]
-  financas      LancamentoFinanceiro[]
-  membros       Membro[]
+  tenant              Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  departamentos       Departamento[]
+  grupos              Grupo[]
+  financas            LancamentoFinanceiro[]
+  membros             Membro[]
+  eventos             Evento[]
+  escalas             Escala[]
+  repertorios         RepertorioEvento[]
+  indisponibilidades  IndisponibilidadeMembro[]
+  mensagensEvento     MensagemEvento[]
+  itensInventario     ItemInventario[]
+  movimentosInventario MovimentoInventario[]
 }
 
 model Membro {
@@ -303,8 +311,10 @@ model Evento {
   criado_em      DateTime           @default(now())
   atualizado_em  DateTime           @updatedAt
   tenant_id      Int
+  congregacao_id Int?
   escalas        Escala[]
   tenant         Tenant             @relation(fields: [tenant_id], references: [id])
+  congregacao    Congregacao?       @relation(fields: [congregacao_id], references: [id])
   repertorio     RepertorioEvento[]
   mensagemEvento MensagemEvento?
 
@@ -321,12 +331,14 @@ model Escala {
   departamento_id Int
   membro_id       Int
   tenant_id       Int
+  congregacao_id  Int?
   funcao_id       Int?
   departamento    Departamento        @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
   evento          Evento              @relation(fields: [evento_id], references: [id], onDelete: Cascade)
   funcao_ref      FuncaoDepartamento? @relation(fields: [funcao_id], references: [id])
   membro          Membro              @relation(fields: [membro_id], references: [id], onDelete: Cascade)
   tenant          Tenant              @relation(fields: [tenant_id], references: [id])
+  congregacao     Congregacao?        @relation(fields: [congregacao_id], references: [id])
   motivo_recusa   String?
 
   @@unique([evento_id, membro_id, funcao_id])
@@ -568,14 +580,16 @@ model Compromisso {
 
 model RepertorioEvento {
   id         String @id @default(uuid())
-  tenant_id  Int
-  evento_id  Int
-  musica_id  String
-  tom_tocado String
-  ordem      Int
-  evento     Evento @relation(fields: [evento_id], references: [id])
-  musica     Musica @relation(fields: [musica_id], references: [id])
-  tenant     Tenant @relation(fields: [tenant_id], references: [id])
+  tenant_id      Int
+  congregacao_id Int?
+  evento_id      Int
+  musica_id      String
+  tom_tocado     String
+  ordem          Int
+  evento         Evento       @relation(fields: [evento_id], references: [id])
+  musica         Musica       @relation(fields: [musica_id], references: [id])
+  tenant         Tenant       @relation(fields: [tenant_id], references: [id])
+  congregacao    Congregacao? @relation(fields: [congregacao_id], references: [id])
 
   @@unique([evento_id, musica_id])
   @@index([tenant_id])
@@ -608,9 +622,10 @@ model SuperAdmin {
 
 model IndisponibilidadeMembro {
   id          Int       @id @default(autoincrement())
-  tenant_id   Int
-  membro_id   Int
-  tipo        String // 'DIA_SEMANA' | 'DATA_ESPECIFICA' | 'INTERVALO'
+  tenant_id      Int
+  congregacao_id Int?
+  membro_id      Int
+  tipo           String // 'DIA_SEMANA' | 'DATA_ESPECIFICA' | 'INTERVALO'
   dia_semana  Int? // 0=Dom, 1=Seg, ..., 6=Sáb (para DIA_SEMANA)
   data_inicio DateTime? // para DATA_ESPECIFICA e INTERVALO
   data_fim    DateTime? // para INTERVALO (null em DATA_ESPECIFICA)
@@ -619,8 +634,9 @@ model IndisponibilidadeMembro {
   motivo      String?
   criado_em   DateTime  @default(now())
 
-  membro Membro @relation(fields: [membro_id], references: [id], onDelete: Cascade)
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  membro      Membro       @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  congregacao Congregacao?  @relation(fields: [congregacao_id], references: [id])
 
   @@index([tenant_id])
   @@index([membro_id])
@@ -634,20 +650,22 @@ model IndisponibilidadeMembro {
 // npx prisma migrate dev --name add_indisponibilidade_membro
 
 model MensagemEvento {
-  id            Int      @id @default(autoincrement())
-  tenant_id     Int
-  evento_id     Int      @unique // um evento tem uma mensagem
-  pregador_id   Int?
-  titulo        String?
-  texto_biblico String? // ex: "João 3:16"
-  tema          String?
-  notas         String? // esboço livre
-  criado_em     DateTime @default(now())
-  atualizado_em DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int
+  congregacao_id Int?
+  evento_id      Int      @unique // um evento tem uma mensagem
+  pregador_id    Int?
+  titulo         String?
+  texto_biblico  String? // ex: "João 3:16"
+  tema           String?
+  notas          String? // esboço livre
+  criado_em      DateTime @default(now())
+  atualizado_em  DateTime @updatedAt
 
-  evento   Evento  @relation(fields: [evento_id], references: [id], onDelete: Cascade)
-  pregador Membro? @relation(fields: [pregador_id], references: [id])
-  tenant   Tenant  @relation(fields: [tenant_id], references: [id])
+  evento      Evento       @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  pregador    Membro?      @relation(fields: [pregador_id], references: [id])
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  congregacao Congregacao?  @relation(fields: [congregacao_id], references: [id])
 
   @@index([tenant_id])
   @@map("mensagens_evento")
@@ -717,6 +735,7 @@ enum MovimentoTipo {
 model ItemInventario {
   id                Int                 @id @default(autoincrement())
   tenant_id         Int
+  congregacao_id    Int?
   nome              String
   descricao         String?
   categoria         InventarioCategoria @default(OUTRO)
@@ -762,6 +781,7 @@ model ItemInventario {
 
   // Relações
   tenant            Tenant                @relation(fields: [tenant_id], references: [id])
+  congregacao       Congregacao?          @relation(fields: [congregacao_id], references: [id])
   dono_departamento Departamento?         @relation(fields: [dono_departamento_id], references: [id])
   dono_grupo        Grupo?                @relation(fields: [dono_grupo_id], references: [id])
   dono_membro       Membro?               @relation(fields: [dono_membro_id], references: [id])
@@ -779,6 +799,8 @@ model ItemInventario {
 
 model MovimentoInventario {
   id                    Int           @id @default(autoincrement())
+  tenant_id             Int
+  congregacao_id        Int?
   item_id               Int
   tipo                  MovimentoTipo
   quantidade            Int           @default(1)
@@ -790,8 +812,11 @@ model MovimentoInventario {
   observacao            String?
   created_at            DateTime      @default(now())
 
-  item ItemInventario @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  item        ItemInventario @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id])
+  congregacao Congregacao?   @relation(fields: [congregacao_id], references: [id])
 
   @@index([item_id])
+  @@index([tenant_id])
   @@map("inventario_movimentos")
 }

@@ -1,14 +1,24 @@
 'use server'
 
-import prisma from '@/lib/prisma'
+import prisma, { getTenantClient } from '@/lib/prisma'
+import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { requireAuth, requireRole } from '@/lib/auth-utils'
+
+async function getDb() {
+    const h = await headers()
+    const tenantId = Number(h.get('x-tenant-id') || 0)
+    const congId = h.get('x-congregation-id') ? Number(h.get('x-congregation-id')) : undefined
+    if (!tenantId) throw new Error('Igreja nao identificada.')
+    return getTenantClient(tenantId, congId)
+}
 
 // 1. BUSCAR O REPERTÓRIO DE UM EVENTO ESPECÍFICO
 export async function getRepertorioByEvento(eventoId: number) {
     try {
         await requireAuth()
-        const repertorio = await prisma.repertorioEvento.findMany({
+        const db = await getDb()
+        const repertorio = await db.repertorioEvento.findMany({
             where: { evento_id: eventoId },
             include: {
                 musica: true // Traz os dados da música junto (título, link, bpm)
@@ -47,8 +57,9 @@ export async function buscarMusicasCatalogo(busca: string = '') {
 export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: string, tomTocado: string) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
+        const db = await getDb()
         // 1. Descobrir o tenant_id do evento para manter a integridade multitenant
-        const evento = await prisma.evento.findUnique({
+        const evento = await db.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
         });
@@ -56,14 +67,14 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
         if (!evento) return { success: false, error: 'Evento não encontrado.' };
 
         // 2. Descobrir qual é a última ordem para colocar a nova no final
-        const ultimaMusica = await prisma.repertorioEvento.findFirst({
+        const ultimaMusica = await db.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
         });
 
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
 
-        const novoItem = await prisma.repertorioEvento.create({
+        const novoItem = await db.repertorioEvento.create({
             data: {
                 evento_id: eventoId,
                 musica_id: musicaId,
@@ -91,7 +102,8 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
 export async function removerMusicaDoRepertorio(repertorioId: string) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
-        await prisma.repertorioEvento.delete({
+        const db = await getDb()
+        await db.repertorioEvento.delete({
             where: { id: repertorioId }
         });
 
@@ -106,6 +118,7 @@ export async function removerMusicaDoRepertorio(repertorioId: string) {
 export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: string, tom: string, link: string) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
+        const db = await getDb()
         // 1. Procura se a música já existe ou cria uma nova na hora
         let musica = await prisma.musica.findFirst({
             where: { titulo: { equals: titulo, mode: 'insensitive' } }
@@ -124,7 +137,7 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
         }
 
         // 2. Descobrir o tenant_id do evento
-        const eventoReq = await prisma.evento.findUnique({
+        const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
         });
@@ -132,14 +145,14 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
         if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
 
         // 3. Define a ordem (coloca no final da lista)
-        const ultimaMusica = await prisma.repertorioEvento.findFirst({
+        const ultimaMusica = await db.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
         });
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
 
         // 4. Salva a música na escala do culto
-        const novoItem = await prisma.repertorioEvento.create({
+        const novoItem = await db.repertorioEvento.create({
             data: {
                 evento_id: eventoId,
                 musica_id: musica.id,
@@ -163,10 +176,11 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
 export async function atualizarOrdemRepertorio(itens: { id: string, ordem: number }[]) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
+        const db = await getDb()
         // Usa uma transação para atualizar todas as ordens de uma vez com segurança
-        await prisma.$transaction(
+        await db.$transaction(
             itens.map(item =>
-                prisma.repertorioEvento.update({
+                db.repertorioEvento.update({
                     where: { id: item.id },
                     data: { ordem: item.ordem }
                 })
@@ -204,20 +218,21 @@ export async function buscarMusicasLocalmente(busca: string) {
 export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: string, tom: string) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
-        const eventoReq = await prisma.evento.findUnique({
+        const db = await getDb()
+        const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
         });
 
         if (!eventoReq) return { success: false, error: 'Evento não encontrado.' };
 
-        const ultimaMusica = await prisma.repertorioEvento.findFirst({
+        const ultimaMusica = await db.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
         });
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1;
 
-        const novoItem = await prisma.repertorioEvento.create({
+        const novoItem = await db.repertorioEvento.create({
             data: {
                 evento_id: eventoId,
                 musica_id: musicaId,
@@ -330,7 +345,8 @@ export async function adicionarMusicaManualAoEvento(
 ) {
     try {
         await requireRole(['ADMIN', 'LEADER'])
-        const eventoReq = await prisma.evento.findUnique({
+        const db = await getDb()
+        const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
             select: { tenant_id: true }
         })
@@ -350,13 +366,13 @@ export async function adicionarMusicaManualAoEvento(
             }
         })
 
-        const ultimaMusica = await prisma.repertorioEvento.findFirst({
+        const ultimaMusica = await db.repertorioEvento.findFirst({
             where: { evento_id: eventoId },
             orderBy: { ordem: 'desc' }
         })
         const proximaOrdem = ultimaMusica ? ultimaMusica.ordem + 1 : 1
 
-        await prisma.repertorioEvento.create({
+        await db.repertorioEvento.create({
             data: {
                 tenant_id: eventoReq.tenant_id,
                 evento_id: eventoId,

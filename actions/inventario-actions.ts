@@ -1,7 +1,7 @@
 'use server'
 // actions/inventario-actions.ts
 
-import prisma from '@/lib/prisma'
+import prisma, { getTenantClient } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { getSessionData } from '@/lib/auth-utils'
@@ -14,11 +14,12 @@ async function verificarAcesso() {
     return session
 }
 
-async function getTenantId() {
+async function getDb() {
     const h = await headers()
-    const id = h.get('x-tenant-id')
-    if (!id) throw new Error('Igreja não identificada.')
-    return Number(id)
+    const tenantId = Number(h.get('x-tenant-id') || 0)
+    const congId = h.get('x-congregation-id') ? Number(h.get('x-congregation-id')) : undefined
+    if (!tenantId) throw new Error('Igreja não identificada.')
+    return { db: getTenantClient(tenantId, congId), tenantId, congId }
 }
 
 // ── LISTAR ────────────────────────────────────────────────────────────────────
@@ -32,7 +33,7 @@ export async function listarInventario(filtros?: {
 }) {
     try {
         await verificarAcesso()
-        const tenantId = await getTenantId()
+        const { db, tenantId } = await getDb()
 
         const where: any = { tenant_id: tenantId, ativo: true }
 
@@ -50,7 +51,7 @@ export async function listarInventario(filtros?: {
             ]
         }
 
-        const itens = await prisma.itemInventario.findMany({
+        const itens = await db.itemInventario.findMany({
             where,
             include: {
                 dono_departamento: { select: { id: true, nome: true } },
@@ -79,7 +80,8 @@ export async function listarInventario(filtros?: {
 export async function buscarItemInventario(id: number) {
     try {
         await verificarAcesso()
-        const item = await prisma.itemInventario.findUnique({
+        const { db } = await getDb()
+        const item = await db.itemInventario.findUnique({
             where: { id },
             include: {
                 dono_departamento: { select: { id: true, nome: true } },
@@ -98,7 +100,7 @@ export async function buscarItemInventario(id: number) {
 export async function criarItemInventario(formData: FormData) {
     try {
         await verificarAcesso()
-        const tenantId = await getTenantId()
+        const { db, tenantId } = await getDb()
 
         const dono_tipo = formData.get('dono_tipo') as string || 'IGREJA'
         const dono_departamento_id = formData.get('dono_departamento_id')
@@ -110,7 +112,7 @@ export async function criarItemInventario(formData: FormData) {
         const data_aquisicao = formData.get('data_aquisicao')
         const garantia_validade = formData.get('garantia_validade')
 
-        const item = await prisma.itemInventario.create({
+        const item = await db.itemInventario.create({
             data: {
                 tenant_id: tenantId,
                 nome: formData.get('nome') as string,
@@ -142,8 +144,9 @@ export async function criarItemInventario(formData: FormData) {
         })
 
         // Regista movimento inicial de entrada
-        await prisma.movimentoInventario.create({
+        await db.movimentoInventario.create({
             data: {
+                tenant_id: tenantId,
                 item_id: item.id,
                 tipo: 'ENTRADA',
                 quantidade,
@@ -163,6 +166,7 @@ export async function criarItemInventario(formData: FormData) {
 export async function editarItemInventario(id: number, formData: FormData) {
     try {
         await verificarAcesso()
+        const { db } = await getDb()
 
         const dono_tipo = formData.get('dono_tipo') as string || 'IGREJA'
         const tem_garantia = formData.get('tem_garantia') === 'true'
@@ -173,7 +177,7 @@ export async function editarItemInventario(id: number, formData: FormData) {
         const dono_grupo_id = formData.get('dono_grupo_id')
         const dono_membro_id = formData.get('dono_membro_id')
 
-        await prisma.itemInventario.update({
+        await db.itemInventario.update({
             where: { id },
             data: {
                 nome: formData.get('nome') as string,
@@ -213,6 +217,7 @@ export async function editarItemInventario(id: number, formData: FormData) {
 export async function registarMovimento(formData: FormData) {
     try {
         await verificarAcesso()
+        const { db, tenantId } = await getDb()
 
         const itemId = Number(formData.get('item_id'))
         const tipo = formData.get('tipo') as string
@@ -222,7 +227,7 @@ export async function registarMovimento(formData: FormData) {
         const data_retorno_prevista = formData.get('data_retorno_prevista') as string || null
         const responsavel = formData.get('responsavel') as string || null
 
-        const item = await prisma.itemInventario.findUnique({ where: { id: itemId } })
+        const item = await db.itemInventario.findUnique({ where: { id: itemId } })
         if (!item) return { ok: false, error: 'Item não encontrado.' }
 
         // Calcula nova disponibilidade
@@ -236,7 +241,7 @@ export async function registarMovimento(formData: FormData) {
             novaDispo = Math.min(item.quantidade_total, novaDispo + quantidade)
         } else if (tipo === 'ENTRADA') {
             novaDispo += quantidade
-            await prisma.itemInventario.update({
+            await db.itemInventario.update({
                 where: { id: itemId },
                 data: { quantidade_total: item.quantidade_total + quantidade }
             })
@@ -244,9 +249,10 @@ export async function registarMovimento(formData: FormData) {
             novaDispo = quantidade // ajuste directo
         }
 
-        await prisma.$transaction([
-            prisma.movimentoInventario.create({
+        await db.$transaction([
+            db.movimentoInventario.create({
                 data: {
+                    tenant_id: tenantId,
                     item_id: itemId,
                     tipo: tipo as any,
                     quantidade,
@@ -256,7 +262,7 @@ export async function registarMovimento(formData: FormData) {
                     data_retorno_prevista: data_retorno_prevista ? new Date(data_retorno_prevista) : null,
                 }
             }),
-            prisma.itemInventario.update({
+            db.itemInventario.update({
                 where: { id: itemId },
                 data: { quantidade_disponivel: novaDispo }
             })
@@ -273,7 +279,8 @@ export async function registarMovimento(formData: FormData) {
 export async function arquivarItemInventario(id: number) {
     try {
         await verificarAcesso()
-        await prisma.itemInventario.update({ where: { id }, data: { ativo: false } })
+        const { db } = await getDb()
+        await db.itemInventario.update({ where: { id }, data: { ativo: false } })
         revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {
@@ -285,30 +292,30 @@ export async function arquivarItemInventario(id: number) {
 export async function getKpisInventario() {
     try {
         await verificarAcesso()
-        const tenantId = await getTenantId()
+        const { db, tenantId } = await getDb()
 
         const [total, emprestados, emManutencao, garantiaExpirando, valorTotal] = await Promise.all([
-            prisma.itemInventario.count({ where: { tenant_id: tenantId, ativo: true } }),
-            prisma.itemInventario.count({
+            db.itemInventario.count({ where: { tenant_id: tenantId, ativo: true } }),
+            db.itemInventario.count({
                 where: {
                     tenant_id: tenantId, ativo: true,
                     quantidade_disponivel: { lt: prisma.itemInventario.fields.quantidade_total }
                 }
             }),
-            prisma.movimentoInventario.count({
+            db.movimentoInventario.count({
                 where: {
                     tipo: 'MANUTENCAO',
                     data_retorno_real: null,
                     item: { tenant_id: tenantId }
                 }
             }),
-            prisma.itemInventario.count({
+            db.itemInventario.count({
                 where: {
                     tenant_id: tenantId, ativo: true, tem_garantia: true,
                     garantia_validade: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
                 }
             }),
-            prisma.itemInventario.aggregate({
+            db.itemInventario.aggregate({
                 where: { tenant_id: tenantId, ativo: true },
                 _sum: { valor_aquisicao: true }
             })
