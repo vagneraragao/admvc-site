@@ -72,21 +72,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
     }, [eventoId, funcaoId])
 
     return (
-        <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-figueira" />
-
-            <div className="flex items-center gap-4 border-b border-soft pb-6 mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0 shadow-sm">
-                    <Zap size={20} />
-                </div>
-                <div>
-                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg leading-none">Nova Escala</h2>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1.5">
-                        Alocação Rápida
-                    </p>
-                </div>
-            </div>
-
+        <div className="relative">
             <section className="relative animate-in fade-in duration-500">
                 {sucesso && (
                     <div className="absolute -top-4 left-0 right-0 bg-emerald-500 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] animate-in slide-in-from-top-4 duration-300 z-50 flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20">
@@ -116,13 +102,15 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                             alert(res.error)
                         }
                     }}
-                    className="space-y-6"
+                    className="space-y-5"
                 >
+                    <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+
                     {/* PASSO 1 — EVENTO */}
                     <div className="space-y-2 relative">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">1</span>
-                            <label className="text-[10px] font-black uppercase text-muted tracking-widest">Escolha o Evento</label>
+                            <label className="text-[10px] font-black uppercase text-muted tracking-widest">Evento</label>
                         </div>
                         <div className="relative">
                             <CalendarDays size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-figueira" />
@@ -145,9 +133,9 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
 
                     {/* PASSO 2 — FUNÇÃO */}
                     <div className={`space-y-2 transition-all duration-300 ${!eventoId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">2</span>
-                            <label className="text-[10px] font-black uppercase text-muted tracking-widest">Qual a necessidade?</label>
+                            <label className="text-[10px] font-black uppercase text-muted tracking-widest">Funcao</label>
                         </div>
                         <div className="relative">
                             <ShieldCheck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-figueira" />
@@ -168,10 +156,10 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
 
                     {/* PASSO 3 — MEMBRO */}
                     <div className={`space-y-2 transition-all duration-300 ${!funcaoId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">3</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest flex items-center gap-2">
-                                Quem vai servir?
+                                Membro
                                 {funcaoId && (
                                     <span className={`px-2 py-0.5 rounded-md text-[8px] ${membrosAptos.length > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
                                         {membrosAptos.length} Apto(s)
@@ -239,10 +227,14 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                     </div>
 
                     {/* HORÁRIO */}
-                    <div className={`pt-2 transition-all duration-300 ${!membroId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
+                    <div className={`space-y-2 transition-all duration-300 ${!membroId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">4</span>
+                            <label className="text-[10px] font-black uppercase text-muted tracking-widest">Horario</label>
+                        </div>
                         <div className="flex items-center justify-between bg-figueira/5 border border-figueira/20 px-5 py-4 rounded-2xl">
                             <label className="text-[10px] font-black uppercase text-figueira tracking-widest flex items-center gap-2">
-                                <Clock size={14} /> Chegada Padrão
+                                <Clock size={14} /> Chegada
                             </label>
                             <input
                                 type="time"
@@ -253,6 +245,8 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                             />
                         </div>
                     </div>
+
+                    </div>{/* fecha grid */}
 
                     {/* BOTÃO */}
                     <div className="pt-4 mt-4 border-t border-soft/50">

@@ -78,7 +78,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
     )
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
             <header className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -113,52 +113,46 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                 </div>
             </section>
 
-            {/* LAYOUT LADO A LADO */}
-            <section className="grid lg:grid-cols-12 gap-6 items-start">
+            {/* MONTADOR — FULL WIDTH */}
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
+                <div className="flex items-center gap-4 px-6 py-5 border-b border-soft">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                        <Settings2 size={18} />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg leading-none">Atribuir Escala</h2>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
+                            Selecionar evento, departamento, membro e funcao
+                        </p>
+                    </div>
+                </div>
+                <div className="p-6">
+                    <MontadorEscalas
+                        eventos={eventosFuturos}
+                        departamentos={departamentos}
+                        membros={membrosComFuncoes}
+                    />
+                </div>
+            </section>
 
-                {/* MONTADOR — STICKY */}
-                <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 z-10">
-                    <div className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm relative">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
-                        <div className="flex items-center gap-4 px-6 py-5 border-b border-soft">
-                            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                                <Settings2 size={18} />
-                            </div>
-                            <div>
-                                <h2 className="text-sm font-black uppercase tracking-widest text-fg leading-none">Atribuir Escala</h2>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
-                                    Adicionar voluntario
-                                </p>
-                            </div>
-                        </div>
-                        <div className="p-6">
-                            <MontadorEscalas
-                                eventos={eventosFuturos}
-                                departamentos={departamentos}
-                                membros={membrosComFuncoes}
-                            />
-                        </div>
-                    </div>
-                </aside>
-
-                {/* LISTA DE ESCALADOS */}
-                <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-                    <div className="flex items-center gap-3 px-1">
-                        <Users size={15} className="text-emerald-500" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro Geral de Escalas</h2>
-                        {totalEventos > 0 && (
-                            <span className="text-[8px] font-black uppercase tracking-widest bg-soft border border-soft px-2 py-1 rounded-lg text-muted">
-                                {totalEventos} evento{totalEventos !== 1 ? 's' : ''}
-                            </span>
-                        )}
-                    </div>
-                    <div className="animate-in slide-in-from-bottom-4 duration-500">
-                        <ListaEscalados
-                            eventos={eventosFuturos}
-                            isAdmin={true}
-                            membros={membrosComFuncoes}
-                        />
-                    </div>
+            {/* LISTA DE ESCALADOS */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-3 px-1">
+                    <Users size={15} className="text-emerald-500" />
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro Geral de Escalas</h2>
+                    {totalEventos > 0 && (
+                        <span className="text-[8px] font-black uppercase tracking-widest bg-soft border border-soft px-2 py-1 rounded-lg text-muted">
+                            {totalEventos} evento{totalEventos !== 1 ? 's' : ''}
+                        </span>
+                    )}
+                </div>
+                <div className="animate-in slide-in-from-bottom-4 duration-500">
+                    <ListaEscalados
+                        eventos={eventosFuturos}
+                        isAdmin={true}
+                        membros={membrosComFuncoes}
+                    />
                 </div>
             </section>
         </main>
