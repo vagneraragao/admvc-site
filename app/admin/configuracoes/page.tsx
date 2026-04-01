@@ -51,21 +51,6 @@ export default async function EstruturaPage() {
                 </p>
             </header>
 
-            {/* TABS */}
-            <nav className="flex gap-1 p-1 bg-bg2 border border-soft rounded-xl w-fit">
-                {[
-                    { href: '#departamentos', label: 'Departamentos', count: deptos.length, icon: <LayoutGrid size={12} /> },
-                    { href: '#grupos', label: 'Grupos', count: grupos.length, icon: <Users size={12} /> },
-                ].map(item => (
-                    <a key={item.href} href={item.href}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest text-muted hover:text-fg hover:bg-bg transition-all">
-                        {item.icon}
-                        <span className="hidden sm:inline">{item.label}</span>
-                        <span className="text-[8px] bg-soft/50 px-1.5 py-0.5 rounded text-muted">{item.count}</span>
-                    </a>
-                ))}
-            </nav>
-
             {/* DEPARTAMENTOS */}
             <section id="departamentos" className="scroll-mt-20 space-y-4">
                 <div className="flex items-center justify-between">
