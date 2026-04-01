@@ -56,7 +56,7 @@ export function middleware(request: NextRequest) {
         let userId = ''
         let userRole = ''
         let tenantId = ''
-        let plano = 'FREE'
+        let plano = ''
 
         parts.forEach(part => {
             const [key, val] = part.split(':')
@@ -72,8 +72,9 @@ export function middleware(request: NextRequest) {
         }
 
         // 3b. Verificação de módulo: se a rota pertence a um módulo, verifica se o plano o inclui
+        // Se o cookie não tem plano (sessão antiga), permite acesso (será verificado no server-side)
         const modulo = getModuloDaRota(pathname)
-        if (modulo && !moduloIncluidoNoPlano(plano, modulo)) {
+        if (modulo && plano && !moduloIncluidoNoPlano(plano, modulo)) {
             const url = new URL('/membros/dashboard', request.url)
             url.searchParams.set('modulo_bloqueado', modulo)
             return NextResponse.redirect(url)
