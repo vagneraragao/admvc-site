@@ -41,6 +41,7 @@ model Tenant {
   slug                     String                    @unique
   nome                     String
   plano                    String                    @default("FREE")
+  modulos_custom           Json?                     // Override de módulos activos (array de strings). Se null, usa os do plano.
   createdAt                DateTime                  @default(now())
   agendas                  Agenda[]
   avisosMural              AvisoMural[]

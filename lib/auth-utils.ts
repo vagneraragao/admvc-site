@@ -7,6 +7,7 @@ export interface SessionData {
     membroId: number;
     role: string;
     email?: string;
+    plano?: string;
 }
 
 export type Role = 'ADMIN' | 'LEADER' | 'USER' | 'FINANCE' | 'MANAGER'
@@ -53,6 +54,7 @@ export async function getSessionData(): Promise<SessionData | null> {
     let membroId: number | null = null;
     let role: string | null = null;
     let email: string | null = null;
+    let plano: string | null = null;
 
     // Check for the delimited format (id:XX|role:XX|...)
     if (value.includes('id:') && (value.includes('role:') || value.includes('email:'))) {
@@ -69,6 +71,10 @@ export async function getSessionData(): Promise<SessionData | null> {
             if (p.startsWith('email:')) {
                 const val = p.split(':')[1];
                 if (val) email = val;
+            }
+            if (p.startsWith('plano:')) {
+                const val = p.split(':')[1];
+                if (val) plano = val;
             }
         });
     } 
@@ -87,9 +93,10 @@ export async function getSessionData(): Promise<SessionData | null> {
         return null;
     }
 
-    return { 
-        membroId, 
-        role: role || 'USER', 
-        email: email || undefined 
+    return {
+        membroId,
+        role: role || 'USER',
+        email: email || undefined,
+        plano: plano || undefined
     };
 }

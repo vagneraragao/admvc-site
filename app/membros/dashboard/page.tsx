@@ -1,6 +1,8 @@
 // app/membros/dashboard/page.tsx
+import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
+import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -404,6 +406,11 @@ export default async function DashboardMembro({
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 relative">
+
+            {/* MODAL DE MÓDULO BLOQUEADO (aparece quando redirecionado do middleware) */}
+            <Suspense fallback={null}>
+                <ModuloBloqueado />
+            </Suspense>
 
             {/* CABEÇALHO DO PERFIL */}
             <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-[2.5rem] shadow-xl relative z-30">

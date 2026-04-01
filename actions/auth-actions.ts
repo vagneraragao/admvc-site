@@ -47,7 +47,8 @@ export async function validarLoginGeral(email: string, pass: string, redirectPat
 
     try {
         const membro = await prisma.membro.findUnique({
-            where: { email: email.toLowerCase().trim() }
+            where: { email: email.toLowerCase().trim() },
+            include: { tenant: { select: { plano: true } } }
         });
 
         if (!membro || !membro.password) {
@@ -67,8 +68,9 @@ export async function validarLoginGeral(email: string, pass: string, redirectPat
             return { autorizado: false, erro: "Não tem permissão de administrador." };
         }
 
+        const planoGeral = membro.tenant?.plano || 'FREE';
         const cookieStore = await cookies();
-        cookieStore.set('admvc_session', `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`, {
+        cookieStore.set('admvc_session', `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}|plano:${planoGeral}`, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 2, // 2 horas
@@ -189,7 +191,8 @@ export async function loginUnificado(formData: FormData) {
     if (!rateLimit.permitido) return { error: rateLimit.erro }
 
     const usuario = await prisma.membro.findUnique({
-        where: { email }
+        where: { email },
+        include: { tenant: { select: { plano: true } } }
     })
 
     if (!usuario || !usuario.password) {
@@ -249,7 +252,8 @@ export async function loginUnificado(formData: FormData) {
 
     console.log(`LOGIN BEM SUCEDIDO! Role: ${usuario.role}`)
 
-    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}`
+    const plano = usuario.tenant?.plano || 'FREE'
+    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}|plano:${plano}`
     const cookieStore = await cookies()
     cookieStore.set('admvc_session', sessionData, {
         httpOnly: true,
@@ -278,7 +282,8 @@ export async function loginAdmin(formData: FormData) {
     if (!rateLimit.permitido) return { error: rateLimit.erro }
 
     const membro = await prisma.membro.findFirst({
-        where: { email, role: 'ADMIN' }
+        where: { email, role: 'ADMIN' },
+        include: { tenant: { select: { plano: true } } }
     })
 
     if (!membro || !membro.password) {
@@ -332,7 +337,8 @@ export async function loginAdmin(formData: FormData) {
         descricao: `Login de administrador realizado com sucesso`,
     })
 
-    const sessionData = `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}`
+    const planoAdmin = membro.tenant?.plano || 'FREE'
+    const sessionData = `id:${membro.id}|role:${membro.role}|tenant_id:${membro.tenant_id}|plano:${planoAdmin}`
     const cookieStore = await cookies()
     cookieStore.set('admvc_session', sessionData, {
         httpOnly: true,
