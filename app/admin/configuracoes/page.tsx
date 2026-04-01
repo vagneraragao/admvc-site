@@ -54,7 +54,6 @@ export default async function EstruturaPage() {
             {/* TABS */}
             <nav className="flex gap-1 p-1 bg-bg2 border border-soft rounded-xl w-fit">
                 {[
-                    { href: '#cargos', label: 'Cargos', count: cargos.length, icon: <Briefcase size={12} /> },
                     { href: '#departamentos', label: 'Departamentos', count: deptos.length, icon: <LayoutGrid size={12} /> },
                     { href: '#grupos', label: 'Grupos', count: grupos.length, icon: <Users size={12} /> },
                 ].map(item => (
@@ -66,37 +65,6 @@ export default async function EstruturaPage() {
                     </a>
                 ))}
             </nav>
-
-            {/* CARGOS */}
-            <section id="cargos" className="scroll-mt-20 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Briefcase size={16} className="text-figueira" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Cargos</h2>
-                    </div>
-                    <Popover titulo="Cargo">
-                        <ConfigForm action={criarCargo} placeholder="Ex: Diacono..." label="Novo Cargo" />
-                    </Popover>
-                </div>
-
-                {cargos.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                        {cargos.map(c => (
-                            <div key={c.id} className="group flex items-center gap-2 px-3 py-2 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
-                                <Hash size={10} className="text-figueira/40" />
-                                <span className="text-[10px] font-bold uppercase tracking-wide text-fg">{c.nome}</span>
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <BotaoExcluirCargo id={c.id} nome={c.nome} onExcluir={excluirCargo} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <Empty message="Nenhum cargo registado." />
-                )}
-            </section>
-
-            <div className="border-t border-soft/50" />
 
             {/* DEPARTAMENTOS */}
             <section id="departamentos" className="scroll-mt-20 space-y-4">

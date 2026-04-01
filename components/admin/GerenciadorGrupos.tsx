@@ -130,103 +130,74 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         {grupos.map((grupo) => (
-                            <div key={grupo.id} className="group relative bg-bg border border-soft rounded-[2rem] p-6 hover:border-emerald-500/30 transition-all overflow-hidden flex flex-col justify-between">
+                            <div key={grupo.id} className="bg-bg2 border border-soft rounded-2xl p-5 hover:border-emerald-500/20 transition-all group relative overflow-hidden">
 
-                                {/* OVERLAY DE CONFIRMAÇÃO DE EXCLUSÃO */}
+                                {/* Overlay de exclusao */}
                                 {confirmarExclusao === grupo.id && (
-                                    <div className="absolute inset-0 bg-red-600/96 z-20 flex flex-col items-center justify-center p-6 text-center rounded-[2rem] animate-in zoom-in-95 duration-200">
-                                        <Trash2 size={24} className="text-white mb-3" />
-                                        <p className="text-white text-[10px] font-black uppercase tracking-widest mb-5 leading-tight">
-                                            Eliminar "{grupo.nome}"?
+                                    <div className="absolute inset-0 bg-red-600/95 z-20 flex flex-col items-center justify-center p-5 text-center rounded-2xl animate-in zoom-in-95">
+                                        <Trash2 size={20} className="text-white mb-2" />
+                                        <p className="text-white text-[10px] font-black uppercase tracking-widest mb-4">
+                                            Eliminar &quot;{grupo.nome}&quot;?
                                         </p>
-                                        <div className="flex gap-2 w-full">
-                                            <button
-                                                onClick={() => handleExcluir(grupo.id)}
-                                                disabled={salvando}
-                                                className="flex-1 bg-white text-red-600 py-2.5 rounded-xl font-black text-[9px] uppercase hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
-                                            >
-                                                {salvando ? <Loader2 size={12} className="animate-spin" /> : null}
-                                                Confirmar
+                                        <div className="flex gap-2 w-full max-w-[200px]">
+                                            <button onClick={() => handleExcluir(grupo.id)} disabled={salvando}
+                                                className="flex-1 bg-white text-red-600 py-2 rounded-lg font-black text-[9px] uppercase flex items-center justify-center gap-1">
+                                                {salvando ? <Loader2 size={11} className="animate-spin" /> : null} Sim
                                             </button>
-                                            <button
-                                                onClick={() => setConfirmarExclusao(null)}
-                                                className="flex-1 bg-white/20 text-white py-2.5 rounded-xl font-black text-[9px] uppercase hover:bg-white/30"
-                                            >
-                                                Cancelar
+                                            <button onClick={() => setConfirmarExclusao(null)}
+                                                className="flex-1 bg-white/20 text-white py-2 rounded-lg font-black text-[9px] uppercase">
+                                                Nao
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* CONTEÚDO DO CARD */}
-                                <div className="space-y-4">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                                                <Users size={18} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black italic tracking-tight uppercase text-fg leading-none line-clamp-1">
-                                                    {grupo.nome}
-                                                </h3>
-                                                {grupo.categoria && (
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted">
-                                                        {grupo.categoria}
-                                                    </span>
-                                                )}
-                                            </div>
+                                {/* Header */}
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center shrink-0 text-sm font-black">
+                                            {grupo.nome[0]}
                                         </div>
-                                        <button
-                                            onClick={() => setConfirmarExclusao(grupo.id)}
-                                            className="p-1.5 text-muted hover:text-red-500 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-1.5 pl-1">
-                                        <p className="text-[9px] text-muted font-bold uppercase tracking-wide flex items-center gap-2">
-                                            <MapPin size={10} className="text-emerald-500/60 shrink-0" />
-                                            {grupo.bairro}, {grupo.cidade}
-                                        </p>
-                                        <p className="text-[9px] text-muted font-bold uppercase tracking-wide flex items-center gap-2">
-                                            <Calendar size={10} className="text-emerald-500/60 shrink-0" />
-                                            {grupo.dia_semana} · {grupo.horario}
-                                        </p>
-                                    </div>
-
-                                    {/* CHIPS DE LÍDERES */}
-                                    {grupo.lideres?.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5 pt-1">
-                                            {grupo.lideres.map((l: any) => (
-                                                <span key={l.id} className="text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-700 px-2 py-1 rounded-lg border border-emerald-500/20">
-                                                    {l.first_name} {l.last_name}
-                                                </span>
-                                            ))}
+                                        <div>
+                                            <h3 className="text-sm font-black uppercase tracking-tight text-fg leading-none line-clamp-1">
+                                                {grupo.nome}
+                                            </h3>
+                                            <p className="text-[9px] font-bold text-muted mt-1">
+                                                {grupo.dia_semana} · {grupo.horario}
+                                                {grupo.cidade ? ` · ${grupo.cidade}` : ''}
+                                            </p>
                                         </div>
-                                    )}
-
-                                    {/* CONTAGEM DE MEMBROS */}
-                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-muted uppercase tracking-widest">
-                                        <Users size={10} />
-                                        {grupo._count?.membros ?? grupo.membros?.length ?? 0} membros
                                     </div>
+                                    <button onClick={() => setConfirmarExclusao(grupo.id)}
+                                        className="p-1.5 rounded-lg text-muted opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 transition-all">
+                                        <Trash2 size={13} />
+                                    </button>
                                 </div>
 
-                                <button
-                                    onClick={() => abrirFormulario(grupo)}
-                                    className="mt-5 w-full py-3 bg-bg2 border border-soft text-fg rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <Edit3 size={11} /> Editar
+                                {/* Stats */}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-[9px] font-bold bg-soft/30 px-2 py-1 rounded-lg text-muted flex items-center gap-1">
+                                        <Users size={10} /> {grupo._count?.membros ?? grupo.membros?.length ?? 0} membros
+                                    </span>
+                                    {grupo.lideres?.length > 0 && (
+                                        <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-600 px-2 py-1 rounded-lg flex items-center gap-1">
+                                            <Shield size={10} /> {grupo.lideres.map((l: any) => l.first_name).join(', ')}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Action */}
+                                <button onClick={() => abrirFormulario(grupo)}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-fg hover:text-bg transition-all">
+                                    <Edit3 size={13} /> Editar Grupo
                                 </button>
                             </div>
                         ))}
 
                         {grupos.length === 0 && (
-                            <div className="col-span-full py-16 text-center border-2 border-dashed border-soft rounded-3xl">
-                                <Users size={32} className="mx-auto text-muted/30 mb-3" />
+                            <div className="col-span-full py-10 text-center border border-dashed border-soft rounded-2xl bg-bg2/30">
                                 <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Nenhum grupo criado.</p>
                             </div>
                         )}
