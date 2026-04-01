@@ -1,14 +1,14 @@
 // app/admin/familias/page.tsx
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
-import { GestaoFamiliaCard } from '@/components/familias/GestaoFamiliaCard'
 import NovaFamiliaModal from '@/components/familias/NovaFamiliaModal'
-import { Home, Users, UserX } from 'lucide-react'
+import FamiliasGrid from '@/components/familias/FamiliasGrid'
+import { UserX } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminFamiliasPage() {
-    const [familias, qtdMembrosSemVinculo, totalMembros] = await Promise.all([
+    const [familias, qtdMembrosSemVinculo] = await Promise.all([
         prisma.familia.findMany({
             include: {
                 members: {
@@ -21,7 +21,6 @@ export default async function AdminFamiliasPage() {
             orderBy: { surname: 'asc' }
         }),
         prisma.membro.count({ where: { familia_id: null } }),
-        prisma.membro.count({ where: { status: { in: ['Ativo', 'ATIVO'] } } }),
     ])
 
     const nomesFamiliasExistentes = familias.map(f => f.surname)
@@ -30,7 +29,6 @@ export default async function AdminFamiliasPage() {
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
-            {/* HEADER */}
             <header className="flex items-center justify-between">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Familias</h1>
@@ -42,7 +40,6 @@ export default async function AdminFamiliasPage() {
                 <NovaFamiliaModal familiasExistentes={nomesFamiliasExistentes} />
             </header>
 
-            {/* ALERTA */}
             {qtdMembrosSemVinculo > 0 && (
                 <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
@@ -57,19 +54,7 @@ export default async function AdminFamiliasPage() {
                 </div>
             )}
 
-            {/* GRID */}
-            {familias.length > 0 ? (
-                <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {familias.map(familia => (
-                        <GestaoFamiliaCard key={familia.id} familia={familia} />
-                    ))}
-                </section>
-            ) : (
-                <div className="py-16 text-center border border-dashed border-soft rounded-2xl bg-bg2/30">
-                    <Home size={24} className="mx-auto text-muted/30 mb-2" />
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Nenhuma familia registada.</p>
-                </div>
-            )}
+            <FamiliasGrid familias={familias} />
         </main>
     )
 }
