@@ -8,6 +8,7 @@ export interface SessionData {
     role: string;
     email?: string;
     plano?: string;
+    congregacaoId?: number;
 }
 
 export type Role = 'ADMIN' | 'LEADER' | 'USER' | 'FINANCE' | 'MANAGER'
@@ -55,6 +56,7 @@ export async function getSessionData(): Promise<SessionData | null> {
     let role: string | null = null;
     let email: string | null = null;
     let plano: string | null = null;
+    let congregacaoId: number | null = null;
 
     // Check for the delimited format (id:XX|role:XX|...)
     if (value.includes('id:') && (value.includes('role:') || value.includes('email:'))) {
@@ -75,6 +77,10 @@ export async function getSessionData(): Promise<SessionData | null> {
             if (p.startsWith('plano:')) {
                 const val = p.split(':')[1];
                 if (val) plano = val;
+            }
+            if (p.startsWith('cong:')) {
+                const val = p.split(':')[1];
+                if (val) congregacaoId = parseInt(val);
             }
         });
     } 
@@ -97,6 +103,7 @@ export async function getSessionData(): Promise<SessionData | null> {
         membroId,
         role: role || 'USER',
         email: email || undefined,
-        plano: plano || undefined
+        plano: plano || undefined,
+        congregacaoId: congregacaoId && !isNaN(congregacaoId) ? congregacaoId : undefined
     };
 }

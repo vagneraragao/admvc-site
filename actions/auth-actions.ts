@@ -253,7 +253,8 @@ export async function loginUnificado(formData: FormData) {
     console.log(`LOGIN BEM SUCEDIDO! Role: ${usuario.role}`)
 
     const plano = usuario.tenant?.plano || 'FREE'
-    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}|plano:${plano}`
+    const congId = usuario.congregacao_id || ''
+    const sessionData = `id:${usuario.id}|role:${usuario.role}|tenant_id:${usuario.tenant_id}|plano:${plano}${congId ? `|cong:${congId}` : ''}`
     const cookieStore = await cookies()
     cookieStore.set('admvc_session', sessionData, {
         httpOnly: true,
@@ -264,6 +265,16 @@ export async function loginUnificado(formData: FormData) {
     })
 
     console.log(`=============================================\n`)
+
+    // Se é admin/leader, verifica se o tenant tem múltiplas congregações
+    if (usuario.role === 'ADMIN' || usuario.role === 'LEADER') {
+        const totalCong = await prisma.congregacao.count({
+            where: { tenant_id: usuario.tenant_id }
+        })
+        if (totalCong > 1 && !usuario.congregacao_id) {
+            redirect('/membros/selecionar-congregacao')
+        }
+    }
 
     if (usuario.role === 'ADMIN') redirect('/admin/dashboard')
     if (usuario.role === 'FINANCE') redirect('/departamentos/financeiro/dashboard')

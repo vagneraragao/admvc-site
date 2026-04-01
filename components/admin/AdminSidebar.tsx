@@ -70,7 +70,11 @@ function NavSection({ titulo, items, collapsed, pathname }: {
     )
 }
 
-export default function AdminSidebar({ adminNome }: { adminNome?: string }) {
+export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome }: {
+    adminNome?: string
+    igrejaName?: string
+    congregacaoNome?: string | null
+}) {
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
 
@@ -90,25 +94,41 @@ export default function AdminSidebar({ adminNome }: { adminNome?: string }) {
         <aside className={`hidden md:flex bg-bg2 border-r border-soft flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${
             collapsed ? 'w-16' : 'w-60'
         }`}>
-            {/* LOGO + TOGGLE */}
-            <div className={`h-16 flex items-center border-b border-soft ${collapsed ? 'justify-center px-1.5' : 'justify-between px-3'}`}>
-                {!collapsed && (
-                    <Link href="/admin/dashboard" className="flex items-center gap-2 px-1 min-w-0">
-                        <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
-                            <Shield size={14} className="text-white" />
-                        </div>
-                        <span className="font-black italic uppercase tracking-tighter text-fg text-sm truncate">
-                            {adminNome || 'Admin'}
-                        </span>
-                    </Link>
+            {/* HEADER: Igreja + Admin */}
+            <div className={`border-b border-soft ${collapsed ? 'px-1.5 py-3' : 'px-3 py-3'}`}>
+                <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+                    {!collapsed && (
+                        <Link href="/admin/dashboard" className="flex items-center gap-2 px-1 min-w-0">
+                            <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
+                                <Shield size={14} className="text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <span className="font-black italic uppercase tracking-tighter text-fg text-sm truncate block">
+                                    {adminNome || 'Admin'}
+                                </span>
+                            </div>
+                        </Link>
+                    )}
+                    <button
+                        onClick={toggle}
+                        className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all shrink-0"
+                        title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+                    >
+                        {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                    </button>
+                </div>
+                {!collapsed && igrejaName && (
+                    <div className="mt-2 px-1 space-y-0.5">
+                        <p className="text-[8px] font-black uppercase tracking-[0.15em] text-figueira truncate">
+                            {igrejaName}
+                        </p>
+                        {congregacaoNome && (
+                            <p className="text-[8px] font-bold text-muted truncate">
+                                {congregacaoNome}
+                            </p>
+                        )}
+                    </div>
                 )}
-                <button
-                    onClick={toggle}
-                    className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all shrink-0"
-                    title={collapsed ? 'Expandir menu' : 'Recolher menu'}
-                >
-                    {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-                </button>
             </div>
 
             {/* NAV */}
