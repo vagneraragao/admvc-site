@@ -268,11 +268,11 @@ export default function HolyricsControllerPage() {
                         isBackIcon: true
                     },
                     {
-                        label: "Mídia", // ou "Membros", dependendo de como organizas mentalmente a tua plataforma
+                        label: "Louvor",
                         hideOnMobile: true
                     },
                     {
-                        label: "Gestão de Projeção"
+                        label: "Holyrics Live"
                     }
                 ]} />
             </div>

@@ -12,7 +12,7 @@ export default async function RaizAdmin() {
         redirect('/admin/dashboard')
     } else {
         // Se não houver sessão, ele é mandado para a tela de login do admin
-        redirect('/admin/login')
+        redirect('/membros/login')
     }
 
     // Como o redirect interrompe a execução, o retorno abaixo nunca aparece, 

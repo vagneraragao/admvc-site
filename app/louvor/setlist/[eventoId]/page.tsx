@@ -1,4 +1,4 @@
-// app/membros/setlist/[eventoId]/page.tsx
+// app/louvor/setlist/[eventoId]/page.tsx
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import SetlistPalco from '@/components/louvor/SetlistPalco'

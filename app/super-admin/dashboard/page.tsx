@@ -7,7 +7,7 @@ export default async function SuperAdminPage() {
     // 1. Proteção Básica 
     const cookieStore = await cookies();
     const session = cookieStore.get('admvc_session');
-    if (!session) redirect('/admin/login');
+    if (!session) redirect('/membros/login');
 
     // 2. Busca de Dados Globais da Plataforma
     const igrejas = await prismaGlobal.tenant.findMany({

@@ -48,7 +48,7 @@ export default async function AuditoriaPage({
 }) {
     const cookieStore = await cookies()
     const session = cookieStore.get('admvc_session')
-    if (!session) redirect('/admin/login')
+    if (!session) redirect('/membros/login')
 
     const parts = decodeURIComponent(session.value).split('|')
     let tenantId = '1', userRole = ''

@@ -462,7 +462,7 @@ export default async function DashboardMembro({
                                         </Link>
                                     )}
                                     {permissoes.isMidia && (
-                                        <Link href="/departamentos/midia/holyrics" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
+                                        <Link href="/louvor/holyrics" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
                                             <MonitorPlay size={14} className="text-purple-500" /> Mídia / Holyrics
                                         </Link>
                                     )}
