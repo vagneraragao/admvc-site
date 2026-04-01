@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         }),
         tenantId ? prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { nome: true }
+            select: { nome: true, logo_url: true }
         }) : null,
         tenantId ? prisma.congregacao.findMany({
             where: { tenant_id: tenantId },
@@ -40,6 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <AdminSidebar
                 adminNome={admin?.first_name}
                 igrejaName={tenant?.nome}
+                logoUrl={tenant?.logo_url}
                 congregacaoNome={admin?.congregacao?.nome}
                 role={session.role}
                 congregacaoFilter={

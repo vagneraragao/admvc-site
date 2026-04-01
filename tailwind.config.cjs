@@ -1,4 +1,14 @@
 /** @type {import('tailwindcss').Config} */
+
+function withOpacity(variable) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${variable}), ${opacityValue})`
+    }
+    return `rgb(var(${variable}))`
+  }
+}
+
 module.exports = {
   darkMode: ["class"],
   content: [
@@ -9,9 +19,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        figueira: '#3F6B4F',
-        soft: '#7FAE93',
-        // ...
+        figueira: withOpacity('--figueira-rgb'),
+        soft: withOpacity('--soft-rgb'),
       }
     }
   },

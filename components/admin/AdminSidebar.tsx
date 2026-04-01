@@ -76,9 +76,10 @@ function NavSection({ titulo, items, collapsed, pathname, isFullAdmin = true, on
     )
 }
 
-export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome, role = 'ADMIN', congregacaoFilter }: {
+export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregacaoNome, role = 'ADMIN', congregacaoFilter }: {
     adminNome?: string
     igrejaName?: string
+    logoUrl?: string | null
     congregacaoNome?: string | null
     role?: string
     congregacaoFilter?: React.ReactNode
@@ -111,9 +112,13 @@ export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome, r
                 <div className={`flex items-center ${!isMobile && collapsed ? 'justify-center' : 'justify-between'}`}>
                     {(isMobile || !collapsed) && (
                         <Link href="/admin/dashboard" className="flex items-center gap-2 px-1 min-w-0" onClick={() => isMobile && setMobileOpen(false)}>
-                            <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
-                                <Shield size={14} className="text-white" />
-                            </div>
+                            {logoUrl ? (
+                                <img src={logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                            ) : (
+                                <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
+                                    <Shield size={14} className="text-white" />
+                                </div>
+                            )}
                             <div className="min-w-0">
                                 <span className="font-black italic uppercase tracking-tighter text-fg text-sm truncate block">
                                     {adminNome || 'Admin'}
@@ -179,9 +184,13 @@ export default function AdminSidebar({ adminNome, igrejaName, congregacaoNome, r
             {/* MOBILE: Top bar com hamburger */}
             <div className="md:hidden flex items-center justify-between bg-bg2 border-b border-soft px-4 py-3 sticky top-0 z-40">
                 <Link href="/admin/dashboard" className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center">
-                        <Shield size={14} className="text-white" />
-                    </div>
+                    {logoUrl ? (
+                        <img src={logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />
+                    ) : (
+                        <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center">
+                            <Shield size={14} className="text-white" />
+                        </div>
+                    )}
                     <span className="font-black italic uppercase tracking-tighter text-fg text-sm">
                         {adminNome || 'Admin'}
                     </span>

@@ -1,7 +1,7 @@
 // components/ui/BrandingProvider.tsx
 // Server component que injecta CSS variables do tenant no portal
 
-import { getTenantBranding, gerarCorDeep, gerarBg2 } from '@/lib/branding'
+import { getTenantBranding, gerarCorDeep, gerarBg2, hexToRgb } from '@/lib/branding'
 
 export default async function BrandingProvider({ children }: { children: React.ReactNode }) {
     const branding = await getTenantBranding()
@@ -12,6 +12,9 @@ export default async function BrandingProvider({ children }: { children: React.R
         '--g-soft': branding.corSecundaria,
         '--bg': branding.corFundo,
         '--bg2': gerarBg2(branding.corFundo),
+        // RGB channels para Tailwind opacity (bg-figueira/10 etc.)
+        '--figueira-rgb': hexToRgb(branding.corPrimaria),
+        '--soft-rgb': hexToRgb(branding.corSecundaria),
     } as React.CSSProperties
 
     return (

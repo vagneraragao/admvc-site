@@ -72,6 +72,10 @@
   --g-figueira: #3f6b4f;
   --g-deep: #2e4f3a;
   --g-soft: #7fae93;
+
+  /* RGB channels para Tailwind opacity (bg-figueira/10 etc.) */
+  --figueira-rgb: 63, 107, 79;
+  --soft-rgb: 127, 174, 147;
 }
 
 html,
