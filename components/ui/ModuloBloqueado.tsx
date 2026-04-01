@@ -14,6 +14,7 @@ const NOMES_MODULO: Record<string, string> = {
     inventario: 'Inventário',
     gabinete: 'Gabinete / Agenda',
     mural: 'Mural',
+    personalizacao: 'Personalização Visual',
     relatorios: 'Relatórios',
     auditoria: 'Auditoria',
 }
