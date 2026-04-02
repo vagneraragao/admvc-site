@@ -134,6 +134,11 @@ export async function criarCompromissoAction(formData: FormData) {
         const data_inicio = new Date(`${dataStr}T${hora_inicioStr}:00`);
         const data_fim = new Date(`${dataStr}T${hora_fimStr}:00`);
 
+        // Validar: não permitir marcar hora já passada
+        if (data_inicio < new Date()) {
+            return { ok: false, error: "Não é possível agendar para uma data/hora já passada." };
+        }
+
         // 1. Vai buscar a agenda para saber qual é o tenant_id
         const agenda = await prisma.agenda.findUnique({ where: { id: agenda_id } });
         if (!agenda) return { ok: false, error: "Agenda não encontrada." };
