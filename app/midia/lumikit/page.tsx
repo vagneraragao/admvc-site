@@ -16,18 +16,22 @@ export default async function LumikitPage() {
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
-        select: { lumikit_url: true, lumikit_cenas: true }
+        select: { holyrics_url: true, holyrics_token: true, lumikit_cenas: true }
     })
 
-    const config = (tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [], dimmers: [] }
+    const config = (tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [] }
 
     return (
         <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
             <header className="space-y-1">
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Iluminacao</h1>
-                <p className="text-xs text-muted">Lumikit — Controlo de cenas e brilho.</p>
+                <p className="text-xs text-muted">Controlo de cenas via Holyrics + Lumikit.</p>
             </header>
-            <LumikitClient url={tenant?.lumikit_url || ''} scenes={config.scenes} dimmers={config.dimmers} />
+            <LumikitClient
+                holyricsUrl={tenant?.holyrics_url || ''}
+                holyricsToken={tenant?.holyrics_token || ''}
+                scenes={config.scenes}
+            />
         </main>
     )
 }

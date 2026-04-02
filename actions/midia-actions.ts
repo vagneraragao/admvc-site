@@ -74,20 +74,14 @@ export type LumikitScene = {
     id: string
     nome: string
     cor: string
-    page: number   // 0-99
-    scene: number  // 0-15
-}
-
-export type LumikitDimmer = {
-    id: string
-    nome: string
-    page: number
-    scene: number
+    icone: string
+    tipo: 'push' | 'toggle'
+    scriptOn: string       // ID do script no Holyrics (executar / ligar)
+    scriptOff?: string     // ID do script no Holyrics (desligar — só para toggle)
 }
 
 export type LumikitConfig = {
     scenes: LumikitScene[]
-    dimmers: LumikitDimmer[]
 }
 
 export async function salvarLumikitCenas(config: LumikitConfig) {
@@ -104,6 +98,7 @@ export async function salvarLumikitCenas(config: LumikitConfig) {
 
         revalidatePath('/admin/midia')
         revalidatePath('/midia/lumikit')
+        revalidatePath('/admin/dashboard')
         return { ok: true }
     } catch (error: any) {
         return { ok: false, error: 'Erro ao guardar cenas Lumikit.' }
