@@ -115,17 +115,23 @@ export const TONS_DISPONIVEIS = NOTAS
 // IMPORTAÇÃO — Converter formato CifraClub para formato bracket
 // ============================================================================
 
-const ACORDE_REGEX = /^[A-G][#b]?(m|M|dim|aug|sus[24]?|add|maj|min)?[0-9]*(\/[A-G][#b]?)?$/
+// Regex abrangente para acordes musicais
+// Aceita: C, Am, F#m7, Bb7, Cmaj7, Dsus4, G7M, Em/B, A(add9), C2, etc.
+const ACORDE_REGEX = /^[A-G][#b]?(?:m|M|dim|aug|sus[24]?|add[0-9]*|maj|min|°|ø)?[0-9]*(?:M)?(?:\([^)]*\))?(?:\/[A-G][#b]?)?$/
 
 /**
  * Verifica se uma linha contém apenas acordes (formato CifraClub).
  */
 function isLinhaDeAcordes(linha: string): boolean {
-    const partes = linha.trim().split(/\s+/)
-    if (partes.length === 0 || (partes.length === 1 && partes[0] === '')) return false
-    // Pelo menos 50% dos tokens devem ser acordes válidos
+    const trimmed = linha.trim()
+    if (!trimmed) return false
+    const partes = trimmed.split(/\s+/)
+    if (partes.length === 0) return false
+    // Pelo menos 60% dos tokens devem ser acordes válidos, e pelo menos 1
     const acordes = partes.filter(p => ACORDE_REGEX.test(p))
-    return acordes.length > 0 && acordes.length >= partes.length * 0.5
+    // Também considerar linha de acordes se todos os tokens são curtos (< 6 chars) e maioria são acordes
+    const todosCurtos = partes.every(p => p.length <= 8)
+    return acordes.length > 0 && (acordes.length >= partes.length * 0.5 || (todosCurtos && acordes.length >= partes.length * 0.4))
 }
 
 /**
