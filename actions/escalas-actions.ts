@@ -5,6 +5,7 @@ import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 import { enviarNotificacaoEscala } from '@/lib/email-escalas'
+import { sendPushToMembro } from '@/lib/web-push'
 import prisma from '@/lib/prisma'
 
 async function getDb() {
@@ -142,6 +143,17 @@ export async function criarEscalaAction(formData: FormData) {
         // 5. ATUALIZAR CACHE
         revalidatePath(`/escalas/gestao/${deptoId}`);
         revalidatePath('/membros/dashboard');
+
+        // 6. PUSH NOTIFICATION ao membro escalado
+        const evento = await db.evento.findUnique({ where: { id: eventoId }, select: { nome: true, data: true } })
+        if (evento) {
+            const dataFmt = new Date(evento.data).toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: 'short' })
+            sendPushToMembro(membroEscaladoId, {
+                title: 'Nova Escala!',
+                body: `Foste escalado para ${evento.nome} (${dataFmt}) — ${funcaoRef?.nome || 'Servico'}`,
+                url: '/membros/dashboard',
+            }).catch(() => {})
+        }
 
         return { ok: true };
 

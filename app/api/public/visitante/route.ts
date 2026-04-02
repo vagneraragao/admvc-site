@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { enviarEmailNotificacaoEquipa } from '@/lib/mail'
+import { sendPushToDepartamento } from '@/lib/web-push'
 
 export async function POST(request: Request) {
     try {
@@ -31,11 +32,19 @@ export async function POST(request: Request) {
             }
         })
 
-        try {
-            await enviarEmailNotificacaoEquipa({ nome, telefone, pedido: pedido_oracao })
-        } catch {
-            // Nao bloqueia se o email falhar
-        }
+        // Email para equipa
+        enviarEmailNotificacaoEquipa({ nome, telefone, pedido: pedido_oracao }).catch(() => {})
+
+        // Push notification para membros do acolhimento
+        sendPushToDepartamento(
+            ['acolhimento', 'integração', 'Acolhimento'],
+            {
+                title: 'Novo Visitante!',
+                body: `${nome} acabou de se registar. Faca o primeiro contacto.`,
+                url: '/departamentos/acolhimento/dashboard',
+                tag: 'visitante-novo',
+            }
+        ).catch(() => {})
 
         return NextResponse.json({ ok: true, id: visitante.id })
     } catch (error: any) {

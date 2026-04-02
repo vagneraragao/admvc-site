@@ -59,4 +59,68 @@ export async function sendPushToMembro(
   }
 }
 
+// ── Enviar push para membros de departamentos por nome ──────────────────────
+export async function sendPushToDepartamento(
+  deptoTermos: string[],
+  payload: { title: string; body: string; url?: string; tag?: string }
+) {
+  const membros = await prisma.membro.findMany({
+    where: {
+      push_subscription: { not: null },
+      OR: [
+        { ministerios: { some: { departamento: { nome: { in: deptoTermos } } } } },
+        { departamentos_liderados: { some: { nome: { in: deptoTermos } } } },
+      ]
+    },
+    select: { id: true, push_subscription: true }
+  })
+
+  let enviados = 0
+  for (const m of membros) {
+    if (!m.push_subscription) continue
+    try {
+      await webpush.sendNotification(
+        m.push_subscription as unknown as webpush.PushSubscription,
+        JSON.stringify(payload)
+      )
+      enviados++
+    } catch (err: unknown) {
+      const sc = (err as { statusCode?: number }).statusCode
+      if (sc === 410 || sc === 404) {
+        await prisma.membro.update({ where: { id: m.id }, data: { push_subscription: null } })
+      }
+    }
+  }
+  return { enviados, total: membros.length }
+}
+
+// ── Enviar push para multiplos membros por ID ───────────────────────────────
+export async function sendPushToMembros(
+  membroIds: number[],
+  payload: { title: string; body: string; url?: string; tag?: string }
+) {
+  const membros = await prisma.membro.findMany({
+    where: { id: { in: membroIds }, push_subscription: { not: null } },
+    select: { id: true, push_subscription: true }
+  })
+
+  let enviados = 0
+  for (const m of membros) {
+    if (!m.push_subscription) continue
+    try {
+      await webpush.sendNotification(
+        m.push_subscription as unknown as webpush.PushSubscription,
+        JSON.stringify(payload)
+      )
+      enviados++
+    } catch (err: unknown) {
+      const sc = (err as { statusCode?: number }).statusCode
+      if (sc === 410 || sc === 404) {
+        await prisma.membro.update({ where: { id: m.id }, data: { push_subscription: null } })
+      }
+    }
+  }
+  return { enviados, total: membros.length }
+}
+
 export { VAPID_PUBLIC_KEY }

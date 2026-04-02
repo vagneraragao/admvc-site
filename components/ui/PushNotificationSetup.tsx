@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Bell, Loader2 } from 'lucide-react'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -30,23 +31,13 @@ export default function PushNotificationSetup() {
 
   async function subscribe() {
     setStatus('loading')
-
     try {
       const permission = await Notification.requestPermission()
-
-      if (permission !== 'granted') {
-        setStatus('denied')
-        return
-      }
+      if (permission !== 'granted') { setStatus('denied'); return }
 
       const registration = await navigator.serviceWorker.ready
-
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      if (!vapidPublicKey) {
-        console.error('[PUSH] NEXT_PUBLIC_VAPID_PUBLIC_KEY nao configurada')
-        setStatus('idle')
-        return
-      }
+      if (!vapidPublicKey) { setStatus('idle'); return }
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -59,34 +50,18 @@ export default function PushNotificationSetup() {
         body: JSON.stringify(subscription.toJSON()),
       })
 
-      if (res.ok) {
-        setStatus('granted')
-      } else {
-        console.error('[PUSH] Erro ao guardar subscription')
-        setStatus('idle')
-      }
-    } catch (err) {
-      console.error('[PUSH] Erro:', err)
+      setStatus(res.ok ? 'granted' : 'idle')
+    } catch {
       setStatus('idle')
     }
   }
 
-  if (status === 'unsupported') return null
-  if (status === 'granted') return null
+  if (status === 'unsupported' || status === 'granted' || status === 'denied') return null
 
   return (
-    <button
-      onClick={subscribe}
-      disabled={status === 'loading' || status === 'denied'}
-      className="flex items-center gap-2 rounded-lg bg-[#3F6B4F] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2d5039] disabled:opacity-50"
-    >
-      {status === 'loading' ? (
-        'A ativar...'
-      ) : status === 'denied' ? (
-        'Notificacoes bloqueadas'
-      ) : (
-        'Ativar notificacoes'
-      )}
+    <button onClick={subscribe} disabled={status === 'loading'} title="Activar notificacoes"
+      className="h-9 w-9 flex items-center justify-center rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all animate-pulse disabled:animate-none">
+      {status === 'loading' ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
     </button>
   )
 }
