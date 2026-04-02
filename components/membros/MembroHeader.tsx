@@ -59,7 +59,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
 
     // Detectar rota activa
     const isHome = pathname === '/membros/dashboard'
-    const isTesouraria = pathname.startsWith('/departamentos/financeiro')
+    const isTesouraria = pathname.startsWith('/tesouraria') || pathname.startsWith('/departamentos/financeiro')
     const isAcolhimento = pathname.startsWith('/departamentos/acolhimento')
     const isCantina = pathname.startsWith('/cantina') || pathname.startsWith('/departamentos/cantina')
     const isAcaoSocial = pathname.startsWith('/acaosocial')
@@ -130,7 +130,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                                 </Link>
                                             )}
                                             {permissoes.isFinance && (
-                                                <Link href="/departamentos/financeiro/dashboard" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Link href="/tesouraria" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                                     <PieChart size={12} className="text-emerald-500" /> Tesouraria
                                                 </Link>
                                             )}
