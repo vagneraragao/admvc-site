@@ -81,3 +81,34 @@ export function hexToRgb(hex: string): string {
     const b = parseInt(hex.slice(5, 7), 16)
     return `${r}, ${g}, ${b}`
 }
+
+/** Gera cor de border derivada do fundo (ligeiramente mais clara). */
+export function gerarBorder(bgHex: string): string {
+    const r = Math.min(255, parseInt(bgHex.slice(1, 3), 16) + 20)
+    const g = Math.min(255, parseInt(bgHex.slice(3, 5), 16) + 22)
+    const b = Math.min(255, parseInt(bgHex.slice(5, 7), 16) + 20)
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+/** Detecta se o fundo é claro (para ajustar fg/muted). */
+export function isFundoClaro(hex: string): boolean {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128
+}
+
+/** Gera cor de texto principal baseada no fundo. */
+export function gerarFg(bgHex: string): string {
+    return isFundoClaro(bgHex) ? '#1a1a1a' : '#e6efea'
+}
+
+/** Gera cor de texto secundário baseada no fundo. */
+export function gerarMuted(bgHex: string): string {
+    return isFundoClaro(bgHex) ? '#6b7280' : '#b8cfc4'
+}
+
+/** Gera cor de texto terciário baseada no fundo. */
+export function gerarMuted2(bgHex: string): string {
+    return isFundoClaro(bgHex) ? '#9ca3af' : '#7e948a'
+}
