@@ -30,7 +30,6 @@ const NAV_MODULOS = [
 const NAV_SISTEMA = [
     { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
     { label: 'Midia', href: '/admin/midia', icon: MonitorPlay, adminOnly: true },
-    { label: 'Definicoes', href: '/admin/configuracoes', icon: Settings, adminOnly: true },
     { label: 'Auditoria', href: '/admin/auditoria', icon: Shield, adminOnly: false },
 ]
 

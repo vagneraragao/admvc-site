@@ -245,20 +245,22 @@ export default async function DashboardFinanceiro() {
     return (
         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-30">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Tesouraria</h1>
                     <p className="text-xs text-muted">Gestao financeira da igreja.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                    <ModalRelatorioTesouraria membros={membros} />
+
                     <ModalEntradaUnificada
                         membros={membrosParaReceber}
                         carnesAtivos={objetivos}
                         rifaAtiva={rifaAtiva}
                     />
 
-                    <details className="group relative z-40">
+                    <details className="group relative z-30">
                         <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
                             <div className="h-11 px-4 bg-figueira text-white rounded-2xl flex items-center gap-2 hover:bg-figueira/90 transition-all active:scale-95">
                                 <PlusCircle size={14} />
@@ -272,8 +274,6 @@ export default async function DashboardFinanceiro() {
                             <ModalNovaCampanha membros={membros} tipoPredefinido="RIFA" />
                         </div>
                     </details>
-
-                    <ModalRelatorioTesouraria membros={membros} />
                 </div>
             </header>
 
