@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bell, Loader2 } from 'lucide-react'
+import { Bell, BellRing, Loader2, Check } from 'lucide-react'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -15,18 +15,24 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export default function PushNotificationSetup() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'granted' | 'denied' | 'unsupported'>('idle')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'granted' | 'denied' | 'unsupported' | 'no-key'>('idle')
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setStatus('unsupported')
       return
     }
-    if (Notification.permission === 'granted') {
-      setStatus('granted')
-    } else if (Notification.permission === 'denied') {
-      setStatus('denied')
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+      setStatus('no-key')
+      return
     }
+    // Verificar se ja tem subscription activa
+    navigator.serviceWorker.ready.then(reg => {
+      reg.pushManager.getSubscription().then(sub => {
+        if (sub) setStatus('granted')
+        else if (Notification.permission === 'denied') setStatus('denied')
+      })
+    })
   }, [])
 
   async function subscribe() {
@@ -37,7 +43,7 @@ export default function PushNotificationSetup() {
 
       const registration = await navigator.serviceWorker.ready
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      if (!vapidPublicKey) { setStatus('idle'); return }
+      if (!vapidPublicKey) { setStatus('no-key'); return }
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -51,17 +57,28 @@ export default function PushNotificationSetup() {
       })
 
       setStatus(res.ok ? 'granted' : 'idle')
-    } catch {
+    } catch (err) {
+      console.error('[PUSH]', err)
       setStatus('idle')
     }
   }
 
-  if (status === 'unsupported' || status === 'granted' || status === 'denied') return null
+  if (status === 'unsupported' || status === 'no-key') return null
+  if (status === 'granted') return null
+
+  if (status === 'denied') {
+    return (
+      <div className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg bg-red-500/10 text-red-400 text-[7px] font-black uppercase tracking-widest" title="Notificacoes bloqueadas pelo browser">
+        <Bell size={12} /> Bloqueado
+      </div>
+    )
+  }
 
   return (
-    <button onClick={subscribe} disabled={status === 'loading'} title="Activar notificacoes"
-      className="h-9 w-9 flex items-center justify-center rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all animate-pulse disabled:animate-none">
-      {status === 'loading' ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+    <button onClick={subscribe} disabled={status === 'loading'} title="Activar alertas no telemovel"
+      className="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-orange-500 text-white text-[8px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all animate-pulse disabled:animate-none active:scale-95">
+      {status === 'loading' ? <Loader2 size={12} className="animate-spin" /> : <BellRing size={12} />}
+      {status === 'loading' ? 'A activar...' : 'Activar Alertas'}
     </button>
   )
 }
