@@ -355,6 +355,41 @@ export async function atualizarDepartamento(formData: FormData) {
     }
 }
 
+export async function uploadFotoDepartamento(departamentoId: number, formData: FormData) {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const { db } = await getDb()
+        const file = formData.get('file') as File | null
+        if (!file) return { ok: false, error: 'Nenhum ficheiro enviado.' }
+
+        const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp']
+        if (!tiposPermitidos.includes(file.type)) {
+            return { ok: false, error: 'Tipo nao permitido. Use JPG, PNG ou WEBP.' }
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return { ok: false, error: 'Ficheiro demasiado grande (max 5MB).' }
+        }
+
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const filename = `departamentos/depto_${departamentoId}_foto.${ext}`
+
+        const blob = await put(filename, file, {
+            access: 'public',
+            contentType: file.type,
+        })
+
+        await db.departamento.update({
+            where: { id: departamentoId },
+            data: { foto_url: blob.url },
+        })
+
+        revalidatePath('/admin/configuracoes')
+        return { ok: true, url: blob.url }
+    } catch (error) {
+        return { ok: false, error: 'Erro ao fazer upload.' }
+    }
+}
+
 export async function adicionarFuncaoAoDepto(formData: FormData) {
     await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
     const { db, tenantId } = await getDb();

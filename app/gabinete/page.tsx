@@ -12,6 +12,8 @@ import ModalNovaAgenda from '@/components/admin/ModalNovaAgenda'
 import ModalEditarAgenda from '@/components/admin/ModalEditarAgenda'
 import ModalNovoCompromisso from '@/components/admin/ModalNovoCompromisso'
 import BotoesAcaoCompromisso from '@/components/admin/BotoesAcaoCompromisso'
+import HorariosEditor from '@/components/admin/HorariosEditor'
+import BotaoSyncCalendar from '@/components/admin/BotaoSyncCalendar'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,10 +115,12 @@ export default async function AgendasDashboard() {
                     </p>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-3">
-                    {/* Passamos os departamentos também para o buscador! */}
-                    <ModalNovoCompromisso agendas={agendas} membros={membros} visitantes={visitantes} departamentos={departamentos} grupos={grupos} />
-                    <ModalNovaAgenda membros={membros} />
+                <div className="shrink-0 flex flex-col items-end gap-3">
+                    <div className="flex items-center gap-3">
+                        <ModalNovoCompromisso agendas={agendas} membros={membros} visitantes={visitantes} departamentos={departamentos} grupos={grupos} />
+                        <ModalNovaAgenda membros={membros} />
+                    </div>
+                    <BotaoSyncCalendar credenciaisConfiguradas={!!process.env.GOOGLE_CALENDAR_CREDENTIALS} />
                 </div>
             </header>
 
@@ -247,6 +251,23 @@ const isPendente = comp.status === 'PENDENTE';
                                         )
                                     })
                                 )}
+                            </div>
+
+                            {/* HORÁRIOS DISPONÍVEIS */}
+                            <div className="px-8 md:px-10 pb-8 md:pb-10">
+                                <details className="group">
+                                    <summary className="cursor-pointer text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center gap-2 select-none py-2">
+                                        <Clock size={10} />
+                                        Horários Disponíveis
+                                        <span className="text-[8px] text-muted/40 group-open:rotate-90 transition-transform">▶</span>
+                                    </summary>
+                                    <div className="pt-3">
+                                        <HorariosEditor
+                                            agendaId={agenda.id}
+                                            horariosIniciais={(agenda.horarios_disponiveis as any[]) || []}
+                                        />
+                                    </div>
+                                </details>
                             </div>
                         </section>
                     ))}

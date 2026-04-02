@@ -5,16 +5,20 @@ import {
     adicionarFuncaoAoDepto,
     removerFuncaoDoDepto,
     vincularMembroDepartamento,
+    uploadFotoDepartamento,
 } from '@/actions/admin-actions'
 import {
     Users, Settings, X, Search, Plus, Trash2, UserMinus, CalendarDays,
-    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft, CheckCircle2, Church
+    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft, CheckCircle2, Church, ImagePlus
 } from 'lucide-react'
 import { alternarPermissaoEscala, removerFuncaoDoMembro, removerMembroTotal } from '@/actions/admin-actions'
 
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congregacoes = [], onClose }: any) {
     const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes'>('equipe')
     const [loading, setLoading] = useState(false)
+    const [fotoPreview, setFotoPreview] = useState<string | null>(depto.foto_url || null)
+    const [uploadingFoto, setUploadingFoto] = useState(false)
+    const fotoInputRef = useRef<HTMLInputElement>(null)
     const formFuncaoRef = useRef<HTMLFormElement>(null)
     const formEquipeRef = useRef<HTMLFormElement>(null)
 
@@ -310,6 +314,54 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                                     <AlignLeft size={10} /> Notas
                                 </label>
                                 <textarea name="descricao" defaultValue={depto.descricao} rows={3} className="w-full bg-bg border border-soft px-3 py-2.5 rounded-xl text-sm font-bold focus:border-figueira outline-none resize-none" />
+                            </div>
+
+                            {/* FOTO DE CAPA */}
+                            <div className="space-y-1.5">
+                                <label className="text-[8px] font-black uppercase text-muted tracking-widest flex items-center gap-1">
+                                    <ImagePlus size={10} /> Foto de Capa
+                                </label>
+                                <div className="flex items-center gap-4">
+                                    {fotoPreview ? (
+                                        <img src={fotoPreview} alt="Foto do departamento" className="w-20 h-20 rounded-xl object-cover border border-soft" />
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl border border-dashed border-soft bg-bg2 flex items-center justify-center">
+                                            <ImagePlus size={16} className="text-muted/40" />
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            ref={fotoInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0]
+                                                if (!file) return
+                                                setUploadingFoto(true)
+                                                const fd = new FormData()
+                                                fd.append('file', file)
+                                                const res = await uploadFotoDepartamento(depto.id, fd)
+                                                if (res?.ok && res.url) {
+                                                    setFotoPreview(res.url)
+                                                } else {
+                                                    alert(res?.error || 'Erro ao enviar foto.')
+                                                }
+                                                setUploadingFoto(false)
+                                                if (fotoInputRef.current) fotoInputRef.current.value = ''
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={uploadingFoto}
+                                            onClick={() => fotoInputRef.current?.click()}
+                                            className="flex items-center gap-1.5 bg-bg2 border border-soft px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest text-muted hover:border-figueira/30 hover:text-fg transition-all disabled:opacity-50"
+                                        >
+                                            {uploadingFoto ? <Loader2 size={10} className="animate-spin" /> : <ImagePlus size={10} />}
+                                            {uploadingFoto ? 'A enviar...' : 'Escolher Foto'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <button disabled={loading} className="w-full bg-fg text-bg py-3 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-figueira transition-all disabled:opacity-50 flex items-center justify-center gap-2">

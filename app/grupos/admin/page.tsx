@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import GeocodificarBotao from '@/components/grupos/GeocodificarBotao'
 import { Users, MapPin, Map, Globe, Settings } from 'lucide-react'
+import { headers } from 'next/headers'
 
 // Carregamento lazy — o Leaflet só funciona no browser
 const MapaGrupos = nextDynamic(() => import('@/components/grupos/MapaGrupos'), {
@@ -19,7 +20,7 @@ const MapaGrupos = nextDynamic(() => import('@/components/grupos/MapaGrupos'), {
 
 export const dynamic = 'force-dynamic';
 
-const REGIOES = ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
+const REGIOES_DEFAULT = ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
 
 const COR_REGIAO: Record<string, string> = {
     Norte: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
@@ -32,18 +33,28 @@ const COR_REGIAO: Record<string, string> = {
 export default async function AdminGruposPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams
     const session = await getSessionData()
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id') || 0)
     const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
 
-    const grupos = await prisma.grupo.findMany({
-        where: congFilter ? { congregacaoId: congFilter } : undefined,
-        include: {
-            lideres: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },
-            membros: { select: { id: true } },
-        },
-        orderBy: [{ regiao: 'asc' }, { nome: 'asc' }]
-    })
+    const [grupos, tenantConfig] = await Promise.all([
+        prisma.grupo.findMany({
+            where: congFilter ? { congregacaoId: congFilter } : undefined,
+            include: {
+                lideres: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },
+                membros: { select: { id: true } },
+            },
+            orderBy: [{ regiao: 'asc' }, { nome: 'asc' }]
+        }),
+        tenantId ? prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { regioes_custom: true }
+        }) : null,
+    ])
+
+    const REGIOES = (tenantConfig?.regioes_custom as string[]) || REGIOES_DEFAULT
 
     const comCoords = grupos.filter(g => g.latitude && g.longitude).length
     const semCoords = grupos.length - comCoords

@@ -13,9 +13,10 @@ interface GerenciadorProps {
     grupos: any[];
     departamentos: any[];
     membrosDisponiveis: any[];
+    regioes?: string[];
 }
 
-export default function GerenciadorGrupos({ grupos, departamentos, membrosDisponiveis }: GerenciadorProps) {
+export default function GerenciadorGrupos({ grupos, departamentos, membrosDisponiveis, regioes = [] }: GerenciadorProps) {
     const router = useRouter();
     // ✅ useTransition em vez de window.location.reload()
     const [isPending, startTransition] = useTransition();
@@ -332,11 +333,9 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                 <select name="regiao" defaultValue={grupoAtual?.regiao || ''}
                                     className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-[11px] font-bold text-fg focus:border-figueira outline-none appearance-none cursor-pointer">
                                     <option value="">Selecione...</option>
-                                    <option value="Norte">Norte</option>
-                                    <option value="Centro">Centro</option>
-                                    <option value="Sul">Sul</option>
-                                    <option value="Lisboa">Lisboa</option>
-                                    <option value="Online">Online</option>
+                                    {regioes.map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
                                 </select>
                             </div>
 

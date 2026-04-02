@@ -133,6 +133,7 @@ export default async function EstruturaPage() {
                         grupos={grupos}
                         departamentos={deptosParaSelect}
                         membrosDisponiveis={membrosDisponiveis}
+                        regioes={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']}
                     />
                 </div>
             </section>

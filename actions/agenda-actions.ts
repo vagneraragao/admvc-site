@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend';
 import { EmailConfirmacaoAgenda } from '@/components/emails/EmailConfirmacaoAgenda';
 import { requireAuth, requireRole } from '@/lib/auth-utils'
+import { sincronizarCompromissosGoogleCalendar } from '@/lib/google-calendar'
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -371,5 +372,34 @@ export async function pedirAgendamentoAction(dados: {
         return { ok: true }
     } catch (error: any) {
         return { ok: false, error: 'Erro ao criar pedido de agendamento.' }
+    }
+}
+
+// ── SINCRONIZAR GOOGLE CALENDAR ──────────────────────────────────────────────
+export async function sincronizarCalendarAction(): Promise<{ ok: boolean; criados: number; erros: number; total: number; error?: string }> {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+
+        if (!process.env.GOOGLE_CALENDAR_CREDENTIALS) {
+            return { ok: false, criados: 0, erros: 0, total: 0, error: 'GOOGLE_CALENDAR_CREDENTIALS não configurado.' }
+        }
+
+        const compromissos = await prisma.compromisso.findMany({
+            where: {
+                status: 'AGENDADO',
+                data_inicio: { gte: new Date() }
+            },
+            include: {
+                agenda: { include: { dono: true } },
+                membros: true,
+                visitantes: true,
+            }
+        })
+
+        const resultado = await sincronizarCompromissosGoogleCalendar(compromissos)
+        return resultado
+    } catch (error) {
+        console.error('Erro ao sincronizar com Google Calendar:', error)
+        return { ok: false, criados: 0, erros: 0, total: 0, error: 'Erro interno ao sincronizar.' }
     }
 }
