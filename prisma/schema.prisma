@@ -217,6 +217,7 @@ model Departamento {
   compromissoId    Int?
   congregacaoId    Int?
   is_global        Boolean                  @default(false)
+  foto_url         String?
   tenant_id        Int
   avisoMurals      AvisoMural[]
   congregacao      Congregacao?             @relation(fields: [congregacaoId], references: [id])
