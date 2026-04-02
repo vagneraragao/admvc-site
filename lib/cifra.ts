@@ -100,3 +100,103 @@ export function parseCifra(cifra: string): { linhas: { tipo: 'texto' | 'acorde';
 }
 
 export const TONS_DISPONIVEIS = NOTAS
+
+// ============================================================================
+// IMPORTAÇÃO — Converter formato CifraClub para formato bracket
+// ============================================================================
+
+const ACORDE_REGEX = /^[A-G][#b]?(m|M|dim|aug|sus[24]?|add|maj|min)?[0-9]*(\/[A-G][#b]?)?$/
+
+/**
+ * Verifica se uma linha contém apenas acordes (formato CifraClub).
+ */
+function isLinhaDeAcordes(linha: string): boolean {
+    const partes = linha.trim().split(/\s+/)
+    if (partes.length === 0 || (partes.length === 1 && partes[0] === '')) return false
+    // Pelo menos 50% dos tokens devem ser acordes válidos
+    const acordes = partes.filter(p => ACORDE_REGEX.test(p))
+    return acordes.length > 0 && acordes.length >= partes.length * 0.5
+}
+
+/**
+ * Extrai acordes com as suas posições (coluna) numa linha.
+ */
+function extrairAcordesComPosicao(linha: string): { acorde: string; posicao: number }[] {
+    const resultado: { acorde: string; posicao: number }[] = []
+    const regex = /\S+/g
+    let match
+    while ((match = regex.exec(linha)) !== null) {
+        if (ACORDE_REGEX.test(match[0])) {
+            resultado.push({ acorde: match[0], posicao: match.index })
+        }
+    }
+    return resultado
+}
+
+/**
+ * Mescla uma linha de acordes com a linha de letra abaixo.
+ */
+function mesclarAcordesComLetra(linhaAcordes: string, linhaLetra: string): string {
+    const acordes = extrairAcordesComPosicao(linhaAcordes)
+    if (acordes.length === 0) return linhaLetra
+
+    let resultado = ''
+    let ultimaPosicao = 0
+
+    // Ordena por posição (já deve estar, mas por segurança)
+    acordes.sort((a, b) => a.posicao - b.posicao)
+
+    for (const { acorde, posicao } of acordes) {
+        // Adiciona o texto da letra até à posição do acorde
+        const pos = Math.min(posicao, linhaLetra.length)
+        resultado += linhaLetra.slice(ultimaPosicao, pos)
+        resultado += `[${acorde}]`
+        ultimaPosicao = pos
+    }
+
+    // Adiciona o resto da letra
+    resultado += linhaLetra.slice(ultimaPosicao)
+
+    return resultado
+}
+
+/**
+ * Converte texto copiado do CifraClub (acordes em linha separada)
+ * para o formato bracket [Am]letra[G]letra.
+ *
+ * Também aceita texto já no formato bracket (devolve como está).
+ */
+export function importarCifraClub(texto: string): string {
+    // Se já tem brackets, devolve como está
+    if (texto.includes('[') && texto.includes(']')) return texto.trim()
+
+    const linhas = texto.split('\n')
+    const resultado: string[] = []
+    let i = 0
+
+    while (i < linhas.length) {
+        const linhaAtual = linhas[i]
+
+        if (isLinhaDeAcordes(linhaAtual)) {
+            // Verifica se a próxima linha é letra
+            const proximaLinha = i + 1 < linhas.length ? linhas[i + 1] : ''
+
+            if (proximaLinha.trim() && !isLinhaDeAcordes(proximaLinha)) {
+                // Mescla acordes + letra
+                resultado.push(mesclarAcordesComLetra(linhaAtual, proximaLinha))
+                i += 2 // Salta ambas as linhas
+            } else {
+                // Linha de acordes sozinha (sem letra abaixo) — converte cada acorde
+                const acordes = linhaAtual.trim().split(/\s+/).filter(a => ACORDE_REGEX.test(a))
+                resultado.push(acordes.map(a => `[${a}]`).join(' '))
+                i++
+            }
+        } else {
+            // Linha normal (texto, linha vazia, etc.)
+            resultado.push(linhaAtual)
+            i++
+        }
+    }
+
+    return resultado.join('\n').trim()
+}

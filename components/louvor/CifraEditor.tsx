@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Loader2, X, Eye, Edit3, HelpCircle } from 'lucide-react'
-import { parseCifra } from '@/lib/cifra'
+import { Save, Loader2, X, Eye, Edit3, HelpCircle, Download } from 'lucide-react'
+import { parseCifra, importarCifraClub } from '@/lib/cifra'
 import { salvarCifraInternaAction } from '@/actions/louvor-actions'
 
 interface Props {
@@ -18,6 +18,8 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
     const [saving, setSaving] = useState(false)
     const [preview, setPreview] = useState(false)
     const [showHelp, setShowHelp] = useState(false)
+    const [showImport, setShowImport] = useState(false)
+    const [importTexto, setImportTexto] = useState('')
 
     const { linhas } = parseCifra(texto)
 
@@ -44,7 +46,12 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
                         <h3 className="text-sm font-black uppercase tracking-tighter text-white">{titulo}</h3>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setShowHelp(!showHelp)}
+                        <button onClick={() => { setShowImport(!showImport); setShowHelp(false) }}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg ${showImport ? 'bg-orange-500 text-white' : 'bg-white/10 text-white/60'}`}
+                            title="Importar do CifraClub">
+                            <Download size={14} />
+                        </button>
+                        <button onClick={() => { setShowHelp(!showHelp); setShowImport(false) }}
                             className={`w-8 h-8 flex items-center justify-center rounded-lg ${showHelp ? 'bg-blue-500 text-white' : 'bg-white/10 text-white/60'}`}>
                             <HelpCircle size={14} />
                         </button>
@@ -67,6 +74,44 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
                             [Am]Quando eu chorei Tu en[G]xugaste as minhas la[F]grimas
                         </p>
                         <p className="mt-1">Linhas em branco separam estrofes. Podes usar [Em] [Am7] [F#m] etc.</p>
+                    </div>
+                )}
+
+                {/* IMPORT */}
+                {showImport && (
+                    <div className="px-5 py-3 border-b border-white/10 bg-orange-500/10 shrink-0 space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-orange-300">
+                            Importar do CifraClub / Ultimate Guitar
+                        </p>
+                        <p className="text-[9px] text-orange-200/70">
+                            Abre a musica no CifraClub, seleciona todo o texto da cifra (Ctrl+A na area da cifra) e cola aqui:
+                        </p>
+                        <textarea
+                            value={importTexto}
+                            onChange={e => setImportTexto(e.target.value)}
+                            placeholder={"Am            G              F\nQuando eu chorei Tu enxugaste as minhas lagrimas\nDm                    Am\nQuando clamei Tu me ouviste"}
+                            rows={5}
+                            className="w-full bg-black/50 text-white font-mono text-xs p-3 rounded-xl outline-none resize-none border border-orange-500/20 placeholder:text-white/20"
+                            spellCheck={false}
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    const convertido = importarCifraClub(importTexto)
+                                    setTexto(prev => prev ? prev + '\n\n' + convertido : convertido)
+                                    setImportTexto('')
+                                    setShowImport(false)
+                                }}
+                                disabled={!importTexto.trim()}
+                                className="flex-1 py-2 rounded-xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+                            >
+                                <Download size={12} /> Converter e Importar
+                            </button>
+                            <button onClick={() => { setShowImport(false); setImportTexto('') }}
+                                className="px-4 py-2 rounded-xl bg-white/10 text-white/60 text-[9px] font-black uppercase tracking-widest">
+                                Cancelar
+                            </button>
+                        </div>
                     </div>
                 )}
 
