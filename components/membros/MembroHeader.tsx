@@ -13,6 +13,7 @@ import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
+import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
 
 interface Props {
     membro: any
@@ -29,9 +30,11 @@ interface Props {
     }
     mostraServico: boolean
     escolaridades: any[]
+    avisos?: any[]
+    alertasAcolhimento?: any[]
 }
 
-export default function MembroHeader({ membro, igrejaName, role, permissoes, mostraServico, escolaridades }: Props) {
+export default function MembroHeader({ membro, igrejaName, role, permissoes, mostraServico, escolaridades, avisos = [], alertasAcolhimento = [] }: Props) {
     const pathname = usePathname()
     const [mounted, setMounted] = useState(false)
     const [menuAberto, setMenuAberto] = useState(false)
@@ -167,6 +170,8 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                 </div>
                             )}
                         </div>
+
+                        <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
 
                         <form action={logoutMembro}>
                             <button type="submit" className="h-9 w-9 flex items-center justify-center bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">

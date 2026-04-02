@@ -16,7 +16,18 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
 
     const db = getTenantClient(Number(tenantIdStr))
 
-    const [membro, tenantData, escolaridades] = await Promise.all([
+    // IDs de departamentos e grupos do membro para filtrar avisos
+    const membroBasico = await db.membro.findUnique({
+        where: { id: session.membroId },
+        select: {
+            ministerios: { select: { departamento_id: true } },
+            grupos: { select: { id: true } },
+        }
+    })
+    const deptIds = membroBasico?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []
+    const grupoIds = membroBasico?.grupos?.map((g: any) => g.id).filter(Boolean) || []
+
+    const [membro, tenantData, escolaridades, ultimosAvisos, visitantesAtualizados] = await Promise.all([
         db.membro.findUnique({
             where: { id: session.membroId },
             include: {
@@ -27,6 +38,29 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
         }),
         db.tenant.findFirst({ select: { nome: true } }),
         db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
+        // Avisos do mural (departamentos e grupos do membro)
+        db.avisoMural.findMany({
+            where: {
+                OR: [
+                    { departamento_id: { in: deptIds.length > 0 ? deptIds : [-1] } },
+                    { grupo_id: { in: grupoIds.length > 0 ? grupoIds : [-1] } }
+                ]
+            },
+            include: {
+                autor: { select: { first_name: true, last_name: true, avatar_file: true } },
+                departamento: { select: { nome: true } },
+                grupo: { select: { nome: true } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        }),
+        // Visitantes pendentes (só para acolhimento/admin)
+        db.visitante.findMany({
+            where: { status: { in: ['NOVO', 'EM_CONTACTO'] } },
+            select: { id: true, nome: true, data_ultima_visita: true, status: true },
+            orderBy: { data_ultima_visita: 'desc' },
+            take: 5
+        }),
     ])
 
     if (!membro) return <>{children}</>
@@ -58,6 +92,8 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
                 permissoes={permissoes}
                 mostraServico={mostraServico}
                 escolaridades={escolaridades}
+                avisos={ultimosAvisos}
+                alertasAcolhimento={permissoes.isAcolhimento || permissoes.isAdmin ? visitantesAtualizados : []}
             />
             {children}
         </>
