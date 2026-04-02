@@ -15,6 +15,10 @@ export const MODULOS = {
     PERSONALIZACAO: 'personalizacao',
     RELATORIOS: 'relatorios',
     AUDITORIA: 'auditoria',
+    HOLYRICS: 'holyrics',
+    MESA_SOM: 'mesa_som',
+    CIFRAS: 'cifras',
+    LUMIKIT: 'lumikit',
 } as const
 
 export type Modulo = typeof MODULOS[keyof typeof MODULOS]
@@ -82,6 +86,8 @@ export const PLANOS: Record<PlanoId, PlanoConfig> = {
             MODULOS.PERSONALIZACAO,
             MODULOS.RELATORIOS,
             MODULOS.AUDITORIA,
+            MODULOS.CIFRAS,
+            MODULOS.HOLYRICS,
         ],
         limites: {
             max_membros: 0, // ilimitado
@@ -117,6 +123,8 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/membros/mural': MODULOS.MURAL,
     '/admin/personalizacao': MODULOS.PERSONALIZACAO,
     '/admin/auditoria': MODULOS.AUDITORIA,
+    '/admin/midia/x32': MODULOS.MESA_SOM,
+    '/admin/midia/lumikit': MODULOS.LUMIKIT,
 }
 
 /**

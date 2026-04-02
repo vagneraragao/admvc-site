@@ -39,13 +39,17 @@ const MODULOS_UI = [
     { id: 'relatorios', nome: 'Relatorios', desc: 'Relatorios de escalas e financeiros', icon: BarChart3, planos: ['BASIC', 'PRO', 'ENTERPRISE'] },
     { id: 'personalizacao', nome: 'Personalizacao', desc: 'Cores, logotipo e identidade visual da igreja', icon: Palette, planos: ['PRO', 'ENTERPRISE'] },
     { id: 'auditoria', nome: 'Auditoria', desc: 'Logs de acoes e seguranca', icon: Shield, planos: ['BASIC', 'PRO', 'ENTERPRISE'] },
+    { id: 'holyrics', nome: 'Holyrics', desc: 'Integracao com software de projeccao Holyrics', icon: Music, planos: ['PRO', 'ENTERPRISE'] },
+    { id: 'cifras', nome: 'Cifras Internas', desc: 'Editor de cifras com transposicao e importacao', icon: Music, planos: ['PRO', 'ENTERPRISE'] },
+    { id: 'mesa_som', nome: 'Mesa de Som (X32)', desc: 'Controlo remoto da Behringer X32 via OSC', icon: Music, planos: ['ENTERPRISE'] },
+    { id: 'lumikit', nome: 'Lumikit', desc: 'Controlo de iluminacao e cenas DMX', icon: Music, planos: ['ENTERPRISE'] },
 ]
 
 // Mapa de planos → módulos (espelha lib/planos.ts)
 const MODULOS_POR_PLANO: Record<string, string[]> = {
     FREE: ['mural'],
     BASIC: ['escalas', 'grupos', 'mural', 'acolhimento', 'relatorios', 'auditoria'],
-    PRO: ['escalas', 'grupos', 'louvor', 'financeiro', 'cantina', 'acolhimento', 'inventario', 'gabinete', 'mural', 'personalizacao', 'relatorios', 'auditoria'],
+    PRO: ['escalas', 'grupos', 'louvor', 'financeiro', 'cantina', 'acolhimento', 'inventario', 'gabinete', 'mural', 'personalizacao', 'relatorios', 'auditoria', 'cifras', 'holyrics'],
     ENTERPRISE: MODULOS_UI.map(m => m.id),
 }
 
