@@ -3,6 +3,7 @@ import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { format } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import {
@@ -18,6 +19,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     const params = await searchParams
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
+
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id') || 0)
 
     const congFilter = session.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
@@ -35,7 +39,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     const [
         totalMembros, pendentesCount, batizados, totalFamilias,
         proximasEscalas, todosMembros, membrosPendentesDocs,
-        escalasPendentesConfirmacao,
+        escalasPendentesConfirmacao, tenantConfig,
     ] = await Promise.all([
         prisma.membro.count({ where: { status: statusAtivo, ...congWhere } }),
         prisma.membro.count({ where: { status: statusPendente, ...congWhere } }),
@@ -76,6 +80,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         prisma.escala.count({
             where: { confirmado: false, ...congWhere, evento: { data: { gte: new Date() } } }
         }),
+        tenantId ? prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { holyrics_url: true, holyrics_token: true }
+        }) : null,
     ])
 
     const mesAtual = new Date().getMonth() + 1
@@ -225,7 +233,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             </div>
 
             {/* HOLYRICS LOG */}
-            <HolyricsLogPanel />
+            <HolyricsLogPanel holyricsUrl={tenantConfig?.holyrics_url} holyricsToken={tenantConfig?.holyrics_token} />
         </main>
     )
 }

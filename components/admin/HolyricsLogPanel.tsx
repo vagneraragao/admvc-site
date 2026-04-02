@@ -13,12 +13,17 @@ type LogEntry = {
     type: 'info' | 'success' | 'error' | 'request'
 }
 
-export default function HolyricsLogPanel() {
+interface Props {
+    holyricsUrl?: string | null
+    holyricsToken?: string | null
+}
+
+export default function HolyricsLogPanel({ holyricsUrl, holyricsToken }: Props) {
     const [open, setOpen] = useState(false)
     const [status, setStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle')
     const [logs, setLogs] = useState<LogEntry[]>([])
-    const [ip, setIp] = useState('')
-    const [token, setToken] = useState('')
+    const ip = holyricsUrl || ''
+    const token = holyricsToken || ''
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
@@ -50,19 +55,14 @@ export default function HolyricsLogPanel() {
         }
     }, [addLog])
 
-    // Load saved config and do initial check
+    // Initial check on mount
     useEffect(() => {
-        const savedIp = localStorage.getItem('holyrics_ip') || ''
-        const savedToken = localStorage.getItem('holyrics_token') || ''
-        setIp(savedIp)
-        setToken(savedToken)
-
-        if (savedIp) {
-            checkConnection(savedIp, savedToken)
+        if (ip) {
+            checkConnection(ip, token)
         } else {
-            addLog('Nenhuma configuracao Holyrics encontrada', 'info')
+            addLog('Nenhuma configuracao Holyrics encontrada. Configure em Admin > Midia.', 'info')
         }
-    }, [addLog, checkConnection])
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Periodic health check every 30s when panel is open
     useEffect(() => {
