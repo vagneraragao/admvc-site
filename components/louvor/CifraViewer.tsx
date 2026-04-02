@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, Settings2 } from 'lucide-react'
-import { parseCifra, transporCifra, calcularSemitons, TONS_DISPONIVEIS } from '@/lib/cifra'
+import { parseCifra, transporCifra, calcularSemitons, notaRaiz, TONS_DISPONIVEIS } from '@/lib/cifra'
 
 interface Props {
     cifra: string
@@ -27,27 +27,24 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     const cifraTransposta = transporCifra(cifra, semitons)
     const { linhas } = parseCifra(cifraTransposta)
 
-    // Extrair tom base: do prop ou do primeiro acorde da cifra
+    // Tom base: extrair nota raiz do prop ou do primeiro acorde da cifra
     const tomBase = (() => {
-        if (tomOriginal) {
-            // Extrair apenas a nota raiz (ex: "Am" → "A", "F#m" → "F#")
-            let raiz = tomOriginal[0]
-            if (tomOriginal[1] === '#' || tomOriginal[1] === 'b') raiz += tomOriginal[1]
-            return raiz
-        }
-        // Tentar extrair do primeiro acorde na cifra
-        const match = cifra.match(/\[([A-G][#b]?)/)
-        return match ? match[1] : null
+        if (tomOriginal) return notaRaiz(tomOriginal)
+        if (tomTocado) return notaRaiz(tomTocado)
+        const match = cifra.match(/\[([A-G][#b]?[^[\]]*)\]/)
+        return match ? notaRaiz(match[1]) : null
     })()
 
     // Tom actual (transposto)
-    const tomAtual = tomBase
-        ? (() => {
-            const idx = TONS_DISPONIVEIS.indexOf(tomBase)
-            if (idx === -1) return tomBase
-            return TONS_DISPONIVEIS[((idx + semitons) % 12 + 12) % 12]
-        })()
-        : null
+    const tomAtual = (() => {
+        if (!tomBase) {
+            if (semitons === 0) return null
+            return `${semitons > 0 ? '+' : ''}${semitons}`
+        }
+        const idx = TONS_DISPONIVEIS.indexOf(tomBase)
+        if (idx === -1) return tomBase
+        return TONS_DISPONIVEIS[((idx + semitons) % 12 + 12) % 12]
+    })()
 
     // Auto-scroll
     const scroll = useCallback(() => {

@@ -46,11 +46,23 @@ function transporAcorde(acorde: string, semitons: number): string {
 }
 
 /**
- * Calcula quantos semitons entre duas notas.
+ * Extrai apenas a nota raiz de um tom/acorde. Ex: "Am" → "A", "F#m7" → "F#", "Bb" → "Bb"
+ */
+export function notaRaiz(tom: string): string {
+    let raiz = tom[0]
+    if (tom[1] === '#' || tom[1] === 'b') raiz += tom[1]
+    return raiz
+}
+
+/**
+ * Calcula quantos semitons entre duas notas/acordes.
+ * Aceita notas puras ("A", "Bb") ou acordes ("Am", "F#m7").
  */
 export function calcularSemitons(de: string, para: string): number {
-    const deNormal = NORMALIZAR[de] || de
-    const paraNormal = NORMALIZAR[para] || para
+    const raizDe = notaRaiz(de)
+    const raizPara = notaRaiz(para)
+    const deNormal = NORMALIZAR[raizDe] || raizDe
+    const paraNormal = NORMALIZAR[raizPara] || raizPara
     const idxDe = NOTAS.indexOf(deNormal)
     const idxPara = NOTAS.indexOf(paraNormal)
     if (idxDe === -1 || idxPara === -1) return 0
