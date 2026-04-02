@@ -25,10 +25,12 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
 
     async function handleSave() {
         setSaving(true)
-        const res = await salvarCifraInternaAction(musicaId, texto)
+        // Se a cifra não tem brackets, converter automaticamente
+        const cifraFinal = texto.includes('[') ? texto : importarCifraClub(texto)
+        const res = await salvarCifraInternaAction(musicaId, cifraFinal)
         setSaving(false)
         if (res.ok) {
-            onSaved?.(texto)
+            onSaved?.(cifraFinal)
             onClose()
         } else {
             alert(res.error || 'Erro ao guardar.')

@@ -474,9 +474,10 @@ export async function buscarMusicaPorId(musicaId: string) {
 export async function salvarCifraInternaAction(musicaId: string, cifra: string) {
     try {
         await requireAuth()
+        // Guardar a cifra como recebida (o editor já converte no client)
         await prisma.musica.update({
             where: { id: musicaId },
-            data: { cifra_interna: cifra || null }
+            data: { cifra_interna: cifra?.trim() || null }
         })
         revalidatePath('/louvor')
         revalidatePath('/membros/dashboard')

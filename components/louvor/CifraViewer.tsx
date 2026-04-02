@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, Settings2 } from 'lucide-react'
-import { parseCifra, transporCifra, calcularSemitons, notaRaiz, TONS_DISPONIVEIS } from '@/lib/cifra'
+import { parseCifra, transporCifra, calcularSemitons, notaRaiz, importarCifraClub, TONS_DISPONIVEIS } from '@/lib/cifra'
 
 interface Props {
     cifra: string
@@ -24,7 +24,9 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     const scrollRef = useRef<HTMLDivElement>(null)
     const rafRef = useRef<number | null>(null)
 
-    const cifraTransposta = transporCifra(cifra, semitons)
+    // Se a cifra não tem brackets, converter primeiro
+    const cifraNormalizada = cifra.includes('[') ? cifra : importarCifraClub(cifra)
+    const cifraTransposta = transporCifra(cifraNormalizada, semitons)
     const { linhas } = parseCifra(cifraTransposta)
 
     // Tom base: extrair nota raiz do prop ou do primeiro acorde da cifra
