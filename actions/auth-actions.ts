@@ -266,16 +266,6 @@ export async function loginUnificado(formData: FormData) {
 
     console.log(`=============================================\n`)
 
-    // Se é admin/leader, verifica se o tenant tem múltiplas congregações
-    if (usuario.role === 'ADMIN' || usuario.role === 'CONGREGATION_ADMIN' || usuario.role === 'LEADER') {
-        const totalCong = await prisma.congregacao.count({
-            where: { tenant_id: usuario.tenant_id }
-        })
-        if (totalCong > 1 && !usuario.congregacao_id) {
-            redirect('/membros/selecionar-congregacao')
-        }
-    }
-
     if (usuario.role === 'ADMIN' || usuario.role === 'CONGREGATION_ADMIN') redirect('/admin/dashboard')
     if (usuario.role === 'FINANCE') redirect('/departamentos/financeiro/dashboard')
     redirect('/membros/dashboard')
