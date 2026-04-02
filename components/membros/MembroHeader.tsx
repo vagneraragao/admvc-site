@@ -42,7 +42,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     useEffect(() => setMounted(true), [])
 
     // Paginas que nao devem mostrar header
-    const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao'
+    const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
     if (hideHeader) return null
 
     const iniciais = `${membro.first_name?.[0] || ''}${membro.last_name?.[0] || ''}`

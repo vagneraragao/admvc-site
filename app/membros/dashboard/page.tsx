@@ -405,7 +405,7 @@ export default async function DashboardMembro({
     });
 
     return (
-        <div className="space-y-8 pt-6 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6 pb-20 animate-in fade-in duration-700">
 
             {/* MODAL DE MÓDULO BLOQUEADO */}
             <Suspense fallback={null}>
