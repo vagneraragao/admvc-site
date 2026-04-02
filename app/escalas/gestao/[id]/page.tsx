@@ -170,47 +170,45 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                 </div>
             </div>
 
-            <div className="grid lg:grid-cols-12 gap-8 items-start pt-4">
-                {/* COLUNA ESQUERDA: MONTADOR INTELIGENTE */}
-                <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-8 z-10 space-y-6">
+            {/* MONTADOR — FULL WIDTH */}
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-figueira" />
+                <div className="flex items-center gap-4 px-6 py-5 border-b border-soft">
+                    <div className="w-10 h-10 rounded-2xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0">
+                        <Calendar size={18} />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg leading-none">Atribuir Escala</h2>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
+                            Selecionar evento, funcao e membro
+                        </p>
+                    </div>
+                </div>
+                <div className="p-6">
                     <MontadorEscalas
                         eventos={eventos}
                         funcoesDisponiveis={depto.funcoes}
                         membros={membrosFormatados}
                         departamentoId={deptoId}
                     />
-                </aside>
+                </div>
+            </section>
 
-                {/* COLUNA DIREITA: VISÃO GERAL */}
-                <section className="lg:col-span-7 xl:col-span-8 space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-3">
-                            <Activity size={16} className="text-emerald-500" />
-                            <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro de Escalas</h2>
-                        </div>
-                    </div>
-
-                    <div className="animate-in slide-in-from-bottom-4 duration-500">
-                        {/* PASSAMOS A VARIÁVEL isLouvor AQUI! */}
-                        <ListaEscalados
-                            eventos={eventos}
-                            isAdmin={eAdmin}
-                            membros={membrosFormatados}
-                            isLouvor={isLouvor}
-                        />
-                    </div>
-                </section>
-
-                {/*
-                <section className="mt-8 border-t border-soft pt-8">
-                    <RelatorioEscalasDepartamento
-                        escalas={historicoSerializado}
-                        equipaDoDepartamento={equipaDoDepartamento}
+            {/* QUADRO DE ESCALAS */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-3 px-1">
+                    <Activity size={16} className="text-emerald-500" />
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro de Escalas</h2>
+                </div>
+                <div className="animate-in slide-in-from-bottom-4 duration-500">
+                    <ListaEscalados
+                        eventos={eventos}
+                        isAdmin={eAdmin}
+                        membros={membrosFormatados}
+                        isLouvor={isLouvor}
                     />
-                </section>
-*/}
-
-            </div>
+                </div>
+            </section>
         </main>
     );
 }
