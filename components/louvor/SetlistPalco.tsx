@@ -6,12 +6,13 @@ import { useState, useEffect, useRef } from 'react'
 import {
     ChevronLeft, ChevronRight, X, FileText, Guitar,
     Headphones, Youtube, Music, Hash, Gauge,
-    List, Maximize2, ArrowLeft, CheckCircle2, Home
+    List, Maximize2, ArrowLeft, CheckCircle2, Home, Download, Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 
 import CifraViewer from './CifraViewer'
 import CifraEditor from './CifraEditor'
+import { importarCifraDeUrlAction } from '@/actions/cifra-actions'
 
 interface Musica {
     id: string
@@ -82,6 +83,7 @@ export default function SetlistPalco({ evento }: Props) {
     const [marcadas, setMarcadas] = useState<Set<string>>(new Set())
     const [cifraAberta, setCifraAberta] = useState(false)
     const [editorAberto, setEditorAberto] = useState(false)
+    const [importandoUrl, setImportandoUrl] = useState(false)
     // Cache local das cifras editadas (para reflectir sem recarregar a página)
     const [cifrasEditadas, setCifrasEditadas] = useState<Record<string, string>>({})
 
@@ -295,15 +297,39 @@ export default function SetlistPalco({ evento }: Props) {
                         </div>
                     )}
 
-                    {/* Botão editar/criar cifra */}
+                    {/* Botões criar/importar cifra (quando não tem cifra_interna) */}
                     {!musica?.cifra_interna && (
-                        <button
-                            onClick={() => setEditorAberto(true)}
-                            className="w-full flex items-center justify-center gap-2 py-3 mb-3 rounded-2xl bg-white/5 text-white/30 border border-white/10 active:scale-95 transition-all text-[10px] font-black uppercase tracking-widest"
-                        >
-                            <Guitar size={14} />
-                            Criar Cifra Interna
-                        </button>
+                        <div className="flex gap-2 mb-3">
+                            {/* Importar automático do CifraClub (se tem link) */}
+                            {musica?.link_cifra && (
+                                <button
+                                    onClick={async () => {
+                                        if (!musica?.link_cifra || !musica?.id) return
+                                        setImportandoUrl(true)
+                                        const res = await importarCifraDeUrlAction(musica.id, musica.link_cifra)
+                                        setImportandoUrl(false)
+                                        if (res.ok && res.cifra) {
+                                            setCifrasEditadas(prev => ({ ...prev, [musica.id]: res.cifra! }))
+                                        } else {
+                                            alert(res.error || 'Erro ao importar.')
+                                        }
+                                    }}
+                                    disabled={importandoUrl}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-orange-500/20 text-orange-300 border border-orange-500/30 active:scale-95 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                                >
+                                    {importandoUrl ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                    {importandoUrl ? 'A importar...' : 'Importar do CifraClub'}
+                                </button>
+                            )}
+                            {/* Criar/editar manualmente */}
+                            <button
+                                onClick={() => setEditorAberto(true)}
+                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/5 text-white/30 border border-white/10 active:scale-95 transition-all text-[10px] font-black uppercase tracking-widest ${musica?.link_cifra ? 'px-4' : 'flex-1'}`}
+                            >
+                                <Guitar size={14} />
+                                {musica?.link_cifra ? 'Manual' : 'Criar Cifra'}
+                            </button>
+                        </div>
                     )}
 
                     {/* BOTÕES DE RECURSOS EXTERNOS */}
