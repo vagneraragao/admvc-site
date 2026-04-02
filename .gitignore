@@ -2,6 +2,10 @@
 node_modules/
 jspm_packages/
 
+# Executáveis do proxy X32 (gerar com: npm run build:proxy)
+public/scripts/admvc-x32-proxy-*
+scripts/node_modules/
+
 # Segurança (NUNCA suba suas chaves de API)
 .env
 .env.local

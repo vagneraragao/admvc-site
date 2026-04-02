@@ -108,14 +108,25 @@ export default async function MidiaConfigPage() {
                             <p className="text-[9px] text-muted">Apos iniciar o proxy, va a Midia → Mesa de Som e conecte com <code className="bg-soft px-1.5 rounded text-[10px]">ws://localhost:8080</code></p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Executavel (duplo-clique, sem instalar nada):</p>
+                            <div className="grid grid-cols-3 gap-2">
+                                <a href="/scripts/admvc-x32-proxy-win.exe" download
+                                    className="flex flex-col items-center gap-1 py-3 rounded-xl bg-fg text-bg text-[8px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
+                                    <Download size={14} /> Windows
+                                </a>
+                                <a href="/scripts/admvc-x32-proxy-macos" download
+                                    className="flex flex-col items-center gap-1 py-3 rounded-xl bg-bg border border-soft text-muted text-[8px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
+                                    <Download size={14} /> macOS
+                                </a>
+                                <a href="/scripts/admvc-x32-proxy-linux" download
+                                    className="flex flex-col items-center gap-1 py-3 rounded-xl bg-bg border border-soft text-muted text-[8px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
+                                    <Download size={14} /> Linux
+                                </a>
+                            </div>
                             <a href="/scripts/x32-proxy.js" download="x32-proxy.js"
-                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-bg border border-soft text-muted text-[9px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
-                                <Download size={13} /> Script (.js)
-                            </a>
-                            <a href="/scripts/x32-proxy.js" download="admvc-x32-proxy.js"
-                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-fg text-bg text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
-                                <Download size={13} /> Descarregar Proxy
+                                className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-[8px] font-bold uppercase tracking-widest text-muted hover:text-fg transition-all">
+                                <Download size={10} /> Ou descarregar script .js (requer Node.js)
                             </a>
                         </div>
                     </div>
