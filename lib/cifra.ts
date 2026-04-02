@@ -128,48 +128,72 @@ export const TONS_DISPONIVEIS = NOTAS
 // ============================================================================
 
 // Regex para validar se um token é um acorde musical
-const ACORDE_REGEX = /^[A-G][#b]?(?:m|M|dim|aug|sus[24]?|add[0-9]*|maj|min|°|ø)?[0-9]*(?:M)?(?:\([^)]*\))?(?:\/[A-G][#b]?)?$/
+// Aceita: C, Am, F#m7, Bb7, Cmaj7, G7M, Dsus4, Em/B, Cm7(9), Ab7M, Eb/G, Cm7M, etc.
+const ACORDE_REGEX = /^[A-G][#b]?(?:m|M|dim|aug|sus[24]?|add[0-9]*|maj|min|°|ø)?[0-9]*(?:M)?(?:\([0-9b#/]+\))?(?:\/[A-G][#b]?)?$/
+
+/**
+ * Limpa um token removendo parênteses de agrupamento à volta.
+ * Preserva parênteses que fazem parte do acorde: Cm7(9) fica Cm7(9)
+ * Mas "(Cm)" fica "Cm" e "(" fica ""
+ */
+function limparToken(token: string): string {
+    let limpo = token
+    // Remover ( do início
+    while (limpo.startsWith('(')) limpo = limpo.slice(1)
+    // Remover ) do final MAS só se não faz parte de um acorde tipo X(9)
+    // Se o ) fecha um ( que está no meio do token, manter
+    while (limpo.endsWith(')')) {
+        // Verificar se há ( correspondente no meio do token (parte do acorde)
+        const semUltimo = limpo.slice(0, -1)
+        const abertos = (semUltimo.match(/\(/g) || []).length
+        const fechados = (semUltimo.match(/\)/g) || []).length
+        if (abertos > fechados) {
+            // O ) fecha um ( que faz parte do acorde — manter
+            break
+        }
+        limpo = semUltimo
+    }
+    return limpo
+}
 
 /**
  * Verifica se uma linha é exclusivamente de acordes.
- * Ignora linhas com palavras comuns (Tom:, Intro, etc.)
  */
 function isLinhaDeAcordes(linha: string): boolean {
     const trimmed = linha.trim()
     if (!trimmed) return false
 
-    // Ignorar linhas que claramente não são acordes
+    // Ignorar linhas que começam com tags de secção
     const lower = trimmed.toLowerCase()
-    if (lower.startsWith('tom:') || lower.startsWith('capo') || lower.startsWith('intro:') ||
-        lower.startsWith('verso') || lower.startsWith('refr') || lower.startsWith('ponte') ||
-        lower.startsWith('pré-') || lower.startsWith('pre-') || lower.startsWith('final') ||
-        lower.startsWith('[') || lower.startsWith('(')) return false
+    if (lower.startsWith('tom:') || lower.startsWith('capo') ||
+        lower.startsWith('[')) return false
 
-    const partes = trimmed.split(/\s+/)
+    // Remover parênteses e separar por espaço
+    const partes = trimmed.split(/\s+/).map(limparToken).filter(p => p.length > 0)
     if (partes.length === 0) return false
 
-    // Contar quantos tokens são acordes válidos
+    // Contar acordes válidos
     const acordes = partes.filter(p => ACORDE_REGEX.test(p))
 
-    // TODOS os tokens devem ser acordes (linha pura de acordes)
+    // Todos devem ser acordes (ou strings vazias de parênteses)
     return acordes.length === partes.length && acordes.length > 0
 }
 
 /**
  * Extrai acordes com posições de coluna de uma linha.
+ * Lida com parênteses: "( Cm  Cm7(9) )" → extrai Cm na posição correcta
  */
 function extrairAcordesComPosicao(linha: string): { acorde: string; posicao: number }[] {
     const resultado: { acorde: string; posicao: number }[] = []
-    // Encontrar cada token com a sua posição exacta
     let i = 0
     while (i < linha.length) {
-        // Saltar espaços
-        if (linha[i] === ' ' || linha[i] === '\t') { i++; continue }
+        // Saltar espaços, parênteses, tabs
+        if (' \t()'.includes(linha[i])) { i++; continue }
         // Ler token
         let j = i
-        while (j < linha.length && linha[j] !== ' ' && linha[j] !== '\t') j++
-        const token = linha.slice(i, j)
-        if (ACORDE_REGEX.test(token)) {
+        while (j < linha.length && !' \t()'.includes(linha[j])) j++
+        const token = limparToken(linha.slice(i, j))
+        if (token && ACORDE_REGEX.test(token)) {
             resultado.push({ acorde: token, posicao: i })
         }
         i = j
@@ -216,30 +240,73 @@ function mesclarAcordesComLetra(linhaAcordes: string, linhaLetra: string): strin
 }
 
 /**
+ * Verifica se o texto já está no nosso formato bracket (acordes entre []).
+ * Distingue entre [Am] (acorde) e [Intro] (tag de secção do CifraClub).
+ */
+function jaTemAcordesEmBrackets(texto: string): boolean {
+    const matches = texto.match(/\[([^\]]+)\]/g)
+    if (!matches) return false
+    return matches.some(m => {
+        const conteudo = m.slice(1, -1).trim()
+        return ACORDE_REGEX.test(conteudo)
+    })
+}
+
+/**
  * Converte texto copiado do CifraClub para formato bracket.
- * Aceita texto já com brackets (devolve como está).
+ * Aceita texto já com brackets de acordes (devolve como está).
+ * Tags de secção como [Intro], [Refrão] são tratadas como texto normal.
  */
 export function importarCifraClub(texto: string): string {
-    if (texto.includes('[') && texto.includes(']')) return texto.trim()
+    // Só retorna como está se já tem ACORDES entre brackets (não tags)
+    if (jaTemAcordesEmBrackets(texto)) return texto.trim()
 
+    // Pré-processamento: remover tags de secção [Intro], [Refrão], etc.
+    // e linhas Tom:, Capo:
     const linhas = texto.split('\n')
     const resultado: string[] = []
     let i = 0
 
     while (i < linhas.length) {
         const linhaAtual = linhas[i]
+        const trimmed = linhaAtual.trim()
+        const lower = trimmed.toLowerCase()
 
-        // Remover linhas "Tom: X", "Capo: X" etc.
-        const lower = linhaAtual.trim().toLowerCase()
+        // Ignorar Tom: e Capo:
         if (lower.startsWith('tom:') || lower.startsWith('capo')) {
+            i++
+            continue
+        }
+
+        // Tags de secção [Intro], [Refrão], etc.
+        if (trimmed.match(/^\[.+\]/)) {
+            const tag = trimmed.match(/^\[[^\]]+\]/)?.[0] || ''
+            const semTag = trimmed.replace(/^\[[^\]]+\]\s*/, '')
+            if (semTag) {
+                const partes = semTag.split(/\s+/).map(limparToken).filter(p => p.length > 0)
+                const todosAcordes = partes.length > 0 && partes.every(p => ACORDE_REGEX.test(p))
+                if (todosAcordes) {
+                    resultado.push(tag + ' ' + partes.map(a => `[${a}]`).join(' '))
+                } else {
+                    resultado.push(linhaAtual)
+                }
+            } else {
+                resultado.push(tag)
+            }
             i++
             continue
         }
 
         if (isLinhaDeAcordes(linhaAtual)) {
             const proximaLinha = i + 1 < linhas.length ? linhas[i + 1] : ''
+            const proximaTrimmed = proximaLinha.trim()
 
-            if (proximaLinha.trim() && !isLinhaDeAcordes(proximaLinha)) {
+            // A próxima linha é letra? (não vazia, não acordes, não tag de secção)
+            const proximaELetra = proximaTrimmed &&
+                !isLinhaDeAcordes(proximaLinha) &&
+                !proximaTrimmed.match(/^\[.+\]/)
+
+            if (proximaELetra) {
                 resultado.push(mesclarAcordesComLetra(linhaAtual, proximaLinha))
                 i += 2
             } else {
