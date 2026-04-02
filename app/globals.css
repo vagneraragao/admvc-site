@@ -149,3 +149,35 @@ body {
   user-select: none;
   pointer-events: none;
 }
+
+/* Range slider grande para palco mobile */
+input[type="range"].accent-emerald-500 {
+  height: 24px;
+}
+input[type="range"].accent-emerald-500::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+}
+input[type="range"].accent-emerald-500::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-top: -11px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+input[type="range"].accent-emerald-500::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+}
+input[type="range"].accent-emerald-500::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #10b981;
+  border: none;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}

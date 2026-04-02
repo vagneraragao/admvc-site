@@ -143,15 +143,17 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                 </div>
 
                 {/* Auto-scroll */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     {scrolling && (
-                        <input type="range" min="0.5" max="5" step="0.5" value={velocidade}
+                        <input type="range" min="0.3" max="5" step="0.1" value={velocidade}
                             onChange={e => setVelocidade(Number(e.target.value))}
-                            className="w-16 h-1 accent-emerald-500" />
+                            className="w-28 sm:w-36 h-6 accent-emerald-500 cursor-pointer"
+                            style={{ WebkitAppearance: 'none', appearance: 'none', background: 'transparent' }}
+                        />
                     )}
                     <button onClick={() => setScrolling(s => !s)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 ${scrolling ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                        {scrolling ? <Pause size={14} /> : <Play size={14} />}
+                        className={`h-10 px-4 flex items-center justify-center gap-2 rounded-xl active:scale-90 text-[9px] font-black uppercase tracking-widest ${scrolling ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                        {scrolling ? <><Pause size={14} /> <span className="hidden sm:inline">{velocidade.toFixed(1)}x</span></> : <><Play size={14} /> <span className="hidden sm:inline">Scroll</span></>}
                     </button>
                 </div>
             </div>
