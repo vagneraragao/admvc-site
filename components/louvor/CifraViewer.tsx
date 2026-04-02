@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, Settings2 } from 'lucide-react'
+import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, AlignLeft, AlignCenter } from 'lucide-react'
 import { parseCifra, transporCifra, calcularSemitons, notaRaiz, importarCifraClub, TONS_DISPONIVEIS } from '@/lib/cifra'
 
 interface Props {
@@ -21,6 +21,7 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     const [scrolling, setScrolling] = useState(false)
     const [velocidade, setVelocidade] = useState(1.5)
     const [fontSize, setFontSize] = useState(14)
+    const [modoSeparado, setModoSeparado] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
     const rafRef = useRef<number | null>(null)
 
@@ -122,6 +123,13 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                     </button>
                 </div>
 
+                {/* Modo: inline vs separado */}
+                <button onClick={() => setModoSeparado(s => !s)}
+                    className={`h-8 px-3 flex items-center gap-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest active:scale-90 ${modoSeparado ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                    {modoSeparado ? <AlignLeft size={12} /> : <AlignCenter size={12} />}
+                    {modoSeparado ? 'Separado' : 'Inline'}
+                </button>
+
                 {/* Tamanho fonte */}
                 <div className="flex items-center gap-1">
                     <button onClick={() => setFontSize(s => Math.max(10, s - 2))}
@@ -151,21 +159,61 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
             {/* CIFRA */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
                 <div className="max-w-2xl mx-auto font-mono whitespace-pre-wrap" style={{ fontSize }}>
-                    {linhas.map((segs, i) => (
-                        <div key={i} className="min-h-[1.6em] leading-relaxed">
-                            {segs.length === 0 && <br />}
-                            {segs.map((seg, j) => (
-                                seg.tipo === 'acorde' ? (
-                                    <span key={j} className="text-emerald-400 font-black" style={{ fontSize: fontSize + 2 }}>
-                                        {seg.valor}
-                                    </span>
-                                ) : (
-                                    <span key={j} className="text-white/80">{seg.valor}</span>
+                    {modoSeparado ? (
+                        /* MODO SEPARADO: acordes numa linha, letra na outra */
+                        linhas.map((segs, i) => {
+                            if (segs.length === 0) return <br key={i} />
+                            const temAcordes = segs.some(s => s.tipo === 'acorde')
+                            if (!temAcordes) {
+                                return (
+                                    <div key={i} className="text-white/80 leading-relaxed min-h-[1.4em]">
+                                        {segs.map((s, j) => <span key={j}>{s.valor}</span>)}
+                                    </div>
                                 )
-                            ))}
-                        </div>
-                    ))}
-                    {/* Espaço extra para o auto-scroll poder continuar */}
+                            }
+                            // Construir linha de acordes e linha de letra separadas
+                            let acordeLine = ''
+                            let letraLine = ''
+                            for (const seg of segs) {
+                                if (seg.tipo === 'acorde') {
+                                    // Preencher espaços na letra até à posição actual
+                                    while (acordeLine.length > letraLine.length) letraLine += ' '
+                                    while (letraLine.length > acordeLine.length) acordeLine += ' '
+                                    acordeLine += seg.valor
+                                } else {
+                                    // Preencher espaços nos acordes até à posição actual
+                                    while (letraLine.length > acordeLine.length) acordeLine += ' '
+                                    letraLine += seg.valor
+                                }
+                            }
+                            return (
+                                <div key={i} className="mb-1">
+                                    <div className="text-emerald-400 font-black leading-tight" style={{ fontSize: fontSize + 1 }}>
+                                        {acordeLine || '\u00A0'}
+                                    </div>
+                                    <div className="text-white/80 leading-relaxed">
+                                        {letraLine || '\u00A0'}
+                                    </div>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        /* MODO INLINE: acordes na mesma linha da letra */
+                        linhas.map((segs, i) => (
+                            <div key={i} className="min-h-[1.6em] leading-relaxed">
+                                {segs.length === 0 && <br />}
+                                {segs.map((seg, j) => (
+                                    seg.tipo === 'acorde' ? (
+                                        <span key={j} className="text-emerald-400 font-black" style={{ fontSize: fontSize + 2 }}>
+                                            {seg.valor}
+                                        </span>
+                                    ) : (
+                                        <span key={j} className="text-white/80">{seg.valor}</span>
+                                    )
+                                ))}
+                            </div>
+                        ))
+                    )}
                     <div className="h-[60vh]" />
                 </div>
             </div>
