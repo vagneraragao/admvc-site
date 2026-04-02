@@ -433,20 +433,23 @@ export default async function DashboardMembro({
 
                 {/* ── ABA: GERAL ───────────────────────────────────────────── */}
                 {currentTab === 'geral' && (
-                    <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-500">
-                        <section id="agenda-servico" className="space-y-5">
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-lg font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
-                                        <CalendarDays size={16} className="text-figueira" /> Minhas Escalas
-                                    </h2>
-                                    {(isAdmin(role) || membro.departamentos_liderados?.length > 0) && departamentoLouvorId && (
-                                        <ModalHistoricoEscalas departamentoId={departamentoLouvorId} />
-                                    )}
-                                </div>
+                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+
+                        {/* GRID: Escalas + Agenda + Aniversarios lado a lado */}
+                        <div className="grid lg:grid-cols-3 gap-6">
+
+                        {/* ESCALAS — 2 colunas */}
+                        <section className="lg:col-span-2 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                    <CalendarDays size={14} className="text-figueira" /> Minhas Escalas
+                                </h2>
+                                {(isAdmin(role) || membro.departamentos_liderados?.length > 0) && departamentoLouvorId && (
+                                    <ModalHistoricoEscalas departamentoId={departamentoLouvorId} />
+                                )}
                             </div>
 
-                            <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+                            <div className="grid sm:grid-cols-2 gap-4">
                                 {listaEscalas.length > 0 ? (
                                     listaEscalas.map((esc: any) => (
                                         <div key={esc.id} className={`bg-bg2 border p-5 rounded-[2rem] shadow-sm transition-all flex flex-col gap-4
@@ -511,18 +514,16 @@ export default async function DashboardMembro({
                             </div>
                         </section>
 
-                        <section className="grid lg:grid-cols-3 gap-6">
-                            {/* AGENDA — colapsável no mobile */}
-                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm collapsible-mobile">
-                                <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
-                                    <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-                                        <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja
+                        {/* SIDEBAR: Agenda + Aniversarios — 1 coluna */}
+                        <aside className="lg:col-span-1 space-y-4">
+                            <details className="bg-bg2 border border-soft rounded-2xl shadow-sm">
+                                <summary className="p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
+                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                        <CalendarDays size={12} className="text-figueira" /> Agenda
                                     </h2>
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted lg:hidden">
-                                        {proximosEventos.length} evento{proximosEventos.length !== 1 ? 's' : ''}
-                                    </span>
+                                    <span className="text-[8px] font-black text-muted">{proximosEventos.length}</span>
                                 </summary>
-                                <div className="px-5 pb-5">
+                                <div className="px-4 pb-4">
                                     <WidgetAgendaUnificada
                                         eventosIgreja={proximosEventos}
                                         gruposMembro={membro.grupos || []}
@@ -531,17 +532,14 @@ export default async function DashboardMembro({
                                 </div>
                             </details>
 
-                            {/* ANIVERSARIANTES — colapsável no mobile */}
-                            <details className="lg:col-span-1 bg-bg2 border border-soft rounded-2xl shadow-sm collapsible-mobile">
-                                <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
-                                    <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-                                        <CalendarDays size={14} className="text-figueira" /> Aniversarios
+                            <details className="bg-bg2 border border-soft rounded-2xl shadow-sm">
+                                <summary className="p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
+                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                        <CalendarDays size={12} className="text-figueira" /> Aniversarios
                                     </h2>
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted lg:hidden">
-                                        {aniversariantesMesFiltrados.length}
-                                    </span>
+                                    <span className="text-[8px] font-black text-muted">{aniversariantesMesFiltrados.length}</span>
                                 </summary>
-                                <div className="px-5 pb-5">
+                                <div className="px-4 pb-4">
                                     <CardAniversariantesMes aniversariantes={aniversariantesMesFiltrados} />
                                     {aniversariantesMesFiltrados.length === 0 && (
                                         <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center py-4">
@@ -550,7 +548,9 @@ export default async function DashboardMembro({
                                     )}
                                 </div>
                             </details>
-                        </section>
+                        </aside>
+
+                        </div>{/* fecha grid 3 colunas */}
                     </div>
                 )}
 

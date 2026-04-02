@@ -226,17 +226,21 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
                                                 )}
                                             </div>
 
-                                            {/* BOTÃO DE WHATSAPP (Opcional, se já tiver) */}
+                                            {/* CONTACTOS */}
                                             {integrante.membro.phone_1 && (
-                                                <a
-                                                    href={`https://wa.me/${integrante.membro.phone_1.replace(/\D/g, '')}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-500 hover:text-white flex items-center justify-center transition-all shrink-0 self-center"
-                                                    title="Enviar Mensagem"
-                                                >
-                                                    <Phone size={14} />
-                                                </a>
+                                                <div className="flex gap-1 shrink-0 self-center">
+                                                    <a href={`https://wa.me/${integrante.membro.phone_1.replace(/\D/g, '')}`}
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-500 hover:text-white flex items-center justify-center transition-all"
+                                                        title="WhatsApp">
+                                                        <Phone size={13} />
+                                                    </a>
+                                                    <a href={`tel:${integrante.membro.phone_1}`}
+                                                        className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all"
+                                                        title="Ligar">
+                                                        <Phone size={13} />
+                                                    </a>
+                                                </div>
                                             )}
                                         </div>
                                     ))}
