@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { audit } from '@/lib/audit'
+import { enviarEmailBoasVindas } from '@/lib/mail'
 
 
 // ============================================================================
@@ -263,6 +264,20 @@ export async function loginUnificado(formData: FormData) {
         maxAge: 60 * 60 * 24 * 7,
         sameSite: 'lax',
     })
+
+    // Atualizar ultimo_login e enviar email de boas-vindas se for o primeiro acesso
+    const primeiroLogin = usuario.ultimo_login === null
+    await prisma.membro.update({
+        where: { id: usuario.id },
+        data: { ultimo_login: new Date() },
+    })
+
+    if (primeiroLogin && usuario.email) {
+        enviarEmailBoasVindas(
+            `${usuario.first_name} ${usuario.last_name}`,
+            usuario.email,
+        ).catch((err) => console.error('[LOGIN] Erro ao enviar email de boas-vindas:', err))
+    }
 
     console.log(`=============================================\n`)
 

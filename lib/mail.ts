@@ -93,3 +93,67 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
     return { ok: false };
   }
 }
+
+// ── EMAIL DE BOAS-VINDAS (primeiro login) ────────────────────────────────────
+export async function enviarEmailBoasVindas(nome: string, email: string) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const linkDashboard = 'https://igrejaadmvc.org/membros/dashboard';
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Igreja ADMVC <acolhimento@igrejaadmvc.org>',
+      to: email,
+      subject: `Bem-vindo(a) a Igreja ADMVC, ${nome}!`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background-color: #ffffff;">
+
+          <div style="background-color: #3F6B4F; padding: 40px 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 2px; font-weight: 900;">
+              Bem-vindo(a)!
+            </h1>
+            <p style="color: #d4edda; margin: 10px 0 0 0; font-size: 14px;">
+              Igreja Assembleia de Deus Ministerio Vida Crista
+            </p>
+          </div>
+
+          <div style="padding: 30px; color: #1a202c;">
+            <p style="font-size: 16px; line-height: 1.8;">
+              Ola <strong>${nome}</strong>,
+            </p>
+            <p style="font-size: 16px; line-height: 1.8;">
+              O seu primeiro acesso ao sistema da igreja foi registado com sucesso.
+              A partir de agora pode acompanhar escalas, eventos, grupos e muito mais pela sua area de membro.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${linkDashboard}" target="_blank" style="display: inline-block; background-color: #3F6B4F; color: #ffffff; padding: 15px 40px; border-radius: 12px; text-decoration: none; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+                Aceder a minha area
+              </a>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
+              Caso tenha alguma duvida, fale com a equipa de acolhimento ou responda a este email.
+            </p>
+          </div>
+
+          <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 11px; color: #64748b;">
+            <p style="margin: 0;">Este e um email automatico do Sistema ADMVC.</p>
+            <p style="margin: 5px 0 0 0; font-weight: bold;">"Se muito bem-vindo, fica para sempre!"</p>
+          </div>
+        </div>
+      `
+    });
+
+    if (error) {
+      console.error('[BOAS-VINDAS] Erro Resend:', error);
+      return { ok: false };
+    }
+
+    console.log(`[BOAS-VINDAS] Email enviado para ${email}`);
+    return { ok: true };
+  } catch (err) {
+    console.error('[BOAS-VINDAS] Erro ao enviar email:', err);
+    return { ok: false };
+  }
+}

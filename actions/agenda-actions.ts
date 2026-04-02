@@ -250,7 +250,45 @@ export async function apagarCompromisso(id: number) {
     }
 }
 
-// EDITAR COMPROMISSO 
+// ATUALIZAR HORÁRIOS DISPONÍVEIS DA AGENDA
+// horarios: [{ dia_semana: 0-6, hora_inicio: "09:00", hora_fim: "12:00" }]
+export interface HorarioDisponivel {
+    dia_semana: number   // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    hora_inicio: string  // formato "HH:mm" (ex: "09:00")
+    hora_fim: string     // formato "HH:mm" (ex: "12:00")
+}
+
+export async function atualizarHorariosDisponiveis(agendaId: number, horarios: HorarioDisponivel[]) {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+
+        // Validação básica dos horários
+        for (const h of horarios) {
+            if (h.dia_semana < 0 || h.dia_semana > 6) {
+                return { ok: false, error: `Dia da semana inválido: ${h.dia_semana}. Use 0 (Domingo) a 6 (Sábado).` }
+            }
+            if (!/^\d{2}:\d{2}$/.test(h.hora_inicio) || !/^\d{2}:\d{2}$/.test(h.hora_fim)) {
+                return { ok: false, error: `Formato de hora inválido. Use "HH:mm" (ex: "09:00").` }
+            }
+            if (h.hora_inicio >= h.hora_fim) {
+                return { ok: false, error: `Hora de início (${h.hora_inicio}) deve ser anterior à hora de fim (${h.hora_fim}).` }
+            }
+        }
+
+        await prisma.agenda.update({
+            where: { id: agendaId },
+            data: { horarios_disponiveis: horarios as any }
+        })
+
+        revalidatePath('/gabinete')
+        return { ok: true }
+    } catch (error) {
+        console.error("Erro ao atualizar horários disponíveis:", error)
+        return { ok: false, error: "Erro interno ao gravar os horários." }
+    }
+}
+
+// EDITAR COMPROMISSO
 export async function editarCompromissoAction(formData: FormData) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])

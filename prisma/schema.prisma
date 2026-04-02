@@ -154,6 +154,8 @@ model Membro {
   familia_id                 Int?
   parentesco                 String?
   is_family_admin            Boolean                   @default(false)
+  ultimo_login               DateTime?
+  push_subscription          Json?
   ip_assinatura              String?
   data_aceite                DateTime?
   termo_aceite               Boolean                   @default(false)
@@ -550,17 +552,18 @@ model AvisoMural {
 }
 
 model Agenda {
-  id           Int           @id @default(autoincrement())
-  tenant_id    Int
-  slug         String        @unique
-  nome         String
-  is_publica   Boolean       @default(true)
-  dono_id      Int           @unique
-  criado_em    DateTime      @default(now())
-  dono         Membro        @relation("DonoAgenda", fields: [dono_id], references: [id], onDelete: Cascade)
-  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
-  compromissos Compromisso[]
-  gestores     Membro[]      @relation("GestoresAgenda")
+  id                     Int           @id @default(autoincrement())
+  tenant_id              Int
+  slug                   String        @unique
+  nome                   String
+  is_publica             Boolean       @default(true)
+  dono_id                Int           @unique
+  criado_em              DateTime      @default(now())
+  horarios_disponiveis   Json?         // [{ dia_semana: 0-6, hora_inicio: "09:00", hora_fim: "12:00" }]
+  dono                   Membro        @relation("DonoAgenda", fields: [dono_id], references: [id], onDelete: Cascade)
+  tenant                 Tenant        @relation(fields: [tenant_id], references: [id])
+  compromissos           Compromisso[]
+  gestores               Membro[]      @relation("GestoresAgenda")
 
   @@index([tenant_id])
 }
