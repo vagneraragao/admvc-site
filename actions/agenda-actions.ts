@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend';
 import { EmailConfirmacaoAgenda } from '@/components/emails/EmailConfirmacaoAgenda';
-import { requireRole } from '@/lib/auth-utils'
+import { requireAuth, requireRole } from '@/lib/auth-utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -326,5 +326,50 @@ export async function editarCompromissoAction(formData: FormData) {
         return { ok: true };
     } catch (error) {
         return { ok: false, error: "Erro ao editar compromisso." };
+    }
+}
+// ── PEDIR AGENDAMENTO (MEMBRO) ──────────────────────────────────────────────
+export async function pedirAgendamentoAction(dados: {
+    agenda_id: number
+    titulo: string
+    categoria: string
+    data: string
+    hora_inicio: string
+    hora_fim: string
+    observacoes?: string
+    membro_id: number
+}) {
+    try {
+        await requireAuth()
+
+        const data_inicio = new Date(`${dados.data}T${dados.hora_inicio}:00`)
+        const data_fim = new Date(`${dados.data}T${dados.hora_fim}:00`)
+
+        if (data_inicio < new Date()) {
+            return { ok: false, error: 'Nao e possivel agendar para uma data/hora ja passada.' }
+        }
+
+        const agenda = await prisma.agenda.findUnique({ where: { id: dados.agenda_id } })
+        if (!agenda) return { ok: false, error: 'Agenda nao encontrada.' }
+
+        await prisma.compromisso.create({
+            data: {
+                tenant_id: agenda.tenant_id,
+                agenda_id: dados.agenda_id,
+                titulo: dados.titulo,
+                categoria: dados.categoria,
+                data_inicio,
+                data_fim,
+                observacoes: dados.observacoes || null,
+                status: 'PENDENTE',
+                membros: { connect: [{ id: dados.membro_id }] },
+            }
+        })
+
+        revalidatePath('/gabinete')
+        revalidatePath('/membros/agendar')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao criar pedido de agendamento.' }
     }
 }

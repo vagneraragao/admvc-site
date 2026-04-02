@@ -251,9 +251,7 @@ export default async function DashboardFinanceiro() {
                     <p className="text-xs text-muted">Gestao financeira da igreja.</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <ModalRelatorioTesouraria membros={membros} />
-
+                <div className="flex items-center gap-2">
                     <ModalEntradaUnificada
                         membros={membrosParaReceber}
                         carnesAtivos={objetivos}
@@ -262,9 +260,9 @@ export default async function DashboardFinanceiro() {
 
                     <details className="group relative z-30">
                         <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
-                            <div className="h-11 px-4 bg-figueira text-white rounded-2xl flex items-center gap-2 hover:bg-figueira/90 transition-all active:scale-95">
+                            <div className="h-11 px-4 bg-figueira text-white rounded-xl flex items-center gap-2 hover:bg-figueira/90 transition-all active:scale-95">
                                 <PlusCircle size={14} />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Nova Campanha</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Campanha</span>
                                 <ChevronDown size={12} className="opacity-50 group-open:rotate-180 transition-transform" />
                             </div>
                         </summary>
@@ -272,6 +270,9 @@ export default async function DashboardFinanceiro() {
                             <p className="text-[8px] text-muted font-black uppercase tracking-widest px-3 pt-2 pb-1.5 border-b border-soft/50">Criar Novo Objetivo</p>
                             <ModalNovaCampanha membros={membros} tipoPredefinido="CARNE" campanhasExistentes={campanhasAgrupadas} />
                             <ModalNovaCampanha membros={membros} tipoPredefinido="RIFA" />
+                            <div className="border-t border-soft/50 mt-1 pt-1">
+                                <ModalRelatorioTesouraria membros={membros} />
+                            </div>
                         </div>
                     </details>
                 </div>
