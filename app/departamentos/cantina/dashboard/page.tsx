@@ -76,31 +76,10 @@ export default async function GestaoCantinaPage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
-            <Breadcrumb items={[
-                {
-                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard",
-                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard",
-                    isBackIcon: true
-                },
-                {
-                    label: "Logística / Cantina",
-                    hideOnMobile: true
-                },
-                {
-                    label: "Gestão da Cantina"
-                }
-            ]} />
-
-            {/* --- CABEÇALHO --- */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-soft pb-6">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <Store size={14} /> Módulo Operacional
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Gestão de <span className="text-muted/20">Cantina.</span>
-                    </h1>
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Cantina</h1>
+                    <p className="text-xs text-muted">Gestao de produtos e stock.</p>
                 </div>
 
                 {/* Badge de Status do Loyverse */}

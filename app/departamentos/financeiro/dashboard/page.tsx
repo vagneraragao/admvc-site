@@ -243,23 +243,12 @@ export default async function DashboardFinanceiro() {
         transacoesFlat.reduce((s, t) => s + t.valor, 0)
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
-            <Breadcrumb items={[
-                { label: 'Dashboard', href: '/membros/dashboard', isBackIcon: true },
-                { label: 'Financeiro', hideOnMobile: true },
-                { label: 'Tesouraria' }
-            ]} />
-
-            {/* ── HEADER ───────────────────────────────────────────────────── */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-soft">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <Wallet size={14} /> Módulo Tesouraria
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        A Paz, <span className="text-muted/20">{adminLogado?.first_name || 'Tesoureiro'}.</span>
-                    </h1>
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Tesouraria</h1>
+                    <p className="text-xs text-muted">Gestao financeira da igreja.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

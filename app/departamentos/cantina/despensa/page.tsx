@@ -63,31 +63,9 @@ export default async function AdminDespensaPage() {
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
-            <Breadcrumb items={[
-                {
-                    label: (isAdmin || isFinance) ? "Painel Admin" : "Dashboard",
-                    href: (isAdmin || isFinance) ? "/admin/dashboard" : "/membros/dashboard",
-                    isBackIcon: true
-                },
-                {
-                    label: "Ministérios",
-                    hideOnMobile: true
-                },
-                {
-                    label: "Ação Social & Despensa"
-                }
-            ]} />
-
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-soft pb-8">
-                <div className="space-y-2">
-                    <span className="text-blue-500 font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <HeartHandshake size={14} /> Controlo de Donativos e Insumos
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Despensa & <span className="text-muted/20">Apoio.</span>
-                    </h1>
-                </div>
+            <header className="space-y-1">
+                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Despensa</h1>
+                <p className="text-xs text-muted">Controlo de donativos e insumos.</p>
             </header>
 
             <DespensaManager produtos={produtosProcessados} categorias={categoriasAlvo} />

@@ -3,39 +3,30 @@ import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
-import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
-import { logoutMembro } from '@/actions/auth-actions'
 
 import {
-    ShieldCheck, PieChart, UserCircle, LogOut, Users,
-    LayoutDashboard, Coffee, Receipt, BellRing, FileSignature,
-    HeartHandshake, Store, Heart, MessageSquare, Menu, MapPin,
-    Clock, CalendarDays, MonitorPlay, Wallet2, ListMusic, ChevronRight,
-    Pencil
+    Coffee, Receipt, FileSignature,
+    HeartHandshake, Heart, CalendarDays, Wallet2, ChevronRight,
+    Users, Clock, MapPin
 } from 'lucide-react'
 
-// Componentes
 import CardWalletCantina from '@/components/membros/CardWalletCantina'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import PainelFinanceiroMembro from '@/components/membros/PainelFinanceiroMembro'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
-import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
 import FormAcompanhamentoRapido from '@/components/acolhimento/FormAcompanhamentoRapido'
 import WidgetAgendaUnificada from '@/components/membros/WidgetAgendaUnificada'
 import AvisoEscalaVazia from '@/components/membros/AvisoEscalaVazia'
-import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
 import ModalExtratoMembro from '@/components/financeiro/ModalExtratoMembro'
 import ModalRepertorio from '@/components/louvor/ModalRepertorio'
 import ModalHistoricoEscalas from '@/components/louvor/ModalHistoricoEscalas'
 import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
-import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import CardAniversariantesMes from '@/components/membros/CardAniversariantesMes'
 import ModalDetalhesEscala from '@/components/membros/ModalDetalhesEscalas'
-import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import BotaoSetlistPalco from '@/components/louvor/BotaoSetlistPalco'
 
 export default async function DashboardMembro({
@@ -59,10 +50,6 @@ export default async function DashboardMembro({
     }
 
     const db = getTenantClient(Number(tenantIdStr));
-
-    // Buscar nome da igreja
-    const tenantData = await db.tenant.findFirst({ select: { nome: true } })
-    const igrejaName = tenantData?.nome || 'Igreja'
 
     // 2. BUSCA O MEMBRO — com grupos e encontros incluídos
     const membro = await db.membro.findUnique({
@@ -293,7 +280,6 @@ export default async function DashboardMembro({
     ]);
 
     // 5. PROCESSAMENTO DE DADOS UI
-    const iniciais = `${membro.first_name?.[0] || 'M'}${membro.last_name?.[0] || 'V'}`;
     const hoje = new Date();
     const gdprPendente = !membro.gdpr_aceite || (membro.gdpr_validade && membro.gdpr_validade < hoje);
 
@@ -419,126 +405,12 @@ export default async function DashboardMembro({
     });
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 relative">
+        <div className="space-y-8 pt-6 animate-in fade-in duration-700">
 
-            {/* MODAL DE MÓDULO BLOQUEADO (aparece quando redirecionado do middleware) */}
+            {/* MODAL DE MÓDULO BLOQUEADO */}
             <Suspense fallback={null}>
                 <ModuloBloqueado />
             </Suspense>
-
-            {/* CABEÇALHO DO PERFIL */}
-            <header className="bg-bg2 border border-soft p-6 lg:p-8 rounded-2xl shadow-sm relative z-30">
-                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
-                    <div className="flex items-center gap-5">
-                        <div className="relative w-14 h-14 md:w-16 md:h-16 shrink-0">
-                            {membro.avatar_file ? (
-                                <Image src={membro.avatar_file} alt="Perfil" fill className="rounded-2xl object-cover border-2 border-soft shadow-sm" />
-                            ) : (
-                                <div className="w-full h-full rounded-2xl bg-fg text-bg flex items-center justify-center text-lg font-black border-2 border-soft shadow-sm">
-                                    {iniciais}
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-figueira mb-0.5">
-                                {igrejaName}{membro.congregacao ? ` · ${membro.congregacao.nome}` : ''}
-                            </p>
-                            <h1 className="text-2xl md:text-3xl font-black text-fg italic tracking-tighter uppercase leading-none">
-                                {membro.first_name} <span className="text-muted/40">{membro.last_name}</span>
-                            </h1>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <span className="text-[8px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-lg uppercase tracking-widest border border-figueira/20">
-                                    {permissoes.isLider ? 'Lider' : isAdmin(role) ? 'Admin' : 'Membro'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full lg:w-auto pt-4 lg:pt-0 border-t border-soft lg:border-0">
-                        {/* MENU HAMBÚRGUER — Serviço */}
-                        <details className="group relative z-50 flex-1 lg:flex-none">
-                            <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
-                                <div className="h-11 w-full lg:w-auto px-4 bg-figueira text-white rounded-xl flex items-center justify-center gap-2 hover:bg-figueira/90 transition-all shadow-sm active:scale-95">
-                                    <Menu size={16} />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Servico</span>
-                                </div>
-                            </summary>
-                            <div className="absolute right-0 top-full mt-2 w-60 bg-bg border border-soft p-2 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-0.5 z-50">
-                                {/* SECÇÃO: Meu Perfil */}
-                                <p className="text-[8px] font-black uppercase text-muted tracking-widest px-3 pt-1 pb-1">Minha Conta</p>
-                                <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
-                                <ModalIndisponibilidade isMenuItem />
-                                <ModalRelatorioEscalas membroId={membro?.id} isMenuItem />
-                                <Link href="/membros/dashboard?tab=financeiro" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                    <Wallet2 size={13} className="text-emerald-500" /> Financas e Cantina
-                                </Link>
-
-                                {/* SEPARADOR */}
-                                {mostraFerramentasExtra && <div className="border-t border-soft my-1" />}
-
-                                {/* SECÇÃO: Departamentos */}
-                                {mostraFerramentasExtra && (
-                                    <>
-                                        <p className="text-[8px] font-black uppercase text-muted tracking-widest px-3 pt-1 pb-1">Departamentos</p>
-                                        {isAdmin(role) && (
-                                            <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                                <ShieldCheck size={13} className="text-figueira" /> Painel Admin
-                                            </Link>
-                                        )}
-                                        {permissoes.isAdminOrFinance && (
-                                            <Link href="/departamentos/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                                <PieChart size={13} className="text-emerald-500" /> Tesouraria
-                                            </Link>
-                                        )}
-                                        {permissoes.isAcolhimento && (
-                                            <Link href="/departamentos/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                                <HeartHandshake size={13} className="text-blue-500" /> Acolhimento
-                                            </Link>
-                                        )}
-                                        {permissoes.isCantina && (
-                                            <Link href="/departamentos/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                                <Store size={13} className="text-orange-500" /> Cantina
-                                            </Link>
-                                        )}
-                                        {permissoes.isMidia && (
-                                            <Link href="/louvor/holyrics" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
-                                                <MonitorPlay size={13} className="text-purple-500" /> Midia / Holyrics
-                                            </Link>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </details>
-
-                        {/* NOTIFICAÇÕES */}
-                        <NotificacaoHeader
-                            avisos={ultimosAvisos}
-                            alertasAcolhimento={visitantesAtualizados}
-                        />
-
-                        <form action={logoutMembro} className="shrink-0">
-                            <button type="submit" className="h-11 w-11 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                                <LogOut size={15} strokeWidth={3} />
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {/* TABS */}
-                <div className="mt-6 pt-4 border-t border-soft flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-                    {[
-                        { tab: 'geral', label: 'Home', icon: LayoutDashboard },
-                        { tab: 'departamentos', label: 'Igreja', icon: Users },
-                    ].map(({ tab, label, icon: Icon }) => (
-                        <Link key={tab} href={`/membros/dashboard?tab=${tab}`}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                currentTab === tab ? 'bg-fg text-bg shadow-sm' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                            }`}>
-                            <Icon size={14} /> {label}
-                        </Link>
-                    ))}
-                </div>
-            </header>
 
             {/* AVISOS CRÍTICOS */}
             {gdprPendente && (
@@ -891,6 +763,6 @@ export default async function DashboardMembro({
                 )}
             </div>
 
-        </main>
+        </div>
     )
 }
