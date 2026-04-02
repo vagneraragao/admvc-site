@@ -20,6 +20,7 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
     const [showHelp, setShowHelp] = useState(false)
     const [showImport, setShowImport] = useState(!cifraAtual)
     const [importTexto, setImportTexto] = useState('')
+    const [importMsg, setImportMsg] = useState('')
 
     const { linhas } = parseCifra(texto)
 
@@ -39,9 +40,15 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
 
     function handleImport() {
         const convertido = importarCifraClub(importTexto)
-        setTexto(prev => prev ? prev + '\n\n' + convertido : convertido)
+        setTexto(convertido)
         setImportTexto('')
         setShowImport(false)
+        if (convertido.includes('[')) {
+            setImportMsg(`Convertido com sucesso! ${(convertido.match(/\[/g) || []).length} acordes detectados.`)
+        } else {
+            setImportMsg('Aviso: nenhum acorde detectado. Verifica o formato.')
+        }
+        setTimeout(() => setImportMsg(''), 5000)
     }
 
     return (
@@ -112,6 +119,13 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
                             Cancelar
                         </button>
                     </div>
+                </div>
+            )}
+
+            {/* MENSAGEM DE IMPORTAÇÃO */}
+            {importMsg && (
+                <div className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest shrink-0 ${importMsg.includes('sucesso') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                    {importMsg}
                 </div>
             )}
 
