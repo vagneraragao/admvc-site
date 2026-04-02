@@ -23,7 +23,7 @@ import BotoesEscala from '@/components/membros/BotoesEscala'
 import PainelFinanceiroMembro from '@/components/membros/PainelFinanceiroMembro'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 import SessaoExtratoCantina from '@/components/membros/SessaoExtratoCantina'
-import WidgetMural from '@/components/membros/WidgetMural'
+import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
 import FormAcompanhamentoRapido from '@/components/acolhimento/FormAcompanhamentoRapido'
 import WidgetAgendaUnificada from '@/components/membros/WidgetAgendaUnificada'
 import AvisoEscalaVazia from '@/components/membros/AvisoEscalaVazia'
@@ -488,6 +488,12 @@ export default async function DashboardMembro({
                         {/* MODAL DE INDISPONIBILIDADES */}
                         <ModalIndisponibilidade />
 
+                        {/* NOTIFICAÇÕES */}
+                        <NotificacaoHeader
+                            avisos={ultimosAvisos}
+                            alertasAcolhimento={visitantesAtualizados}
+                        />
+
                         <form action={logoutMembro} className="shrink-0">
                             <button type="submit" className="h-12 w-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
                                 <LogOut size={16} strokeWidth={3} />
@@ -854,12 +860,6 @@ export default async function DashboardMembro({
                     </div>
                 )}
             </div>
-
-            {/* WIDGET MURAL */}
-            <WidgetMural
-                avisos={ultimosAvisos}
-                alertasAcolhimento={visitantesAtualizados}
-            />
 
         </main>
     )
