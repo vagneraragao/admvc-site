@@ -59,31 +59,36 @@ export default function LumikitClient({ url, scenes, dimmers }: Props) {
                 addLog(`A conectar a ${baseUrl}...`, 'request')
                 const controller = new AbortController()
                 const timeout = setTimeout(() => controller.abort(), 4000)
-                await fetch(`${baseUrl}/services/edmx_get_active_scene`, { signal: controller.signal, mode: 'no-cors' })
+                const res = await fetch(`${baseUrl}/services/edmx_get_active_scene`, { signal: controller.signal })
                 clearTimeout(timeout)
-                setStatus('connected')
-                addLog('Lumikit acessivel!', 'success')
-            } catch (err: any) {
-                // no-cors pode nao dar erro se o host responde
-                if (err.name === 'AbortError') {
-                    setStatus('error')
-                    addLog('Timeout — Lumikit nao respondeu em 4s', 'error')
-                } else {
+                if (res.ok) {
+                    const data = await res.text()
                     setStatus('connected')
-                    addLog('Lumikit acessivel (no-cors)', 'success')
+                    addLog(`Lumikit conectado! ${data}`, 'success')
+                } else {
+                    setStatus('error')
+                    addLog(`Lumikit respondeu com HTTP ${res.status}`, 'error')
+                }
+            } catch (err: any) {
+                setStatus('error')
+                const msg = err.name === 'AbortError' ? 'Timeout (4s)' : err.message
+                addLog(`Falha na conexao: ${msg}`, 'error')
+                if (!baseUrl.includes('localhost')) {
+                    addLog('Dica: se a app esta em HTTPS, use o proxy local (http://localhost:8081)', 'info')
                 }
             }
         }
         connect()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Enviar comando GET para Lumikit
+    // Enviar comando GET para Lumikit (via proxy ou directo)
     const sendCommand = async (endpoint: string, label: string) => {
         const fullUrl = `${baseUrl}${endpoint}`
         addLog(`[GET] ${endpoint}`, 'request')
         try {
-            await fetch(fullUrl, { mode: 'no-cors' })
-            addLog(`[OK] ${label}`, 'success')
+            const res = await fetch(fullUrl)
+            const text = await res.text()
+            addLog(`[OK] ${label} → ${text.substring(0, 80)}`, 'success')
             return true
         } catch (err: any) {
             addLog(`[ERRO] ${label}: ${err.message}`, 'error')

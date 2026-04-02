@@ -88,6 +88,40 @@ export default async function MidiaConfigPage() {
                 <LumikitCenasEditor initialConfig={(tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [], dimmers: [] }} />
             )}
 
+            {/* PROXY LOCAL LUMIKIT */}
+            {temLumikit && (
+                <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-soft flex items-center gap-2">
+                        <Terminal size={14} className="text-amber-500" />
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Proxy Local (Lumikit)</h2>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        <p className="text-xs text-muted leading-relaxed">
+                            A app funciona em HTTPS mas o Lumikit usa HTTP na rede local.
+                            O proxy resolve este bloqueio — corre no PC da igreja e encaminha os comandos.
+                        </p>
+
+                        <div className="bg-bg border border-soft rounded-xl p-4 text-sm text-fg space-y-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-figueira">Como usar (requer Node.js)</p>
+                            <div className="bg-black/50 rounded-lg px-3 py-2 font-mono text-emerald-400 text-xs space-y-1">
+                                <p>node lumikit-proxy.js 172.20.10.2</p>
+                            </div>
+                            <p className="text-[9px] text-muted">Substitua o IP pelo endereco do PC com Lumikit SHOW. O proxy escuta em <code className="bg-soft px-1.5 rounded text-[10px]">localhost:8081</code>.</p>
+
+                            <div className="border-t border-soft pt-3">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-figueira">Depois de iniciar o proxy</p>
+                                <p className="text-[9px] text-muted mt-1">Altere o URL do Lumikit nas configuracoes acima para <code className="bg-soft px-1.5 rounded text-[10px]">http://localhost:8081</code></p>
+                            </div>
+                        </div>
+
+                        <a href="/scripts/lumikit-proxy.js" download="lumikit-proxy.js"
+                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-fg text-bg text-[8px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
+                            <Download size={14} /> Descarregar lumikit-proxy.js
+                        </a>
+                    </div>
+                </section>
+            )}
+
             {/* PROXY LOCAL — DOWNLOAD E INSTRUCOES */}
             {temMesaSom && (
                 <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
