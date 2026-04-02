@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { CalendarSearch, X, Filter, Clock, ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { buscarRelatorioEscalasAction } from '@/actions/membro-actions' // Ajuste o caminho se necessário
 
-export default function ModalRelatorioEscalas({ membroId }: { membroId: number }) {
+export default function ModalRelatorioEscalas({ membroId, isMenuItem }: { membroId: number; isMenuItem?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [escalas, setEscalas] = useState<any[]>([]);
@@ -40,13 +40,17 @@ export default function ModalRelatorioEscalas({ membroId }: { membroId: number }
 
     return (
         <>
-            {/* O Botão que fica na Dashboard */}
-            <button
-                onClick={() => setIsOpen(true)}
-                className="bg-bg text-muted border border-soft hover:border-figueira hover:text-figueira transition-all text-[9px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 shrink-0"
-            >
-                <CalendarSearch size={14} /> Ver Relatório
-            </button>
+            {isMenuItem ? (
+                <button onClick={() => setIsOpen(true)}
+                    className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 w-full text-left">
+                    <CalendarSearch size={13} className="text-blue-500" /> Relatorio Escalas
+                </button>
+            ) : (
+                <button onClick={() => setIsOpen(true)}
+                    className="bg-bg text-muted border border-soft hover:border-figueira hover:text-figueira transition-all text-[9px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 shrink-0">
+                    <CalendarSearch size={14} /> Ver Relatorio
+                </button>
+            )}
 
             {/* O Modal */}
             {isOpen && (

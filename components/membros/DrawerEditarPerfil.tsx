@@ -8,9 +8,10 @@ import MeuPerfilClient from '@/components/membros/MeuPerfilClient'
 interface Props {
     membro: any
     escolaridades: any[]
+    isMenuItem?: boolean
 }
 
-export default function DrawerEditarPerfil({ membro, escolaridades }: Props) {
+export default function DrawerEditarPerfil({ membro, escolaridades, isMenuItem }: Props) {
     const [aberto, setAberto] = useState(false)
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
@@ -24,14 +25,18 @@ export default function DrawerEditarPerfil({ membro, escolaridades }: Props) {
 
     return (
         <>
-            {/* BOTÃO DE ABERTURA — mesmo estilo dos outros botões do header */}
-            <button
-                onClick={() => setAberto(true)}
-                className="h-12 w-12 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-2xl hover:bg-soft hover:text-fg transition-all shadow-sm shrink-0"
-                title="Editar o meu perfil"
-            >
-                <UserCircle size={18} />
-            </button>
+            {isMenuItem ? (
+                <button onClick={() => setAberto(true)}
+                    className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 w-full text-left">
+                    <UserCircle size={13} className="text-figueira" /> Editar Perfil
+                </button>
+            ) : (
+                <button onClick={() => setAberto(true)}
+                    className="h-12 w-12 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-2xl hover:bg-soft hover:text-fg transition-all shadow-sm shrink-0"
+                    title="Editar o meu perfil">
+                    <UserCircle size={18} />
+                </button>
+            )}
 
             {/* OVERLAY */}
             {aberto && (

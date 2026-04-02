@@ -19,7 +19,7 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
         return 0
     })
     const [scrolling, setScrolling] = useState(false)
-    const [velocidade, setVelocidade] = useState(1.5)
+    const [velocidade, setVelocidade] = useState(0.8)
     const [fontSize, setFontSize] = useState(14)
     const [modoSeparado, setModoSeparado] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -48,6 +48,20 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
         if (idx === -1) return tomBase
         return TONS_DISPONIVEIS[((idx + semitons) % 12 + 12) % 12]
     })()
+
+    // Wake Lock — manter ecrã ligado enquanto vê cifra
+    useEffect(() => {
+        let wakeLock: any = null
+        const pedirWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await (navigator as any).wakeLock.request('screen')
+                }
+            } catch { }
+        }
+        pedirWakeLock()
+        return () => { wakeLock?.release?.() }
+    }, [])
 
     // Auto-scroll
     const scroll = useCallback(() => {
@@ -158,8 +172,9 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                 </div>
             </div>
 
-            {/* CIFRA */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+            {/* CIFRA — toque para pausar/retomar scroll */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar"
+                onClick={() => { if (scrolling) setScrolling(false) }}>
                 <div className="max-w-2xl mx-auto font-mono whitespace-pre-wrap" style={{ fontSize }}>
                     {modoSeparado ? (
                         /* MODO SEPARADO: acordes numa linha, letra na outra */

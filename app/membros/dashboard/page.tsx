@@ -60,6 +60,10 @@ export default async function DashboardMembro({
 
     const db = getTenantClient(Number(tenantIdStr));
 
+    // Buscar nome da igreja
+    const tenantData = await db.tenant.findFirst({ select: { nome: true } })
+    const igrejaName = tenantData?.nome || 'Igreja'
+
     // 2. BUSCA O MEMBRO — com grupos e encontros incluídos
     const membro = await db.membro.findUnique({
         where: { id: membroId },
@@ -318,7 +322,16 @@ export default async function DashboardMembro({
             });
         }
     });
-    const listaEscalas = Array.from(escalasAgrupadas.values()).slice(0, 4);
+    // Ordenar: confirmadas primeiro, depois por data mais próxima
+    const listaEscalas = Array.from(escalasAgrupadas.values())
+        .sort((a: any, b: any) => {
+            // Confirmadas primeiro
+            if (a.confirmado && !b.confirmado) return -1
+            if (!a.confirmado && b.confirmado) return 1
+            // Depois por data mais próxima
+            return new Date(a.evento.data).getTime() - new Date(b.evento.data).getTime()
+        })
+        .slice(0, 6);
 
     // DEPARTAMENTOS
     const departamentosAgrupados = new Map();
@@ -427,66 +440,72 @@ export default async function DashboardMembro({
                             )}
                         </div>
                         <div>
+                            <p className="text-[8px] font-black uppercase tracking-widest text-figueira mb-0.5">
+                                {igrejaName}{membro.congregacao ? ` · ${membro.congregacao.nome}` : ''}
+                            </p>
                             <h1 className="text-2xl md:text-3xl font-black text-fg italic tracking-tighter uppercase leading-none">
                                 {membro.first_name} <span className="text-muted/40">{membro.last_name}</span>
                             </h1>
-                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                <span className="text-[9px] font-black text-figueira bg-figueira/10 px-2.5 py-0.5 rounded-lg uppercase tracking-widest border border-figueira/20">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-[8px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-lg uppercase tracking-widest border border-figueira/20">
                                     {permissoes.isLider ? 'Lider' : isAdmin(role) ? 'Admin' : 'Membro'}
                                 </span>
-                                {membro.congregacao && (
-                                    <span className="text-[9px] font-bold text-muted bg-soft/30 px-2.5 py-0.5 rounded-lg uppercase tracking-widest border border-soft">
-                                        {membro.congregacao.nome}
-                                    </span>
-                                )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto pt-4 lg:pt-0 border-t border-soft lg:border-0">
-                        {mostraFerramentasExtra && (
-                            <details className="group relative z-50 flex-1 lg:flex-none">
-                                <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
-                                    <div className="h-12 w-full lg:w-auto px-5 bg-figueira text-white rounded-2xl flex items-center justify-center gap-2 hover:bg-figueira/90 transition-all shadow-sm active:scale-95">
-                                        <Menu size={18} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Ferramentas</span>
-                                    </div>
-                                </summary>
-                                <div className="absolute right-0 top-full mt-2 w-56 bg-bg border border-soft p-2 rounded-[1.5rem] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-1 z-50">
-                                    <p className="text-[9px] font-black uppercase text-figueira tracking-widest border-b border-soft/50 pb-2 mb-1 px-3 mt-1">Área de Serviço</p>
-                                    {isAdmin(role) && (
-                                        <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
-                                            <ShieldCheck size={14} className="text-figueira" /> Painel Geral
-                                        </Link>
-                                    )}
-                                    {permissoes.isAdminOrFinance && (
-                                        <Link href="/departamentos/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
-                                            <PieChart size={14} className="text-emerald-500" /> Tesouraria
-                                        </Link>
-                                    )}
-                                    {permissoes.isAcolhimento && (
-                                        <Link href="/departamentos/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
-                                            <HeartHandshake size={14} className="text-blue-500" /> Acolhimento
-                                        </Link>
-                                    )}
-                                    {permissoes.isCantina && (
-                                        <Link href="/departamentos/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
-                                            <Store size={14} className="text-orange-500" /> Gestão Cantina
-                                        </Link>
-                                    )}
-                                    {permissoes.isMidia && (
-                                        <Link href="/louvor/holyrics" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3">
-                                            <MonitorPlay size={14} className="text-purple-500" /> Mídia / Holyrics
-                                        </Link>
-                                    )}
+                    <div className="flex items-center gap-2 w-full lg:w-auto pt-4 lg:pt-0 border-t border-soft lg:border-0">
+                        {/* MENU HAMBÚRGUER — Serviço */}
+                        <details className="group relative z-50 flex-1 lg:flex-none">
+                            <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
+                                <div className="h-11 w-full lg:w-auto px-4 bg-figueira text-white rounded-xl flex items-center justify-center gap-2 hover:bg-figueira/90 transition-all shadow-sm active:scale-95">
+                                    <Menu size={16} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Servico</span>
                                 </div>
-                            </details>
-                        )}
-                        {/* DRAWER DE EDIÇÃO DE PERFIL */}
-                        <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} />
+                            </summary>
+                            <div className="absolute right-0 top-full mt-2 w-60 bg-bg border border-soft p-2 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-0.5 z-50">
+                                {/* SECÇÃO: Meu Perfil */}
+                                <p className="text-[8px] font-black uppercase text-muted tracking-widest px-3 pt-1 pb-1">Minha Conta</p>
+                                <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
+                                <ModalIndisponibilidade isMenuItem />
+                                <ModalRelatorioEscalas membroId={membro?.id} isMenuItem />
 
-                        {/* MODAL DE INDISPONIBILIDADES */}
-                        <ModalIndisponibilidade />
+                                {/* SEPARADOR */}
+                                {mostraFerramentasExtra && <div className="border-t border-soft my-1" />}
+
+                                {/* SECÇÃO: Departamentos */}
+                                {mostraFerramentasExtra && (
+                                    <>
+                                        <p className="text-[8px] font-black uppercase text-muted tracking-widest px-3 pt-1 pb-1">Departamentos</p>
+                                        {isAdmin(role) && (
+                                            <Link href="/admin/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                                <ShieldCheck size={13} className="text-figueira" /> Painel Admin
+                                            </Link>
+                                        )}
+                                        {permissoes.isAdminOrFinance && (
+                                            <Link href="/departamentos/financeiro/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                                <PieChart size={13} className="text-emerald-500" /> Tesouraria
+                                            </Link>
+                                        )}
+                                        {permissoes.isAcolhimento && (
+                                            <Link href="/departamentos/acolhimento/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                                <HeartHandshake size={13} className="text-blue-500" /> Acolhimento
+                                            </Link>
+                                        )}
+                                        {permissoes.isCantina && (
+                                            <Link href="/departamentos/cantina/dashboard" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                                <Store size={13} className="text-orange-500" /> Cantina
+                                            </Link>
+                                        )}
+                                        {permissoes.isMidia && (
+                                            <Link href="/louvor/holyrics" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                                <MonitorPlay size={13} className="text-purple-500" /> Midia / Holyrics
+                                            </Link>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </details>
 
                         {/* NOTIFICAÇÕES */}
                         <NotificacaoHeader
@@ -495,8 +514,8 @@ export default async function DashboardMembro({
                         />
 
                         <form action={logoutMembro} className="shrink-0">
-                            <button type="submit" className="h-12 w-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                                <LogOut size={16} strokeWidth={3} />
+                            <button type="submit" className="h-11 w-11 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                                <LogOut size={15} strokeWidth={3} />
                             </button>
                         </form>
                     </div>
@@ -505,8 +524,8 @@ export default async function DashboardMembro({
                 {/* TABS */}
                 <div className="mt-6 pt-4 border-t border-soft flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">
                     {[
-                        { tab: 'geral', label: 'Visao Geral', icon: LayoutDashboard },
-                        { tab: 'departamentos', label: 'Departamentos', icon: Users },
+                        { tab: 'geral', label: 'Home', icon: LayoutDashboard },
+                        { tab: 'departamentos', label: 'Igreja', icon: Users },
                         { tab: 'financeiro', label: 'Financas', icon: Wallet2 },
                     ].map(({ tab, label, icon: Icon }) => (
                         <Link key={tab} href={`/membros/dashboard?tab=${tab}`}
@@ -551,7 +570,6 @@ export default async function DashboardMembro({
                                         <ModalHistoricoEscalas departamentoId={departamentoLouvorId} />
                                     )}
                                 </div>
-                                <ModalRelatorioEscalas membroId={membro?.id} />
                             </div>
 
                             <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -620,34 +638,44 @@ export default async function DashboardMembro({
                         </section>
 
                         <section className="grid lg:grid-cols-3 gap-6">
-                            {/* AGENDA — 2/3 da largura */}
-                            <div className="lg:col-span-2 bg-bg2 border border-soft p-5 rounded-2xl shadow-sm">
-                                <h2 className="text-sm font-black uppercase tracking-widest text-fg mb-4 flex items-center gap-2">
-                                    <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja
-                                </h2>
-                                <WidgetAgendaUnificada
-                                    eventosIgreja={proximosEventos}
-                                    gruposMembro={membro.grupos || []}
-                                    isAdmin={isAdmin(role)}
-                                />
-                            </div>
+                            {/* AGENDA — colapsável no mobile */}
+                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm group" open>
+                                <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
+                                    <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                        <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja
+                                    </h2>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted lg:hidden">
+                                        {proximosEventos.length} evento{proximosEventos.length !== 1 ? 's' : ''}
+                                    </span>
+                                </summary>
+                                <div className="px-5 pb-5">
+                                    <WidgetAgendaUnificada
+                                        eventosIgreja={proximosEventos}
+                                        gruposMembro={membro.grupos || []}
+                                        isAdmin={isAdmin(role)}
+                                    />
+                                </div>
+                            </details>
 
-                            {/* ANIVERSARIANTES — 1/3 da largura */}
-                            <div className="lg:col-span-1 space-y-4">
-                                <CardAniversariantesMes aniversariantes={aniversariantesMesFiltrados} />
-
-                                {/* Placeholder se não houver aniversariantes */}
-                                {aniversariantesMesFiltrados.length === 0 && (
-                                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
-                                        <div className="w-10 h-10 bg-soft rounded-xl flex items-center justify-center mx-auto mb-3">
-                                            <CalendarDays size={18} className="text-muted/50" />
-                                        </div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">
-                                            Sem aniversários este mês
+                            {/* ANIVERSARIANTES — colapsável no mobile */}
+                            <details className="lg:col-span-1 bg-bg2 border border-soft rounded-2xl shadow-sm" open>
+                                <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
+                                    <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                        <CalendarDays size={14} className="text-figueira" /> Aniversarios
+                                    </h2>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted lg:hidden">
+                                        {aniversariantesMesFiltrados.length}
+                                    </span>
+                                </summary>
+                                <div className="px-5 pb-5">
+                                    <CardAniversariantesMes aniversariantes={aniversariantesMesFiltrados} />
+                                    {aniversariantesMesFiltrados.length === 0 && (
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center py-4">
+                                            Sem aniversarios este mes
                                         </p>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            </details>
                         </section>
                     </div>
                 )}
