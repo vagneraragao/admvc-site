@@ -469,3 +469,19 @@ export async function buscarMusicaPorId(musicaId: string) {
         return { success: false, error: error.message }
     }
 }
+
+// ── GUARDAR CIFRA INTERNA ────────────────────────────────────────────────────
+export async function salvarCifraInternaAction(musicaId: string, cifra: string) {
+    try {
+        await requireAuth()
+        await prisma.musica.update({
+            where: { id: musicaId },
+            data: { cifra_interna: cifra || null }
+        })
+        revalidatePath('/louvor')
+        revalidatePath('/membros/dashboard')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao guardar cifra.' }
+    }
+}

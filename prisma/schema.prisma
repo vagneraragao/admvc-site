@@ -30,6 +30,7 @@ model Musica {
   link_letra  String? // letras.mus.br, letras.com
   link_cifra  String? // cifraclub.com.br, ultimate-guitar.com
   link_audio  String? // Spotify, SoundCloud, YouTube Music
+  cifra_interna String? // Cifra com acordes no formato [Am]letra[G]letra
   holyrics_id String?            @unique
   eventos     RepertorioEvento[]
 

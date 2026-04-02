@@ -10,6 +10,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+import CifraViewer from './CifraViewer'
+import CifraEditor from './CifraEditor'
+
 interface Musica {
     id: string
     titulo: string
@@ -20,6 +23,7 @@ interface Musica {
     link_cifra?: string | null
     link_audio?: string | null
     link_video?: string | null
+    cifra_interna?: string | null
 }
 
 interface ItemRepertorio {
@@ -76,6 +80,8 @@ export default function SetlistPalco({ evento }: Props) {
     const [indexActual, setIndexActual] = useState(0)
     const [mostrarLista, setMostrarLista] = useState(false)
     const [marcadas, setMarcadas] = useState<Set<string>>(new Set())
+    const [cifraAberta, setCifraAberta] = useState(false)
+    const [editorAberto, setEditorAberto] = useState(false)
 
     // Swipe
     const touchStartX = useRef<number | null>(null)
@@ -152,7 +158,7 @@ export default function SetlistPalco({ evento }: Props) {
         weekday: 'long', day: '2-digit', month: 'long'
     }).format(new Date(evento.data))
 
-    const temLinks = musica?.link_letra || musica?.link_cifra || musica?.link_audio || musica?.link_video
+    const temLinks = musica?.link_letra || musica?.link_cifra || musica?.link_audio || musica?.link_video || musica?.cifra_interna
 
     if (total === 0) {
         return (
@@ -255,8 +261,39 @@ export default function SetlistPalco({ evento }: Props) {
                         )}
                     </div>
 
-                    {/* BOTÕES DE RECURSOS — grandes, fáceis de tocar */}
-                    {temLinks && (
+                    {/* CIFRA INTERNA — botão destaque */}
+                    {musica?.cifra_interna && (
+                        <div className="flex gap-2 mb-3">
+                            <button
+                                onClick={() => setCifraAberta(true)}
+                                className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 active:scale-95 transition-all"
+                            >
+                                <Guitar size={20} />
+                                <span className="text-sm font-black uppercase tracking-widest">Cifra ADMVC</span>
+                            </button>
+                            <button
+                                onClick={() => setEditorAberto(true)}
+                                className="w-12 flex items-center justify-center rounded-2xl bg-white/10 text-white/40 border border-white/10 active:scale-90 hover:text-white/70"
+                                title="Editar cifra"
+                            >
+                                <FileText size={16} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Botão editar/criar cifra */}
+                    {!musica?.cifra_interna && (
+                        <button
+                            onClick={() => setEditorAberto(true)}
+                            className="w-full flex items-center justify-center gap-2 py-3 mb-3 rounded-2xl bg-white/5 text-white/30 border border-white/10 active:scale-95 transition-all text-[10px] font-black uppercase tracking-widest"
+                        >
+                            <Guitar size={14} />
+                            Criar Cifra Interna
+                        </button>
+                    )}
+
+                    {/* BOTÕES DE RECURSOS EXTERNOS */}
+                    {(musica?.link_letra || musica?.link_cifra || musica?.link_audio || musica?.link_video) && (
                         <div className={`grid gap-3 mb-4 ${[musica?.link_letra, musica?.link_cifra, musica?.link_audio, musica?.link_video].filter(Boolean).length === 4
                                 ? 'grid-cols-4'
                                 : [musica?.link_letra, musica?.link_cifra, musica?.link_audio, musica?.link_video].filter(Boolean).length === 3
@@ -435,6 +472,28 @@ export default function SetlistPalco({ evento }: Props) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* CIFRA VIEWER */}
+            {cifraAberta && musica?.cifra_interna && (
+                <CifraViewer
+                    cifra={musica.cifra_interna}
+                    titulo={musica.titulo}
+                    artista={musica.artista}
+                    tomOriginal={musica.tom}
+                    tomTocado={item.tom_tocado}
+                    onClose={() => setCifraAberta(false)}
+                />
+            )}
+
+            {/* CIFRA EDITOR */}
+            {editorAberto && musica && (
+                <CifraEditor
+                    musicaId={musica.id}
+                    titulo={musica.titulo}
+                    cifraAtual={musica.cifra_interna}
+                    onClose={() => setEditorAberto(false)}
+                />
             )}
         </div>
     )

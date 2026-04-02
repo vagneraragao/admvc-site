@@ -42,6 +42,7 @@ export default async function SetlistPage({ params }: { params: { eventoId: stri
                 link_cifra: r.musica.link_cifra,
                 link_audio: r.musica.link_audio,
                 link_video: r.musica.link_video,
+                cifra_interna: r.musica.cifra_interna,
             }
         }))
     }
