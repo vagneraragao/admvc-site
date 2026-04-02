@@ -34,7 +34,6 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
         setSelecionadosLideres(grupo?.lideres?.map((l: any) => l.id) || []);
         setBuscaMembros("");
         setModo('form');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const membrosFiltrados = useMemo(() => {
@@ -205,9 +204,12 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                 </>
             )}
 
-            {/* ── MODO FORMULÁRIO ─────────────────────────────────────────── */}
+            {/* ── MODAL FORMULÁRIO ─────────────────────────────────────────── */}
             {modo === 'form' && (
-                <form onSubmit={handleSalvar} className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-bg/80 backdrop-blur-md" onClick={() => setModo('lista')} />
+                    <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-bg border border-soft rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 p-6">
+                <form onSubmit={handleSalvar} className="space-y-6">
 
                     {/* HEADER DO FORM */}
                     <div className="flex items-center justify-between">
@@ -452,6 +454,8 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                         </button>
                     </div>
                 </form>
+                </div>
+                </div>
             )}
         </div>
     );
