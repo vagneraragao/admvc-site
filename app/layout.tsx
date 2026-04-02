@@ -9,18 +9,29 @@ export const metadata: Metadata = {
   title: `${SITE_NAME} Cloud`,
   description: "Plataforma de gestao integrada para igrejas.",
   metadataBase: new URL("https://app.igrejaadmvc.org"),
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: "/images/favicon.ico" },
       { url: "/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-  }
+    apple: [
+      { url: "/images/apple-touch-icon.png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ADMVC',
+  },
 };
 
 export const viewport = {
-  themeColor: '#000000',
+  themeColor: '#3F6B4F',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +41,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <BrandingProvider>
           {children}
         </BrandingProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,
+          }}
+        />
       </body>
     </html>
   );
