@@ -59,11 +59,21 @@ export function calcularSemitons(de: string, para: string): number {
 
 /**
  * Transpõe todos os acordes [entre brackets] numa cifra por N semitons.
+ * Se a cifra não tiver brackets, tenta transpor acordes soltos no início de palavras.
  */
 export function transporCifra(cifra: string, semitons: number): string {
     if (semitons === 0) return cifra
-    return cifra.replace(/\[([^\]]+)\]/g, (_, acorde) => {
-        return `[${transporAcorde(acorde, semitons)}]`
+
+    // Se tem brackets — formato normal
+    if (cifra.includes('[')) {
+        return cifra.replace(/\[([^\]]+)\]/g, (_, acorde) => {
+            return `[${transporAcorde(acorde, semitons)}]`
+        })
+    }
+
+    // Fallback: transpor acordes soltos (texto plano do CifraClub não convertido)
+    return cifra.replace(/\b([A-G][#b]?(?:m|M|dim|aug|sus[24]?|add|maj|min)?[0-9]*(?:\/[A-G][#b]?)?)\b/g, (match) => {
+        return transporAcorde(match, semitons)
     })
 }
 

@@ -27,9 +27,26 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     const cifraTransposta = transporCifra(cifra, semitons)
     const { linhas } = parseCifra(cifraTransposta)
 
-    // Tom atual
-    const tomAtual = tomOriginal
-        ? TONS_DISPONIVEIS[(TONS_DISPONIVEIS.indexOf(tomOriginal) + semitons + 12) % 12]
+    // Extrair tom base: do prop ou do primeiro acorde da cifra
+    const tomBase = (() => {
+        if (tomOriginal) {
+            // Extrair apenas a nota raiz (ex: "Am" → "A", "F#m" → "F#")
+            let raiz = tomOriginal[0]
+            if (tomOriginal[1] === '#' || tomOriginal[1] === 'b') raiz += tomOriginal[1]
+            return raiz
+        }
+        // Tentar extrair do primeiro acorde na cifra
+        const match = cifra.match(/\[([A-G][#b]?)/)
+        return match ? match[1] : null
+    })()
+
+    // Tom actual (transposto)
+    const tomAtual = tomBase
+        ? (() => {
+            const idx = TONS_DISPONIVEIS.indexOf(tomBase)
+            if (idx === -1) return tomBase
+            return TONS_DISPONIVEIS[((idx + semitons) % 12 + 12) % 12]
+        })()
         : null
 
     // Auto-scroll
@@ -72,11 +89,18 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                    {/* Tom */}
                     {tomAtual && (
-                        <div className="flex items-center gap-1 bg-white/10 rounded-xl px-2.5 py-1.5">
+                        <div className="flex items-center gap-1.5 bg-white/10 rounded-xl px-2.5 py-1.5">
                             <Hash size={11} className="text-white/50" />
-                            <span className="text-xs font-black">{tomAtual}</span>
+                            <span className="text-xs font-black text-emerald-400">{tomAtual}</span>
+                            {semitons !== 0 && tomBase && (
+                                <span className="text-[8px] text-white/30 font-bold">({tomBase})</span>
+                            )}
+                        </div>
+                    )}
+                    {!tomAtual && semitons !== 0 && (
+                        <div className="flex items-center gap-1 bg-white/10 rounded-xl px-2.5 py-1.5">
+                            <span className="text-[9px] font-black text-white/50">{semitons > 0 ? `+${semitons}` : semitons}</span>
                         </div>
                     )}
                 </div>
