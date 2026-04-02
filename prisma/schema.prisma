@@ -221,7 +221,7 @@ model Departamento {
   compromissos     Compromisso[]            @relation("CompromissoDepartamentos")
   itens_inventario ItemInventario[]
 
-  @@unique([nome, tenant_id])
+  @@unique([nome, tenant_id, congregacaoId])
   @@index([tenant_id])
 }
 

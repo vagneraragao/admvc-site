@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
+import { headers } from 'next/headers'
 import { criarCargo, excluirCargo, criarDepartamento, excluirDepartamento } from '@/actions/admin-actions'
 import ConfigForm from '@/components/ConfigForm'
+import FormCriarDepartamento from '@/components/admin/FormCriarDepartamento'
 import DeptoItem from '@/components/DeptoItem'
 import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
@@ -9,11 +11,15 @@ import { Plus, Briefcase, LayoutGrid, Users, Hash, Shield } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function EstruturaPage() {
-    const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos] = await Promise.all([
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+
+    const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos, congregacoes] = await Promise.all([
         prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
         prisma.departamento.findMany({
             include: {
                 lider: { select: { first_name: true, last_name: true } },
+                congregacao: { select: { nome: true } },
                 funcoes: { orderBy: { nome: 'asc' } },
                 integrantes: {
                     include: {
@@ -35,7 +41,12 @@ export default async function EstruturaPage() {
                 departamento: { select: { id: true, nome: true } },
                 _count: { select: { membros: true } }
             }
-        })
+        }),
+        tenantId ? prisma.congregacao.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, nome: true, cidade: true },
+            orderBy: { nome: 'asc' }
+        }) : [],
     ])
 
     return (
@@ -60,7 +71,7 @@ export default async function EstruturaPage() {
                         <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{deptos.length}</span>
                     </div>
                     <Popover titulo="Departamento" cor="blue">
-                        <ConfigForm action={criarDepartamento} placeholder="Nome do setor..." label="Novo Setor" buttonColor="bg-blue-600" />
+                        <FormCriarDepartamento congregacoes={congregacoes} />
                     </Popover>
                 </div>
 

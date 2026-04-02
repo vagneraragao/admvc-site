@@ -1,5 +1,6 @@
 // app/admin/escalas/page.tsx
 import prisma from '@/lib/prisma'
+import { headers } from 'next/headers'
 import { getSessionData } from '@/lib/auth-utils'
 import { CalendarDays, Settings2, Users } from 'lucide-react'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
@@ -16,12 +17,15 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
 
+    const headersList = await headers()
+    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+
     const dataInicioMes = new Date()
     dataInicioMes.setDate(1)
 
     const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
-    const [eventos, departamentos, membrosComFuncoes] = await Promise.all([
+    const [eventos, departamentos, membrosComFuncoes, congregacoes] = await Promise.all([
         prisma.evento.findMany({
             where: { data: { gte: dataInicioMes }, ...congWhere },
             include: {
@@ -64,7 +68,12 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                 departamentos_liderados: { select: { id: true } }
             },
             orderBy: { first_name: 'asc' }
-        })
+        }),
+        tenantId ? prisma.congregacao.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, nome: true, cidade: true },
+            orderBy: { nome: 'asc' }
+        }) : [],
     ])
 
     const hoje = new Date(new Date().setHours(0, 0, 0, 0))
@@ -85,7 +94,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                     <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Escalas & Eventos</h1>
                     <p className="text-xs text-muted">Gestao de voluntarios e agenda de servico.</p>
                 </div>
-                <ModalNovoEvento />
+                <ModalNovoEvento congregacoes={congregacoes} />
             </header>
 
             {/* KPIs */}

@@ -150,9 +150,10 @@ async function main() {
         // 1. Cria ou Atualiza o Departamento (Usando chave composta nome + tenant_id)
         const departamentoCriado = await prisma.departamento.upsert({
             where: {
-                nome_tenant_id: {
+                nome_tenant_id_congregacaoId: {
                     nome: depto.nome,
-                    tenant_id: tenant.id
+                    tenant_id: tenant.id,
+                    congregacaoId: null
                 }
             },
             update: { descricao: depto.descricao },

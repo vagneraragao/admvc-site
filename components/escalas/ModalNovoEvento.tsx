@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CalendarDays, X, Save, Loader2, Clock, Repeat, Type, Filter, CalendarPlus, Calendar, AlignLeft } from 'lucide-react'
 import { criarEventoUnificadoAction } from '@/actions/admin-actions'
 
-export default function ModalNovoEvento() {
+export default function ModalNovoEvento({ congregacoes = [] }: { congregacoes?: { id: number; nome: string; cidade: string }[] }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
     const [tipoEvento, setTipoEvento] = useState<'UNICO' | 'CONTINUO'>('UNICO')
@@ -114,7 +114,7 @@ export default function ModalNovoEvento() {
                                     </div>
                                 </div>
 
-                                {/* NOVO CAMPO: DESCRIÇÃO */}
+                                {/* DESCRIÇÃO */}
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2 flex items-center gap-2">
                                         <AlignLeft size={12} className="text-figueira" /> Descrição / Tema (Opcional)
@@ -126,6 +126,24 @@ export default function ModalNovoEvento() {
                                         className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg focus:border-figueira outline-none resize-none shadow-sm transition-all leading-relaxed"
                                     />
                                 </div>
+
+                                {/* CONGREGAÇÃO */}
+                                {congregacoes.length > 0 && (
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2 flex items-center gap-2">
+                                            <CalendarDays size={12} className="text-figueira" /> Congregacao
+                                        </label>
+                                        <select
+                                            name="congregacao_id"
+                                            className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-sm font-bold text-fg focus:border-figueira outline-none appearance-none cursor-pointer shadow-sm transition-all"
+                                        >
+                                            <option value="">Toda a Igreja (sem congregacao)</option>
+                                            {congregacoes.map(c => (
+                                                <option key={c.id} value={c.id}>{c.nome} — {c.cidade}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             {/* BLOCO 2: DATA E AGENDAMENTO */}

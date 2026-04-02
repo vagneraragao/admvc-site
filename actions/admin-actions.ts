@@ -67,8 +67,19 @@ export async function criarDepartamento(formData: FormData) {
     const nome = formData.get('nome') as string;
     if (!nome) return;
 
+    const congId = formData.get('congregacaoId')
+    const congregacaoId = congId ? Number(congId) : null
+    const isGlobal = !congregacaoId
+
     const { db, tenantId } = await getDb();
-    await db.departamento.create({ data: { nome, tenant_id: tenantId } });
+    await db.departamento.create({
+        data: {
+            nome,
+            tenant_id: tenantId,
+            congregacaoId,
+            is_global: isGlobal,
+        }
+    });
     revalidatePath('/admin/configuracoes');
 }
 
@@ -446,6 +457,8 @@ export async function criarEventoUnificadoAction(formData: FormData) {
         const tipo = formData.get('tipo') as string;
         const nome = formData.get('nome') as string;
         const horario = formData.get('horario') as string;
+        const congIdStr = formData.get('congregacao_id') as string;
+        const congregacao_id = congIdStr ? Number(congIdStr) : null;
         const [horas, minutos] = horario.split(':');
 
         if (tipo === 'UNICO') {
@@ -453,7 +466,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
             const dataEvento = new Date(dataString);
             dataEvento.setHours(Number(horas), Number(minutos), 0, 0);
 
-            await db.evento.create({ data: { nome, data: dataEvento, tenant_id: tenantId, } });
+            await db.evento.create({ data: { nome, data: dataEvento, tenant_id: tenantId, congregacao_id } });
             revalidatePath('/escalas/admin');
             return { ok: true, totalCriado: 1 };
         }
@@ -484,7 +497,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
                         if (proximaSemana.getMonth() !== dataAtual.getMonth()) isMatch = true;
                     } else if (frequencia === semanaDoMes.toString()) isMatch = true;
 
-                    if (isMatch) eventosParaCriar.push({ nome, data: new Date(dataAtual) });
+                    if (isMatch) eventosParaCriar.push({ nome, data: new Date(dataAtual), congregacao_id });
                 }
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }
