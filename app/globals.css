@@ -150,6 +150,16 @@ body {
   pointer-events: none;
 }
 
+/* Details colapsáveis: fechados no mobile, abertos no desktop */
+@media (min-width: 1024px) {
+  details.group > summary {
+    pointer-events: none;
+  }
+  details.group:not([open]) > summary ~ * {
+    display: block !important;
+  }
+}
+
 /* Range slider grande para palco mobile */
 input[type="range"].accent-emerald-500 {
   height: 24px;

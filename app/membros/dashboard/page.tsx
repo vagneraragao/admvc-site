@@ -469,6 +469,9 @@ export default async function DashboardMembro({
                                 <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
                                 <ModalIndisponibilidade isMenuItem />
                                 <ModalRelatorioEscalas membroId={membro?.id} isMenuItem />
+                                <Link href="/membros/dashboard?tab=financeiro" className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3">
+                                    <Wallet2 size={13} className="text-emerald-500" /> Financas e Cantina
+                                </Link>
 
                                 {/* SEPARADOR */}
                                 {mostraFerramentasExtra && <div className="border-t border-soft my-1" />}
@@ -526,7 +529,6 @@ export default async function DashboardMembro({
                     {[
                         { tab: 'geral', label: 'Home', icon: LayoutDashboard },
                         { tab: 'departamentos', label: 'Igreja', icon: Users },
-                        { tab: 'financeiro', label: 'Financas', icon: Wallet2 },
                     ].map(({ tab, label, icon: Icon }) => (
                         <Link key={tab} href={`/membros/dashboard?tab=${tab}`}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
@@ -639,7 +641,7 @@ export default async function DashboardMembro({
 
                         <section className="grid lg:grid-cols-3 gap-6">
                             {/* AGENDA — colapsável no mobile */}
-                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm group" open>
+                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm group">
                                 <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
                                     <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja

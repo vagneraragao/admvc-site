@@ -20,6 +20,7 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     })
     const [scrolling, setScrolling] = useState(false)
     const [velocidade, setVelocidade] = useState(0.8)
+    const scrollWasActive = useRef(false)
     const [fontSize, setFontSize] = useState(14)
     const [modoSeparado, setModoSeparado] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -172,9 +173,10 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                 </div>
             </div>
 
-            {/* CIFRA — toque para pausar/retomar scroll */}
+            {/* CIFRA — dedo na tela pausa, ao tirar retoma */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar"
-                onClick={() => { if (scrolling) setScrolling(false) }}>
+                onTouchStart={() => { if (scrolling) { scrollWasActive.current = true; setScrolling(false) } else { scrollWasActive.current = false } }}
+                onTouchEnd={() => { if (scrollWasActive.current) { setScrolling(true); scrollWasActive.current = false } }}>
                 <div className="max-w-2xl mx-auto font-mono whitespace-pre-wrap" style={{ fontSize }}>
                     {modoSeparado ? (
                         /* MODO SEPARADO: acordes numa linha, letra na outra */

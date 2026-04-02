@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
     ChevronLeft, ChevronRight, X, FileText, Guitar,
     Headphones, Youtube, Music, Hash, Gauge,
-    List, Maximize2, ArrowLeft, CheckCircle2
+    List, Maximize2, ArrowLeft, CheckCircle2, Home
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -186,10 +186,17 @@ export default function SetlistPalco({ evento }: Props) {
         >
             {/* ── HEADER ─────────────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 pt-safe pt-4 pb-3 shrink-0">
-                <Link href="/membros/dashboard"
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90">
-                    <ArrowLeft size={18} />
-                </Link>
+                <div className="flex items-center gap-1.5">
+                    <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/membros/dashboard'}
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <Link href="/membros/dashboard"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90"
+                        title="Home">
+                        <Home size={16} />
+                    </Link>
+                </div>
 
                 <div className="text-center">
                     <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40">
