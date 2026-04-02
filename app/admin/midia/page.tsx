@@ -5,8 +5,10 @@ import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import { getModulosAtivos, MODULOS } from '@/lib/planos'
 import MidiaConfigClient from '@/components/admin/MidiaConfigClient'
+import LumikitCenasEditor from '@/components/admin/LumikitCenasEditor'
 import Link from 'next/link'
 import { Music2, Lightbulb, MonitorPlay, Download, Terminal, ArrowRight } from 'lucide-react'
+import type { LumikitConfig } from '@/actions/midia-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +29,7 @@ export default async function MidiaConfigPage() {
             x32_ip: true,
             x32_port: true,
             lumikit_url: true,
+            lumikit_cenas: true,
         }
     })
 
@@ -78,6 +81,11 @@ export default async function MidiaConfigPage() {
                         )}
                     </div>
                 </section>
+            )}
+
+            {/* CONFIGURADOR DE CENAS LUMIKIT */}
+            {temLumikit && (
+                <LumikitCenasEditor initialConfig={(tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [], dimmers: [] }} />
             )}
 
             {/* PROXY LOCAL — DOWNLOAD E INSTRUCOES */}

@@ -67,3 +67,45 @@ export async function testarConectividade(tipo: 'holyrics' | 'x32' | 'lumikit', 
         return { ok: false, status: 0, info: error.message }
     }
 }
+
+// ── LUMIKIT CENAS & DIMMERS ──
+
+export type LumikitScene = {
+    id: string
+    nome: string
+    cor: string
+    page: number   // 0-99
+    scene: number  // 0-15
+}
+
+export type LumikitDimmer = {
+    id: string
+    nome: string
+    page: number
+    scene: number
+}
+
+export type LumikitConfig = {
+    scenes: LumikitScene[]
+    dimmers: LumikitDimmer[]
+}
+
+export async function salvarLumikitCenas(config: LumikitConfig) {
+    try {
+        await requireRole(['ADMIN'])
+        const headersList = await headers()
+        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+        if (!tenantId) return { ok: false, error: 'Tenant nao identificado.' }
+
+        await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { lumikit_cenas: config as any }
+        })
+
+        revalidatePath('/admin/midia')
+        revalidatePath('/midia/lumikit')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao guardar cenas Lumikit.' }
+    }
+}

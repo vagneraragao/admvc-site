@@ -52,7 +52,8 @@ model Tenant {
   holyrics_token           String?
   x32_ip                   String?                   // Ex: 192.168.1.50
   x32_port                 Int?                      @default(10023)
-  lumikit_url              String?                   // Ex: http://192.168.1.60
+  lumikit_url              String?                   // Ex: http://192.168.1.60:5000
+  lumikit_cenas            Json?                     // { scenes: [...], dimmers: [...] }
   regioes_custom           Json?                     // Array de strings com regioes customizadas
   createdAt                DateTime                  @default(now())
   agendas                  Agenda[]

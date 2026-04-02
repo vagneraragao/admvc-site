@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import LumikitClient from '@/components/midia/LumikitClient'
+import type { LumikitConfig } from '@/actions/midia-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +16,10 @@ export default async function LumikitPage() {
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
-        select: { lumikit_url: true }
+        select: { lumikit_url: true, lumikit_cenas: true }
     })
+
+    const config = (tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [], dimmers: [] }
 
     return (
         <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
@@ -24,7 +27,7 @@ export default async function LumikitPage() {
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Iluminacao</h1>
                 <p className="text-xs text-muted">Lumikit — Controlo de cenas e brilho.</p>
             </header>
-            <LumikitClient url={tenant?.lumikit_url || ''} />
+            <LumikitClient url={tenant?.lumikit_url || ''} scenes={config.scenes} dimmers={config.dimmers} />
         </main>
     )
 }
