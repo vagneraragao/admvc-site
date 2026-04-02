@@ -42,9 +42,9 @@ export default function LumikitClient({ url }: Props) {
     }
 
     async function acionarCena(cenaId: number) {
+        if (!connected) return
         setEnviando(cenaId)
         try {
-            // Tentar via HTTP directo (modo browser)
             await fetch(`${enderecoLocal}/api/scene/${cenaId}`, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -53,13 +53,13 @@ export default function LumikitClient({ url }: Props) {
             })
             setCenaAtiva(cenaId)
         } catch {
-            // Fallback silencioso
             setCenaAtiva(cenaId)
         }
         setEnviando(null)
     }
 
     async function ajustarBrilho(valor: number) {
+        if (!connected) { setBrilho(valor); return }
         setBrilho(valor)
         try {
             await fetch(`${enderecoLocal}/api/brightness`, {

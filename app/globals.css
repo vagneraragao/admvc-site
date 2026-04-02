@@ -150,15 +150,10 @@ body {
   pointer-events: none;
 }
 
-/* Details colapsáveis: fechados no mobile, abertos no desktop */
-@media (min-width: 1024px) {
-  details.collapsible-mobile > summary {
-    pointer-events: none;
-    cursor: default;
-  }
-  details.collapsible-mobile {
-    /* Forçar open no desktop */
-  }
+/* Details colapsáveis — removido forçar abertura no desktop */
+/* Agenda e aniversários ficam colapsados em todas as telas */
+@media (min-width: 99999px) {
+  /* Regra desactivada — manter colapsado */
   details.collapsible-mobile > summary ~ * {
     display: block !important;
   }

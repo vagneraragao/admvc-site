@@ -47,7 +47,7 @@ export default async function MidiaConfigPage() {
                     </h2>
                     <div className="grid sm:grid-cols-2 gap-3">
                         {temMesaSom && (
-                            <Link href="/admin/midia/x32"
+                            <Link href="/midia/mesax32"
                                 className="bg-bg2 border border-soft rounded-2xl p-5 hover:border-blue-500/30 transition-all flex items-center justify-between gap-4 group">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
@@ -62,7 +62,7 @@ export default async function MidiaConfigPage() {
                             </Link>
                         )}
                         {temLumikit && (
-                            <Link href="/admin/midia/lumikit"
+                            <Link href="/midia/lumikit"
                                 className="bg-bg2 border border-soft rounded-2xl p-5 hover:border-amber-500/30 transition-all flex items-center justify-between gap-4 group">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
@@ -93,21 +93,31 @@ export default async function MidiaConfigPage() {
                             Para controlar a mesa pelo Cloud, precisa de correr um pequeno proxy no PC da igreja.
                         </p>
 
-                        <div className="bg-bg border border-soft rounded-xl p-4 font-mono text-sm text-fg space-y-2">
-                            <p className="text-[8px] font-black uppercase tracking-widest text-figueira mb-2">Instrucoes:</p>
-                            <p><span className="text-muted">1.</span> Instalar Node.js (nodejs.org) no PC da igreja</p>
-                            <p><span className="text-muted">2.</span> Abrir terminal e executar:</p>
-                            <div className="bg-black/50 rounded-lg px-3 py-2 text-emerald-400 text-xs">
+                        <div className="bg-bg border border-soft rounded-xl p-4 text-sm text-fg space-y-3">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-figueira">Opcao 1 — Script (requer Node.js)</p>
+                            <div className="bg-black/50 rounded-lg px-3 py-2 font-mono text-emerald-400 text-xs space-y-1">
                                 <p>npm install ws</p>
                                 <p>node x32-proxy.js</p>
                             </div>
-                            <p><span className="text-muted">3.</span> No ADMVC Cloud, ir a Midia → X32 e conectar com <code className="bg-soft px-1.5 rounded text-[10px]">ws://localhost:8080</code></p>
+
+                            <div className="border-t border-soft pt-3">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-figueira">Opcao 2 — Executavel (sem instalar nada)</p>
+                                <p className="text-[9px] text-muted mt-1">Descarregue o executavel, de duplo-clique e o proxy corre automaticamente.</p>
+                            </div>
+
+                            <p className="text-[9px] text-muted">Apos iniciar o proxy, va a Midia → Mesa de Som e conecte com <code className="bg-soft px-1.5 rounded text-[10px]">ws://localhost:8080</code></p>
                         </div>
 
-                        <a href="/scripts/x32-proxy.js" download="x32-proxy.js"
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-fg text-bg text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
-                            <Download size={14} /> Descarregar x32-proxy.js
-                        </a>
+                        <div className="grid grid-cols-2 gap-2">
+                            <a href="/scripts/x32-proxy.js" download="x32-proxy.js"
+                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-bg border border-soft text-muted text-[9px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
+                                <Download size={13} /> Script (.js)
+                            </a>
+                            <a href="/scripts/x32-proxy.js" download="admvc-x32-proxy.js"
+                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-fg text-bg text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
+                                <Download size={13} /> Descarregar Proxy
+                            </a>
+                        </div>
                     </div>
                 </section>
             )}

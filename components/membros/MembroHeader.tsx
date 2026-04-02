@@ -129,17 +129,17 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                             </Link>
                                         )}
                                         {permissoes.isMidia && (
-                                            <Link href="/louvor/holyrics" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                            <Link href="/midia/holyrics" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                                 <MonitorPlay size={12} className="text-purple-500" /> Holyrics
                                             </Link>
                                         )}
                                         {(permissoes.isMidia || permissoes.isLouvor) && (
-                                            <Link href="/admin/midia/x32" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                            <Link href="/midia/mesax32" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                                 <Music2 size={12} className="text-blue-500" /> Mesa de Som
                                             </Link>
                                         )}
                                         {permissoes.isMidia && (
-                                            <Link href="/admin/midia/lumikit" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                            <Link href="/midia/lumikit" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                                 <Lightbulb size={12} className="text-amber-500" /> Iluminacao
                                             </Link>
                                         )}
