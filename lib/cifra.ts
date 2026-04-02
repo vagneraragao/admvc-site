@@ -127,75 +127,99 @@ export const TONS_DISPONIVEIS = NOTAS
 // IMPORTAÇÃO — Converter formato CifraClub para formato bracket
 // ============================================================================
 
-// Regex abrangente para acordes musicais
-// Aceita: C, Am, F#m7, Bb7, Cmaj7, Dsus4, G7M, Em/B, A(add9), C2, etc.
+// Regex para validar se um token é um acorde musical
 const ACORDE_REGEX = /^[A-G][#b]?(?:m|M|dim|aug|sus[24]?|add[0-9]*|maj|min|°|ø)?[0-9]*(?:M)?(?:\([^)]*\))?(?:\/[A-G][#b]?)?$/
 
 /**
- * Verifica se uma linha contém apenas acordes (formato CifraClub).
+ * Verifica se uma linha é exclusivamente de acordes.
+ * Ignora linhas com palavras comuns (Tom:, Intro, etc.)
  */
 function isLinhaDeAcordes(linha: string): boolean {
     const trimmed = linha.trim()
     if (!trimmed) return false
+
+    // Ignorar linhas que claramente não são acordes
+    const lower = trimmed.toLowerCase()
+    if (lower.startsWith('tom:') || lower.startsWith('capo') || lower.startsWith('intro:') ||
+        lower.startsWith('verso') || lower.startsWith('refr') || lower.startsWith('ponte') ||
+        lower.startsWith('pré-') || lower.startsWith('pre-') || lower.startsWith('final') ||
+        lower.startsWith('[') || lower.startsWith('(')) return false
+
     const partes = trimmed.split(/\s+/)
     if (partes.length === 0) return false
-    // Pelo menos 60% dos tokens devem ser acordes válidos, e pelo menos 1
+
+    // Contar quantos tokens são acordes válidos
     const acordes = partes.filter(p => ACORDE_REGEX.test(p))
-    // Também considerar linha de acordes se todos os tokens são curtos (< 6 chars) e maioria são acordes
-    const todosCurtos = partes.every(p => p.length <= 8)
-    return acordes.length > 0 && (acordes.length >= partes.length * 0.5 || (todosCurtos && acordes.length >= partes.length * 0.4))
+
+    // TODOS os tokens devem ser acordes (linha pura de acordes)
+    return acordes.length === partes.length && acordes.length > 0
 }
 
 /**
- * Extrai acordes com as suas posições (coluna) numa linha.
+ * Extrai acordes com posições de coluna de uma linha.
  */
 function extrairAcordesComPosicao(linha: string): { acorde: string; posicao: number }[] {
     const resultado: { acorde: string; posicao: number }[] = []
-    const regex = /\S+/g
-    let match
-    while ((match = regex.exec(linha)) !== null) {
-        if (ACORDE_REGEX.test(match[0])) {
-            resultado.push({ acorde: match[0], posicao: match.index })
+    // Encontrar cada token com a sua posição exacta
+    let i = 0
+    while (i < linha.length) {
+        // Saltar espaços
+        if (linha[i] === ' ' || linha[i] === '\t') { i++; continue }
+        // Ler token
+        let j = i
+        while (j < linha.length && linha[j] !== ' ' && linha[j] !== '\t') j++
+        const token = linha.slice(i, j)
+        if (ACORDE_REGEX.test(token)) {
+            resultado.push({ acorde: token, posicao: i })
         }
+        i = j
     }
     return resultado
 }
 
 /**
- * Mescla uma linha de acordes com a linha de letra abaixo.
+ * Mescla uma linha de acordes com a letra abaixo, inserindo [brackets].
+ * Encontra o ponto de inserção mais próximo do início de uma palavra.
  */
 function mesclarAcordesComLetra(linhaAcordes: string, linhaLetra: string): string {
     const acordes = extrairAcordesComPosicao(linhaAcordes)
     if (acordes.length === 0) return linhaLetra
 
+    // Construir resultado inserindo acordes nas posições correctas
     let resultado = ''
-    let ultimaPosicao = 0
+    let letraIdx = 0
 
-    // Ordena por posição (já deve estar, mas por segurança)
-    acordes.sort((a, b) => a.posicao - b.posicao)
+    for (let a = 0; a < acordes.length; a++) {
+        const { acorde, posicao } = acordes[a]
 
-    for (const { acorde, posicao } of acordes) {
-        // Adiciona o texto da letra até à posição do acorde
-        const pos = Math.min(posicao, linhaLetra.length)
-        resultado += linhaLetra.slice(ultimaPosicao, pos)
+        // Posição na letra onde inserir (limitada ao comprimento da letra)
+        let inserirEm = Math.min(posicao, linhaLetra.length)
+
+        // Ajustar para não cortar no meio de uma palavra — recuar ao espaço anterior
+        if (inserirEm < linhaLetra.length && inserirEm > 0 &&
+            linhaLetra[inserirEm] !== ' ' && linhaLetra[inserirEm - 1] !== ' ') {
+            // Procurar o início da palavra actual
+            let k = inserirEm
+            while (k > letraIdx && linhaLetra[k - 1] !== ' ') k--
+            if (k > letraIdx) inserirEm = k
+        }
+
+        // Adicionar letra desde a última posição até aqui
+        resultado += linhaLetra.slice(letraIdx, inserirEm)
         resultado += `[${acorde}]`
-        ultimaPosicao = pos
+        letraIdx = inserirEm
     }
 
-    // Adiciona o resto da letra
-    resultado += linhaLetra.slice(ultimaPosicao)
-
+    // Resto da letra
+    resultado += linhaLetra.slice(letraIdx)
     return resultado
 }
 
 /**
- * Converte texto copiado do CifraClub (acordes em linha separada)
- * para o formato bracket [Am]letra[G]letra.
- *
- * Também aceita texto já no formato bracket (devolve como está).
+ * Converte texto copiado do CifraClub para formato bracket.
+ * Aceita texto já com brackets (devolve como está).
  */
 export function importarCifraClub(texto: string): string {
-    // Se já tem brackets, devolve como está
     if (texto.includes('[') && texto.includes(']')) return texto.trim()
 
     const linhas = texto.split('\n')
@@ -205,22 +229,26 @@ export function importarCifraClub(texto: string): string {
     while (i < linhas.length) {
         const linhaAtual = linhas[i]
 
+        // Remover linhas "Tom: X", "Capo: X" etc.
+        const lower = linhaAtual.trim().toLowerCase()
+        if (lower.startsWith('tom:') || lower.startsWith('capo')) {
+            i++
+            continue
+        }
+
         if (isLinhaDeAcordes(linhaAtual)) {
-            // Verifica se a próxima linha é letra
             const proximaLinha = i + 1 < linhas.length ? linhas[i + 1] : ''
 
             if (proximaLinha.trim() && !isLinhaDeAcordes(proximaLinha)) {
-                // Mescla acordes + letra
                 resultado.push(mesclarAcordesComLetra(linhaAtual, proximaLinha))
-                i += 2 // Salta ambas as linhas
+                i += 2
             } else {
-                // Linha de acordes sozinha (sem letra abaixo) — converte cada acorde
-                const acordes = linhaAtual.trim().split(/\s+/).filter(a => ACORDE_REGEX.test(a))
-                resultado.push(acordes.map(a => `[${a}]`).join(' '))
+                // Linha de acordes sem letra (intro, solo, etc.)
+                const acordes = extrairAcordesComPosicao(linhaAtual)
+                resultado.push(acordes.map(a => `[${a.acorde}]`).join(' '))
                 i++
             }
         } else {
-            // Linha normal (texto, linha vazia, etc.)
             resultado.push(linhaAtual)
             i++
         }
