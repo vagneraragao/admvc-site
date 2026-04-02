@@ -10,6 +10,7 @@ import {
     ArrowUpRight, BookOpen, Clock, CheckCircle2
 } from 'lucide-react'
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
+import HolyricsLogPanel from '@/components/admin/HolyricsLogPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -222,6 +223,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                     </div>
                 </section>
             </div>
+
+            {/* HOLYRICS LOG */}
+            <HolyricsLogPanel />
         </main>
     )
 }
