@@ -82,6 +82,8 @@ export default function SetlistPalco({ evento }: Props) {
     const [marcadas, setMarcadas] = useState<Set<string>>(new Set())
     const [cifraAberta, setCifraAberta] = useState(false)
     const [editorAberto, setEditorAberto] = useState(false)
+    // Cache local das cifras editadas (para reflectir sem recarregar a página)
+    const [cifrasEditadas, setCifrasEditadas] = useState<Record<string, string>>({})
 
     // Swipe
     const touchStartX = useRef<number | null>(null)
@@ -90,7 +92,12 @@ export default function SetlistPalco({ evento }: Props) {
     const lista = evento.repertorio
     const total = lista.length
     const item = lista[indexActual]
-    const musica = item?.musica
+    const musicaBase = item?.musica
+    // Aplica cifra editada localmente (sem precisar recarregar)
+    const musica = musicaBase ? {
+        ...musicaBase,
+        cifra_interna: cifrasEditadas[musicaBase.id] ?? musicaBase.cifra_interna
+    } : undefined
 
     // Mantém o ecrã acordado (Wake Lock API)
     useEffect(() => {
@@ -493,6 +500,9 @@ export default function SetlistPalco({ evento }: Props) {
                     titulo={musica.titulo}
                     cifraAtual={musica.cifra_interna}
                     onClose={() => setEditorAberto(false)}
+                    onSaved={(novaCifra) => {
+                        setCifrasEditadas(prev => ({ ...prev, [musica.id]: novaCifra }))
+                    }}
                 />
             )}
         </div>

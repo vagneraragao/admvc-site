@@ -10,7 +10,7 @@ interface Props {
     titulo: string
     cifraAtual?: string | null
     onClose: () => void
-    onSaved?: () => void
+    onSaved?: (cifra: string) => void
 }
 
 export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onSaved }: Props) {
@@ -28,7 +28,7 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
         const res = await salvarCifraInternaAction(musicaId, texto)
         setSaving(false)
         if (res.ok) {
-            onSaved?.()
+            onSaved?.(texto)
             onClose()
         } else {
             alert(res.error || 'Erro ao guardar.')
