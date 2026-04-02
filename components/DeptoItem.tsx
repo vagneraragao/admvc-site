@@ -1,16 +1,15 @@
 "use client"
 import { useState } from 'react'
 import PainelGerenciarDepto from '@/components/PainelGerenciarDepto'
-import { LayoutGrid, Users, Wrench, Settings2, Trash2 } from 'lucide-react'
+import { LayoutGrid, Users, Wrench, Settings2, Trash2, Church, Globe } from 'lucide-react'
 
-export default function DeptoItem({ depto, membrosDisponiveis, onExcluir }: any) {
+export default function DeptoItem({ depto, membrosDisponiveis, congregacoes = [], onExcluir }: any) {
     const [painelAberto, setPainelAberto] = useState(false)
     const total = depto._count?.integrantes || 0
 
     return (
         <>
             <div className="bg-bg2 border border-soft rounded-2xl p-5 hover:border-figueira/20 transition-all group">
-                {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center shrink-0 text-sm font-black">
@@ -33,17 +32,24 @@ export default function DeptoItem({ depto, membrosDisponiveis, onExcluir }: any)
                     </button>
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <span className="text-[9px] font-bold bg-soft/30 px-2 py-1 rounded-lg text-muted flex items-center gap-1">
                         <Users size={10} /> {total} membros
                     </span>
                     <span className="text-[9px] font-bold bg-soft/30 px-2 py-1 rounded-lg text-muted flex items-center gap-1">
                         <Wrench size={10} /> {depto.funcoes?.length || 0} funcoes
                     </span>
+                    {depto.congregacao?.nome ? (
+                        <span className="text-[8px] font-black bg-figueira/10 text-figueira px-2 py-0.5 rounded-lg border border-figueira/20 flex items-center gap-1">
+                            <Church size={8} /> {depto.congregacao.nome}
+                        </span>
+                    ) : (
+                        <span className="text-[8px] font-black bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-lg border border-blue-500/20 flex items-center gap-1">
+                            <Globe size={8} /> Global
+                        </span>
+                    )}
                 </div>
 
-                {/* Action */}
                 <button
                     onClick={() => setPainelAberto(true)}
                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-fg hover:text-bg transition-all"
@@ -56,6 +62,7 @@ export default function DeptoItem({ depto, membrosDisponiveis, onExcluir }: any)
                 <PainelGerenciarDepto
                     depto={depto}
                     membrosDisponiveis={membrosDisponiveis}
+                    congregacoes={congregacoes}
                     onClose={() => setPainelAberto(false)}
                 />
             )}

@@ -339,9 +339,13 @@ export async function atualizarDepartamento(formData: FormData) {
         const liderInput = formData.get("lider_id");
         const lider_id = liderInput ? Number(liderInput) : null;
 
+        const congIdStr = formData.get("congregacaoId") as string;
+        const congregacaoId = congIdStr ? Number(congIdStr) : null;
+        const is_global = !congregacaoId;
+
         await db.departamento.update({
             where: { id },
-            data: { nome, descricao, lider_id: lider_id === 0 ? null : lider_id }
+            data: { nome, descricao, lider_id: lider_id === 0 ? null : lider_id, congregacaoId, is_global }
         });
 
         revalidatePath("/admin/configuracoes");
@@ -837,12 +841,14 @@ export async function editarEventoAction(formData: FormData) {
         const dataStr = formData.get('data') as string;
         const horaStr = formData.get('horario') as string;
         const descricao = formData.get('descricao') as string;
+        const congIdStr = formData.get('congregacao_id') as string;
+        const congregacao_id = congIdStr ? Number(congIdStr) : null;
 
         const dataCompleta = new Date(`${dataStr}T${horaStr}:00`);
 
         await db.evento.update({
             where: { id: Number(id) },
-            data: { nome, data: dataCompleta, descricao: descricao || null }
+            data: { nome, data: dataCompleta, descricao: descricao || null, congregacao_id }
         });
 
         revalidatePath('/escalas/admin');

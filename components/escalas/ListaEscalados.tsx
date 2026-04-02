@@ -16,12 +16,14 @@ export default function ListaEscalados({
     eventos,
     isAdmin,
     membros,
-    isLouvor
+    isLouvor,
+    congregacoes
 }: {
     eventos: any[]
     isAdmin?: boolean
     membros?: any[]
     isLouvor?: boolean
+    congregacoes?: { id: number; nome: string; cidade: string }[]
 }) {
     const [editingId, setEditingId] = useState<number | null>(null)
     const [isPending, setIsPending] = useState(false)
@@ -145,7 +147,7 @@ export default function ListaEscalados({
 
                                 {isAdmin && (
                                     <div className="mt-1 sm:mt-0 flex gap-2" onClick={e => e.stopPropagation()}>
-                                        <ModalEditarEvento evento={evento} />
+                                        <ModalEditarEvento evento={evento} congregacoes={congregacoes} />
                                         <BotaoApagarEvento id={evento.id} nome={evento.nome} />
                                     </div>
                                 )}

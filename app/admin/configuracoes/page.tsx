@@ -82,6 +82,7 @@ export default async function EstruturaPage() {
                                 key={d.id}
                                 depto={d}
                                 membrosDisponiveis={membrosDisponiveis}
+                                congregacoes={congregacoes}
                                 onExcluir={excluirDepartamento}
                             />
                         ))}

@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, Trash2, Load
 import { apagarEventoAction } from '@/actions/admin-actions'
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 
-export default function CalendarioAgenda({ eventos }: { eventos: any[] }) {
+export default function CalendarioAgenda({ eventos, congregacoes }: { eventos: any[]; congregacoes?: { id: number; nome: string; cidade: string }[] }) {
     const [mesAtual, setMesAtual] = useState(new Date())
     const [diaSelecionado, setDiaSelecionado] = useState(new Date())
     const [isDeleting, setIsDeleting] = useState<number | null>(null)
@@ -130,7 +130,7 @@ return (
                                     <div className="absolute top-4 right-4 flex items-center gap-1.5 z-10">
                                         
                                         {/* O TEU MODAL DE EDITAR ENTRA AQUI */}
-                                        <ModalEditarEvento evento={ev} />
+                                        <ModalEditarEvento evento={ev} congregacoes={congregacoes} />
 
                                         {/* O TEU BOTÃO DE APAGAR (Ajustei um pouco as margens para não colidir) */}
                                         <button

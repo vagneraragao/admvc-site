@@ -118,7 +118,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Visao Calendario</h2>
                 </div>
                 <div className="p-6">
-                    <CalendarioAgenda eventos={eventos} />
+                    <CalendarioAgenda eventos={eventos} congregacoes={congregacoes} />
                 </div>
             </section>
 
@@ -161,6 +161,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                         eventos={eventosFuturos}
                         isAdmin={true}
                         membros={membrosComFuncoes}
+                        congregacoes={congregacoes}
                     />
                 </div>
             </section>
