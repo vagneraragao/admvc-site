@@ -187,11 +187,21 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                     )}
                                 </div>
 
-                                {/* Action */}
-                                <button onClick={() => abrirFormulario(grupo)}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-fg hover:text-bg transition-all">
-                                    <Edit3 size={13} /> Editar Grupo
-                                </button>
+                                {/* Actions */}
+                                <div className="flex gap-2">
+                                    <button onClick={() => abrirFormulario(grupo)}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-fg hover:text-bg transition-all">
+                                        <Edit3 size={13} /> Editar
+                                    </button>
+                                    {grupo.latitude && grupo.longitude && (
+                                        <a href={`https://www.google.com/maps?q=${grupo.latitude},${grupo.longitude}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="w-10 flex items-center justify-center bg-bg border border-soft rounded-xl text-muted hover:text-emerald-500 hover:border-emerald-500/30 transition-all"
+                                            title="Ver no mapa">
+                                            <MapPin size={13} />
+                                        </a>
+                                    )}
+                                </div>
                             </div>
                         ))}
 

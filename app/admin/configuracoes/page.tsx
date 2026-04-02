@@ -7,6 +7,7 @@ import DeptoItem from '@/components/DeptoItem'
 import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import { Plus, Briefcase, LayoutGrid, Users, Hash, Shield, MapPin } from 'lucide-react'
+import RegioesEditor from '@/components/admin/RegioesEditor'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ export default async function EstruturaPage() {
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
 
-    const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos, congregacoes] = await Promise.all([
+    const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos, tenantConfig, congregacoes] = await Promise.all([
         prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
         prisma.departamento.findMany({
             include: {
@@ -42,6 +43,10 @@ export default async function EstruturaPage() {
                 _count: { select: { membros: true } }
             }
         }),
+        tenantId ? prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { regioes_custom: true }
+        }) : null,
         tenantId ? prisma.congregacao.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true, cidade: true },
@@ -139,15 +144,7 @@ export default async function EstruturaPage() {
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Regioes</h2>
                 </div>
                 <div className="p-5">
-                    <p className="text-[9px] text-muted mb-3">Regioes disponiveis para classificar os grupos. Edite directamente:</p>
-                    <div className="flex flex-wrap gap-2">
-                        {['Norte', 'Centro', 'Sul', 'Lisboa', 'Online'].map(r => (
-                            <span key={r} className="text-[9px] font-black uppercase tracking-widest bg-bg border border-soft px-3 py-2 rounded-xl text-fg">
-                                {r}
-                            </span>
-                        ))}
-                    </div>
-                    <p className="text-[8px] text-muted/60 mt-3">Para personalizar as regioes, contacte o administrador da plataforma.</p>
+                    <RegioesEditor regioesIniciais={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']} />
                 </div>
             </section>
         </main>

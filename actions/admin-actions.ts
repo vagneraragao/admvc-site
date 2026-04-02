@@ -1747,3 +1747,38 @@ export async function removerMembroDeCongregacao(membroId: number) {
         return { ok: false, error: err.message }
     }
 }
+// ── REGIÕES CUSTOMIZADAS ─────────────────────────────────────────────────────
+export async function salvarRegioesAction(regioes: string[]) {
+    try {
+        await requireRole(['ADMIN'])
+        const headersList = await headers()
+        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+        if (!tenantId) return { ok: false, error: 'Tenant nao identificado.' }
+
+        await prismaGlobal.tenant.update({
+            where: { id: tenantId },
+            data: { regioes_custom: regioes }
+        })
+
+        revalidatePath('/admin/configuracoes')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao guardar regioes.' }
+    }
+}
+
+export async function buscarRegioesAction() {
+    try {
+        await requireAuth()
+        const headersList = await headers()
+        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+        const tenant = await prismaGlobal.tenant.findUnique({
+            where: { id: tenantId },
+            select: { regioes_custom: true }
+        })
+        const regioes = (tenant?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
+        return { ok: true, data: regioes }
+    } catch {
+        return { ok: true, data: ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online'] }
+    }
+}
