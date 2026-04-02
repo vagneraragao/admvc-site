@@ -7,7 +7,7 @@ import {
     LayoutDashboard, Users, Home, Calendar, HeartHandshake,
     BarChart3, Settings, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
-    Menu, X
+    Menu, X, MonitorPlay
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
@@ -29,6 +29,7 @@ const NAV_MODULOS = [
 
 const NAV_SISTEMA = [
     { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
+    { label: 'Midia', href: '/admin/midia', icon: MonitorPlay, adminOnly: true },
     { label: 'Definicoes', href: '/admin/configuracoes', icon: Settings, adminOnly: true },
     { label: 'Auditoria', href: '/admin/auditoria', icon: Shield, adminOnly: false },
 ]

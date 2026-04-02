@@ -8,7 +8,7 @@ import {
     ChevronDown, ChevronRight, Key, TerminalSquare, ChevronUp, Image as ImageIcon,
     StopCircle, BookOpen, X
 } from 'lucide-react'
-import Breadcrumb from '@/components/ui/Breadcrumb'
+// Breadcrumb removido — header persistente via layout
 
 // TIPAGENS DA API
 type HolyricsItem = {
@@ -259,23 +259,6 @@ export default function HolyricsControllerPage() {
 
     return (
         <main className="max-w-screen-2xl mx-auto p-4 sm:p-6 pb-20 animate-in fade-in duration-700 h-screen flex flex-col">
-            {/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
-            <div className="mb-6">
-                <Breadcrumb items={[
-                    {
-                        label: "Painel do Membro",
-                        href: "/membros/dashboard",
-                        isBackIcon: true
-                    },
-                    {
-                        label: "Louvor",
-                        hideOnMobile: true
-                    },
-                    {
-                        label: "Holyrics Live"
-                    }
-                ]} />
-            </div>
             {/* CABEÇALHO COMPACTO DA CONEXÃO */}
             <header className="mb-4 flex flex-col xl:flex-row justify-between items-center gap-4 bg-bg2 border border-soft p-3 rounded-2xl shadow-sm shrink-0">
                 <div className="flex items-center gap-3 w-full xl:w-auto shrink-0 px-2">
