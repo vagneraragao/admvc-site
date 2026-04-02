@@ -641,7 +641,7 @@ export default async function DashboardMembro({
 
                         <section className="grid lg:grid-cols-3 gap-6">
                             {/* AGENDA — colapsável no mobile */}
-                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm group">
+                            <details className="lg:col-span-2 bg-bg2 border border-soft rounded-2xl shadow-sm collapsible-mobile">
                                 <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
                                     <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <CalendarDays size={14} className="text-figueira" /> Agenda da Igreja
@@ -660,7 +660,7 @@ export default async function DashboardMembro({
                             </details>
 
                             {/* ANIVERSARIANTES — colapsável no mobile */}
-                            <details className="lg:col-span-1 bg-bg2 border border-soft rounded-2xl shadow-sm" open>
+                            <details className="lg:col-span-1 bg-bg2 border border-soft rounded-2xl shadow-sm collapsible-mobile">
                                 <summary className="p-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between">
                                     <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <CalendarDays size={14} className="text-figueira" /> Aniversarios

@@ -152,10 +152,14 @@ body {
 
 /* Details colapsáveis: fechados no mobile, abertos no desktop */
 @media (min-width: 1024px) {
-  details.group > summary {
+  details.collapsible-mobile > summary {
     pointer-events: none;
+    cursor: default;
   }
-  details.group:not([open]) > summary ~ * {
+  details.collapsible-mobile {
+    /* Forçar open no desktop */
+  }
+  details.collapsible-mobile > summary ~ * {
     display: block !important;
   }
 }
