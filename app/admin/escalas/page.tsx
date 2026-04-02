@@ -52,6 +52,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
             where: congFilter
                 ? { OR: [{ congregacaoId: congFilter }, { is_global: true }] }
                 : undefined,
+            select: { id: true, nome: true, congregacaoId: true, is_global: true, funcoes: { select: { id: true, nome: true }, orderBy: { nome: 'asc' as const } } },
             orderBy: { nome: 'asc' }
         }),
         prisma.membro.findMany({

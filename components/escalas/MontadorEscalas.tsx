@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFormStatus } from 'react-dom'
 import { criarEscalaAction } from '@/actions/escalas-actions'
 import { verificarIndisponibilidade } from '@/actions/escalas-actions'
@@ -10,7 +10,8 @@ import {
     ChevronDown, Loader2, Zap, AlertTriangle, X
 } from 'lucide-react'
 
-export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, departamentoId }: any) {
+export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, departamentoId, departamentos }: any) {
+    const [deptoSelecionadoId, setDeptoSelecionadoId] = useState(departamentoId?.toString() || '')
     const [eventoId, setEventoId] = useState('')
     const [membroId, setMembroId] = useState('')
     const [funcaoId, setFuncaoId] = useState('')
@@ -53,6 +54,22 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
         setVerificando(false)
     }
 
+    // Departamento seleccionado (fixo na gestao, escolhido no admin)
+    const deptoActual = departamentos?.find((d: any) => d.id.toString() === deptoSelecionadoId)
+    const deptoIdFinal = departamentoId || (deptoSelecionadoId ? Number(deptoSelecionadoId) : null)
+    const deptoCongId = deptoActual?.congregacaoId || null
+
+    // Filtrar eventos pela congregacao do departamento
+    const eventosFiltrados = useMemo(() => {
+        if (!deptoCongId) return eventos // departamento global -> todos os eventos
+        return eventos.filter((ev: any) =>
+            ev.congregacao_id === deptoCongId || ev.congregacao_id === null
+        )
+    }, [eventos, deptoCongId])
+
+    // Funcoes do departamento seleccionado (admin page)
+    const funcoesActuais = funcoesDisponiveis || deptoActual?.funcoes || []
+
     const membrosAptos = membros.filter((m: any) => {
         if (!funcaoId) return true
         return m.funcoesHabilitadas?.includes(Number(funcaoId))
@@ -87,7 +104,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                         if (bloqueio?.bloqueado) return
 
                         fd.append('evento_id', eventoId)
-                        fd.append('departamento_id', departamentoId.toString())
+                        fd.append('departamento_id', String(deptoIdFinal))
                         fd.append('membro_id', membroId)
                         fd.append('funcao_id', funcaoId)
                         fd.append('horario', horarioEscala)
@@ -104,12 +121,37 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                     }}
                     className="space-y-5"
                 >
-                    <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div className={`grid md:grid-cols-2 ${departamentos ? 'xl:grid-cols-5' : 'xl:grid-cols-4'} gap-4`}>
 
-                    {/* PASSO 1 — EVENTO */}
-                    <div className="space-y-2 relative">
+                    {/* PASSO 0 — DEPARTAMENTO (apenas admin) */}
+                    {departamentos && (
+                        <div className="space-y-2 relative">
+                            <div className="flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">1</span>
+                                <label className="text-[10px] font-black uppercase text-muted tracking-widest">Departamento</label>
+                            </div>
+                            <div className="relative">
+                                <ShieldCheck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-figueira" />
+                                <select
+                                    required
+                                    value={deptoSelecionadoId}
+                                    onChange={e => { setDeptoSelecionadoId(e.target.value); setEventoId(''); setFuncaoId(''); setMembroId('') }}
+                                    className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
+                                >
+                                    <option value="">Selecionar Departamento...</option>
+                                    {departamentos.map((d: any) => (
+                                        <option key={d.id} value={d.id}>{d.nome}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PASSO 1 — EVENTO (filtrado por congregacao do departamento) */}
+                    <div className={`space-y-2 relative transition-all duration-300 ${departamentos && !deptoSelecionadoId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">1</span>
+                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">{departamentos ? '2' : '1'}</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest">Evento</label>
                         </div>
                         <div className="relative">
@@ -121,7 +163,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                             >
                                 <option value="">Selecionar Culto/Evento...</option>
-                                {eventos.map((ev: any) => (
+                                {eventosFiltrados.map((ev: any) => (
                                     <option key={ev.id} value={ev.id}>
                                         {format(new Date(ev.data), 'dd/MM (HH:mm)')} • {ev.nome}
                                     </option>
@@ -131,10 +173,10 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                         </div>
                     </div>
 
-                    {/* PASSO 2 — FUNÇÃO */}
+                    {/* FUNÇÃO */}
                     <div className={`space-y-2 transition-all duration-300 ${!eventoId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">2</span>
+                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">{departamentos ? '3' : '2'}</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest">Funcao</label>
                         </div>
                         <div className="relative">
@@ -146,7 +188,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                             >
                                 <option value="">Selecionar Cargo...</option>
-                                {(funcoesDisponiveis || []).map((f: any) => (
+                                {funcoesActuais.map((f: any) => (
                                     <option key={f.id} value={f.id}>{f.nome}</option>
                                 ))}
                             </select>
@@ -157,7 +199,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                     {/* PASSO 3 — MEMBRO */}
                     <div className={`space-y-2 transition-all duration-300 ${!funcaoId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">3</span>
+                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">{departamentos ? '4' : '3'}</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest flex items-center gap-2">
                                 Membro
                                 {funcaoId && (
@@ -229,7 +271,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                     {/* HORÁRIO */}
                     <div className={`space-y-2 transition-all duration-300 ${!membroId ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
                         <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">4</span>
+                            <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">{departamentos ? '5' : '4'}</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest">Horario</label>
                         </div>
                         <div className="flex items-center justify-between bg-figueira/5 border border-figueira/20 px-5 py-4 rounded-2xl">

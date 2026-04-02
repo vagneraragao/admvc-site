@@ -43,8 +43,17 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
     }
 
     // 2. BUSCA EVENTOS E ESCALAS ATUAIS (Com Repertório)
+    // Filtra eventos pela congregacao do departamento (ou todos se global)
+    const eventoWhere: any = { data: { gte: new Date() } }
+    if (depto.congregacaoId) {
+        eventoWhere.OR = [
+            { congregacao_id: depto.congregacaoId },
+            { congregacao_id: null },
+        ]
+    }
+
     const eventos = await prisma.evento.findMany({
-        where: { data: { gte: new Date() } },
+        where: eventoWhere,
         include: {
             repertorio: {
                 include: { musica: true },
