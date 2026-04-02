@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
-    Wallet2, Home, Church
+    Wallet2, Home, Church, Music2, Lightbulb
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -130,7 +130,17 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                         )}
                                         {permissoes.isMidia && (
                                             <Link href="/louvor/holyrics" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <MonitorPlay size={12} className="text-purple-500" /> Midia
+                                                <MonitorPlay size={12} className="text-purple-500" /> Holyrics
+                                            </Link>
+                                        )}
+                                        {(permissoes.isMidia || permissoes.isLouvor) && (
+                                            <Link href="/admin/midia/x32" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Music2 size={12} className="text-blue-500" /> Mesa de Som
+                                            </Link>
+                                        )}
+                                        {permissoes.isMidia && (
+                                            <Link href="/admin/midia/lumikit" className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Lightbulb size={12} className="text-amber-500" /> Iluminacao
                                             </Link>
                                         )}
                                     </>
