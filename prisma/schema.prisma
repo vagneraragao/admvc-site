@@ -87,6 +87,11 @@ model Tenant {
   movimentosInventario     MovimentoInventario[]
   sermoes                  Sermao[]
   escolasBiblicas          EscolaBiblica[]
+  cursosEBD                CursoEBD[]
+  turmasEBD                TurmaEBD[]
+  matriculasEBD            MatriculaEBD[]
+  atividadesEBD            AtividadeEBD[]
+  notasEBD                 NotaEBD[]
 }
 
 model Congregacao {
@@ -119,6 +124,8 @@ model Congregacao {
   movimentosInventario MovimentoInventario[]
   sermoes             Sermao[]
   escolasBiblicas     EscolaBiblica[]
+  cursosEBD           CursoEBD[]
+  turmasEBD           TurmaEBD[]
 }
 
 model Membro {
@@ -212,6 +219,9 @@ model Membro {
   sermoes                    Sermao[]                    @relation("PregadorSermao")
   aulasEBD                   EscolaBiblica[]             @relation("ProfessorEBD")
   presencasEBD               PresencaEBD[]
+  turmasEBD                  TurmaEBD[]                  @relation("ProfessorTurmaEBD")
+  matriculasEBD              MatriculaEBD[]              @relation("MatriculaEBD")
+  notasEBD                   NotaEBD[]                   @relation("NotaEBD")
 
   @@index([tenant_id])
   @@map("membros")
@@ -661,16 +671,19 @@ model EscolaBiblica {
   perguntas_discussao Json?           // ["pergunta 1", "pergunta 2", ...]
   professor_id        Int
   sermao_id           String?         // Sermão base (opcional)
+  turma_id            String?         // Turma a que pertence (opcional)
   congregacao_id      Int?
   tenant_id           Int
   created_at          DateTime        @default(now())
   professor           Membro          @relation("ProfessorEBD", fields: [professor_id], references: [id])
   sermao              Sermao?         @relation(fields: [sermao_id], references: [id])
+  turma               TurmaEBD?       @relation(fields: [turma_id], references: [id])
   congregacao         Congregacao?    @relation(fields: [congregacao_id], references: [id])
   tenant              Tenant          @relation(fields: [tenant_id], references: [id])
   presencas           PresencaEBD[]
 
   @@index([tenant_id])
+  @@index([turma_id])
 }
 
 model PresencaEBD {
@@ -678,10 +691,138 @@ model PresencaEBD {
   escola_biblica_id   String
   membro_id           Int
   presente            Boolean         @default(true)
+  justificativa       String?         // motivo da falta (doenca, viagem, etc.)
   escolaBiblica       EscolaBiblica   @relation(fields: [escola_biblica_id], references: [id], onDelete: Cascade)
   membro              Membro          @relation(fields: [membro_id], references: [id])
 
   @@unique([escola_biblica_id, membro_id])
+}
+
+// ── ESCOLA BÍBLICA DOMINICAL — Cursos e Turmas ──────────────────────────────
+
+model CursoEBD {
+  id              String        @id @default(uuid())
+  titulo          String        // "Frutos do Espírito"
+  descricao       String?
+  trimestre       Int           // 1, 2, 3, 4
+  ano             Int           // 2026
+  data_inicio     DateTime
+  data_fim        DateTime
+  material_ref    String?       // "Revista CPAD - Adultos T2/2026"
+  nota_minima     Float         @default(7.0)
+  presenca_minima Float         @default(75.0) // percentual
+  status          StatusCurso   @default(PLANEADO)
+  congregacao_id  Int?
+  tenant_id       Int
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  turmas          TurmaEBD[]
+  congregacao     Congregacao?  @relation(fields: [congregacao_id], references: [id])
+  tenant          Tenant        @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([ano, trimestre])
+  @@map("cursos_ebd")
+}
+
+model TurmaEBD {
+  id              String            @id @default(uuid())
+  nome            String            // "Adultos", "Jovens", "Criancas"
+  faixa_etaria    String?           // "18-35 anos"
+  curso_id        String
+  professor_id    Int
+  congregacao_id  Int?
+  tenant_id       Int
+  created_at      DateTime          @default(now())
+  curso           CursoEBD          @relation(fields: [curso_id], references: [id], onDelete: Cascade)
+  professor       Membro            @relation("ProfessorTurmaEBD", fields: [professor_id], references: [id])
+  congregacao     Congregacao?      @relation(fields: [congregacao_id], references: [id])
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
+  matriculas      MatriculaEBD[]
+  aulas           EscolaBiblica[]
+  atividades      AtividadeEBD[]
+
+  @@index([tenant_id])
+  @@index([curso_id])
+  @@map("turmas_ebd")
+}
+
+model MatriculaEBD {
+  id              Int               @id @default(autoincrement())
+  turma_id        String
+  membro_id       Int
+  data_matricula  DateTime          @default(now())
+  status          StatusMatricula   @default(ATIVA)
+  nota_final      Float?
+  percentual_presenca Float?
+  aprovado        Boolean?
+  tenant_id       Int
+  turma           TurmaEBD          @relation(fields: [turma_id], references: [id], onDelete: Cascade)
+  membro          Membro            @relation("MatriculaEBD", fields: [membro_id], references: [id])
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
+
+  @@unique([turma_id, membro_id])
+  @@index([tenant_id])
+  @@map("matriculas_ebd")
+}
+
+model AtividadeEBD {
+  id              String            @id @default(uuid())
+  titulo          String            // "Exercicio Licao 3"
+  tipo            TipoAtividade     @default(EXERCICIO)
+  descricao       String?
+  data_entrega    DateTime?
+  peso            Float             @default(1.0)
+  nota_maxima     Float             @default(10.0)
+  turma_id        String
+  tenant_id       Int
+  created_at      DateTime          @default(now())
+  turma           TurmaEBD          @relation(fields: [turma_id], references: [id], onDelete: Cascade)
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
+  notas           NotaEBD[]
+
+  @@index([tenant_id])
+  @@index([turma_id])
+  @@map("atividades_ebd")
+}
+
+model NotaEBD {
+  id              Int               @id @default(autoincrement())
+  atividade_id    String
+  membro_id       Int
+  nota            Float?
+  entregue        Boolean           @default(false)
+  observacao      String?
+  tenant_id       Int
+  created_at      DateTime          @default(now())
+  atividade       AtividadeEBD      @relation(fields: [atividade_id], references: [id], onDelete: Cascade)
+  membro          Membro            @relation("NotaEBD", fields: [membro_id], references: [id])
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
+
+  @@unique([atividade_id, membro_id])
+  @@index([tenant_id])
+  @@map("notas_ebd")
+}
+
+enum StatusCurso {
+  PLANEADO
+  EM_CURSO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum StatusMatricula {
+  ATIVA
+  TRANCADA
+  CONCLUIDA
+  DESISTENTE
+}
+
+enum TipoAtividade {
+  EXERCICIO
+  PROVA
+  TRABALHO
+  PARTICIPACAO
 }
 
 enum Role {

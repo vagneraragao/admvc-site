@@ -48,6 +48,8 @@ export function middleware(request: NextRequest) {
         || pathname.startsWith('/cantina')
         || pathname.startsWith('/acaosocial')
         || pathname.startsWith('/tesouraria')
+        || pathname.startsWith('/pregacao')
+        || pathname.startsWith('/ebd')
 
     // 2. Sem sessão em rota protegida → login
     if ((isMembrosProtected || isAdminProtected || isModuleProtected) && !session) {
@@ -118,5 +120,7 @@ export const config = {
         '/acaosocial/:path*',
         '/tesouraria/:path*',
         '/api/admin/:path*',
+        '/pregacao/:path*',
+        '/ebd/:path*',
     ],
 }

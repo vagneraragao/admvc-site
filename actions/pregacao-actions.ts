@@ -262,6 +262,8 @@ export async function criarEBD(formData: FormData) {
         const professor_id = Number(formData.get('professor_id'))
         const sermao_id_raw = formData.get('sermao_id')
         const sermao_id = sermao_id_raw ? (sermao_id_raw as string) : null
+        const turma_id_raw = formData.get('turma_id')
+        const turma_id = turma_id_raw ? (turma_id_raw as string) : null
 
         if (!titulo || !data || !professor_id) {
             return { ok: false, error: 'Preencha todos os campos obrigatórios (título, data, professor).' }
@@ -276,6 +278,7 @@ export async function criarEBD(formData: FormData) {
                 perguntas_discussao: perguntas_discussao ? JSON.parse(perguntas_discussao) : undefined,
                 professor_id,
                 sermao_id: sermao_id || undefined,
+                turma_id: turma_id || undefined,
                 tenant_id: tenantId,
             },
         })
@@ -376,15 +379,9 @@ export async function buscarRelatorioEBD() {
         await requireAuth()
         const db = await getDb()
 
-        // Total de aulas
         const totalAulas = await db.escolaBiblica.count()
+        const totalPresencas = await db.presencaEBD.count({ where: { presente: true } })
 
-        // Total de presenças
-        const totalPresencas = await db.presencaEBD.count({
-            where: { presente: true },
-        })
-
-        // Membros mais assíduos
         const membrosAssíduos = await db.presencaEBD.groupBy({
             by: ['membro_id'],
             where: { presente: true },
@@ -393,7 +390,6 @@ export async function buscarRelatorioEBD() {
             take: 10,
         })
 
-        // Buscar nomes dos membros
         const membrosIds = membrosAssíduos.map((m) => m.membro_id)
         const membros = await db.membro.findMany({
             where: { id: { in: membrosIds } },
@@ -401,7 +397,6 @@ export async function buscarRelatorioEBD() {
         })
 
         const membrosMap = new Map(membros.map((m) => [m.id, m]))
-
         const membrosRanking = membrosAssíduos.map((m) => {
             const membro = membrosMap.get(m.membro_id)
             return {
@@ -411,7 +406,6 @@ export async function buscarRelatorioEBD() {
             }
         })
 
-        // Top 5 temas mais abordados
         const aulas = await db.escolaBiblica.findMany({
             where: { tema: { not: null } },
             select: { tema: true },
@@ -420,8 +414,7 @@ export async function buscarRelatorioEBD() {
         const temaContagem: Record<string, number> = {}
         for (const aula of aulas) {
             if (aula.tema) {
-                const tema = aula.tema.trim()
-                temaContagem[tema] = (temaContagem[tema] || 0) + 1
+                temaContagem[aula.tema.trim()] = (temaContagem[aula.tema.trim()] || 0) + 1
             }
         }
 
@@ -430,18 +423,448 @@ export async function buscarRelatorioEBD() {
             .slice(0, 5)
             .map(([tema, count]) => ({ tema, count }))
 
-        revalidatePath('/pregacao')
-        return {
-            ok: true,
-            data: {
-                totalAulas,
-                totalPresencas,
-                membrosRanking,
-                topTemas,
-            },
-        }
+        revalidatePath('/ebd')
+        return { ok: true, data: { totalAulas, totalPresencas, membrosRanking, topTemas } }
     } catch (error: any) {
         console.error('Erro ao buscar relatório EBD:', error)
         return { ok: false, error: error.message || 'Erro ao buscar relatório.' }
+    }
+}
+
+// ── CURSOS EBD ──────────────────────────────────────────────────────────────
+
+export async function listarCursos(ano?: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        const cursos = await db.cursoEBD.findMany({
+            where: ano ? { ano } : undefined,
+            include: {
+                turmas: {
+                    include: {
+                        professor: { select: { first_name: true, last_name: true } },
+                        _count: { select: { matriculas: true, aulas: true, atividades: true } },
+                    },
+                },
+                _count: { select: { turmas: true } },
+            },
+            orderBy: [{ ano: 'desc' }, { trimestre: 'desc' }],
+        })
+
+        return { ok: true, data: cursos }
+    } catch (error: any) {
+        console.error('Erro ao listar cursos:', error)
+        return { ok: false, error: error.message || 'Erro ao listar cursos.' }
+    }
+}
+
+export async function criarCurso(formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        const titulo = formData.get('titulo') as string
+        const descricao = formData.get('descricao') as string | null
+        const trimestre = Number(formData.get('trimestre'))
+        const ano = Number(formData.get('ano'))
+        const data_inicio = formData.get('data_inicio') as string
+        const data_fim = formData.get('data_fim') as string
+        const material_ref = formData.get('material_ref') as string | null
+        const nota_minima = Number(formData.get('nota_minima') || 7)
+        const presenca_minima = Number(formData.get('presenca_minima') || 75)
+
+        if (!titulo || !trimestre || !ano || !data_inicio || !data_fim) {
+            return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
+        }
+
+        const curso = await db.cursoEBD.create({
+            data: {
+                titulo,
+                descricao: descricao || null,
+                trimestre,
+                ano,
+                data_inicio: new Date(data_inicio),
+                data_fim: new Date(data_fim),
+                material_ref: material_ref || null,
+                nota_minima,
+                presenca_minima,
+                tenant_id: tenantId,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true, data: curso }
+    } catch (error: any) {
+        console.error('Erro ao criar curso:', error)
+        return { ok: false, error: error.message || 'Erro ao criar curso.' }
+    }
+}
+
+export async function atualizarCurso(id: string, formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        const titulo = formData.get('titulo') as string
+        const descricao = formData.get('descricao') as string | null
+        const trimestre = Number(formData.get('trimestre'))
+        const ano = Number(formData.get('ano'))
+        const data_inicio = formData.get('data_inicio') as string
+        const data_fim = formData.get('data_fim') as string
+        const material_ref = formData.get('material_ref') as string | null
+        const nota_minima = Number(formData.get('nota_minima') || 7)
+        const presenca_minima = Number(formData.get('presenca_minima') || 75)
+        const status = formData.get('status') as string | null
+
+        const curso = await db.cursoEBD.update({
+            where: { id },
+            data: {
+                titulo,
+                descricao: descricao || null,
+                trimestre,
+                ano,
+                data_inicio: new Date(data_inicio),
+                data_fim: new Date(data_fim),
+                material_ref: material_ref || null,
+                nota_minima,
+                presenca_minima,
+                ...(status ? { status: status as any } : {}),
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true, data: curso }
+    } catch (error: any) {
+        console.error('Erro ao atualizar curso:', error)
+        return { ok: false, error: error.message || 'Erro ao atualizar curso.' }
+    }
+}
+
+export async function removerCurso(id: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        await db.cursoEBD.delete({ where: { id } })
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao remover curso:', error)
+        return { ok: false, error: error.message || 'Erro ao remover curso.' }
+    }
+}
+
+// ── TURMAS EBD ──────────────────────────────────────────────────────────────
+
+export async function criarTurma(formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        const nome = formData.get('nome') as string
+        const faixa_etaria = formData.get('faixa_etaria') as string | null
+        const curso_id = formData.get('curso_id') as string
+        const professor_id = Number(formData.get('professor_id'))
+
+        if (!nome || !curso_id || !professor_id) {
+            return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
+        }
+
+        const turma = await db.turmaEBD.create({
+            data: {
+                nome,
+                faixa_etaria: faixa_etaria || null,
+                curso_id,
+                professor_id,
+                tenant_id: tenantId,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true, data: turma }
+    } catch (error: any) {
+        console.error('Erro ao criar turma:', error)
+        return { ok: false, error: error.message || 'Erro ao criar turma.' }
+    }
+}
+
+export async function removerTurma(id: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        await db.turmaEBD.delete({ where: { id } })
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao remover turma:', error)
+        return { ok: false, error: error.message || 'Erro ao remover turma.' }
+    }
+}
+
+export async function buscarTurma(id: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        const turma = await db.turmaEBD.findUnique({
+            where: { id },
+            include: {
+                curso: true,
+                professor: { select: { id: true, first_name: true, last_name: true } },
+                matriculas: {
+                    include: {
+                        membro: { select: { id: true, first_name: true, last_name: true } },
+                    },
+                    orderBy: { membro: { first_name: 'asc' } },
+                },
+                aulas: {
+                    include: {
+                        professor: { select: { first_name: true, last_name: true } },
+                        _count: { select: { presencas: true } },
+                        presencas: { select: { membro_id: true } },
+                    },
+                    orderBy: { data: 'desc' },
+                },
+                atividades: {
+                    include: {
+                        notas: true,
+                        _count: { select: { notas: true } },
+                    },
+                    orderBy: { created_at: 'desc' },
+                },
+            },
+        })
+
+        if (!turma) return { ok: false, error: 'Turma não encontrada.' }
+        return { ok: true, data: turma }
+    } catch (error: any) {
+        console.error('Erro ao buscar turma:', error)
+        return { ok: false, error: error.message || 'Erro ao buscar turma.' }
+    }
+}
+
+// ── MATRÍCULAS ──────────────────────────────────────────────────────────────
+
+export async function matricularAlunos(turmaId: string, membroIds: number[]) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        // Buscar matrículas existentes
+        const existentes = await db.matriculaEBD.findMany({
+            where: { turma_id: turmaId },
+            select: { membro_id: true },
+        })
+        const jaMatriculados = new Set(existentes.map(e => e.membro_id))
+
+        const novos = membroIds.filter(id => !jaMatriculados.has(id))
+        if (novos.length > 0) {
+            await db.matriculaEBD.createMany({
+                data: novos.map(membro_id => ({
+                    turma_id: turmaId,
+                    membro_id,
+                    tenant_id: tenantId,
+                })),
+            })
+        }
+
+        revalidatePath('/ebd')
+        return { ok: true, data: { matriculados: novos.length } }
+    } catch (error: any) {
+        console.error('Erro ao matricular alunos:', error)
+        return { ok: false, error: error.message || 'Erro ao matricular alunos.' }
+    }
+}
+
+export async function removerMatricula(turmaId: string, membroId: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        await db.matriculaEBD.delete({
+            where: { turma_id_membro_id: { turma_id: turmaId, membro_id: membroId } },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao remover matrícula:', error)
+        return { ok: false, error: error.message || 'Erro ao remover matrícula.' }
+    }
+}
+
+// ── ATIVIDADES E NOTAS ──────────────────────────────────────────────────────
+
+export async function criarAtividade(formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        const titulo = formData.get('titulo') as string
+        const tipo = formData.get('tipo') as string
+        const descricao = formData.get('descricao') as string | null
+        const data_entrega = formData.get('data_entrega') as string | null
+        const peso = Number(formData.get('peso') || 1)
+        const nota_maxima = Number(formData.get('nota_maxima') || 10)
+        const turma_id = formData.get('turma_id') as string
+
+        if (!titulo || !tipo || !turma_id) {
+            return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
+        }
+
+        const atividade = await db.atividadeEBD.create({
+            data: {
+                titulo,
+                tipo: tipo as any,
+                descricao: descricao || null,
+                data_entrega: data_entrega ? new Date(data_entrega) : null,
+                peso,
+                nota_maxima,
+                turma_id,
+                tenant_id: tenantId,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true, data: atividade }
+    } catch (error: any) {
+        console.error('Erro ao criar atividade:', error)
+        return { ok: false, error: error.message || 'Erro ao criar atividade.' }
+    }
+}
+
+export async function removerAtividade(id: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        await db.atividadeEBD.delete({ where: { id } })
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao remover atividade:', error)
+        return { ok: false, error: error.message || 'Erro ao remover atividade.' }
+    }
+}
+
+export async function salvarNotas(atividadeId: string, notas: { membro_id: number; nota: number | null; entregue: boolean; observacao?: string }[]) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        for (const n of notas) {
+            await db.notaEBD.upsert({
+                where: { atividade_id_membro_id: { atividade_id: atividadeId, membro_id: n.membro_id } },
+                create: {
+                    atividade_id: atividadeId,
+                    membro_id: n.membro_id,
+                    nota: n.nota,
+                    entregue: n.entregue,
+                    observacao: n.observacao || null,
+                    tenant_id: tenantId,
+                },
+                update: {
+                    nota: n.nota,
+                    entregue: n.entregue,
+                    observacao: n.observacao || null,
+                },
+            })
+        }
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao salvar notas:', error)
+        return { ok: false, error: error.message || 'Erro ao salvar notas.' }
+    }
+}
+
+// ── CÁLCULO DE APROVAÇÃO ────────────────────────────────────────────────────
+
+export async function calcularAprovacao(turmaId: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        const turma = await db.turmaEBD.findUnique({
+            where: { id: turmaId },
+            include: {
+                curso: { select: { nota_minima: true, presenca_minima: true } },
+                matriculas: { select: { membro_id: true } },
+                aulas: {
+                    select: {
+                        id: true,
+                        presencas: { select: { membro_id: true, presente: true } },
+                    },
+                },
+                atividades: {
+                    select: {
+                        id: true,
+                        peso: true,
+                        nota_maxima: true,
+                        notas: { select: { membro_id: true, nota: true } },
+                    },
+                },
+            },
+        })
+
+        if (!turma) return { ok: false, error: 'Turma não encontrada.' }
+
+        const totalAulas = turma.aulas.length
+        const { nota_minima, presenca_minima } = turma.curso
+        const resultados: { membro_id: number; nota_final: number; percentual_presenca: number; aprovado: boolean }[] = []
+
+        for (const mat of turma.matriculas) {
+            // Calcular presença
+            let presencas = 0
+            for (const aula of turma.aulas) {
+                const presente = aula.presencas.find(p => p.membro_id === mat.membro_id && p.presente)
+                if (presente) presencas++
+            }
+            const percentualPresenca = totalAulas > 0 ? (presencas / totalAulas) * 100 : 0
+
+            // Calcular média ponderada
+            let somaPeso = 0
+            let somaNotaPonderada = 0
+            for (const atv of turma.atividades) {
+                const notaAluno = atv.notas.find(n => n.membro_id === mat.membro_id)
+                if (notaAluno?.nota != null) {
+                    const notaNormalizada = (notaAluno.nota / atv.nota_maxima) * 10
+                    somaNotaPonderada += notaNormalizada * atv.peso
+                    somaPeso += atv.peso
+                }
+            }
+            const notaFinal = somaPeso > 0 ? somaNotaPonderada / somaPeso : 0
+
+            const aprovado = notaFinal >= nota_minima && percentualPresenca >= presenca_minima
+
+            // Atualizar matrícula
+            await db.matriculaEBD.update({
+                where: { turma_id_membro_id: { turma_id: turmaId, membro_id: mat.membro_id } },
+                data: {
+                    nota_final: Math.round(notaFinal * 100) / 100,
+                    percentual_presenca: Math.round(percentualPresenca * 100) / 100,
+                    aprovado,
+                    status: 'CONCLUIDA',
+                },
+            })
+
+            resultados.push({
+                membro_id: mat.membro_id,
+                nota_final: Math.round(notaFinal * 100) / 100,
+                percentual_presenca: Math.round(percentualPresenca * 100) / 100,
+                aprovado,
+            })
+        }
+
+        revalidatePath('/ebd')
+        return { ok: true, data: resultados }
+    } catch (error: any) {
+        console.error('Erro ao calcular aprovação:', error)
+        return { ok: false, error: error.message || 'Erro ao calcular aprovação.' }
     }
 }

@@ -19,6 +19,8 @@ export const MODULOS = {
     MESA_SOM: 'mesa_som',
     CIFRAS: 'cifras',
     LUMIKIT: 'lumikit',
+    PREGACAO: 'pregacao',
+    EBD: 'ebd',
 } as const
 
 export type Modulo = typeof MODULOS[keyof typeof MODULOS]
@@ -88,6 +90,8 @@ export const PLANOS: Record<PlanoId, PlanoConfig> = {
             MODULOS.AUDITORIA,
             MODULOS.CIFRAS,
             MODULOS.HOLYRICS,
+            MODULOS.PREGACAO,
+            MODULOS.EBD,
         ],
         limites: {
             max_membros: 0, // ilimitado
@@ -125,6 +129,8 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/admin/auditoria': MODULOS.AUDITORIA,
     '/admin/midia/x32': MODULOS.MESA_SOM,
     '/admin/midia/lumikit': MODULOS.LUMIKIT,
+    '/pregacao': MODULOS.PREGACAO,
+    '/ebd': MODULOS.EBD,
 }
 
 /**
