@@ -70,6 +70,45 @@ export async function testarConectividade(tipo: 'holyrics' | 'x32' | 'lumikit', 
 
 // ── LUMIKIT CENAS & DIMMERS ──
 
+// ── X32 CENAS (via Holyrics) ──
+
+export type X32Scene = {
+    id: string
+    nome: string
+    cor: string
+    icone: string
+    tipo: 'push' | 'toggle'
+    endpoint: string
+    scriptOn: string
+    scriptOff?: string
+}
+
+export type X32CenasConfig = {
+    scenes: X32Scene[]
+}
+
+export async function salvarX32Cenas(config: X32CenasConfig) {
+    try {
+        await requireRole(['ADMIN'])
+        const headersList = await headers()
+        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+        if (!tenantId) return { ok: false, error: 'Tenant nao identificado.' }
+
+        await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { x32_cenas: config as any }
+        })
+
+        revalidatePath('/admin/midia')
+        revalidatePath('/midia/mesax32')
+        return { ok: true }
+    } catch (error: any) {
+        return { ok: false, error: 'Erro ao guardar cenas X32.' }
+    }
+}
+
+// ── LUMIKIT CENAS & DIMMERS ──
+
 export type LumikitScene = {
     id: string
     nome: string

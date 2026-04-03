@@ -6,9 +6,10 @@ import { getSessionData } from '@/lib/auth-utils'
 import { getModulosAtivos, MODULOS } from '@/lib/planos'
 import MidiaConfigClient from '@/components/admin/MidiaConfigClient'
 import LumikitCenasEditor from '@/components/admin/LumikitCenasEditor'
+import X32CenasEditor from '@/components/admin/X32CenasEditor'
 import Link from 'next/link'
-import { Music2, Lightbulb, MonitorPlay, Download, Terminal, ArrowRight } from 'lucide-react'
-import type { LumikitConfig } from '@/actions/midia-actions'
+import { Music2, Lightbulb, MonitorPlay, Download, Terminal, ArrowRight, Sliders } from 'lucide-react'
+import type { LumikitConfig, X32CenasConfig } from '@/actions/midia-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,7 @@ export default async function MidiaConfigPage() {
             x32_port: true,
             lumikit_url: true,
             lumikit_cenas: true,
+            x32_cenas: true,
         }
     })
 
@@ -88,7 +90,12 @@ export default async function MidiaConfigPage() {
                 <LumikitCenasEditor initialConfig={(tenant?.lumikit_cenas as LumikitConfig | null) || { scenes: [] }} />
             )}
 
-            {/* PROXY LOCAL — DOWNLOAD E INSTRUCOES */}
+            {/* CONFIGURADOR DE PRESETS X32 (via Holyrics) */}
+            {temMesaSom && (
+                <X32CenasEditor initialConfig={(tenant?.x32_cenas as X32CenasConfig | null) || { scenes: [] }} />
+            )}
+
+            {/* PROXY LOCAL — DOWNLOAD E INSTRUCOES (modo avancado) */}
             {temMesaSom && (
                 <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     <div className="px-5 py-4 border-b border-soft flex items-center gap-2">
