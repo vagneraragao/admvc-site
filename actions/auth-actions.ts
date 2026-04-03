@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { redis } from '@/lib/redis'
 import { audit } from '@/lib/audit'
 import { enviarEmailBoasVindas } from '@/lib/mail'
 
@@ -14,10 +14,6 @@ import { enviarEmailBoasVindas } from '@/lib/mail'
 // ============================================================================
 // 🛡️ CONFIGURAÇÃO DO RATE LIMITER (Proteção contra Força Bruta)
 // ============================================================================
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN!,
-});
 
 // Rate limit por email: 5 tentativas em 15 minutos
 const ratelimitPorEmail = new Ratelimit({

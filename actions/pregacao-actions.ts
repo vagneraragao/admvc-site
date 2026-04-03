@@ -4,6 +4,7 @@ import prisma, { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/auth-utils'
+import { invalidateSermoes } from '@/lib/cache'
 
 async function getDb() {
     const h = await headers()
@@ -102,6 +103,7 @@ export async function criarSermao(formData: FormData) {
         })
 
         revalidatePath('/pregacao')
+        invalidateSermoes(tenantId).catch(() => {})
         return { ok: true, data: sermao }
     } catch (error: any) {
         console.error('Erro ao criar sermão:', error)

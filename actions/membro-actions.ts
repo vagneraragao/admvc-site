@@ -3,9 +3,10 @@
 import prisma, { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import bcrypt from 'bcryptjs' // Recomendo bcryptjs para evitar problemas de compilação em Edge Runtime
-import { put } from '@vercel/blob' // <-- Importação do Blob Storage
+import bcrypt from 'bcryptjs'
+import { put } from '@vercel/blob'
 import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
+import { invalidateMembros } from '@/lib/cache'
 
 
 // ============================================================================
@@ -209,6 +210,7 @@ export async function cadastrarMembroCompleto(formData: FormData) {
         });
 
         revalidatePath('/admin/membros');
+        invalidateMembros(tenantId).catch(() => {})
         return { sucesso: true, id: novo.id };
     } catch (error: any) {
         console.error("Erro ao cadastrar:", error);
@@ -302,8 +304,10 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
         console.log(`💾 Perfil do membro atualizado com sucesso!`);
         console.log(`=============================================\n`);
 
-        revalidatePath('/membros/dashboard'); // Ajuste para a rota onde o membro vê o perfil
+        revalidatePath('/membros/dashboard');
         revalidatePath('/admin/membros');
+        const hdr = await headers()
+        invalidateMembros(Number(hdr.get('x-tenant-id'))).catch(() => {})
         return { sucesso: "Dados atualizados com sucesso!" };
     } catch (error: any) {
         console.error("❌ ERRO NO PRISMA:", error);
@@ -685,6 +689,8 @@ export async function confirmarImportacao(membrosValidos: any[]) {
         })
 
         revalidatePath('/admin/membros')
+        const hdr2 = await headers()
+        invalidateMembros(Number(hdr2.get('x-tenant-id'))).catch(() => {})
         return { ok: true, count: dados.length }
 
     } catch (err: any) {

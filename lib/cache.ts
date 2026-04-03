@@ -1,77 +1,69 @@
-import { unstable_cache } from 'next/cache'
 import prisma from '@/lib/prisma'
+import { cached, invalidatePrefix } from '@/lib/redis'
+
+// ── Keys com tenant prefix ───────────────────────────────────────────────────
+const k = (tenant: number, entity: string) => `admvc:${tenant}:${entity}`
 
 // ── Membros activos (usado em ~10 páginas) ──────────────────────────────────
-// Lista leve: id + nome. Revalida a cada 60s ou quando chamado revalidateTag.
-export const getCachedMembrosAtivos = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.membro.findMany({
+export function getCachedMembrosAtivos(tenantId: number) {
+    return cached(k(tenantId, 'membros-ativos'), 60, () =>
+        prisma.membro.findMany({
             where: { tenant_id: tenantId, is_active: true },
             select: { id: true, first_name: true, last_name: true },
             orderBy: { first_name: 'asc' },
         })
-    },
-    ['membros-ativos'],
-    { revalidate: 60, tags: ['membros'] }
-)
+    )
+}
 
 // ── Departamentos (usado em ~8 páginas) ──────────────────────────────────────
-export const getCachedDepartamentos = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.departamento.findMany({
+export function getCachedDepartamentos(tenantId: number) {
+    return cached(k(tenantId, 'departamentos'), 120, () =>
+        prisma.departamento.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' },
         })
-    },
-    ['departamentos'],
-    { revalidate: 120, tags: ['departamentos'] }
-)
+    )
+}
 
 // ── Grupos (usado em ~5 páginas) ─────────────────────────────────────────────
-export const getCachedGrupos = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.grupo.findMany({
+export function getCachedGrupos(tenantId: number) {
+    return cached(k(tenantId, 'grupos'), 120, () =>
+        prisma.grupo.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' },
         })
-    },
-    ['grupos'],
-    { revalidate: 120, tags: ['grupos'] }
-)
+    )
+}
 
 // ── Sermões recentes (usado em ~3 páginas) ───────────────────────────────────
-export const getCachedSermoes = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.sermao.findMany({
+export function getCachedSermoes(tenantId: number) {
+    return cached(k(tenantId, 'sermoes'), 60, () =>
+        prisma.sermao.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, titulo: true, data_pregacao: true },
             orderBy: { data_pregacao: 'desc' },
             take: 100,
         })
-    },
-    ['sermoes'],
-    { revalidate: 60, tags: ['sermoes'] }
-)
+    )
+}
 
 // ── Congregações (usado em ~6 páginas) ───────────────────────────────────────
-export const getCachedCongregacoes = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.congregacao.findMany({
+export function getCachedCongregacoes(tenantId: number) {
+    return cached(k(tenantId, 'congregacoes'), 300, () =>
+        prisma.congregacao.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' },
         })
-    },
-    ['congregacoes'],
-    { revalidate: 300, tags: ['congregacoes'] }
-)
+    )
+}
 
 // ── Tenant config (usado em ~5 páginas media) ────────────────────────────────
-export const getCachedTenantConfig = unstable_cache(
-    async (tenantId: number) => {
-        return prisma.tenant.findUnique({
+export function getCachedTenantConfig(tenantId: number) {
+    return cached(k(tenantId, 'tenant-config'), 300, () =>
+        prisma.tenant.findUnique({
             where: { id: tenantId },
             select: {
                 id: true, nome: true,
@@ -81,7 +73,26 @@ export const getCachedTenantConfig = unstable_cache(
                 regioes_custom: true,
             },
         })
-    },
-    ['tenant-config'],
-    { revalidate: 300, tags: ['tenant'] }
-)
+    )
+}
+
+// ── Invalidação por entidade ─────────────────────────────────────────────────
+export async function invalidateMembros(tenantId: number) {
+    await invalidatePrefix(k(tenantId, 'membros'))
+}
+
+export async function invalidateDepartamentos(tenantId: number) {
+    await invalidatePrefix(k(tenantId, 'departamentos'))
+}
+
+export async function invalidateGrupos(tenantId: number) {
+    await invalidatePrefix(k(tenantId, 'grupos'))
+}
+
+export async function invalidateSermoes(tenantId: number) {
+    await invalidatePrefix(k(tenantId, 'sermoes'))
+}
+
+export async function invalidateTenant(tenantId: number) {
+    await invalidatePrefix(k(tenantId, 'tenant'))
+}
