@@ -1,13 +1,11 @@
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { criarCargo, excluirCargo, criarDepartamento, excluirDepartamento } from '@/actions/admin-actions'
-import ConfigForm from '@/components/ConfigForm'
 import FormCriarDepartamento from '@/components/admin/FormCriarDepartamento'
 import DeptoItem from '@/components/DeptoItem'
-import BotaoExcluirCargo from '@/components/BotaoExcluirCargo'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
-import { Plus, Briefcase, LayoutGrid, Users, Hash, Shield, MapPin } from 'lucide-react'
-import RegioesEditor from '@/components/admin/RegioesEditor'
+import { Plus, Briefcase, LayoutGrid, Users, MapPin, Settings } from 'lucide-react'
+import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,12 +52,21 @@ export default async function EstruturaPage() {
         }) : [],
     ])
 
+    const cargosSerializados = cargos.map((c: any) => ({ id: c.id, nome: c.nome }))
+
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-20">
 
-            <header className="space-y-1">
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Estrutura</h1>
-                <p className="text-xs text-muted">Departamentos, cargos, grupos e regioes da igreja.</p>
+            <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Estrutura</h1>
+                    <p className="text-xs text-muted">Departamentos, grupos, cargos e regioes da igreja.</p>
+                </div>
+                {/* Submenu: Cargos e Regiões */}
+                <EstruturaSubMenu
+                    cargos={cargosSerializados}
+                    regioesIniciais={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']}
+                />
             </header>
 
             {/* DEPARTAMENTOS */}
@@ -93,34 +100,6 @@ export default async function EstruturaPage() {
                 </div>
             </section>
 
-            {/* CARGOS */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
-                    <div className="flex items-center gap-2">
-                        <Briefcase size={14} className="text-purple-500" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Cargos</h2>
-                        <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{cargos.length}</span>
-                    </div>
-                    <Popover titulo="Cargo" cor="figueira">
-                        <ConfigForm action={criarCargo} placeholder="Nome do cargo..." label="Novo Cargo" buttonColor="bg-purple-600" />
-                    </Popover>
-                </div>
-                <div className="p-5">
-                {cargos.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {cargos.map((c: any) => (
-                            <div key={c.id} className="bg-bg border border-soft rounded-xl px-4 py-3 flex items-center justify-between gap-2 group hover:border-purple-500/30 transition-all">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-fg truncate">{c.nome}</span>
-                                <BotaoExcluirCargo id={c.id} nome={c.nome} onExcluir={excluirCargo} />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <Empty message="Nenhum cargo registado." />
-                )}
-                </div>
-            </section>
-
             {/* GRUPOS */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
@@ -135,17 +114,6 @@ export default async function EstruturaPage() {
                         membrosDisponiveis={membrosDisponiveis}
                         regioes={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']}
                     />
-                </div>
-            </section>
-
-            {/* REGIÕES */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
-                    <MapPin size={14} className="text-orange-500" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Regioes</h2>
-                </div>
-                <div className="p-5">
-                    <RegioesEditor regioesIniciais={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']} />
                 </div>
             </section>
         </main>
