@@ -196,30 +196,21 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                     {modoSeparado ? 'Separado' : 'Inline'}
                 </button>
 
-                {/* Tamanho fonte */}
+                {/* Auto-scroll com +/- velocidade */}
                 <div className="flex items-center gap-1">
-                    <button onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 text-[10px] font-black">
-                        A-
-                    </button>
-                    <button onClick={() => setFontSize(s => Math.min(24, s + 2))}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 text-[10px] font-black">
-                        A+
-                    </button>
-                </div>
-
-                {/* Auto-scroll */}
-                <div className="flex items-center gap-2">
                     {scrolling && (
-                        <input type="range" min="0.3" max="5" step="0.1" value={velocidade}
-                            onChange={e => setVelocidade(Number(e.target.value))}
-                            className="w-28 sm:w-36 h-6 accent-emerald-500 cursor-pointer"
-                            style={{ WebkitAppearance: 'none', appearance: 'none', background: 'transparent' }}
-                        />
+                        <>
+                            <button onClick={() => setVelocidade(v => Math.max(0.3, Math.round((v - 0.3) * 10) / 10))}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 active:scale-90 text-xs font-black">−</button>
+                            <span className="text-[8px] font-black text-white/40 w-8 text-center">{velocidade.toFixed(1)}x</span>
+                            <button onClick={() => setVelocidade(v => Math.min(5, Math.round((v + 0.3) * 10) / 10))}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 active:scale-90 text-xs font-black">+</button>
+                        </>
                     )}
                     <button onClick={() => setScrolling(s => !s)}
-                        className={`h-10 px-4 flex items-center justify-center gap-2 rounded-xl active:scale-90 text-[9px] font-black uppercase tracking-widest ${scrolling ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                        {scrolling ? <><Pause size={14} /> <span className="hidden sm:inline">{velocidade.toFixed(1)}x</span></> : <><Play size={14} /> <span className="hidden sm:inline">Scroll</span></>}
+                        className={`h-8 px-3 flex items-center justify-center gap-1.5 rounded-xl active:scale-90 text-[8px] font-black uppercase tracking-widest ${scrolling ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                        {scrolling ? <Pause size={12} /> : <Play size={12} />}
+                        {scrolling ? 'Parar' : 'Scroll'}
                     </button>
                 </div>
             </div>
