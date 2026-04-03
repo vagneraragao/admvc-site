@@ -8,7 +8,7 @@ import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
     Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare,
-    BookOpen, GraduationCap
+    BookOpen, GraduationCap, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -42,6 +42,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const pathname = usePathname()
     const [mounted, setMounted] = useState(false)
     const [menuAberto, setMenuAberto] = useState(false)
+    const [expandido, setExpandido] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => setMounted(true), [])
@@ -58,6 +59,18 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
         document.addEventListener('click', handler)
         return () => document.removeEventListener('click', handler)
     }, [menuAberto])
+
+    // Persistir estado expandido
+    useEffect(() => {
+        const saved = localStorage.getItem('membro_header_expanded')
+        if (saved === 'true') setExpandido(true)
+    }, [])
+
+    function toggleExpandido() {
+        const next = !expandido
+        setExpandido(next)
+        localStorage.setItem('membro_header_expanded', String(next))
+    }
 
     const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
     if (hideHeader) return null
@@ -87,35 +100,49 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
         : isLumikit ? 'Midia / Iluminacao'
         : isMidiaRoute ? 'Midia'
         : isPregacao ? 'Pregacao'
-        : isEBD ? 'Escola Biblica'
         : null
+
+    const podePregacao = permissoes.isAdmin || permissoes.isDiaconia
 
     return (
         <header className="bg-bg2 border-b border-soft sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* LINHA PRINCIPAL */}
-                <div className="flex items-center justify-between py-3 gap-3">
+                <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${expandido ? 'py-4' : 'py-3'}`}>
                     <Link href="/membros/dashboard" className="flex items-center gap-3 min-w-0">
-                        <div className="relative w-9 h-9 shrink-0">
+                        <div className={`relative shrink-0 transition-all duration-300 ${expandido ? 'w-14 h-14' : 'w-9 h-9'}`}>
                             {membro.avatar_file ? (
                                 <Image src={membro.avatar_file} alt="" fill className="rounded-lg object-cover border border-soft" />
                             ) : (
-                                <div className="w-full h-full rounded-lg bg-fg text-bg flex items-center justify-center text-[10px] font-black border border-soft">
+                                <div className={`w-full h-full rounded-lg bg-fg text-bg flex items-center justify-center font-black border border-soft transition-all duration-300 ${expandido ? 'text-base rounded-xl' : 'text-[10px]'}`}>
                                     {iniciais}
                                 </div>
                             )}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[7px] font-black uppercase tracking-widest text-figueira truncate">
+                            <p className={`font-black uppercase tracking-widest text-figueira truncate transition-all duration-300 ${expandido ? 'text-[8px]' : 'text-[7px]'}`}>
                                 {igrejaName}{membro.congregacao ? ` · ${membro.congregacao.nome}` : ''}
                             </p>
-                            <h1 className="text-sm font-black text-fg italic tracking-tighter uppercase leading-none truncate">
-                                {membro.first_name} <span className="text-muted/40 hidden sm:inline">{membro.last_name}</span>
+                            <h1 className={`font-black text-fg italic tracking-tighter uppercase leading-none truncate transition-all duration-300 ${expandido ? 'text-lg' : 'text-sm'}`}>
+                                {membro.first_name} <span className={`text-muted/40 ${expandido ? 'inline' : 'hidden sm:inline'}`}>{membro.last_name}</span>
                             </h1>
+                            {expandido && (
+                                <p className="text-[8px] font-bold text-muted mt-0.5 animate-in fade-in duration-200">
+                                    {role === 'ADMIN' ? 'Administrador' : role === 'LEADER' ? 'Lider' : role === 'FINANCE' ? 'Tesouraria' : 'Membro'}
+                                    {membro.email && <span className="ml-2 text-muted/50">{membro.email}</span>}
+                                </p>
+                            )}
                         </div>
                     </Link>
 
                     <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Botão expandir/recolher */}
+                        <button onClick={toggleExpandido}
+                            className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all"
+                            title={expandido ? 'Recolher' : 'Expandir'}>
+                            {expandido ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+
                         {/* MENU SERVIÇO */}
                         <div ref={menuRef} className="relative z-50">
                             <button onClick={() => setMenuAberto(!menuAberto)}
@@ -159,6 +186,11 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                             {permissoes.isCantina && (
                                                 <Link href="/cantina" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                                     <Store size={12} className="text-orange-500" /> Cantina
+                                                </Link>
+                                            )}
+                                            {podePregacao && (
+                                                <Link href="/pregacao" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                    <BookOpen size={12} className="text-indigo-400" /> Pregacao
                                                 </Link>
                                             )}
                                             {permissoes.isMidia && (
@@ -212,19 +244,13 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                         }`}>
                         Igreja
                     </Link>
-                    <Link href="/pregacao"
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                            isPregacao ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                        }`}>
-                        Pregacao
-                    </Link>
                     <Link href="/ebd"
                         className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                             isEBD ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
                         }`}>
                         Cursos
                     </Link>
-                    {moduloPath && !isPregacao && !isEBD && (
+                    {moduloPath && !isEBD && (
                         <>
                             <span className="text-muted/30 text-[9px]">/</span>
                             <span className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 whitespace-nowrap">

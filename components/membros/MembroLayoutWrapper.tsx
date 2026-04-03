@@ -82,7 +82,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
         isLouvor: checkDepto(['louvor', 'música', 'musica', 'banda']),
         isDiaconia: checkDepto(['diaconia', 'diácono', 'diacono']),
     }
-    const mostraServico = permissoes.isAdmin || permissoes.isFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isMidia || permissoes.isLouvor || permissoes.isLider
+    const mostraServico = permissoes.isAdmin || permissoes.isFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isMidia || permissoes.isLouvor || permissoes.isLider || permissoes.isDiaconia
 
     return (
         <>
