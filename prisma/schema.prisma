@@ -85,6 +85,8 @@ model Tenant {
   audit_logs               AuditLog[]
   itemInventarios          ItemInventario[]
   movimentosInventario     MovimentoInventario[]
+  sermoes                  Sermao[]
+  escolasBiblicas          EscolaBiblica[]
 }
 
 model Congregacao {
@@ -115,6 +117,8 @@ model Congregacao {
   mensagensEvento     MensagemEvento[]
   itensInventario     ItemInventario[]
   movimentosInventario MovimentoInventario[]
+  sermoes             Sermao[]
+  escolasBiblicas     EscolaBiblica[]
 }
 
 model Membro {
@@ -205,6 +209,9 @@ model Membro {
   indisponibilidadeMembros   IndisponibilidadeMembro[]
   mensagemEventos            MensagemEvento[]
   itemInventarios            ItemInventario[]
+  sermoes                    Sermao[]                    @relation("PregadorSermao")
+  aulasEBD                   EscolaBiblica[]             @relation("ProfessorEBD")
+  presencasEBD               PresencaEBD[]
 
   @@index([tenant_id])
   @@map("membros")
@@ -339,6 +346,7 @@ model Evento {
   congregacao    Congregacao?       @relation(fields: [congregacao_id], references: [id])
   repertorio     RepertorioEvento[]
   mensagemEvento MensagemEvento?
+  sermoes        Sermao[]
 
   @@index([tenant_id])
 }
@@ -616,6 +624,64 @@ model RepertorioEvento {
 
   @@unique([evento_id, musica_id])
   @@index([tenant_id])
+}
+
+model Sermao {
+  id                  String          @id @default(uuid())
+  titulo              String
+  texto_corpo         String?         // HTML com marcadores coloridos e refs
+  referencias_biblicas Json?          // [{livro, capitulo, versiculo_inicio, versiculo_fim, texto}]
+  notas_privadas      String?
+  tags                Json?           // ["fé", "oração", ...]
+  publicado           Boolean         @default(false)
+  partilhado_whatsapp Boolean         @default(false)
+  data_pregacao       DateTime
+  pregador_id         Int
+  evento_id           Int?
+  congregacao_id      Int?
+  tenant_id           Int
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+  pregador            Membro          @relation("PregadorSermao", fields: [pregador_id], references: [id])
+  evento              Evento?         @relation(fields: [evento_id], references: [id])
+  congregacao         Congregacao?    @relation(fields: [congregacao_id], references: [id])
+  tenant              Tenant          @relation(fields: [tenant_id], references: [id])
+  escolasBiblicas     EscolaBiblica[]
+
+  @@index([tenant_id])
+  @@index([pregador_id])
+}
+
+model EscolaBiblica {
+  id                  String          @id @default(uuid())
+  titulo              String
+  tema                String?
+  data                DateTime
+  material_apoio      String?         // Texto livre, links, etc.
+  perguntas_discussao Json?           // ["pergunta 1", "pergunta 2", ...]
+  professor_id        Int
+  sermao_id           String?         // Sermão base (opcional)
+  congregacao_id      Int?
+  tenant_id           Int
+  created_at          DateTime        @default(now())
+  professor           Membro          @relation("ProfessorEBD", fields: [professor_id], references: [id])
+  sermao              Sermao?         @relation(fields: [sermao_id], references: [id])
+  congregacao         Congregacao?    @relation(fields: [congregacao_id], references: [id])
+  tenant              Tenant          @relation(fields: [tenant_id], references: [id])
+  presencas           PresencaEBD[]
+
+  @@index([tenant_id])
+}
+
+model PresencaEBD {
+  id                  Int             @id @default(autoincrement())
+  escola_biblica_id   String
+  membro_id           Int
+  presente            Boolean         @default(true)
+  escolaBiblica       EscolaBiblica   @relation(fields: [escola_biblica_id], references: [id], onDelete: Cascade)
+  membro              Membro          @relation(fields: [membro_id], references: [id])
+
+  @@unique([escola_biblica_id, membro_id])
 }
 
 enum Role {
