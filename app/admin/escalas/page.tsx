@@ -62,7 +62,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                     select: {
                         departamento_id: true,
                         funcoes: {
-                            select: { funcao: { select: { nome: true } } }
+                            select: { funcao_id: true, funcao: { select: { id: true, nome: true } } }
                         }
                     }
                 },
@@ -76,6 +76,14 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
             orderBy: { nome: 'asc' }
         }) : [],
     ])
+
+    // Formatar membros com funcoesHabilitadas por departamento
+    const membrosFormatados = membrosComFuncoes.map((m: any) => ({
+        ...m,
+        funcoesHabilitadas: m.ministerios.flatMap((min: any) =>
+            min.funcoes.map((f: any) => f.funcao_id)
+        ),
+    }))
 
     const hoje = new Date(new Date().setHours(0, 0, 0, 0))
     const eventosFuturos = eventos.filter(e => new Date(e.data) >= hoje)
@@ -141,7 +149,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                     <MontadorEscalas
                         eventos={eventosFuturos}
                         departamentos={departamentos}
-                        membros={membrosComFuncoes}
+                        membros={membrosFormatados}
                     />
                 </div>
             </section>
@@ -161,7 +169,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                     <ListaEscalados
                         eventos={eventosFuturos}
                         isAdmin={true}
-                        membros={membrosComFuncoes}
+                        membros={membrosFormatados}
                         congregacoes={congregacoes}
                     />
                 </div>
