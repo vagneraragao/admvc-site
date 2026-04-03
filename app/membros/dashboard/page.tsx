@@ -32,7 +32,7 @@ import BotaoSetlistPalco from '@/components/louvor/BotaoSetlistPalco'
 export default async function DashboardMembro({
     searchParams
 }: {
-    searchParams: { tab?: string }
+    searchParams: Promise<{ tab?: string }>
 }) {
     const { tab } = await searchParams;
     const currentTab = tab || 'geral';
@@ -291,6 +291,7 @@ export default async function DashboardMembro({
 
     const escalasAgrupadas = new Map();
     membro.escalas.forEach((esc: any) => {
+        if (!esc.evento || !esc.departamento) return
         const key = `${esc.evento.id}-${esc.departamento.id}`;
         if (escalasAgrupadas.has(key)) {
             const existente = escalasAgrupadas.get(key);
