@@ -43,7 +43,7 @@ export default async function EBDPage({
     ]
     const membroGrupoIds = membroData?.grupos?.map((g: any) => g.id) || []
 
-    const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas] = await Promise.all([
+    const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas, meusInteressesRaw] = await Promise.all([
         prisma.cursoEBD.findMany({
             where: { tenant_id: tenantId },
             include: {
@@ -55,6 +55,10 @@ export default async function EBDPage({
                 },
                 criado_por: { select: { first_name: true, last_name: true } },
                 aprovado_por: { select: { first_name: true, last_name: true } },
+                interesses: {
+                    include: { membro: { select: { id: true, first_name: true, last_name: true } } },
+                    orderBy: { created_at: 'desc' as const },
+                },
                 _count: { select: { turmas: true } },
             },
             orderBy: [{ ano: 'desc' }, { created_at: 'desc' }],
@@ -96,9 +100,19 @@ export default async function EBDPage({
             where: { membro_id: session.membroId, tenant_id: tenantId },
             select: { turma: { select: { curso_id: true } } },
         }),
+        // Interesses do membro actual
+        prisma.interesseCurso.findMany({
+            where: { membro_id: session.membroId, tenant_id: tenantId },
+            select: { curso_id: true, status: true },
+        }),
     ])
 
     const meusCursoIds = new Set(minhasMatriculas.map(m => m.turma.curso_id))
+    const meusInteresses: Record<string, string> = {}
+    for (const i of meusInteressesRaw) {
+        meusInteresses[i.curso_id] = i.status
+    }
+
 
     const cursosSerializados = cursos.map(c => ({
         ...c,
@@ -109,6 +123,7 @@ export default async function EBDPage({
         created_at: c.created_at.toISOString(),
         updated_at: c.updated_at.toISOString(),
         turmas: c.turmas.map(t => ({ ...t, created_at: t.created_at.toISOString() })),
+        interesses: c.interesses.map(i => ({ ...i, created_at: i.created_at.toISOString(), aprovado_em: i.aprovado_em?.toISOString() || null })),
     }))
 
     const aulasSerializadas = aulas.map(a => ({
@@ -136,6 +151,7 @@ export default async function EBDPage({
             podeGerir={podeGerir}
             membroId={session.membroId}
             meusCursoIds={Array.from(meusCursoIds)}
+            meusInteresses={meusInteresses}
             membroDeptIds={membroDeptIds}
             membroGrupoIds={membroGrupoIds}
         />

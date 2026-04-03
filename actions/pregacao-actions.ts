@@ -953,88 +953,33 @@ export async function agendarAberturaCurso(cursoId: string, dataAbertura: string
     }
 }
 
-// ── AUTO-INSCRIÇÃO PELO MEMBRO ──────────────────────────────────────────────
+// ── INTERESSE EM CURSO (pelo membro) ────────────────────────────────────────
 
-export async function inscreverMeCurso(cursoId: string) {
+export async function manifestarInteresse(cursoId: string, mensagem?: string) {
     try {
         const session = await requireAuth()
         const db = await getDb()
         const tenantId = Number((await headers()).get('x-tenant-id') || 0)
 
-        const curso = await db.cursoEBD.findUnique({
-            where: { id: cursoId },
-            include: {
-                turmas: {
-                    include: {
-                        _count: { select: { matriculas: true } },
-                        matriculas: { where: { membro_id: session.membroId }, select: { id: true } },
-                    },
-                },
-            },
-        })
-
+        const curso = await db.cursoEBD.findUnique({ where: { id: cursoId } })
         if (!curso) return { ok: false, error: 'Curso não encontrado.' }
-        if (!curso.aprovado) return { ok: false, error: 'Este curso ainda não foi aprovado.' }
+        if (!curso.aprovado) return { ok: false, error: 'Este curso ainda não está disponível.' }
 
-        // Verificar data de abertura
         if (curso.data_abertura_inscricoes && new Date() < new Date(curso.data_abertura_inscricoes)) {
-            return { ok: false, error: 'As inscrições ainda não abriram para este curso.' }
+            return { ok: false, error: 'As inscrições ainda não abriram.' }
         }
 
-        // Verificar se já está inscrito em alguma turma
-        const jaInscrito = curso.turmas.some(t => t.matriculas.length > 0)
-        if (jaInscrito) return { ok: false, error: 'Já está inscrito neste curso.' }
-
-        // Verificar restrição por departamento/grupo
-        if (curso.tipo_inscricao === 'DEPARTAMENTO' && curso.departamento_ids) {
-            const deptIds = curso.departamento_ids as number[]
-            const membro = await db.membro.findUnique({
-                where: { id: session.membroId },
-                select: { ministerios: { select: { departamento_id: true } } },
-            })
-            const membroDeptIds = membro?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []
-            const temAcesso = deptIds.some(id => membroDeptIds.includes(id))
-            if (!temAcesso) return { ok: false, error: 'Este curso é exclusivo para departamentos específicos.' }
-        }
-
-        if (curso.tipo_inscricao === 'GRUPO' && curso.grupo_ids) {
-            const grpIds = curso.grupo_ids as number[]
-            const membro = await db.membro.findUnique({
-                where: { id: session.membroId },
-                select: { grupos: { select: { id: true } } },
-            })
-            const membroGrpIds = membro?.grupos?.map((g: any) => g.id) || []
-            const temAcesso = grpIds.some(id => membroGrpIds.includes(id))
-            if (!temAcesso) return { ok: false, error: 'Este curso é exclusivo para grupos específicos.' }
-        }
-
-        // Encontrar turma com vagas (primeira disponível)
-        let turmaAlvo = curso.turmas.find(t => {
-            if (curso.vagas_maximas) {
-                const totalInscritos = curso.turmas.reduce((acc, tt) => acc + tt._count.matriculas, 0)
-                return totalInscritos < curso.vagas_maximas
-            }
-            return true
+        // Verificar se já manifestou interesse
+        const existente = await db.interesseCurso.findUnique({
+            where: { curso_id_membro_id: { curso_id: cursoId, membro_id: session.membroId } },
         })
+        if (existente) return { ok: false, error: 'Já manifestou interesse neste curso.' }
 
-        if (!turmaAlvo) {
-            // Se não há turma disponível, tentar a primeira turma
-            turmaAlvo = curso.turmas[0]
-            if (!turmaAlvo) return { ok: false, error: 'Este curso não tem turmas disponíveis.' }
-
-            // Verificar vagas
-            if (curso.vagas_maximas) {
-                const totalInscritos = curso.turmas.reduce((acc, t) => acc + t._count.matriculas, 0)
-                if (totalInscritos >= curso.vagas_maximas) {
-                    return { ok: false, error: 'Não há mais vagas disponíveis.' }
-                }
-            }
-        }
-
-        await db.matriculaEBD.create({
+        await db.interesseCurso.create({
             data: {
-                turma_id: turmaAlvo.id,
+                curso_id: cursoId,
                 membro_id: session.membroId,
+                mensagem: mensagem || null,
                 tenant_id: tenantId,
             },
         })
@@ -1042,32 +987,82 @@ export async function inscreverMeCurso(cursoId: string) {
         revalidatePath('/ebd')
         return { ok: true }
     } catch (error: any) {
-        console.error('Erro ao inscrever no curso:', error)
-        return { ok: false, error: error.message || 'Erro ao inscrever no curso.' }
+        console.error('Erro ao manifestar interesse:', error)
+        return { ok: false, error: error.message || 'Erro ao manifestar interesse.' }
     }
 }
 
-export async function cancelarInscricao(cursoId: string) {
+export async function cancelarInteresse(cursoId: string) {
     try {
         const session = await requireAuth()
         const db = await getDb()
 
-        // Encontrar a matrícula do membro neste curso
-        const matricula = await db.matriculaEBD.findFirst({
-            where: {
-                membro_id: session.membroId,
-                turma: { curso_id: cursoId },
-            },
+        await db.interesseCurso.delete({
+            where: { curso_id_membro_id: { curso_id: cursoId, membro_id: session.membroId } },
         })
-
-        if (!matricula) return { ok: false, error: 'Inscrição não encontrada.' }
-
-        await db.matriculaEBD.delete({ where: { id: matricula.id } })
 
         revalidatePath('/ebd')
         return { ok: true }
     } catch (error: any) {
-        console.error('Erro ao cancelar inscrição:', error)
-        return { ok: false, error: error.message || 'Erro ao cancelar inscrição.' }
+        console.error('Erro ao cancelar interesse:', error)
+        return { ok: false, error: error.message || 'Erro ao cancelar interesse.' }
+    }
+}
+
+// ── APROVAR / REJEITAR INTERESSE (pelo gestor) ──────────────────────────────
+
+export async function aprovarInteresse(interesseId: number, turmaId: string) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        const interesse = await db.interesseCurso.findUnique({ where: { id: interesseId } })
+        if (!interesse) return { ok: false, error: 'Interesse não encontrado.' }
+        if (interesse.status !== 'PENDENTE') return { ok: false, error: 'Este interesse já foi processado.' }
+
+        // Aprovar interesse
+        await db.interesseCurso.update({
+            where: { id: interesseId },
+            data: {
+                status: 'APROVADO',
+                aprovado_por_id: session.membroId,
+                aprovado_em: new Date(),
+                turma_id: turmaId,
+            },
+        })
+
+        // Matricular o membro na turma
+        await db.matriculaEBD.create({
+            data: {
+                turma_id: turmaId,
+                membro_id: interesse.membro_id,
+                tenant_id: tenantId,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao aprovar interesse:', error)
+        return { ok: false, error: error.message || 'Erro ao aprovar interesse.' }
+    }
+}
+
+export async function rejeitarInteresse(interesseId: number) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+
+        await db.interesseCurso.update({
+            where: { id: interesseId },
+            data: { status: 'REJEITADO', aprovado_por_id: session.membroId, aprovado_em: new Date() },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao rejeitar interesse:', error)
+        return { ok: false, error: error.message || 'Erro ao rejeitar interesse.' }
     }
 }

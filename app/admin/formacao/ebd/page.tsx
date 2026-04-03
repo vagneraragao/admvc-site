@@ -52,6 +52,10 @@ export default async function AdminEBDPage({
                 },
                 criado_por: { select: { first_name: true, last_name: true } },
                 aprovado_por: { select: { first_name: true, last_name: true } },
+                interesses: {
+                    include: { membro: { select: { id: true, first_name: true, last_name: true } } },
+                    orderBy: { created_at: 'desc' as const },
+                },
                 _count: { select: { turmas: true } },
             },
             orderBy: [{ ano: 'desc' }, { created_at: 'desc' }],
@@ -105,6 +109,7 @@ export default async function AdminEBDPage({
         created_at: c.created_at.toISOString(),
         updated_at: c.updated_at.toISOString(),
         turmas: c.turmas.map(t => ({ ...t, created_at: t.created_at.toISOString() })),
+        interesses: c.interesses.map(i => ({ ...i, created_at: i.created_at.toISOString(), aprovado_em: i.aprovado_em?.toISOString() || null })),
     }))
 
     const aulasSerializadas = aulas.map(a => ({

@@ -14,7 +14,8 @@ import {
 import {
     criarCurso, removerCurso, aprovarCurso,
     criarTurma, criarEBD, removerEBD, registarPresencasEBD,
-    inscreverMeCurso, cancelarInscricao
+    manifestarInteresse, cancelarInteresse,
+    aprovarInteresse, rejeitarInteresse
 } from '@/actions/pregacao-actions'
 
 const MESES = [
@@ -62,6 +63,14 @@ interface Curso {
     criado_por: { first_name: string; last_name: string } | null
     aprovado_por: { first_name: string; last_name: string } | null
     turmas: Turma[]; _count: { turmas: number }
+    interesses: Interesse[]
+}
+
+interface Interesse {
+    id: number; curso_id: string; membro_id: number
+    mensagem: string | null; status: string
+    created_at: string; aprovado_em: string | null; turma_id: string | null
+    membro: { id: number; first_name: string; last_name: string }
 }
 
 interface Aula {
@@ -81,14 +90,15 @@ interface Props {
     departamentos: DeptGrupo[]; grupos: DeptGrupo[]
     mes: number; ano: number; sermaoIdInicial: string | null
     podeGerir?: boolean; membroId: number
-    meusCursoIds: string[]; membroDeptIds: number[]; membroGrupoIds: number[]
+    meusCursoIds: string[]; meusInteresses?: Record<string, string>
+    membroDeptIds: number[]; membroGrupoIds: number[]
     basePath?: string
 }
 
 export default function EBDDashboard({
     cursos, aulas, membros, sermoes, departamentos, grupos,
     mes, ano, sermaoIdInicial, podeGerir = false, membroId,
-    meusCursoIds, membroDeptIds, membroGrupoIds, basePath = '/ebd'
+    meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ebd'
 }: Props) {
     const router = useRouter()
     const pathname = usePathname()
@@ -185,19 +195,36 @@ export default function EBDDashboard({
         else alert(res.error)
     }
 
-    async function handleInscrever(cursoId: string) {
+    async function handleInteresse(cursoId: string) {
         setLoadingInscricao(cursoId)
-        const res = await inscreverMeCurso(cursoId)
+        const res = await manifestarInteresse(cursoId)
         setLoadingInscricao(null)
         if (res.ok) router.refresh()
         else alert(res.error)
     }
 
-    async function handleCancelar(cursoId: string) {
-        if (!confirm('Cancelar a sua inscrição neste curso?')) return
+    async function handleCancelarInteresse(cursoId: string) {
+        if (!confirm('Cancelar o seu interesse neste curso?')) return
         setLoadingInscricao(cursoId)
-        const res = await cancelarInscricao(cursoId)
+        const res = await cancelarInteresse(cursoId)
         setLoadingInscricao(null)
+        if (res.ok) router.refresh()
+        else alert(res.error)
+    }
+
+    async function handleAprovarInteresse(interesseId: number, turmaId: string) {
+        setLoading(true)
+        const res = await aprovarInteresse(interesseId, turmaId)
+        setLoading(false)
+        if (res.ok) router.refresh()
+        else alert(res.error)
+    }
+
+    async function handleRejeitarInteresse(interesseId: number) {
+        if (!confirm('Rejeitar este interesse?')) return
+        setLoading(true)
+        const res = await rejeitarInteresse(interesseId)
+        setLoading(false)
         if (res.ok) router.refresh()
         else alert(res.error)
     }
@@ -208,6 +235,8 @@ export default function EBDDashboard({
         const st = STATUS_LABELS[curso.status] || STATUS_LABELS.PLANEADO
         const inscritos = totalInscritos(curso)
         const emBreve = cursoEmBreve(curso)
+        const interesseStatus = meusInteresses[curso.id] || null
+        const interessesPendentes = curso.interesses?.filter(i => i.status === 'PENDENTE') || []
         const jaInscrito = meusCursoIds.includes(curso.id)
 
         return (
@@ -262,13 +291,24 @@ export default function EBDDashboard({
                             <Eye size={10} /> Detalhes
                         </button>
 
-                        {/* Inscricao do membro */}
-                        {modo === 'disponivel' && !jaInscrito && !emBreve && !curso.is_externo && (
-                            <button onClick={() => handleInscrever(curso.id)} disabled={loadingInscricao === curso.id}
+                        {/* Interesse do membro */}
+                        {modo === 'disponivel' && !jaInscrito && !emBreve && !curso.is_externo && !interesseStatus && (
+                            <button onClick={() => handleInteresse(curso.id)} disabled={loadingInscricao === curso.id}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-figueira text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">
                                 {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <UserPlus size={10} />}
-                                Inscrever-me
+                                Tenho Interesse
                             </button>
+                        )}
+                        {/* Interesse enviado */}
+                        {interesseStatus === 'PENDENTE' && (
+                            <span className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-400">
+                                <Clock size={10} /> Interesse Enviado
+                            </span>
+                        )}
+                        {interesseStatus === 'REJEITADO' && (
+                            <span className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400">
+                                <XCircle size={10} /> Nao Aprovado
+                            </span>
                         )}
 
                         {/* Curso externo */}
@@ -284,20 +324,20 @@ export default function EBDDashboard({
                             </span>
                         )}
 
-                        {/* Meus cursos: cancelar ou ver turma */}
-                        {modo === 'meu' && (
-                            <>
-                                {curso.turmas[0] && (
-                                    <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
-                                        <GraduationCap size={10} /> Minha Turma
-                                    </Link>
-                                )}
-                                <button onClick={() => handleCancelar(curso.id)} disabled={loadingInscricao === curso.id}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto disabled:opacity-50">
-                                    {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
-                                    Cancelar
-                                </button>
-                            </>
+                        {/* Meus cursos: ver turma */}
+                        {modo === 'meu' && curso.turmas[0] && (
+                            <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                <GraduationCap size={10} /> Minha Turma
+                            </Link>
+                        )}
+
+                        {/* Cancelar interesse (se pendente) */}
+                        {interesseStatus === 'PENDENTE' && (
+                            <button onClick={() => handleCancelarInteresse(curso.id)} disabled={loadingInscricao === curso.id}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto disabled:opacity-50">
+                                {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
+                                Cancelar Interesse
+                            </button>
                         )}
 
                         {/* Gestao: aprovar, turmas, remover */}
@@ -321,6 +361,42 @@ export default function EBDDashboard({
                                     <Trash2 size={10} /> Remover
                                 </button>
                             </>
+                        )}
+
+                        {/* Interessados pendentes (gestao) */}
+                        {modo === 'gestao' && podeGerir && interessesPendentes.length > 0 && (
+                            <div className="w-full mt-3 pt-3 border-t border-soft space-y-2">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                                    <UserPlus size={10} /> {interessesPendentes.length} interessado{interessesPendentes.length !== 1 ? 's' : ''} pendente{interessesPendentes.length !== 1 ? 's' : ''}
+                                </p>
+                                {interessesPendentes.map(interesse => (
+                                    <div key={interesse.id} className="flex items-center gap-3 bg-bg border border-soft rounded-xl px-3 py-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-black text-fg">{interesse.membro.first_name} {interesse.membro.last_name}</p>
+                                            {interesse.mensagem && <p className="text-[8px] text-muted italic truncate">"{interesse.mensagem}"</p>}
+                                            <p className="text-[8px] text-muted/50">{new Date(interesse.created_at).toLocaleDateString('pt-PT')}</p>
+                                        </div>
+                                        {curso.turmas.length > 0 ? (
+                                            <select
+                                                onChange={e => { if (e.target.value) handleAprovarInteresse(interesse.id, e.target.value) }}
+                                                defaultValue=""
+                                                className="bg-bg2 border border-emerald-500/30 rounded-lg px-2 py-1.5 text-[8px] font-black text-emerald-400 focus:outline-none cursor-pointer"
+                                            >
+                                                <option value="" disabled>Aprovar em...</option>
+                                                {curso.turmas.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.nome}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <span className="text-[8px] text-muted">Crie uma turma primeiro</span>
+                                        )}
+                                        <button onClick={() => handleRejeitarInteresse(interesse.id)}
+                                            className="text-red-400 hover:text-red-300 p-1 transition-colors" title="Rejeitar">
+                                            <XCircle size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>

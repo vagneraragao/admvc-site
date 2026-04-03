@@ -93,6 +93,7 @@ model Tenant {
   matriculasEBD            MatriculaEBD[]
   atividadesEBD            AtividadeEBD[]
   notasEBD                 NotaEBD[]
+  interessesCurso          InteresseCurso[]
 }
 
 model Congregacao {
@@ -225,6 +226,8 @@ model Membro {
   notasEBD                   NotaEBD[]                   @relation("NotaEBD")
   cursosAprovados            CursoEBD[]                  @relation("AprovadorCurso")
   cursosCriados              CursoEBD[]                  @relation("CriadorCurso")
+  interessesCurso            InteresseCurso[]            @relation("InteresseCurso")
+  interessesAprovados        InteresseCurso[]            @relation("AprovadorInteresse")
 
   @@index([tenant_id])
   @@map("membros")
@@ -701,6 +704,34 @@ model PresencaEBD {
   @@unique([escola_biblica_id, membro_id])
 }
 
+model InteresseCurso {
+  id              Int              @id @default(autoincrement())
+  curso_id        String
+  membro_id       Int
+  mensagem        String?          // "Tenho interesse, sou do louvor"
+  status          StatusInteresse  @default(PENDENTE)
+  created_at      DateTime         @default(now())
+  aprovado_em     DateTime?
+  aprovado_por_id Int?
+  turma_id        String?          // Turma atribuida ao aprovar
+  tenant_id       Int
+  curso           CursoEBD         @relation(fields: [curso_id], references: [id], onDelete: Cascade)
+  membro          Membro           @relation("InteresseCurso", fields: [membro_id], references: [id])
+  aprovado_por    Membro?          @relation("AprovadorInteresse", fields: [aprovado_por_id], references: [id])
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+
+  @@unique([curso_id, membro_id])
+  @@index([tenant_id])
+  @@index([curso_id, status])
+  @@map("interesses_curso")
+}
+
+enum StatusInteresse {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
 // ── ESCOLA BÍBLICA DOMINICAL — Cursos e Turmas ──────────────────────────────
 
 model CursoEBD {
@@ -743,6 +774,7 @@ model CursoEBD {
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
   turmas          TurmaEBD[]
+  interesses      InteresseCurso[]
   congregacao     Congregacao?    @relation(fields: [congregacao_id], references: [id])
   tenant          Tenant          @relation(fields: [tenant_id], references: [id])
   aprovado_por    Membro?         @relation("AprovadorCurso", fields: [aprovado_por_id], references: [id])
