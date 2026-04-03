@@ -45,7 +45,7 @@ const INSCRICAO_LABELS: Record<string, string> = {
 
 interface Turma {
     id: string; nome: string; faixa_etaria: string | null
-    professor: { first_name: string; last_name: string }
+    professores: { id: number; first_name: string; last_name: string }[]
     _count: { matriculas: number; aulas: number; atividades: number }
 }
 
@@ -98,7 +98,7 @@ interface Props {
 export default function EBDDashboard({
     cursos, aulas, membros, sermoes, departamentos, grupos,
     mes, ano, sermaoIdInicial, podeGerir = false, membroId,
-    meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ebd'
+    meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ensino'
 }: Props) {
     const router = useRouter()
     const pathname = usePathname()
@@ -111,6 +111,7 @@ export default function EBDDashboard({
     const [modalTurma, setModalTurma] = useState<string | null>(null)
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [profsSelecionados, setProfsSelecionados] = useState<number[]>([])
     const [detalhesCurso, setDetalhesCurso] = useState<string | null>(null)
     const [loadingInscricao, setLoadingInscricao] = useState<string | null>(null)
 
@@ -435,7 +436,7 @@ export default function EBDDashboard({
                                     {c.turmas.map(t => (
                                         <div key={t.id} className="flex items-center gap-2 bg-bg border border-soft rounded-xl px-3 py-2 text-[10px]">
                                             <span className="font-black text-fg">{t.nome}</span>
-                                            <span className="text-muted">{t.professor.first_name} {t.professor.last_name}</span>
+                                            <span className="text-muted">{t.professores.map(p => `${p.first_name} ${p.last_name}`).join(', ')}</span>
                                             <span className="text-muted ml-auto"><Users size={9} className="inline mr-0.5" />{t._count.matriculas}</span>
                                         </div>
                                     ))}
@@ -565,13 +566,24 @@ export default function EBDDashboard({
             <div className="relative w-full max-w-lg bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                 <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Nova Turma</h2>
-                    <button onClick={() => setModalTurma(null)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
+                    <button onClick={() => { setModalTurma(null); setProfsSelecionados([]) }} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
                 </div>
-                <form onSubmit={handleCriarTurma} className="p-6 space-y-4">
+                <form onSubmit={e => { const hidden = e.currentTarget.querySelector('input[name="professor_ids"]') as HTMLInputElement; if (hidden) hidden.value = profsSelecionados.join(','); handleCriarTurma(e) }} className="p-6 space-y-4">
+                    <input type="hidden" name="professor_ids" value={profsSelecionados.join(',')} />
                     <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nome *</label><input name="nome" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Turma A, Adultos" /></div>
                     <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Faixa Etaria</label><input name="faixa_etaria" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: 18-35 anos" /></div>
-                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professor *</label><select name="professor_id" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="">Selecionar...</option>{membros.map(m => (<option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>))}</select></div>
-                    <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professores * <span className="text-figueira">({profsSelecionados.length})</span></label>
+                        <div className="bg-bg border border-soft rounded-2xl p-2 max-h-48 overflow-y-auto space-y-0.5">
+                            {membros.map(m => (
+                                <label key={m.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer transition-all text-xs ${profsSelecionados.includes(m.id) ? 'bg-figueira/10 text-figueira font-bold' : 'text-fg hover:bg-soft/30'}`}>
+                                    <input type="checkbox" checked={profsSelecionados.includes(m.id)} onChange={() => setProfsSelecionados(prev => prev.includes(m.id) ? prev.filter(x => x !== m.id) : [...prev, m.id])} className="w-3.5 h-3.5 rounded border-soft accent-figueira" />
+                                    {m.first_name} {m.last_name}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                    <button type="submit" disabled={loading || profsSelecionados.length === 0} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         {loading ? 'A criar...' : 'Criar Turma'}
                     </button>

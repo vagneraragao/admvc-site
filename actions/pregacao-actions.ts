@@ -427,7 +427,7 @@ export async function buscarRelatorioEBD() {
             .slice(0, 5)
             .map(([tema, count]) => ({ tema, count }))
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: { totalAulas, totalPresencas, membrosRanking, topTemas } }
     } catch (error: any) {
         console.error('Erro ao buscar relatório EBD:', error)
@@ -447,7 +447,7 @@ export async function listarCursos(ano?: number) {
             include: {
                 turmas: {
                     include: {
-                        professor: { select: { first_name: true, last_name: true } },
+                        professores: { select: { id: true, first_name: true, last_name: true } },
                         _count: { select: { matriculas: true, aulas: true, atividades: true } },
                     },
                 },
@@ -531,7 +531,7 @@ export async function criarCurso(formData: FormData) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: curso }
     } catch (error: any) {
         console.error('Erro ao criar curso:', error)
@@ -594,7 +594,7 @@ export async function atualizarCurso(id: string, formData: FormData) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: curso }
     } catch (error: any) {
         console.error('Erro ao atualizar curso:', error)
@@ -607,7 +607,7 @@ export async function removerCurso(id: string) {
         await requireAuth()
         const db = await getDb()
         await db.cursoEBD.delete({ where: { id } })
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao remover curso:', error)
@@ -626,10 +626,11 @@ export async function criarTurma(formData: FormData) {
         const nome = formData.get('nome') as string
         const faixa_etaria = formData.get('faixa_etaria') as string | null
         const curso_id = formData.get('curso_id') as string
-        const professor_id = Number(formData.get('professor_id'))
+        const professor_ids_raw = formData.get('professor_ids') as string
+        const professor_ids = professor_ids_raw ? professor_ids_raw.split(',').map(Number).filter(Boolean) : []
 
-        if (!nome || !curso_id || !professor_id) {
-            return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
+        if (!nome || !curso_id || professor_ids.length === 0) {
+            return { ok: false, error: 'Preencha todos os campos obrigatórios (incluindo pelo menos 1 professor).' }
         }
 
         const turma = await db.turmaEBD.create({
@@ -637,12 +638,12 @@ export async function criarTurma(formData: FormData) {
                 nome,
                 faixa_etaria: faixa_etaria || null,
                 curso_id,
-                professor_id,
+                professores: { connect: professor_ids.map(id => ({ id })) },
                 tenant_id: tenantId,
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: turma }
     } catch (error: any) {
         console.error('Erro ao criar turma:', error)
@@ -655,7 +656,7 @@ export async function removerTurma(id: string) {
         await requireAuth()
         const db = await getDb()
         await db.turmaEBD.delete({ where: { id } })
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao remover turma:', error)
@@ -672,7 +673,7 @@ export async function buscarTurma(id: string) {
             where: { id },
             include: {
                 curso: true,
-                professor: { select: { id: true, first_name: true, last_name: true } },
+                professores: { select: { id: true, first_name: true, last_name: true } },
                 matriculas: {
                     include: {
                         membro: { select: { id: true, first_name: true, last_name: true } },
@@ -731,7 +732,7 @@ export async function matricularAlunos(turmaId: string, membroIds: number[]) {
             })
         }
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: { matriculados: novos.length } }
     } catch (error: any) {
         console.error('Erro ao matricular alunos:', error)
@@ -748,7 +749,7 @@ export async function removerMatricula(turmaId: string, membroId: number) {
             where: { turma_id_membro_id: { turma_id: turmaId, membro_id: membroId } },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao remover matrícula:', error)
@@ -791,7 +792,7 @@ export async function criarAtividade(formData: FormData) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: atividade }
     } catch (error: any) {
         console.error('Erro ao criar atividade:', error)
@@ -804,7 +805,7 @@ export async function removerAtividade(id: string) {
         await requireAuth()
         const db = await getDb()
         await db.atividadeEBD.delete({ where: { id } })
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao remover atividade:', error)
@@ -837,7 +838,7 @@ export async function salvarNotas(atividadeId: string, notas: { membro_id: numbe
             })
         }
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao salvar notas:', error)
@@ -895,7 +896,7 @@ export async function responderAtividade(atividadeId: string, respostas: any[]) 
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, nota: notaAuto }
     } catch (error: any) {
         console.error('Erro ao responder atividade:', error)
@@ -981,7 +982,7 @@ export async function calcularAprovacao(turmaId: string) {
             })
         }
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true, data: resultados }
     } catch (error: any) {
         console.error('Erro ao calcular aprovação:', error)
@@ -1006,7 +1007,7 @@ export async function aprovarCurso(cursoId: string) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao aprovar curso:', error)
@@ -1026,7 +1027,7 @@ export async function agendarAberturaCurso(cursoId: string, dataAbertura: string
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao agendar abertura:', error)
@@ -1065,7 +1066,7 @@ export async function manifestarInteresse(cursoId: string, mensagem?: string) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao manifestar interesse:', error)
@@ -1082,7 +1083,7 @@ export async function cancelarInteresse(cursoId: string) {
             where: { curso_id_membro_id: { curso_id: cursoId, membro_id: session.membroId } },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao cancelar interesse:', error)
@@ -1122,7 +1123,7 @@ export async function aprovarInteresse(interesseId: number, turmaId: string) {
             },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao aprovar interesse:', error)
@@ -1140,7 +1141,7 @@ export async function rejeitarInteresse(interesseId: number) {
             data: { status: 'REJEITADO', aprovado_por_id: session.membroId, aprovado_em: new Date() },
         })
 
-        revalidatePath('/ebd')
+        revalidatePath('/ensino')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao rejeitar interesse:', error)

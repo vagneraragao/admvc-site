@@ -3,10 +3,11 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
+import { podeGerirCursos } from '@/lib/cursos-permissoes'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminEBDPage({
+export default async function EBDPage({
     searchParams,
 }: {
     searchParams: Promise<{ ano?: string; mes?: string; sermao_id?: string }>
@@ -25,7 +26,9 @@ export default async function AdminEBDPage({
     const inicio = new Date(ano, mes - 1, 1)
     const fim = new Date(ano, mes, 1)
 
-    // No admin, membro tem acesso total a departamentos/grupos (para ver restricoes)
+    const podeGerir = await podeGerirCursos(session.membroId, session.role)
+
+    // IDs do membro para verificar restricoes de inscricao
     const membroData = await prisma.membro.findUnique({
         where: { id: session.membroId },
         select: {
@@ -40,7 +43,7 @@ export default async function AdminEBDPage({
     ]
     const membroGrupoIds = membroData?.grupos?.map((g: any) => g.id) || []
 
-    const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas] = await Promise.all([
+    const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas, meusInteressesRaw] = await Promise.all([
         prisma.cursoEBD.findMany({
             where: { tenant_id: tenantId },
             include: {
@@ -92,13 +95,24 @@ export default async function AdminEBDPage({
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' },
         }),
+        // Matriculas do membro actual
         prisma.matriculaEBD.findMany({
             where: { membro_id: session.membroId, tenant_id: tenantId },
             select: { turma: { select: { curso_id: true } } },
         }),
+        // Interesses do membro actual
+        prisma.interesseCurso.findMany({
+            where: { membro_id: session.membroId, tenant_id: tenantId },
+            select: { curso_id: true, status: true },
+        }),
     ])
 
     const meusCursoIds = new Set(minhasMatriculas.map(m => m.turma.curso_id))
+    const meusInteresses: Record<string, string> = {}
+    for (const i of meusInteressesRaw) {
+        meusInteresses[i.curso_id] = i.status
+    }
+
 
     const cursosSerializados = cursos.map(c => ({
         ...c,
@@ -134,12 +148,12 @@ export default async function AdminEBDPage({
             mes={mes}
             ano={ano}
             sermaoIdInicial={params.sermao_id || null}
-            podeGerir={true}
+            podeGerir={podeGerir}
             membroId={session.membroId}
             meusCursoIds={Array.from(meusCursoIds)}
+            meusInteresses={meusInteresses}
             membroDeptIds={membroDeptIds}
             membroGrupoIds={membroGrupoIds}
-            basePath="/admin/formacao/ebd"
         />
     )
 }

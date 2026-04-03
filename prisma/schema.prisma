@@ -794,12 +794,11 @@ model TurmaEBD {
   nome            String            // "Adultos", "Jovens", "Criancas"
   faixa_etaria    String?           // "18-35 anos"
   curso_id        String
-  professor_id    Int
   congregacao_id  Int?
   tenant_id       Int
   created_at      DateTime          @default(now())
   curso           CursoEBD          @relation(fields: [curso_id], references: [id], onDelete: Cascade)
-  professor       Membro            @relation("ProfessorTurmaEBD", fields: [professor_id], references: [id])
+  professores     Membro[]          @relation("ProfessorTurmaEBD")
   congregacao     Congregacao?      @relation(fields: [congregacao_id], references: [id])
   tenant          Tenant            @relation(fields: [tenant_id], references: [id])
   matriculas      MatriculaEBD[]

@@ -90,7 +90,7 @@ interface Turma {
     nome: string
     faixa_etaria: string | null
     curso: Curso
-    professor: { id: number; first_name: string; last_name: string }
+    professores: { id: number; first_name: string; last_name: string }[]
     matriculas: Matricula[]
     aulas: Aula[]
     atividades: Atividade[]
@@ -105,7 +105,7 @@ interface Props {
     membroId?: number
 }
 
-export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ebd', membroId }: Props) {
+export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ensino', membroId }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -336,7 +336,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professor *</label>
-                            <select name="professor_id" required defaultValue={turma.professor.id} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
+                            <select name="professor_id" required defaultValue={turma.professores[0]?.id} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
                                 {membros.map(m => (<option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>))}
                             </select>
                         </div>
@@ -580,7 +580,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         {turma.nome}<span className="text-muted/20">.</span>
                     </h1>
                     <p className="text-[10px] font-bold text-muted">
-                        <User size={10} className="inline mr-1" />Prof. {turma.professor.first_name} {turma.professor.last_name}
+                        <User size={10} className="inline mr-1" />Prof. {turma.professores.map(p => `${p.first_name} ${p.last_name}`).join(', ')}
                         {turma.faixa_etaria && <span className="ml-3">{turma.faixa_etaria}</span>}
                     </p>
                 </header>

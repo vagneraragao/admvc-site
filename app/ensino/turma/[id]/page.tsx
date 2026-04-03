@@ -3,10 +3,11 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import TurmaClient from '@/components/pregacao/TurmaClient'
+import { podeGerirCursos } from '@/lib/cursos-permissoes'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminTurmaPage({
+export default async function TurmaPage({
     params,
 }: {
     params: Promise<{ id: string }>
@@ -18,6 +19,8 @@ export default async function AdminTurmaPage({
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
 
+    const podeGerir = await podeGerirCursos(session.membroId, session.role)
+
     const [turma, membros, sermoes] = await Promise.all([
         prisma.turmaEBD.findFirst({
             where: { id, tenant_id: tenantId },
@@ -25,7 +28,9 @@ export default async function AdminTurmaPage({
                 curso: true,
                 professores: { select: { id: true, first_name: true, last_name: true } },
                 matriculas: {
-                    include: { membro: { select: { id: true, first_name: true, last_name: true } } },
+                    include: {
+                        membro: { select: { id: true, first_name: true, last_name: true } },
+                    },
                     orderBy: { membro: { first_name: 'asc' } },
                 },
                 aulas: {
@@ -38,7 +43,10 @@ export default async function AdminTurmaPage({
                     orderBy: { data: 'desc' },
                 },
                 atividades: {
-                    include: { notas: true, _count: { select: { notas: true } } },
+                    include: {
+                        notas: true,
+                        _count: { select: { notas: true } },
+                    },
                     orderBy: { created_at: 'desc' },
                 },
             },
@@ -56,8 +64,9 @@ export default async function AdminTurmaPage({
         }),
     ])
 
-    if (!turma) redirect('/admin/formacao/ebd')
+    if (!turma) redirect('/ensino')
 
+    // Serialize dates
     const turmaSerializada = {
         ...turma,
         created_at: turma.created_at.toISOString(),
@@ -70,20 +79,33 @@ export default async function AdminTurmaPage({
             created_at: turma.curso.created_at.toISOString(),
             updated_at: turma.curso.updated_at.toISOString(),
         },
-        matriculas: turma.matriculas.map(m => ({ ...m, data_matricula: m.data_matricula.toISOString() })),
-        aulas: turma.aulas.map(a => ({ ...a, data: a.data.toISOString(), created_at: a.created_at.toISOString() })),
-        atividades: turma.atividades.map(a => ({ ...a, data_entrega: a.data_entrega?.toISOString() || null, created_at: a.created_at.toISOString() })),
+        matriculas: turma.matriculas.map(m => ({
+            ...m,
+            data_matricula: m.data_matricula.toISOString(),
+        })),
+        aulas: turma.aulas.map(a => ({
+            ...a,
+            data: a.data.toISOString(),
+            created_at: a.created_at.toISOString(),
+        })),
+        atividades: turma.atividades.map(a => ({
+            ...a,
+            data_entrega: a.data_entrega?.toISOString() || null,
+            created_at: a.created_at.toISOString(),
+        })),
     }
 
-    const sermoesSerializados = sermoes.map(s => ({ ...s, data_pregacao: s.data_pregacao.toISOString() }))
+    const sermoesSerializados = sermoes.map(s => ({
+        ...s,
+        data_pregacao: s.data_pregacao.toISOString(),
+    }))
 
     return (
         <TurmaClient
             turma={turmaSerializada}
             membros={membros}
             sermoes={sermoesSerializados}
-            podeGerir={true}
-            basePath="/admin/formacao/ebd"
+            podeGerir={podeGerir}
             membroId={session.membroId}
         />
     )
