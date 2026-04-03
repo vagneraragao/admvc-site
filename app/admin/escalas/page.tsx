@@ -171,6 +171,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                         isAdmin={true}
                         membros={membrosFormatados}
                         congregacoes={congregacoes}
+                        podeEditarRepertorio={true}
                     />
                 </div>
             </section>

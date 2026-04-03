@@ -17,13 +17,15 @@ export default function ListaEscalados({
     isAdmin,
     membros,
     isLouvor,
-    congregacoes
+    congregacoes,
+    podeEditarRepertorio
 }: {
     eventos: any[]
     isAdmin?: boolean
     membros?: any[]
     isLouvor?: boolean
     congregacoes?: { id: number; nome: string; cidade: string }[]
+    podeEditarRepertorio?: boolean
 }) {
     const [editingId, setEditingId] = useState<number | null>(null)
     const [isPending, setIsPending] = useState(false)
@@ -330,7 +332,7 @@ export default function ListaEscalados({
                                         <Music size={14} className="text-figueira" />
                                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-fg">Gestão Musical</h4>
                                     </div>
-                                    <ModalRepertorio eventoId={evento.id} repertorioInical={evento.repertorio || []} podeEditar={true} />
+                                    <ModalRepertorio eventoId={evento.id} repertorioInical={evento.repertorio || []} podeEditar={!!podeEditarRepertorio} />
                                     <SecaoMensagemEvento
                                         eventoId={evento.id}
                                         eventoNome={evento.nome}

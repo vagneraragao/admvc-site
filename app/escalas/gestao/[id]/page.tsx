@@ -176,6 +176,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                         isAdmin={eAdmin}
                         membros={membrosFormatados}
                         isLouvor={isLouvor}
+                        podeEditarRepertorio={eAdmin || eLiderModel || !!vinculoLider}
                     />
                 </div>
             </section>
