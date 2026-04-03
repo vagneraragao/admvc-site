@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import {
     X, Users, Clock, BookOpen, Camera,
@@ -67,6 +68,15 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
 
     const [salvandoHorario, setSalvandoHorario] = useState(false)
     const [sucessoHorario, setSucessoHorario] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => { setMounted(true) }, [])
+
+    useEffect(() => {
+        if (aberto) document.body.style.overflow = 'hidden'
+        else document.body.style.overflow = ''
+        return () => { document.body.style.overflow = '' }
+    }, [aberto])
 
     // Lightbox
     const [fotoAmpliada, setFotoAmpliada] = useState<{ url: string; tema: string } | null>(null)
@@ -193,8 +203,8 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
                 {isLider ? 'Gerir Grupo' : 'Ver Encontros'}
             </button>
 
-            {aberto && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setAberto(false)}>
+            {mounted && aberto && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setAberto(false)}>
                     <div className="bg-bg w-full max-w-2xl rounded-[2.5rem] shadow-2xl border border-soft flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh]" onClick={e => e.stopPropagation()}>
 
                         {/* CABEÇALHO */}
@@ -423,33 +433,17 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
 
                             {/* HORÁRIO */}
                             {aba === 'horario' && isLider && (
-                                <form onSubmit={handleAtualizarHorario} className="space-y-5 animate-in fade-in duration-200">
-                                    <div className="bg-bg2 border border-soft rounded-2xl p-5">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Configuração Atual</p>
-                                        <p className="text-sm font-black text-fg uppercase italic mt-1">{grupo.dia_semana} às {grupo.horario}</p>
-                                    </div>
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest">Dia da Semana</label>
-                                            <select name="dia_semana" defaultValue={grupo.dia_semana} required className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none appearance-none">
-                                                {['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'].map(d => <option key={d} value={d}>{d}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest">Horário</label>
-                                            <input type="time" name="horario" defaultValue={grupo.horario} required className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none" />
-                                        </div>
-                                    </div>
-                                    <button type="submit" disabled={salvandoHorario || sucessoHorario}
-                                        className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-60 shadow-md ${sucessoHorario ? 'bg-emerald-500 text-white' : 'bg-figueira text-white hover:brightness-110'}`}>
-                                        {salvandoHorario ? <><Loader2 size={14} className="animate-spin" /> A guardar...</> : sucessoHorario ? <><Check size={14} /> Atualizado!</> : <><Pencil size={14} /> Atualizar Horário</>}
-                                    </button>
-                                </form>
+                                <HorarioForm
+                                    grupo={grupo}
+                                    salvando={salvandoHorario}
+                                    sucesso={sucessoHorario}
+                                    onSubmit={handleAtualizarHorario}
+                                />
                             )}
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </>
     )
 }
@@ -459,5 +453,112 @@ function TabBtn({ label, icon, ativo, onClick, destaque }: { label: string; icon
         <button onClick={onClick} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${ativo ? (destaque ? 'bg-figueira text-white shadow-md' : 'bg-fg text-bg shadow-sm') : 'text-muted hover:text-fg hover:bg-soft/50'}`}>
             {icon} {label}
         </button>
+    )
+}
+
+const DIAS_SEMANA = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo']
+
+const FREQUENCIAS = [
+    { id: 'semanal', label: 'Semanal' },
+    { id: 'quinzenal', label: 'Quinzenal' },
+    { id: 'mensal', label: 'Mensal' },
+    { id: 'data', label: 'Data específica' },
+]
+
+function parseFrequencia(diaSemana: string): { freq: string; dia: string; dataEsp: string } {
+    if (!diaSemana) return { freq: 'semanal', dia: 'Segunda-feira', dataEsp: '' }
+    if (diaSemana.startsWith('Quinzenal - ')) return { freq: 'quinzenal', dia: diaSemana.replace('Quinzenal - ', ''), dataEsp: '' }
+    if (diaSemana.startsWith('Mensal - ')) return { freq: 'mensal', dia: diaSemana.replace('Mensal - ', ''), dataEsp: '' }
+    if (/^\d{4}-\d{2}-\d{2}/.test(diaSemana)) return { freq: 'data', dia: '', dataEsp: diaSemana }
+    return { freq: 'semanal', dia: diaSemana, dataEsp: '' }
+}
+
+function HorarioForm({ grupo, salvando, sucesso, onSubmit }: {
+    grupo: any; salvando: boolean; sucesso: boolean; onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+}) {
+    const parsed = parseFrequencia(grupo.dia_semana)
+    const [freq, setFreq] = useState(parsed.freq)
+    const [dia, setDia] = useState(parsed.dia || 'Segunda-feira')
+    const [dataEsp, setDataEsp] = useState(parsed.dataEsp)
+    const [horario, setHorario] = useState(grupo.horario || '')
+
+    // Compor o valor final de dia_semana
+    const diaSemanaValue = freq === 'semanal' ? dia
+        : freq === 'quinzenal' ? `Quinzenal - ${dia}`
+        : freq === 'mensal' ? `Mensal - ${dia}`
+        : dataEsp
+
+    // Label actual para mostrar
+    const labelAtual = grupo.dia_semana
+        ? `${grupo.dia_semana} às ${grupo.horario}`
+        : 'Não definido'
+
+    return (
+        <form onSubmit={onSubmit} className="space-y-4 animate-in fade-in duration-200">
+            <div className="bg-bg2 border border-soft rounded-2xl p-4">
+                <p className="text-[8px] font-black uppercase tracking-widest text-muted">Atual</p>
+                <p className="text-sm font-black text-fg uppercase italic mt-0.5">{labelAtual}</p>
+            </div>
+
+            {/* FREQUÊNCIA */}
+            <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-muted uppercase tracking-widest">Frequencia</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {FREQUENCIAS.map(f => (
+                        <button key={f.id} type="button" onClick={() => setFreq(f.id)}
+                            className={`py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${freq === f.id ? 'bg-figueira/10 border-figueira/30 text-figueira' : 'bg-bg border-soft text-muted hover:border-figueira/20'}`}>
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* DIA DA SEMANA (para semanal, quinzenal, mensal) */}
+            {freq !== 'data' && (
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-muted uppercase tracking-widest">
+                        {freq === 'mensal' ? 'Dia do mes (ex: 1º Sabado)' : 'Dia da semana'}
+                    </label>
+                    {freq === 'mensal' ? (
+                        <input type="text" value={dia} onChange={e => setDia(e.target.value)}
+                            placeholder="Ex: 1º Sábado, Último Domingo..."
+                            className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted/40" />
+                    ) : (
+                        <select value={dia} onChange={e => setDia(e.target.value)}
+                            className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold text-fg focus:border-figueira outline-none">
+                            {DIAS_SEMANA.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    )}
+                </div>
+            )}
+
+            {/* DATA ESPECÍFICA */}
+            {freq === 'data' && (
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-muted uppercase tracking-widest">Data do proximo encontro</label>
+                    <input type="date" value={dataEsp} onChange={e => setDataEsp(e.target.value)}
+                        required
+                        className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold text-fg focus:border-figueira outline-none" />
+                </div>
+            )}
+
+            {/* HORÁRIO */}
+            <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-muted uppercase tracking-widest">Horario</label>
+                <input type="time" value={horario} onChange={e => setHorario(e.target.value)}
+                    name="horario" required
+                    className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold text-fg focus:border-figueira outline-none" />
+            </div>
+
+            {/* Hidden fields para o form */}
+            <input type="hidden" name="dia_semana" value={diaSemanaValue} />
+
+            <button type="submit" disabled={salvando || sucesso}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-60 shadow-md ${sucesso ? 'bg-emerald-500 text-white' : 'bg-figueira text-white hover:brightness-110'}`}>
+                {salvando ? <><Loader2 size={14} className="animate-spin" /> A guardar...</>
+                    : sucesso ? <><Check size={14} /> Atualizado!</>
+                    : <><Pencil size={14} /> Guardar</>}
+            </button>
+        </form>
     )
 }

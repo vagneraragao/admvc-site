@@ -449,65 +449,77 @@ export default async function DashboardMembro({
                                 )}
                             </div>
 
-                            <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="grid sm:grid-cols-2 gap-3">
                                 {listaEscalas.length > 0 ? (
-                                    listaEscalas.map((esc: any) => (
-                                        <div key={esc.id} className={`bg-bg2 border p-5 rounded-[2rem] shadow-sm transition-all flex flex-col gap-4
-                                            ${esc.confirmado ? 'border-emerald-500/20' : 'border-soft hover:border-figueira/30'}`}>
+                                    listaEscalas.map((esc: any) => {
+                                        const statusBadge = esc.motivo_recusa
+                                            ? { label: 'Indisponivel', cor: 'bg-red-500/10 text-red-500 border-red-500/20' }
+                                            : esc.confirmado
+                                                ? { label: 'Confirmado', cor: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' }
+                                                : { label: 'Pendente', cor: 'bg-orange-500/10 text-orange-600 border-orange-500/20' }
 
-                                            {/* CABEÇALHO */}
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-3 rounded-2xl text-center shadow-sm min-w-[54px] ${esc.confirmado ? 'bg-emerald-500 text-white' : 'bg-fg text-bg'}`}>
-                                                    <span className="block text-[7px] font-black uppercase opacity-70">
-                                                        {new Date(esc.evento.data).toLocaleDateString('pt-PT', { month: 'short' })}
+                                        return (
+                                            <details key={esc.id} className={`bg-bg2 border rounded-2xl shadow-sm transition-all group/esc
+                                                ${esc.confirmado ? 'border-emerald-500/20' : 'border-soft hover:border-figueira/30'}`}>
+
+                                                {/* RESUMO COLAPSADO */}
+                                                <summary className="flex items-center gap-3 p-4 cursor-pointer list-none select-none">
+                                                    <div className={`p-2 rounded-xl text-center shrink-0 min-w-[44px] ${esc.confirmado ? 'bg-emerald-500 text-white' : 'bg-fg text-bg'}`}>
+                                                        <span className="block text-[6px] font-black uppercase opacity-70">
+                                                            {new Date(esc.evento.data).toLocaleDateString('pt-PT', { month: 'short' })}
+                                                        </span>
+                                                        <span className="text-lg block font-black italic leading-tight">
+                                                            {new Date(esc.evento.data).toLocaleDateString('pt-PT', { day: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h5 className="font-black uppercase italic text-fg text-[11px] truncate">{esc.evento.nome}</h5>
+                                                        <span className="text-[8px] font-bold text-figueira uppercase tracking-widest">{esc.departamento.nome}</span>
+                                                    </div>
+                                                    <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0 ${statusBadge.cor}`}>
+                                                        {statusBadge.label}
                                                     </span>
-                                                    <span className="text-xl block font-black italic leading-tight">
-                                                        {new Date(esc.evento.data).toLocaleDateString('pt-PT', { day: '2-digit' })}
-                                                    </span>
+                                                </summary>
+
+                                                {/* CONTEÚDO EXPANDIDO */}
+                                                <div className="px-4 pb-4 space-y-3 animate-in fade-in duration-200 border-t border-soft mt-0 pt-3">
+                                                    {/* FUNÇÃO E HORÁRIO */}
+                                                    <div className="space-y-1.5">
+                                                        {esc.funcoes?.filter(Boolean).length > 0 && (
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-figueira shrink-0" />
+                                                                {esc.funcoes.join(' · ')}
+                                                            </p>
+                                                        )}
+                                                        {esc.horario && (
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                                                                Chegar às {esc.horario}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* REPERTÓRIO (louvor) */}
+                                                    {(esc.departamento.nome.toLowerCase().includes('louvor') || esc.departamento.nome.toLowerCase().includes('música')) && (
+                                                        <>
+                                                            <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
+                                                            <BotaoSetlistPalco eventoId={esc.evento.id} totalMusicas={esc.evento.repertorio?.length || 0} />
+                                                        </>
+                                                    )}
+
+                                                    {/* BOTÃO DETALHES */}
+                                                    <ModalDetalhesEscala escala={esc} />
+
+                                                    {/* BOTÕES DE CONFIRMAÇÃO */}
+                                                    <BotoesEscala
+                                                        escalaIds={esc.ids}
+                                                        confirmado={esc.confirmado}
+                                                        motivoRecusa={esc.motivo_recusa ?? null}
+                                                    />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <h5 className="font-black uppercase italic text-fg text-xs truncate">{esc.evento.nome}</h5>
-                                                    <span className="text-[8px] font-bold text-figueira uppercase bg-figueira/10 px-2 py-0.5 rounded-md border border-figueira/20 inline-block mt-1">
-                                                        {esc.departamento.nome}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* FUNÇÃO E HORÁRIO */}
-                                            <div className="space-y-1.5 px-1">
-                                                {esc.funcoes?.filter(Boolean).length > 0 && (
-                                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-figueira shrink-0" />
-                                                        {esc.funcoes.join(' · ')}
-                                                    </p>
-                                                )}
-                                                {esc.horario && (
-                                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                                                        Chegar às {esc.horario}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {/* REPERTÓRIO (louvor) */}
-                                            {(esc.departamento.nome.toLowerCase().includes('louvor') || esc.departamento.nome.toLowerCase().includes('música')) && (
-                                                <>
-                                                    <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
-                                                    <BotaoSetlistPalco eventoId={esc.evento.id} totalMusicas={esc.evento.repertorio?.length || 0} />
-                                                </>
-                                            )}
-
-                                            {/* BOTÃO DETALHES */}
-                                            <ModalDetalhesEscala escala={esc} />
-
-                                            {/* BOTÕES DE CONFIRMAÇÃO */}
-                                            <BotoesEscala
-                                                escalaIds={esc.ids}
-                                                confirmado={esc.confirmado}
-                                                motivoRecusa={esc.motivo_recusa ?? null}
-                                            />
-                                        </div>
-                                    ))
+                                            </details>
+                                        )
+                                    })
                                 ) : (
                                     <AvisoEscalaVazia />
                                 )}

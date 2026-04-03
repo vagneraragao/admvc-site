@@ -92,6 +92,15 @@ model Congregacao {
   nome          String
   cidade        String
   endereco      String
+  codigo_postal String?
+  distrito      String?
+  pais          String?                @default("Portugal")
+  latitude      Float?
+  longitude     Float?
+  pastor        String?                // Nome do pastor responsavel
+  co_pastor     String?                // Co-pastor ou auxiliar
+  telefone      String?
+  email         String?
   tenant_id     Int
   createdAt     DateTime               @default(now())
   tenant              Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)

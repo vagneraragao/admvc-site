@@ -919,10 +919,16 @@ export async function criarCongregacao(formData: FormData) {
 
         await db.congregacao.create({
             data: {
-                nome,
-                cidade,
-                endereco,
-                tenant_id: tenantId // O TypeScript pede, a nossa extensão substitui!
+                nome, cidade, endereco,
+                codigo_postal: (formData.get('codigo_postal') as string)?.trim() || null,
+                distrito: (formData.get('distrito') as string)?.trim() || null,
+                pastor: (formData.get('pastor') as string)?.trim() || null,
+                co_pastor: (formData.get('co_pastor') as string)?.trim() || null,
+                telefone: (formData.get('telefone') as string)?.trim() || null,
+                email: (formData.get('email') as string)?.trim() || null,
+                latitude: formData.get('latitude') ? Number(formData.get('latitude')) || null : null,
+                longitude: formData.get('longitude') ? Number(formData.get('longitude')) || null : null,
+                tenant_id: tenantId
             }
         });
 
@@ -946,7 +952,17 @@ export async function atualizarCongregacao(id: number, formData: FormData) {
 
         await db.congregacao.update({
             where: { id },
-            data: { nome, cidade, endereco } // No update não precisamos do tenant_id
+            data: {
+                nome, cidade, endereco,
+                codigo_postal: (formData.get('codigo_postal') as string)?.trim() || null,
+                distrito: (formData.get('distrito') as string)?.trim() || null,
+                pastor: (formData.get('pastor') as string)?.trim() || null,
+                co_pastor: (formData.get('co_pastor') as string)?.trim() || null,
+                telefone: (formData.get('telefone') as string)?.trim() || null,
+                email: (formData.get('email') as string)?.trim() || null,
+                latitude: formData.get('latitude') ? Number(formData.get('latitude')) || null : null,
+                longitude: formData.get('longitude') ? Number(formData.get('longitude')) || null : null,
+            }
         });
 
         revalidatePath('/admin/congregacoes');

@@ -7,12 +7,13 @@ import Link from 'next/link'
 import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
-    Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar
+    Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
+import ModalRelatorioLouvor from '@/components/louvor/ModalRelatorioLouvor'
 import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
 import PushNotificationSetup from '@/components/ui/PushNotificationSetup'
 
@@ -122,6 +123,9 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                     <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
                                     <ModalIndisponibilidade isMenuItem />
                                     <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
+                                    {(permissoes.isLouvor || permissoes.isMidia) && (
+                                        <ModalRelatorioLouvor />
+                                    )}
                                     <Link href="/membros/agendar" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                         <Calendar size={12} className="text-figueira" /> Agendar Reuniao
                                     </Link>
@@ -172,6 +176,11 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                             )}
                         </div>
 
+                        <Link href="/membros/mural"
+                            className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all"
+                            title="Mural">
+                            <MessageSquare size={14} />
+                        </Link>
                         <PushNotificationSetup />
                         <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
 

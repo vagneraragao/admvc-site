@@ -109,7 +109,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
             {/* ALERTA COMPLIANCE */}
             {membrosPendentesDocs.length > 0 && (
-                <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <AlertTriangle size={16} className="text-orange-500 shrink-0" />
                         <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">

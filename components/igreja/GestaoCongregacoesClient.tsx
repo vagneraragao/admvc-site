@@ -182,14 +182,54 @@ export default function GestaoCongregacoesClient({
                                 <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Nome</label>
                                 <input name="nome" defaultValue={selecionada?.nome} required className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: Campus Norte" />
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Cidade</label>
-                                    <input name="cidade" defaultValue={selecionada?.cidade} required className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: Lisboa" />
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Endereco</label>
                                     <input name="endereco" defaultValue={selecionada?.endereco} required className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Rua, No..." />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Cidade</label>
+                                    <input name="cidade" defaultValue={selecionada?.cidade} required className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: Figueira da Foz" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Codigo Postal</label>
+                                    <input name="codigo_postal" defaultValue={selecionada?.codigo_postal} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: 3080-001" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Distrito</label>
+                                    <input name="distrito" defaultValue={selecionada?.distrito} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: Coimbra" />
+                                </div>
+                            </div>
+
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted mt-4 mb-2 ml-4">Lideranca</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Pastor Responsavel</label>
+                                    <input name="pastor" defaultValue={selecionada?.pastor} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Nome completo" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Co-Pastor / Auxiliar</label>
+                                    <input name="co_pastor" defaultValue={selecionada?.co_pastor} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Nome completo" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Telefone</label>
+                                    <input name="telefone" defaultValue={selecionada?.telefone} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="+351 912 345 678" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Email</label>
+                                    <input name="email" type="email" defaultValue={selecionada?.email} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="congregacao@email.com" />
+                                </div>
+                            </div>
+
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted mt-4 mb-2 ml-4">Geolocalizacao (opcional)</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Latitude</label>
+                                    <input name="latitude" type="number" step="any" defaultValue={selecionada?.latitude} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: 40.1508" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-muted ml-4 tracking-widest">Longitude</label>
+                                    <input name="longitude" type="number" step="any" defaultValue={selecionada?.longitude} className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-xs font-bold text-fg outline-none focus:border-figueira transition-all" placeholder="Ex: -8.8613" />
                                 </div>
                             </div>
                             <div className="pt-4 border-t border-soft flex gap-3">

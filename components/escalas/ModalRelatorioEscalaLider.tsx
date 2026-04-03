@@ -68,7 +68,7 @@ export default function ModalRelatorioEscalaLider({
     const statsPorMembro = equipaDoDepartamento.map(({ membro }) => {
         const escalasMembro = escalas.filter(e => e.membro_id === membro.id)
         const confirmados = escalasMembro.filter(e => e.confirmado).length
-        const cancelados = escalasMembro.filter(e => !e.confirmado && e.motivo_recusa).length
+        const indisponiveis = escalasMembro.filter(e => !e.confirmado && e.motivo_recusa).length
         const pendentes = escalasMembro.filter(e => !e.confirmado && !e.motivo_recusa).length
         const total = escalasMembro.length
         const taxa = total > 0 ? Math.round((confirmados / total) * 100) : 0
@@ -80,12 +80,12 @@ export default function ModalRelatorioEscalaLider({
             )[0].evento.data)
             : null
 
-        return { membro, total, confirmados, cancelados, pendentes, taxa, ultimaEscala, escalas: escalasMembro }
+        return { membro, total, confirmados, indisponiveis, pendentes, taxa, ultimaEscala, escalas: escalasMembro }
     }).sort((a, b) => b.total - a.total)
 
     const totalGeral = escalas.length
     const totalConfirmados = escalas.filter(e => e.confirmado).length
-    const totalCancelados = escalas.filter(e => !e.confirmado && e.motivo_recusa).length
+    const totalIndisponiveis = escalas.filter(e => !e.confirmado && e.motivo_recusa).length
     const taxaGeral = totalGeral > 0 ? Math.round((totalConfirmados / totalGeral) * 100) : 0
     const membrosInativos = statsPorMembro.filter(s => s.total === 0)
 
@@ -144,7 +144,7 @@ export default function ModalRelatorioEscalaLider({
         texto += `🔢 *Resumo do Período*\n`
         texto += `• Total de escalas: ${totalGeral}\n`
         texto += `• Confirmações: ${totalConfirmados} (${taxaGeral}%)\n`
-        texto += `• Cancelamentos: ${totalCancelados}\n\n`
+        texto += `• Indisponibilidades: ${totalIndisponiveis}\n\n`
 
         if (membrosInativos.length > 0) {
             texto += `⚠️ *Sem escalas este mês:*\n`
@@ -256,7 +256,7 @@ export default function ModalRelatorioEscalaLider({
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 kpis">
                                 <KpiCard label="Total escalas" value={totalGeral} cor="blue" icon={<BarChart2 size={14} />} />
                                 <KpiCard label="Confirmações" value={totalConfirmados} cor="emerald" icon={<CheckCircle2 size={14} />} />
-                                <KpiCard label="Cancelamentos" value={totalCancelados} cor="red" icon={<XCircle size={14} />} />
+                                <KpiCard label="Indisponibilidades" value={totalIndisponiveis} cor="red" icon={<XCircle size={14} />} />
                                 <KpiCard
                                     label="Taxa confirmação"
                                     value={`${taxaGeral}%`}
@@ -319,9 +319,9 @@ export default function ModalRelatorioEscalaLider({
                                                                         <CheckCircle2 size={9} /> {stats.confirmados}
                                                                     </span>
                                                                 )}
-                                                                {stats.cancelados > 0 && (
+                                                                {stats.indisponiveis > 0 && (
                                                                     <span className="text-[8px] font-black text-red-500 bg-red-500/10 border border-red-500/15 px-2 py-0.5 rounded-lg flex items-center gap-1 badge badge-red">
-                                                                        <XCircle size={9} /> {stats.cancelados}
+                                                                        <XCircle size={9} /> {stats.indisponiveis}
                                                                     </span>
                                                                 )}
                                                                 {stats.pendentes > 0 && (
@@ -345,10 +345,10 @@ export default function ModalRelatorioEscalaLider({
                                                                             style={{ width: `${(stats.confirmados / stats.total) * 100}%` }}
                                                                         />
                                                                     )}
-                                                                    {stats.cancelados > 0 && (
+                                                                    {stats.indisponiveis > 0 && (
                                                                         <div
                                                                             className="bg-red-400 h-full transition-all duration-700"
-                                                                            style={{ width: `${(stats.cancelados / stats.total) * 100}%` }}
+                                                                            style={{ width: `${(stats.indisponiveis / stats.total) * 100}%` }}
                                                                         />
                                                                     )}
                                                                     {stats.pendentes > 0 && (
@@ -461,7 +461,7 @@ export default function ModalRelatorioEscalaLider({
                                         {[
                                             { cor: 'bg-emerald-500', label: 'Confirmado' },
                                             { cor: 'bg-orange-400', label: 'Pendente' },
-                                            { cor: 'bg-red-400', label: 'Cancelado' },
+                                            { cor: 'bg-red-400', label: 'Indisponivel' },
                                         ].map(({ cor, label }) => (
                                             <div key={label} className="flex items-center gap-1.5">
                                                 <div className={`w-3 h-3 rounded-full ${cor}`} />

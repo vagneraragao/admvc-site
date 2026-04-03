@@ -55,7 +55,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
             membro: Props['equipaDoDepartamento'][0]['membro']
             total: number
             confirmados: number
-            cancelados: number
+            indisponiveis: number
             pendentes: number
             ultimaEscala: Date | null
             semanasSemEscalar: number
@@ -68,7 +68,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                 membro,
                 total: 0,
                 confirmados: 0,
-                cancelados: 0,
+                indisponiveis: 0,
                 pendentes: 0,
                 ultimaEscala: null,
                 semanasSemEscalar: 0,
@@ -87,7 +87,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                 stats.ultimaEscala = dataEvento
             }
             if (esc.confirmado) stats.confirmados++
-            else if (esc.motivo_recusa) stats.cancelados++
+            else if (esc.motivo_recusa) stats.indisponiveis++
             else stats.pendentes++
         })
 
@@ -250,7 +250,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                                     mesAtual.ano === hoje.getFullYear()
 
                                 const confirmados = escalasNoDia.filter(e => e.confirmado).length
-                                const cancelados = escalasNoDia.filter(e => !e.confirmado && e.motivo_recusa).length
+                                const indisponiveis = escalasNoDia.filter(e => !e.confirmado && e.motivo_recusa).length
                                 const pendentes = escalasNoDia.filter(e => !e.confirmado && !e.motivo_recusa).length
 
                                 return (
@@ -285,9 +285,9 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                                                             <Clock size={8} /> {pendentes}
                                                         </span>
                                                     )}
-                                                    {cancelados > 0 && (
+                                                    {indisponiveis > 0 && (
                                                         <span className="text-[7px] font-black bg-red-500/15 text-red-700 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                                                            <XCircle size={8} /> {cancelados}
+                                                            <XCircle size={8} /> {indisponiveis}
                                                         </span>
                                                     )}
                                                 </div>
@@ -323,7 +323,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                         {[
                             { cor: 'bg-emerald-500', label: 'Confirmado' },
                             { cor: 'bg-orange-400', label: 'Pendente' },
-                            { cor: 'bg-red-400', label: 'Cancelado' },
+                            { cor: 'bg-red-400', label: 'Indisponivel' },
                         ].map(({ cor, label }) => (
                             <div key={label} className="flex items-center gap-1.5">
                                 <div className={`w-3 h-3 rounded-full ${cor}`} />
@@ -348,7 +348,7 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                                 icon={<CheckCircle2 size={14} />}
                             />
                             <ResumoCard
-                                label="Cancelamentos"
+                                label="Indisponibilidades"
                                 value={escalasMes.filter(e => e.motivo_recusa).length}
                                 cor="red"
                                 icon={<XCircle size={14} />}
@@ -389,8 +389,8 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                             const taxaConfirmacao = stats.total > 0
                                 ? Math.round((stats.confirmados / stats.total) * 100)
                                 : 0
-                            const taxaCancelamento = stats.total > 0
-                                ? Math.round((stats.cancelados / stats.total) * 100)
+                            const taxaIndisponibilidade = stats.total > 0
+                                ? Math.round((stats.indisponiveis / stats.total) * 100)
                                 : 0
                             const isAlerta = stats.semanasSemEscalar >= 3
 
@@ -454,19 +454,19 @@ export default function RelatorioEscalasDepartamento({ escalas, equipaDoDepartam
                                                     </div>
                                                 </div>
 
-                                                {/* Cancelamentos */}
-                                                {stats.cancelados > 0 && (
+                                                {/* Indisponibilidades */}
+                                                {stats.indisponiveis > 0 && (
                                                     <div className="space-y-1">
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[8px] font-black uppercase tracking-widest text-muted flex items-center gap-1">
-                                                                <XCircle size={9} className="text-red-400" /> Cancelamentos
+                                                                <XCircle size={9} className="text-red-400" /> Indisponibilidades
                                                             </span>
-                                                            <span className="text-[8px] font-black text-red-500">{stats.cancelados}/{stats.total} ({taxaCancelamento}%)</span>
+                                                            <span className="text-[8px] font-black text-red-500">{stats.indisponiveis}/{stats.total} ({taxaIndisponibilidade}%)</span>
                                                         </div>
                                                         <div className="h-1.5 bg-soft rounded-full overflow-hidden">
                                                             <div
                                                                 className="h-full bg-red-400 rounded-full transition-all duration-700"
-                                                                style={{ width: `${taxaCancelamento}%` }}
+                                                                style={{ width: `${taxaIndisponibilidade}%` }}
                                                             />
                                                         </div>
                                                     </div>

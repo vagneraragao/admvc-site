@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import {
     ArrowLeft, Calendar, Users, CheckCircle2, XCircle,
-    Clock, Trophy, ChevronLeft, ChevronRight, Filter
+    Clock, ChevronLeft, ChevronRight, Filter, BarChart3
 } from 'lucide-react'
 
 interface MembroStats {
@@ -61,9 +61,14 @@ function RelatorioContent({ dados, departamentos, mes, ano, deptoFiltro, totalEs
     }
 
     const totalConfirmadas = dados.reduce((s, d) => s + d.confirmadas, 0)
-    const totalRecusadas = dados.reduce((s, d) => s + d.recusadas, 0)
+    const totalIndisponiveis = dados.reduce((s, d) => s + d.recusadas, 0)
     const totalPendentes = dados.reduce((s, d) => s + d.pendentes, 0)
     const taxaConfirmacao = totalEscalas > 0 ? Math.round((totalConfirmadas / totalEscalas) * 100) : 0
+    const mediaEscalasPorMembro = dados.length > 0 ? (totalEscalas / dados.length).toFixed(1) : '0'
+
+    // Membros sem escalas neste período (nunca escalados)
+    const membrosAtivos = dados.filter(d => d.total > 0).length
+    const membrosInativos = dados.filter(d => d.total === 0).length
 
     return (
         <>
@@ -73,7 +78,7 @@ function RelatorioContent({ dados, departamentos, mes, ano, deptoFiltro, totalEs
                         <ArrowLeft size={12} /> Relatorios
                     </Link>
                     <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Escalas por Membro</h1>
-                    <p className="text-xs text-muted">Participacao e funcoes de cada voluntario.</p>
+                    <p className="text-xs text-muted">Participacao, funcoes e disponibilidade de cada voluntario.</p>
                 </div>
             </header>
 
@@ -114,80 +119,60 @@ function RelatorioContent({ dados, departamentos, mes, ano, deptoFiltro, totalEs
             </div>
 
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
                 <Kpi label="Voluntarios" value={dados.length} icon={<Users size={13} />} />
                 <Kpi label="Total Escalas" value={totalEscalas} icon={<Calendar size={13} />} />
                 <Kpi label="Confirmadas" value={totalConfirmadas} icon={<CheckCircle2 size={13} />} cor="emerald" />
-                <Kpi label="Recusadas" value={totalRecusadas} icon={<XCircle size={13} />} cor={totalRecusadas > 0 ? 'red' : 'emerald'} />
-                <Kpi label="Confirmacao" value={`${taxaConfirmacao}%`} icon={<Clock size={13} />} cor={taxaConfirmacao >= 80 ? 'emerald' : taxaConfirmacao >= 50 ? 'orange' : 'red'} />
+                <Kpi label="Indisponiveis" value={totalIndisponiveis} icon={<XCircle size={13} />} cor={totalIndisponiveis > 0 ? 'red' : 'emerald'} />
+                <Kpi label="Taxa Confirm." value={`${taxaConfirmacao}%`} icon={<BarChart3 size={13} />} cor={taxaConfirmacao >= 80 ? 'emerald' : taxaConfirmacao >= 50 ? 'orange' : 'red'} />
+                <Kpi label="Media/Membro" value={mediaEscalasPorMembro} icon={<Clock size={13} />} />
             </div>
 
-            {/* TABELA DE MEMBROS */}
+            {/* LISTA DE MEMBROS */}
             {dados.length === 0 ? (
                 <div className="py-16 text-center bg-bg2 border border-soft rounded-2xl">
                     <p className="text-[10px] font-black text-muted uppercase tracking-widest">Nenhuma escala encontrada neste periodo.</p>
                 </div>
             ) : (
-                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                    <div className="divide-y divide-soft">
-                        {dados.map((d, idx) => {
-                            const taxa = d.total > 0 ? Math.round((d.confirmadas / d.total) * 100) : 0
-                            const funcoesList = Object.entries(d.funcoes).sort((a, b) => b[1] - a[1])
+                <div className="space-y-2">
+                    {dados.map((d) => {
+                        const taxa = d.total > 0 ? Math.round((d.confirmadas / d.total) * 100) : 0
+                        const funcoesList = Object.entries(d.funcoes).sort((a, b) => b[1] - a[1])
+                        const deptosList = Object.entries(d.departamentos).sort((a, b) => b[1] - a[1])
 
-                            return (
-                                <div key={d.membro.id} className="flex items-start gap-4 px-5 py-4 hover:bg-soft/10 transition-colors">
-                                    {/* RANKING */}
-                                    <div className="w-8 text-center shrink-0 pt-1">
-                                        {idx === 0 ? (
-                                            <Trophy size={18} className="text-amber-500 mx-auto" />
-                                        ) : (
-                                            <span className="text-[10px] font-black text-muted">{idx + 1}</span>
-                                        )}
-                                    </div>
+                        // Calcular frequência (quantas semanas distintas)
+                        const semanasDistintas = new Set(d.datas.map(dt => {
+                            const date = new Date(dt)
+                            const startOfYear = new Date(date.getFullYear(), 0, 1)
+                            return Math.ceil(((date.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
+                        })).size
 
-                                    {/* AVATAR */}
-                                    <div className="w-10 h-10 rounded-xl bg-soft border border-soft flex items-center justify-center shrink-0 overflow-hidden">
+                        return (
+                            <details key={d.membro.id} className="bg-bg2 border border-soft rounded-2xl overflow-hidden group/m">
+                                {/* RESUMO */}
+                                <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none select-none hover:bg-soft/10 transition-colors">
+                                    <div className="w-9 h-9 rounded-xl bg-soft border border-soft flex items-center justify-center shrink-0 overflow-hidden">
                                         {d.membro.avatar_file ? (
                                             <img src={d.membro.avatar_file} alt="" className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="text-xs font-black text-muted">{d.membro.first_name[0]}</span>
+                                            <span className="text-[10px] font-black text-muted">{d.membro.first_name[0]}</span>
                                         )}
                                     </div>
-
-                                    {/* INFO */}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[11px] font-black uppercase text-fg truncate">
                                             {d.membro.first_name} {d.membro.last_name}
                                         </p>
-
-                                        {/* FUNCOES */}
-                                        <div className="flex flex-wrap gap-1 mt-1">
-                                            {funcoesList.map(([funcao, count]) => (
-                                                <span key={funcao} className="text-[8px] font-bold bg-bg border border-soft px-2 py-0.5 rounded text-muted uppercase tracking-widest">
-                                                    {funcao} <span className="text-fg">&times;{count}</span>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-[8px] font-bold text-muted uppercase tracking-widest">{d.total} escalas</span>
+                                            {funcoesList.length > 0 && (
+                                                <span className="text-[7px] font-bold bg-bg border border-soft px-1.5 py-0.5 rounded text-muted">
+                                                    {funcoesList[0][0]}
                                                 </span>
-                                            ))}
+                                            )}
                                         </div>
-
-                                        {/* DEPARTAMENTOS (se sem filtro) */}
-                                        {!deptoFiltro && Object.keys(d.departamentos).length > 1 && (
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                {Object.entries(d.departamentos).map(([depto, count]) => (
-                                                    <span key={depto} className="text-[7px] font-bold bg-figueira/10 text-figueira px-1.5 py-0.5 rounded">
-                                                        {depto} ({count})
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
-
-                                    {/* STATS */}
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <div className="text-right">
-                                            <p className="text-lg font-black italic text-fg leading-none">{d.total}</p>
-                                            <p className="text-[7px] font-bold text-muted uppercase tracking-widest">escalas</p>
-                                        </div>
-                                        <div className={`text-right px-2 py-1 rounded-lg text-[9px] font-black ${
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <div className={`text-[9px] font-black px-2 py-1 rounded-lg ${
                                             taxa >= 80 ? 'bg-emerald-500/10 text-emerald-600' :
                                             taxa >= 50 ? 'bg-orange-500/10 text-orange-600' :
                                             'bg-red-500/10 text-red-500'
@@ -195,10 +180,71 @@ function RelatorioContent({ dados, departamentos, mes, ano, deptoFiltro, totalEs
                                             {taxa}%
                                         </div>
                                     </div>
+                                </summary>
+
+                                {/* DETALHES EXPANDIDOS */}
+                                <div className="px-4 pb-4 border-t border-soft pt-3 space-y-3 animate-in fade-in duration-200">
+                                    {/* BARRA DE PROGRESSO */}
+                                    <div className="flex h-2 rounded-full overflow-hidden bg-soft">
+                                        {d.confirmadas > 0 && <div className="bg-emerald-500" style={{ width: `${(d.confirmadas / d.total) * 100}%` }} />}
+                                        {d.pendentes > 0 && <div className="bg-orange-400" style={{ width: `${(d.pendentes / d.total) * 100}%` }} />}
+                                        {d.recusadas > 0 && <div className="bg-red-400" style={{ width: `${(d.recusadas / d.total) * 100}%` }} />}
+                                    </div>
+
+                                    {/* STATS EM LINHA */}
+                                    <div className="flex flex-wrap gap-2">
+                                        <StatPill label="Confirmadas" value={d.confirmadas} cor="emerald" />
+                                        <StatPill label="Pendentes" value={d.pendentes} cor="orange" />
+                                        <StatPill label="Indisponiveis" value={d.recusadas} cor="red" />
+                                        <StatPill label="Semanas ativas" value={semanasDistintas} cor="blue" />
+                                    </div>
+
+                                    {/* FUNÇÕES DETALHADAS */}
+                                    {funcoesList.length > 0 && (
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Funcoes desempenhadas</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {funcoesList.map(([funcao, count]) => (
+                                                    <span key={funcao} className="text-[8px] font-bold bg-bg border border-soft px-2 py-1 rounded-lg text-fg">
+                                                        {funcao} <span className="text-figueira font-black">&times;{count}</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* DEPARTAMENTOS */}
+                                    {!deptoFiltro && deptosList.length > 0 && (
+                                        <div className="space-y-1">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Departamentos</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {deptosList.map(([depto, count]) => (
+                                                    <span key={depto} className="text-[7px] font-bold bg-figueira/10 text-figueira px-2 py-0.5 rounded border border-figueira/20">
+                                                        {depto} ({count})
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* DATAS DOS EVENTOS */}
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-muted">Datas escalado</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {d.datas.map((dt, i) => {
+                                                const date = new Date(dt)
+                                                return (
+                                                    <span key={i} className="text-[7px] font-bold bg-bg border border-soft px-1.5 py-0.5 rounded text-muted">
+                                                        {date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
-                            )
-                        })}
-                    </div>
+                            </details>
+                        )
+                    })}
                 </div>
             )}
         </>
@@ -227,5 +273,20 @@ function Kpi({ label, value, icon, cor }: { label: string; value: any; icon: Rea
             </div>
             <p className="text-xl font-black italic tracking-tighter leading-none">{value}</p>
         </div>
+    )
+}
+
+function StatPill({ label, value, cor }: { label: string; value: number; cor: string }) {
+    if (value === 0) return null
+    const cores: Record<string, string> = {
+        emerald: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+        orange: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+        red: 'bg-red-500/10 text-red-500 border-red-500/20',
+        blue: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    }
+    return (
+        <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${cores[cor] || ''}`}>
+            {value} {label}
+        </span>
     )
 }

@@ -486,3 +486,85 @@ export async function salvarCifraInternaAction(musicaId: string, cifra: string) 
         return { ok: false, error: 'Erro ao guardar cifra.' }
     }
 }
+
+// ── RELATÓRIO DE LOUVOR ──
+
+export async function buscarRelatorioLouvorAction(mes: number, ano: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const h = await headers()
+        const tenantId = Number(h.get('x-tenant-id') || 0)
+
+        const inicioMes = new Date(ano, mes - 1, 1)
+        const fimMes = new Date(ano, mes, 0, 23, 59, 59)
+
+        // Buscar repertórios do mês com evento + música + escalas do depto louvor
+        const repertorios = await db.repertorioEvento.findMany({
+            where: {
+                tenant_id: tenantId,
+                evento: {
+                    data: { gte: inicioMes, lte: fimMes }
+                }
+            },
+            include: {
+                musica: { select: { id: true, titulo: true, artista: true, tom: true } },
+                evento: {
+                    select: {
+                        id: true, nome: true, data: true,
+                        escalas: {
+                            where: {
+                                departamento: {
+                                    nome: { contains: 'louvor', mode: 'insensitive' }
+                                }
+                            },
+                            select: {
+                                funcao: true,
+                                confirmado: true,
+                                membro: { select: { id: true, first_name: true, last_name: true } }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { evento: { data: 'asc' } }
+        })
+
+        // Agrupar por evento
+        const eventosMap = new Map<number, {
+            id: number
+            nome: string
+            data: string
+            musicas: { titulo: string; artista: string | null; tomOriginal: string | null; tomTocado: string }[]
+            equipa: { nome: string; funcao: string }[]
+        }>()
+
+        repertorios.forEach(rep => {
+            const ev = rep.evento
+            if (!eventosMap.has(ev.id)) {
+                eventosMap.set(ev.id, {
+                    id: ev.id,
+                    nome: ev.nome,
+                    data: ev.data.toISOString(),
+                    musicas: [],
+                    equipa: ev.escalas
+                        .filter(e => e.confirmado)
+                        .map(e => ({
+                            nome: `${e.membro.first_name} ${e.membro.last_name}`,
+                            funcao: e.funcao
+                        }))
+                })
+            }
+            eventosMap.get(ev.id)!.musicas.push({
+                titulo: rep.musica.titulo,
+                artista: rep.musica.artista,
+                tomOriginal: rep.musica.tom,
+                tomTocado: rep.tom_tocado
+            })
+        })
+
+        return { ok: true, eventos: Array.from(eventosMap.values()) }
+    } catch (error: any) {
+        return { ok: false, eventos: [], error: error.message }
+    }
+}
