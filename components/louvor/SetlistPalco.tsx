@@ -84,12 +84,16 @@ export default function SetlistPalco({ evento }: Props) {
     const [cifraAberta, setCifraAberta] = useState(false)
     const [editorAberto, setEditorAberto] = useState(false)
     const [importandoUrl, setImportandoUrl] = useState(false)
-    // Cache local das cifras editadas (para reflectir sem recarregar a página)
     const [cifrasEditadas, setCifrasEditadas] = useState<Record<string, string>>({})
+    const [fontScale, setFontScale] = useState(1)
 
     // Swipe
     const touchStartX = useRef<number | null>(null)
     const touchStartY = useRef<number | null>(null)
+
+    // Pinch-to-zoom
+    const initialPinchDistance = useRef<number | null>(null)
+    const initialScale = useRef<number>(1)
 
     const lista = evento.repertorio
     const total = lista.length
@@ -143,21 +147,55 @@ export default function SetlistPalco({ evento }: Props) {
         })
     }
 
-    // Swipe handlers
+    // Persistir fontScale
+    useEffect(() => {
+        const saved = localStorage.getItem('setlist_font_scale')
+        if (saved) setFontScale(Number(saved))
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem('setlist_font_scale', String(fontScale))
+    }, [fontScale])
+
+    function getPinchDistance(touches: React.TouchList) {
+        return Math.hypot(
+            touches[0].clientX - touches[1].clientX,
+            touches[0].clientY - touches[1].clientY
+        )
+    }
+
+    // Touch handlers — swipe (1 dedo) + pinch-to-zoom (2 dedos)
     function onTouchStart(e: React.TouchEvent) {
-        touchStartX.current = e.touches[0].clientX
-        touchStartY.current = e.touches[0].clientY
+        if (e.touches.length === 2) {
+            initialPinchDistance.current = getPinchDistance(e.touches)
+            initialScale.current = fontScale
+        } else if (e.touches.length === 1) {
+            touchStartX.current = e.touches[0].clientX
+            touchStartY.current = e.touches[0].clientY
+        }
+    }
+
+    function onTouchMove(e: React.TouchEvent) {
+        if (e.touches.length === 2 && initialPinchDistance.current !== null) {
+            const currentDistance = getPinchDistance(e.touches)
+            const ratio = currentDistance / initialPinchDistance.current
+            const newScale = Math.min(2.5, Math.max(0.6, initialScale.current * ratio))
+            setFontScale(Math.round(newScale * 100) / 100)
+        }
     }
 
     function onTouchEnd(e: React.TouchEvent) {
+        if (initialPinchDistance.current !== null) {
+            initialPinchDistance.current = null
+            return
+        }
         if (touchStartX.current === null || touchStartY.current === null) return
         const dx = e.changedTouches[0].clientX - touchStartX.current
         const dy = e.changedTouches[0].clientY - touchStartY.current
 
-        // Só conta como swipe horizontal se o movimento X for maior que Y
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-            if (dx < 0) avancar()  // swipe esquerda = próxima
-            else recuar()           // swipe direita = anterior
+            if (dx < 0) avancar()
+            else recuar()
         }
         touchStartX.current = null
         touchStartY.current = null
@@ -183,6 +221,7 @@ export default function SetlistPalco({ evento }: Props) {
         <div
             className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden select-none"
             onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
             style={{ touchAction: 'pan-y' }}
         >
@@ -209,17 +248,27 @@ export default function SetlistPalco({ evento }: Props) {
                     </p>
                 </div>
 
-                <button
-                    onClick={() => setMostrarLista(true)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90 relative"
-                >
-                    <List size={18} />
-                    {marcadas.size > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full text-[7px] font-black flex items-center justify-center">
-                            {marcadas.size}
-                        </span>
-                    )}
-                </button>
+                <div className="flex items-center gap-1.5">
+                    {/* Zoom controls */}
+                    <div className="flex items-center bg-white/10 rounded-full overflow-hidden">
+                        <button onClick={() => setFontScale(s => Math.max(0.6, Math.round((s - 0.15) * 100) / 100))}
+                            className="w-8 h-8 flex items-center justify-center text-white/60 active:scale-90 text-sm font-black">−</button>
+                        <span className="text-[8px] font-black text-white/40 w-8 text-center">{Math.round(fontScale * 100)}%</span>
+                        <button onClick={() => setFontScale(s => Math.min(2.5, Math.round((s + 0.15) * 100) / 100))}
+                            className="w-8 h-8 flex items-center justify-center text-white/60 active:scale-90 text-sm font-black">+</button>
+                    </div>
+                    <button
+                        onClick={() => setMostrarLista(true)}
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90 relative"
+                    >
+                        <List size={18} />
+                        {marcadas.size > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full text-[7px] font-black flex items-center justify-center">
+                                {marcadas.size}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* ── INDICADOR DE PROGRESSO ──────────────────────────────────── */}
@@ -244,14 +293,26 @@ export default function SetlistPalco({ evento }: Props) {
                         {String(indexActual + 1).padStart(2, '0')}
                     </div>
 
-                    {/* Título */}
-                    <h1 className="text-3xl sm:text-4xl font-black uppercase italic tracking-tighter text-white leading-tight mb-2">
-                        {musica?.titulo}
-                    </h1>
+                    {/* Título com setas de navegação */}
+                    <div className="flex items-center gap-3 mb-2">
+                        <button onClick={recuar} disabled={indexActual === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-white/60 disabled:opacity-10 active:scale-90 transition-all shrink-0">
+                            <ChevronLeft size={20} />
+                        </button>
+                        <h1 className="flex-1 font-black uppercase italic tracking-tighter text-white leading-tight"
+                            style={{ fontSize: `${Math.round(1.875 * fontScale * 16)}px` }}>
+                            {musica?.titulo}
+                        </h1>
+                        <button onClick={avancar} disabled={indexActual === total - 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-white/60 disabled:opacity-10 active:scale-90 transition-all shrink-0">
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
 
                     {/* Artista */}
                     {musica?.artista && (
-                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/40 mb-4">
+                        <p className="font-black uppercase tracking-[0.2em] text-white/40 mb-4"
+                            style={{ fontSize: `${Math.round(0.6875 * fontScale * 16)}px` }}>
                             {musica.artista}
                         </p>
                     )}
