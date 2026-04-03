@@ -87,7 +87,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const isMesaSom = pathname.startsWith('/midia/mesax32')
     const isLumikit = pathname.startsWith('/midia/lumikit')
     const isPregacao = pathname.startsWith('/pregacao')
-    const isEBD = pathname.startsWith('/ebd')
+    const isEBD = pathname.startsWith('/ensino')
 
     // Breadcrumb do modulo activo
     const moduloPath = isTesouraria ? 'Tesouraria'
@@ -229,33 +229,35 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                 </div>
 
                 {/* NAV BAR */}
-                <div className="flex items-center gap-1 pb-2 overflow-x-auto custom-scrollbar -mt-1">
-                    <Link href="/membros/dashboard"
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                            isHome && !moduloPath ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                        }`}>
-                        Home
-                    </Link>
-                    <Link href="/membros/dashboard?tab=departamentos"
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                            mounted && globalThis?.location?.search?.includes('tab=departamentos') ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                        }`}>
-                        Igreja
-                    </Link>
-                    <Link href="/ebd"
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                            isEBD ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                        }`}>
-                        Cursos
-                    </Link>
-                    {moduloPath && !isEBD && (
-                        <>
-                            <span className="text-muted/30 text-[9px]">/</span>
-                            <span className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 whitespace-nowrap">
-                                {moduloPath}
-                            </span>
-                        </>
-                    )}
+                <div className="border-t border-soft/60 bg-bg/50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto custom-scrollbar">
+                        <Link href="/membros/dashboard"
+                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                isHome && !moduloPath ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                            }`}>
+                            Home
+                        </Link>
+                        <Link href="/membros/dashboard?tab=departamentos"
+                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                mounted && globalThis?.location?.search?.includes('tab=departamentos') ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                            }`}>
+                            Igreja
+                        </Link>
+                        <Link href="/ensino"
+                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                isEBD ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                            }`}>
+                            Educação
+                        </Link>
+                        {moduloPath && !isEBD && (
+                            <>
+                                <span className="text-muted/30 text-[10px]">/</span>
+                                <span className="px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 whitespace-nowrap">
+                                    {moduloPath}
+                                </span>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>
