@@ -464,7 +464,7 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, po
                                         </button>
                                         {podeGerir && (
                                             <Link
-                                                href={`/ebd?sermao_id=${s.id}`}
+                                                href={`/ensino?sermao_id=${s.id}`}
                                                 className="flex items-center gap-1.5 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/20 transition-colors"
                                             >
                                                 <GraduationCap size={10} />

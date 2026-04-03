@@ -130,7 +130,7 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/admin/midia/x32': MODULOS.MESA_SOM,
     '/admin/midia/lumikit': MODULOS.LUMIKIT,
     '/pregacao': MODULOS.PREGACAO,
-    '/ebd': MODULOS.EBD,
+    '/ensino': MODULOS.EBD,
 }
 
 /**
