@@ -3,7 +3,7 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import PregacaoClient from '@/components/pregacao/PregacaoClient'
-import { podeGerirCursos } from '@/lib/cursos-permissoes'
+import { podeGerirSermoes } from '@/lib/cursos-permissoes'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +26,7 @@ export default async function PregacaoPage({
     const inicio = new Date(ano, mes - 1, 1)
     const fim = new Date(ano, mes, 1)
 
-    const podeGerir = await podeGerirCursos(session.membroId, session.role)
+    const podeGerir = await podeGerirSermoes(session.membroId, session.role)
 
     const [sermoes, membros, eventos] = await Promise.all([
         prisma.sermao.findMany({
