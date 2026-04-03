@@ -20,6 +20,13 @@ const MESES = [
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
 
+const CATEGORIA_LABELS: Record<string, { label: string; icon: string }> = {
+    EBD: { label: 'EBD', icon: 'bg-indigo-600/10 text-indigo-400 border-indigo-600/20' },
+    LIVRE: { label: 'Livre', icon: 'bg-emerald-600/10 text-emerald-400 border-emerald-600/20' },
+    DISCIPULADO: { label: 'Discipulado', icon: 'bg-amber-600/10 text-amber-400 border-amber-600/20' },
+    SEMINARIO: { label: 'Seminario', icon: 'bg-purple-600/10 text-purple-400 border-purple-600/20' },
+}
+
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     PLANEADO: { label: 'Planeado', color: 'text-blue-400 bg-blue-600/10 border-blue-600/20' },
     EM_CURSO: { label: 'Em Curso', color: 'text-green-400 bg-green-600/10 border-green-600/20' },
@@ -39,10 +46,12 @@ interface Curso {
     id: string
     titulo: string
     descricao: string | null
-    trimestre: number
+    categoria: string
+    trimestre: number | null
     ano: number
     data_inicio: string
     data_fim: string
+    carga_horaria: number | null
     material_ref: string | null
     nota_minima: number
     presenca_minima: number
@@ -83,6 +92,7 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
     const searchParams = useSearchParams()
 
     const [tab, setTab] = useState<'cursos' | 'aulas'>('cursos')
+    const [filtroCategoria, setFiltroCategoria] = useState<string>('TODOS')
     const [modalCurso, setModalCurso] = useState(false)
     const [modalTurma, setModalTurma] = useState<string | null>(null) // curso_id
     const [modalAula, setModalAula] = useState(false)
@@ -205,6 +215,7 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
         ? membros.filter(m => `${m.first_name} ${m.last_name}`.toLowerCase().includes(presencaSearch.toLowerCase()))
         : membros
 
+    const cursosFiltrados = filtroCategoria === 'TODOS' ? cursos : cursos.filter(c => c.categoria === filtroCategoria)
     const cursosEmCurso = cursos.filter(c => c.status === 'EM_CURSO')
     const totalAlunos = cursosEmCurso.reduce((acc, c) => acc + c.turmas.reduce((a, t) => a + t._count.matriculas, 0), 0)
 
@@ -220,7 +231,7 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                 <form onSubmit={handleCriarCurso} className="p-6 space-y-4">
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label>
-                        <input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Frutos do Espirito" />
+                        <input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Frutos do Espirito, Fotografia, Musica" />
                     </div>
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label>
@@ -228,18 +239,35 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Trimestre *</label>
-                            <select name="trimestre" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                                <option value="1">1o Trimestre (Jan-Mar)</option>
-                                <option value="2">2o Trimestre (Abr-Jun)</option>
-                                <option value="3">3o Trimestre (Jul-Set)</option>
-                                <option value="4">4o Trimestre (Out-Dez)</option>
+                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Categoria *</label>
+                            <select name="categoria" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
+                                <option value="EBD">Escola Biblica (EBD)</option>
+                                <option value="LIVRE">Curso Livre</option>
+                                <option value="DISCIPULADO">Discipulado</option>
+                                <option value="SEMINARIO">Seminario</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Carga Horaria (h)</label>
+                            <input name="carga_horaria" type="number" min="1" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: 40" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Trimestre</label>
+                            <select name="trimestre" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
+                                <option value="">N/A</option>
+                                <option value="1">1o (Jan-Mar)</option>
+                                <option value="2">2o (Abr-Jun)</option>
+                                <option value="3">3o (Jul-Set)</option>
+                                <option value="4">4o (Out-Dez)</option>
                             </select>
                         </div>
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ano *</label>
                             <input name="ano" type="number" required defaultValue={ano} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
                         </div>
+                        <div />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -406,10 +434,10 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
             <header className="space-y-4">
                 <div className="flex items-center gap-2 text-figueira">
                     <GraduationCap size={16} />
-                    <span className="font-black text-[10px] uppercase tracking-[0.3em]">Escola Biblica Dominical</span>
+                    <span className="font-black text-[10px] uppercase tracking-[0.3em]">Cursos & Escola Biblica</span>
                 </div>
                 <h1 className="text-4xl sm:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                    EBD<span className="text-muted/20">.</span>
+                    Cursos<span className="text-muted/20">.</span>
                 </h1>
             </header>
 
@@ -450,8 +478,18 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
             {/* Tab: Cursos */}
             {tab === 'cursos' && (
                 <section className="space-y-4">
+                    {/* Filtros por categoria */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                        {['TODOS', 'EBD', 'LIVRE', 'DISCIPULADO', 'SEMINARIO'].map(cat => (
+                            <button key={cat} onClick={() => setFiltroCategoria(cat)}
+                                className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filtroCategoria === cat ? 'bg-figueira text-white' : 'bg-bg border border-soft text-muted hover:text-fg'}`}>
+                                {cat === 'TODOS' ? 'Todos' : CATEGORIA_LABELS[cat]?.label || cat}
+                            </button>
+                        ))}
+                    </div>
+
                     <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">{cursos.length} {cursos.length === 1 ? 'curso' : 'cursos'}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">{cursosFiltrados.length} {cursosFiltrados.length === 1 ? 'curso' : 'cursos'}</p>
                         {podeGerir && (
                             <button onClick={() => setModalCurso(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
                                 <Plus size={12} /> Novo Curso
@@ -459,30 +497,40 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                         )}
                     </div>
 
-                    {cursos.length === 0 ? (
+                    {cursosFiltrados.length === 0 ? (
                         <div className="py-20 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
                             <Layers size={32} className="mx-auto text-muted/30 mb-4" />
-                            <p className="text-xs font-black uppercase text-muted tracking-widest">Nenhum curso criado.</p>
-                            <p className="text-[10px] text-muted/60 mt-1">Crie o primeiro curso trimestral para organizar a EBD.</p>
+                            <p className="text-xs font-black uppercase text-muted tracking-widest">Nenhum curso encontrado.</p>
+                            <p className="text-[10px] text-muted/60 mt-1">{cursos.length === 0 ? 'Crie o primeiro curso para comecar.' : 'Nenhum curso nesta categoria.'}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {cursos.map(curso => {
+                            {cursosFiltrados.map(curso => {
                                 const st = STATUS_LABELS[curso.status] || STATUS_LABELS.PLANEADO
                                 return (
                                     <details key={curso.id} className="group bg-bg2 border border-soft rounded-2xl overflow-hidden transition-all hover:border-figueira/30" open={curso.status === 'EM_CURSO'}>
                                         <summary className="cursor-pointer px-5 py-4 flex items-center gap-4 list-none [&::-webkit-details-marker]:hidden">
                                             <div className="flex-shrink-0 w-12 h-12 bg-bg border border-soft rounded-xl flex flex-col items-center justify-center">
-                                                <span className="text-[10px] font-black text-figueira leading-none">T{curso.trimestre}</span>
-                                                <span className="text-[8px] font-bold text-muted">{curso.ano}</span>
+                                                {curso.trimestre ? (
+                                                    <>
+                                                        <span className="text-[10px] font-black text-figueira leading-none">T{curso.trimestre}</span>
+                                                        <span className="text-[8px] font-bold text-muted">{curso.ano}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-figueira leading-none">{curso.ano}</span>
+                                                )}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-xs font-black uppercase tracking-wide text-fg truncate">{curso.titulo}</h3>
                                                 <p className="text-[9px] font-bold text-muted mt-0.5">
                                                     {curso._count.turmas} turma{curso._count.turmas !== 1 ? 's' : ''}
+                                                    {curso.carga_horaria && <span className="ml-2">{curso.carga_horaria}h</span>}
                                                     {curso.material_ref && <span className="ml-2 text-figueira/70">{curso.material_ref}</span>}
                                                 </p>
                                             </div>
+                                            {(() => { const cat = CATEGORIA_LABELS[curso.categoria]; return cat ? (
+                                                <span className={`hidden sm:inline text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${cat.icon}`}>{cat.label}</span>
+                                            ) : null })()}
                                             <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${st.color}`}>
                                                 {st.label}
                                             </span>
@@ -495,6 +543,7 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                                             )}
                                             <div className="flex flex-wrap gap-3 text-[9px] text-muted font-bold">
                                                 <span><Calendar size={10} className="inline mr-1" />{new Date(curso.data_inicio).toLocaleDateString('pt-PT')} — {new Date(curso.data_fim).toLocaleDateString('pt-PT')}</span>
+                                                {curso.carga_horaria && <span><Clock size={10} className="inline mr-1" />{curso.carga_horaria}h</span>}
                                                 <span><TrendingUp size={10} className="inline mr-1" />Nota min: {curso.nota_minima}</span>
                                                 <span><Users size={10} className="inline mr-1" />Presenca min: {curso.presenca_minima}%</span>
                                             </div>

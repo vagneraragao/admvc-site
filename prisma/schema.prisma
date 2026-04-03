@@ -701,27 +701,30 @@ model PresencaEBD {
 // ── ESCOLA BÍBLICA DOMINICAL — Cursos e Turmas ──────────────────────────────
 
 model CursoEBD {
-  id              String        @id @default(uuid())
-  titulo          String        // "Frutos do Espírito"
+  id              String          @id @default(uuid())
+  titulo          String          // "Frutos do Espírito" ou "Fotografia para Midia"
   descricao       String?
-  trimestre       Int           // 1, 2, 3, 4
-  ano             Int           // 2026
+  categoria       CategoriaCurso  @default(EBD)
+  trimestre       Int?            // 1, 2, 3, 4 (opcional para cursos livres)
+  ano             Int             // 2026
   data_inicio     DateTime
   data_fim        DateTime
-  material_ref    String?       // "Revista CPAD - Adultos T2/2026"
-  nota_minima     Float         @default(7.0)
-  presenca_minima Float         @default(75.0) // percentual
-  status          StatusCurso   @default(PLANEADO)
+  carga_horaria   Int?            // horas totais (para diploma)
+  material_ref    String?         // "Revista CPAD - Adultos T2/2026"
+  nota_minima     Float           @default(7.0)
+  presenca_minima Float           @default(75.0) // percentual
+  status          StatusCurso     @default(PLANEADO)
   congregacao_id  Int?
   tenant_id       Int
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
   turmas          TurmaEBD[]
-  congregacao     Congregacao?  @relation(fields: [congregacao_id], references: [id])
-  tenant          Tenant        @relation(fields: [tenant_id], references: [id])
+  congregacao     Congregacao?    @relation(fields: [congregacao_id], references: [id])
+  tenant          Tenant          @relation(fields: [tenant_id], references: [id])
 
   @@index([tenant_id])
-  @@index([ano, trimestre])
+  @@index([ano])
+  @@index([categoria])
   @@map("cursos_ebd")
 }
 
@@ -802,6 +805,13 @@ model NotaEBD {
   @@unique([atividade_id, membro_id])
   @@index([tenant_id])
   @@map("notas_ebd")
+}
+
+enum CategoriaCurso {
+  EBD           // Escola Biblica Dominical (trimestral)
+  LIVRE         // Musica, Fotografia, Informatica, etc.
+  DISCIPULADO   // Novos Convertidos, Batismo, Membresia
+  SEMINARIO     // Teologia, Hermeneutica, Homiletica
 }
 
 enum StatusCurso {

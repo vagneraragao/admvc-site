@@ -73,8 +73,10 @@ interface Atividade {
 interface Curso {
     id: string
     titulo: string
-    trimestre: number
+    categoria: string
+    trimestre: number | null
     ano: number
+    carga_horaria: number | null
     nota_minima: number
     presenca_minima: number
     status: string
@@ -463,7 +465,10 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                 <header className="space-y-2">
                     <div className="flex items-center gap-2 text-figueira">
                         <GraduationCap size={16} />
-                        <span className="font-black text-[10px] uppercase tracking-[0.3em]">{turma.curso.titulo} — T{turma.curso.trimestre}/{turma.curso.ano}</span>
+                        <span className="font-black text-[10px] uppercase tracking-[0.3em]">
+                            {turma.curso.titulo}
+                            {turma.curso.trimestre ? ` — T${turma.curso.trimestre}/${turma.curso.ano}` : ` — ${turma.curso.ano}`}
+                        </span>
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-black italic uppercase tracking-tighter text-fg leading-none">
                         {turma.nome}<span className="text-muted/20">.</span>

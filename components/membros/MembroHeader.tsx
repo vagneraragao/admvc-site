@@ -136,15 +136,6 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                         <Calendar size={12} className="text-figueira" /> Agendar Reuniao
                                     </Link>
 
-                                    <div className="border-t border-soft my-0.5" />
-                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Ensino</p>
-                                    <Link href="/pregacao" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <BookOpen size={12} className="text-indigo-400" /> Pregacao
-                                    </Link>
-                                    <Link href="/ebd" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <GraduationCap size={12} className="text-indigo-400" /> Escola Biblica
-                                    </Link>
-
                                     {mostraServico && <div className="border-t border-soft my-0.5" />}
 
                                     {mostraServico && (
@@ -221,7 +212,19 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                         }`}>
                         Igreja
                     </Link>
-                    {moduloPath && (
+                    <Link href="/pregacao"
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                            isPregacao ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                        }`}>
+                        Pregacao
+                    </Link>
+                    <Link href="/ebd"
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                            isEBD ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                        }`}>
+                        Cursos
+                    </Link>
+                    {moduloPath && !isPregacao && !isEBD && (
                         <>
                             <span className="text-muted/30 text-[9px]">/</span>
                             <span className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 whitespace-nowrap">

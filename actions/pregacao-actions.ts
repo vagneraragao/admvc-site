@@ -467,15 +467,19 @@ export async function criarCurso(formData: FormData) {
 
         const titulo = formData.get('titulo') as string
         const descricao = formData.get('descricao') as string | null
-        const trimestre = Number(formData.get('trimestre'))
+        const categoria = (formData.get('categoria') as string) || 'EBD'
+        const trimestreRaw = formData.get('trimestre') as string | null
+        const trimestre = trimestreRaw ? Number(trimestreRaw) : null
         const ano = Number(formData.get('ano'))
         const data_inicio = formData.get('data_inicio') as string
         const data_fim = formData.get('data_fim') as string
+        const carga_horariaRaw = formData.get('carga_horaria') as string | null
+        const carga_horaria = carga_horariaRaw ? Number(carga_horariaRaw) : null
         const material_ref = formData.get('material_ref') as string | null
         const nota_minima = Number(formData.get('nota_minima') || 7)
         const presenca_minima = Number(formData.get('presenca_minima') || 75)
 
-        if (!titulo || !trimestre || !ano || !data_inicio || !data_fim) {
+        if (!titulo || !ano || !data_inicio || !data_fim) {
             return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
         }
 
@@ -483,10 +487,12 @@ export async function criarCurso(formData: FormData) {
             data: {
                 titulo,
                 descricao: descricao || null,
-                trimestre,
+                categoria: categoria as any,
+                trimestre: trimestre || undefined,
                 ano,
                 data_inicio: new Date(data_inicio),
                 data_fim: new Date(data_fim),
+                carga_horaria: carga_horaria || undefined,
                 material_ref: material_ref || null,
                 nota_minima,
                 presenca_minima,
@@ -509,10 +515,14 @@ export async function atualizarCurso(id: string, formData: FormData) {
 
         const titulo = formData.get('titulo') as string
         const descricao = formData.get('descricao') as string | null
-        const trimestre = Number(formData.get('trimestre'))
+        const categoria = (formData.get('categoria') as string) || 'EBD'
+        const trimestreRaw = formData.get('trimestre') as string | null
+        const trimestre = trimestreRaw ? Number(trimestreRaw) : null
         const ano = Number(formData.get('ano'))
         const data_inicio = formData.get('data_inicio') as string
         const data_fim = formData.get('data_fim') as string
+        const carga_horariaRaw = formData.get('carga_horaria') as string | null
+        const carga_horaria = carga_horariaRaw ? Number(carga_horariaRaw) : null
         const material_ref = formData.get('material_ref') as string | null
         const nota_minima = Number(formData.get('nota_minima') || 7)
         const presenca_minima = Number(formData.get('presenca_minima') || 75)
@@ -523,10 +533,12 @@ export async function atualizarCurso(id: string, formData: FormData) {
             data: {
                 titulo,
                 descricao: descricao || null,
-                trimestre,
+                categoria: categoria as any,
+                trimestre: trimestre || null,
                 ano,
                 data_inicio: new Date(data_inicio),
                 data_fim: new Date(data_fim),
+                carga_horaria: carga_horaria || null,
                 material_ref: material_ref || null,
                 nota_minima,
                 presenca_minima,
