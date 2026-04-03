@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import MuralClient from '@/components/membros/MuralClient'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,21 +61,7 @@ export default async function MuralPage() {
     return (
         <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 h-[calc(100vh-80px)] flex flex-col">
 
-{/* BREADCRUMB PADRONIZADO E INTELIGENTE */}
-            <Breadcrumb items={[
-                { 
-                    label: "Dashboard", 
-                    href: "/membros/dashboard", 
-                    isBackIcon: true 
-                },
-                { 
-                    label: "Mural de Avisos" 
-                }
-            ]} />
-
             <header className="shrink-0 space-y-4">
-
-
                 <div className="flex items-center gap-4 border-b border-soft pb-6">
                     <div className="p-4 bg-figueira/10 text-figueira rounded-2xl">
                         <MessageSquare size={24} />
