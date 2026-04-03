@@ -9,10 +9,10 @@ import {
     Calendar, User, Users, BookOpen, Trash2,
     X, Loader2, Check, ChevronDown, Layers, Clock,
     Award, TrendingUp, ExternalLink, Lock, ShieldCheck,
-    UserPlus, XCircle, Eye
+    UserPlus, XCircle, Eye, Edit3
 } from 'lucide-react'
 import {
-    criarCurso, removerCurso, aprovarCurso,
+    criarCurso, atualizarCurso, removerCurso, aprovarCurso,
     criarTurma, criarEBD, removerEBD, registarPresencasEBD,
     manifestarInteresse, cancelarInteresse,
     aprovarInteresse, rejeitarInteresse
@@ -107,6 +107,7 @@ export default function EBDDashboard({
     const [tab, setTab] = useState<'disponiveis' | 'meus' | 'gestao'>('disponiveis')
     const [filtroCategoria, setFiltroCategoria] = useState<string>('TODOS')
     const [modalCurso, setModalCurso] = useState(false)
+    const [modalEditarCurso, setModalEditarCurso] = useState<Curso | null>(null)
     const [modalTurma, setModalTurma] = useState<string | null>(null)
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -116,10 +117,10 @@ export default function EBDDashboard({
     useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
-        if (modalCurso || modalTurma || detalhesCurso) document.body.style.overflow = 'hidden'
+        if (modalCurso || modalEditarCurso || modalTurma || detalhesCurso) document.body.style.overflow = 'hidden'
         else document.body.style.overflow = ''
         return () => { document.body.style.overflow = '' }
-    }, [modalCurso, modalTurma, detalhesCurso])
+    }, [modalCurso, modalEditarCurso, modalTurma, detalhesCurso])
 
     const agora = new Date()
 
@@ -172,6 +173,16 @@ export default function EBDDashboard({
         const res = await criarCurso(form)
         setLoading(false)
         if (res.ok) { setModalCurso(false); router.refresh() }
+        else alert(res.error)
+    }
+
+    async function handleEditarCurso(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        if (!modalEditarCurso) return
+        setLoading(true)
+        const res = await atualizarCurso(modalEditarCurso.id, new FormData(e.currentTarget))
+        setLoading(false)
+        if (res.ok) { setModalEditarCurso(null); router.refresh() }
         else alert(res.error)
     }
 
@@ -343,6 +354,9 @@ export default function EBDDashboard({
                         {/* Gestao: aprovar, turmas, remover */}
                         {modo === 'gestao' && podeGerir && (
                             <>
+                                <button onClick={() => setModalEditarCurso(curso)} className="flex items-center gap-1.5 px-4 py-2 bg-bg border border-soft rounded-2xl text-[9px] font-black uppercase tracking-widest text-fg hover:border-figueira/50 transition-colors">
+                                    <Edit3 size={10} /> Editar
+                                </button>
                                 {!curso.aprovado && (
                                     <button onClick={() => handleAprovar(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-green-600/10 border border-green-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-green-400 hover:bg-green-600/20 transition-colors">
                                         <ShieldCheck size={10} /> Aprovar
@@ -510,6 +524,62 @@ export default function EBDDashboard({
     ) : null
 
     // Modal turma
+    // Modal editar curso
+    const editarCursoModal = modalEditarCurso && mounted ? createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="relative w-full max-w-2xl bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Editar Curso</h2>
+                    <button onClick={() => setModalEditarCurso(null)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
+                </div>
+                <form onSubmit={handleEditarCurso} className="p-6 space-y-4">
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label><input name="titulo" required defaultValue={modalEditarCurso.titulo} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label><textarea name="descricao" rows={2} defaultValue={modalEditarCurso.descricao || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors resize-y" /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ementa</label><textarea name="ementa" rows={5} defaultValue={modalEditarCurso.ementa || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors resize-y" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Categoria</label><select name="categoria" defaultValue={modalEditarCurso.categoria} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="EBD">EBD</option><option value="LIVRE">Curso Livre</option><option value="DISCIPULADO">Discipulado</option><option value="SEMINARIO">Seminario</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Vagas Maximas</label><input name="vagas_maximas" type="number" min="1" defaultValue={modalEditarCurso.vagas_maximas || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" placeholder="Ilimitado" /></div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Carga Horaria (h)</label><input name="carga_horaria" type="number" min="1" defaultValue={modalEditarCurso.carga_horaria || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Trimestre</label><select name="trimestre" defaultValue={modalEditarCurso.trimestre || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="">N/A</option><option value="1">1o</option><option value="2">2o</option><option value="3">3o</option><option value="4">4o</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ano *</label><input name="ano" type="number" required defaultValue={modalEditarCurso.ano} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Inicio *</label><input name="data_inicio" type="date" required defaultValue={modalEditarCurso.data_inicio.split('T')[0]} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Fim *</label><input name="data_fim" type="date" required defaultValue={modalEditarCurso.data_fim.split('T')[0]} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Tipo Inscricao</label><select name="tipo_inscricao" defaultValue={modalEditarCurso.tipo_inscricao} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="LIVRE">Livre (todos)</option><option value="DEPARTAMENTO">Departamento exclusivo</option><option value="GRUPO">Grupo exclusivo</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Abertura Inscricoes</label><input name="data_abertura_inscricoes" type="datetime-local" defaultValue={modalEditarCurso.data_abertura_inscricoes ? modalEditarCurso.data_abertura_inscricoes.slice(0, 16) : ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Status</label><select name="status" defaultValue={modalEditarCurso.status} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="PLANEADO">Planeado</option><option value="EM_CURSO">Em Curso</option><option value="CONCLUIDO">Concluido</option><option value="CANCELADO">Cancelado</option></select></div>
+                        <div />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-3 cursor-pointer"><input name="is_externo" type="checkbox" defaultChecked={modalEditarCurso.is_externo} className="w-4 h-4 rounded border-soft accent-figueira" /><span className="text-[10px] font-black uppercase tracking-widest text-muted">Curso Externo</span></label>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Link Externo</label><input name="link_externo" defaultValue={modalEditarCurso.link_externo || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Responsavel</label><input name="responsavel_nome" defaultValue={modalEditarCurso.responsavel_nome || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Telefone</label><input name="responsavel_tel" defaultValue={modalEditarCurso.responsavel_tel || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        </div>
+                    </div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Material de Referencia</label><input name="material_ref" defaultValue={modalEditarCurso.material_ref || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nota Minima</label><input name="nota_minima" type="number" step="0.1" defaultValue={modalEditarCurso.nota_minima} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Presenca Minima (%)</label><input name="presenca_minima" type="number" step="1" defaultValue={modalEditarCurso.presenca_minima} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    </div>
+                    <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
+                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {loading ? 'A guardar...' : 'Guardar Alteracoes'}
+                    </button>
+                </form>
+            </div>
+        </div>,
+        document.body
+    ) : null
+
     const turmaModal = modalTurma && mounted ? createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="relative w-full max-w-lg bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
@@ -596,6 +666,7 @@ export default function EBDDashboard({
             )}
 
             {cursoModal}
+            {editarCursoModal}
             {turmaModal}
             {detalhesModal}
         </main>
