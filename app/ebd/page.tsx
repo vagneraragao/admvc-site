@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma'
-import { getSessionData } from '@/lib/auth-utils'
+import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
@@ -24,6 +24,23 @@ export default async function EBDPage({
 
     const inicio = new Date(ano, mes - 1, 1)
     const fim = new Date(ano, mes, 1)
+
+    // Verificar se é admin ou membro da diaconia
+    const membroData = await prisma.membro.findUnique({
+        where: { id: session.membroId },
+        select: {
+            ministerios: { include: { departamento: { select: { nome: true } } } },
+            departamentos_liderados: { select: { nome: true } },
+        },
+    })
+
+    const checkDepto = (termos: string[]) => {
+        const inMin = membroData?.ministerios?.some((m: any) => termos.some(t => m.departamento?.nome.toLowerCase().includes(t))) || false
+        const inLid = membroData?.departamentos_liderados?.some((d: any) => termos.some(t => d.nome.toLowerCase().includes(t))) || false
+        return inMin || inLid
+    }
+
+    const podeGerir = isAdmin(session.role) || checkDepto(['diaconia', 'diácono', 'diacono'])
 
     const [cursos, aulas, membros, sermoes] = await Promise.all([
         prisma.cursoEBD.findMany({
@@ -98,6 +115,7 @@ export default async function EBDPage({
             mes={mes}
             ano={ano}
             sermaoIdInicial={params.sermao_id || null}
+            podeGerir={podeGerir}
         />
     )
 }

@@ -95,9 +95,10 @@ interface Props {
     turma: Turma
     membros: Membro[]
     sermoes: Sermao[]
+    podeGerir?: boolean
 }
 
-export default function TurmaClient({ turma, membros, sermoes }: Props) {
+export default function TurmaClient({ turma, membros, sermoes, podeGerir = false }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -512,9 +513,11 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">{turma.matriculas.length} aluno{turma.matriculas.length !== 1 ? 's' : ''}</p>
-                        <button onClick={() => setModalMatricula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                            <Plus size={12} /> Matricular
-                        </button>
+                        {podeGerir && (
+                            <button onClick={() => setModalMatricula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                                <Plus size={12} /> Matricular
+                            </button>
+                        )}
                     </div>
                     {turma.matriculas.length === 0 ? (
                         <div className="py-16 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
@@ -535,9 +538,11 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                                             {mat.aprovado === false && <span className="ml-2 text-red-400">Reprovado</span>}
                                         </p>
                                     </div>
-                                    <button onClick={() => handleRemoverMatricula(mat.membro_id)} className="text-red-400 hover:text-red-300 transition-colors p-1">
-                                        <Trash2 size={14} />
-                                    </button>
+                                    {podeGerir && (
+                                        <button onClick={() => handleRemoverMatricula(mat.membro_id)} className="text-red-400 hover:text-red-300 transition-colors p-1">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -550,9 +555,11 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">{turma.aulas.length} aula{turma.aulas.length !== 1 ? 's' : ''}</p>
-                        <button onClick={() => setModalAula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                            <Plus size={12} /> Nova Aula
-                        </button>
+                        {podeGerir && (
+                            <button onClick={() => setModalAula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                                <Plus size={12} /> Nova Aula
+                            </button>
+                        )}
                     </div>
                     {turma.aulas.length === 0 ? (
                         <div className="py-16 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
@@ -573,8 +580,8 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] font-bold text-muted"><Users size={10} className="inline mr-0.5" />{a._count.presencas}</span>
-                                        <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline">Presencas</button>
-                                        <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>
+                                        {podeGerir && <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline">Presencas</button>}
+                                        {podeGerir && <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
                                     </div>
                                 </div>
                             ))}
@@ -588,9 +595,11 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">{turma.atividades.length} atividade{turma.atividades.length !== 1 ? 's' : ''}</p>
-                        <button onClick={() => setModalAtividade(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                            <Plus size={12} /> Nova Atividade
-                        </button>
+                        {podeGerir && (
+                            <button onClick={() => setModalAtividade(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                                <Plus size={12} /> Nova Atividade
+                            </button>
+                        )}
                     </div>
                     {turma.atividades.length === 0 ? (
                         <div className="py-16 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
@@ -610,8 +619,8 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] font-bold text-muted">{atv._count.notas} notas</span>
-                                        <button onClick={() => abrirNotas(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline">Lancar Notas</button>
-                                        <button onClick={async () => { if (confirm('Remover atividade?')) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>
+                                        {podeGerir && <button onClick={() => abrirNotas(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline">Lancar Notas</button>}
+                                        {podeGerir && <button onClick={async () => { if (confirm('Remover atividade?')) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
                                     </div>
                                 </div>
                             ))}
@@ -627,10 +636,12 @@ export default function TurmaClient({ turma, membros, sermoes }: Props) {
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                             Nota min: {turma.curso.nota_minima} | Presenca min: {turma.curso.presenca_minima}%
                         </p>
-                        <button onClick={handleCalcularAprovacao} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50">
-                            {loading ? <Loader2 size={12} className="animate-spin" /> : <Calculator size={12} />}
-                            Calcular Aprovacao
-                        </button>
+                        {podeGerir && (
+                            <button onClick={handleCalcularAprovacao} disabled={loading} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50">
+                                {loading ? <Loader2 size={12} className="animate-spin" /> : <Calculator size={12} />}
+                                Calcular Aprovacao
+                            </button>
+                        )}
                     </div>
 
                     {turma.matriculas.length === 0 ? (

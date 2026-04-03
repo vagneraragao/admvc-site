@@ -49,9 +49,10 @@ interface Props {
     eventos: Evento[]
     mes: number
     ano: number
+    podeGerir?: boolean
 }
 
-export default function PregacaoClient({ sermoes, membros, eventos, mes, ano }: Props) {
+export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, podeGerir = false }: Props) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -348,13 +349,15 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano }: 
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted">
                     {sermoes.length} {sermoes.length === 1 ? 'sermao' : 'sermoes'}
                 </p>
-                <button
-                    onClick={() => setModalAberto(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity"
-                >
-                    <Plus size={12} />
-                    Novo Sermao
-                </button>
+                {podeGerir && (
+                    <button
+                        onClick={() => setModalAberto(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity"
+                    >
+                        <Plus size={12} />
+                        Novo Sermao
+                    </button>
+                )}
             </div>
 
             {/* Sermoes List */}
@@ -443,13 +446,15 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano }: 
 
                                     {/* Actions */}
                                     <div className="flex flex-wrap gap-2 pt-2">
-                                        <Link
-                                            href={`/pregacao/editor/${s.id}`}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-bg border border-soft rounded-2xl text-[9px] font-black uppercase tracking-widest text-fg hover:border-figueira/50 transition-colors"
-                                        >
-                                            <Edit3 size={10} />
-                                            Editar
-                                        </Link>
+                                        {podeGerir && (
+                                            <Link
+                                                href={`/pregacao/editor/${s.id}`}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-bg border border-soft rounded-2xl text-[9px] font-black uppercase tracking-widest text-fg hover:border-figueira/50 transition-colors"
+                                            >
+                                                <Edit3 size={10} />
+                                                Editar
+                                            </Link>
+                                        )}
                                         <button
                                             onClick={() => handleWhatsApp(s.id)}
                                             className="flex items-center gap-1.5 px-4 py-2 bg-green-600/10 border border-green-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-600/20 transition-colors"
@@ -457,20 +462,24 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano }: 
                                             <MessageCircle size={10} />
                                             WhatsApp
                                         </button>
-                                        <Link
-                                            href={`/ebd?sermao_id=${s.id}`}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/20 transition-colors"
-                                        >
-                                            <GraduationCap size={10} />
-                                            Usar na EBD
-                                        </Link>
-                                        <button
-                                            onClick={() => handleRemover(s.id)}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto"
-                                        >
-                                            <Trash2 size={10} />
-                                            Remover
-                                        </button>
+                                        {podeGerir && (
+                                            <Link
+                                                href={`/ebd?sermao_id=${s.id}`}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/20 transition-colors"
+                                            >
+                                                <GraduationCap size={10} />
+                                                Usar na EBD
+                                            </Link>
+                                        )}
+                                        {podeGerir && (
+                                            <button
+                                                onClick={() => handleRemover(s.id)}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto"
+                                            >
+                                                <Trash2 size={10} />
+                                                Remover
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </details>

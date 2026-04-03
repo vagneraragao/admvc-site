@@ -74,9 +74,10 @@ interface Props {
     mes: number
     ano: number
     sermaoIdInicial: string | null
+    podeGerir?: boolean
 }
 
-export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano, sermaoIdInicial }: Props) {
+export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano, sermaoIdInicial, podeGerir = false }: Props) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -451,9 +452,11 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">{cursos.length} {cursos.length === 1 ? 'curso' : 'cursos'}</p>
-                        <button onClick={() => setModalCurso(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                            <Plus size={12} /> Novo Curso
-                        </button>
+                        {podeGerir && (
+                            <button onClick={() => setModalCurso(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                                <Plus size={12} /> Novo Curso
+                            </button>
+                        )}
                     </div>
 
                     {cursos.length === 0 ? (
@@ -500,9 +503,11 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted">Turmas</p>
-                                                    <button onClick={() => setModalTurma(curso.id)} className="text-[8px] font-black uppercase tracking-widest text-figueira hover:underline flex items-center gap-1">
-                                                        <Plus size={10} /> Adicionar Turma
-                                                    </button>
+                                                    {podeGerir && (
+                                                        <button onClick={() => setModalTurma(curso.id)} className="text-[8px] font-black uppercase tracking-widest text-figueira hover:underline flex items-center gap-1">
+                                                            <Plus size={10} /> Adicionar Turma
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 {curso.turmas.length === 0 ? (
                                                     <p className="text-[10px] text-muted/50 text-center py-4">Nenhuma turma criada para este curso.</p>
@@ -531,11 +536,13 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                                                 )}
                                             </div>
 
-                                            <div className="flex flex-wrap gap-2 pt-2">
-                                                <button onClick={() => handleRemoverCurso(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
-                                                    <Trash2 size={10} /> Remover
-                                                </button>
-                                            </div>
+                                            {podeGerir && (
+                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                    <button onClick={() => handleRemoverCurso(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
+                                                        <Trash2 size={10} /> Remover
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </details>
                                 )
@@ -560,9 +567,11 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
 
                     <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted">{aulas.length} {aulas.length === 1 ? 'aula' : 'aulas'}</p>
-                        <button onClick={() => setModalAula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                            <Plus size={12} /> Nova Aula
-                        </button>
+                        {podeGerir && (
+                            <button onClick={() => setModalAula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                                <Plus size={12} /> Nova Aula
+                            </button>
+                        )}
                     </div>
 
                     {aulas.length === 0 ? (
@@ -595,12 +604,16 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                                     </summary>
                                     <div className="px-5 pb-5 pt-2 border-t border-soft">
                                         <div className="flex flex-wrap gap-2 pt-2">
-                                            <button onClick={() => abrirPresencas(a)} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
-                                                <Users size={10} /> Marcar Presencas
-                                            </button>
-                                            <button onClick={() => handleRemoverAula(a.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
-                                                <Trash2 size={10} /> Remover
-                                            </button>
+                                            {podeGerir && (
+                                                <button onClick={() => abrirPresencas(a)} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                                    <Users size={10} /> Marcar Presencas
+                                                </button>
+                                            )}
+                                            {podeGerir && (
+                                                <button onClick={() => handleRemoverAula(a.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
+                                                    <Trash2 size={10} /> Remover
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </details>

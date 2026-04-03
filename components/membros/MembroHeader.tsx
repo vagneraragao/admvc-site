@@ -7,7 +7,8 @@ import Link from 'next/link'
 import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
-    Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare
+    Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare,
+    BookOpen, GraduationCap
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -29,6 +30,7 @@ interface Props {
         isCantina: boolean
         isFinance: boolean
         isLouvor: boolean
+        isDiaconia: boolean
     }
     mostraServico: boolean
     escolaridades: any[]
@@ -72,6 +74,8 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const isHolyrics = pathname.startsWith('/midia/holyrics')
     const isMesaSom = pathname.startsWith('/midia/mesax32')
     const isLumikit = pathname.startsWith('/midia/lumikit')
+    const isPregacao = pathname.startsWith('/pregacao')
+    const isEBD = pathname.startsWith('/ebd')
 
     // Breadcrumb do modulo activo
     const moduloPath = isTesouraria ? 'Tesouraria'
@@ -82,6 +86,8 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
         : isMesaSom ? 'Midia / Mesa de Som'
         : isLumikit ? 'Midia / Iluminacao'
         : isMidiaRoute ? 'Midia'
+        : isPregacao ? 'Pregacao'
+        : isEBD ? 'Escola Biblica'
         : null
 
     return (
@@ -128,6 +134,15 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                     )}
                                     <Link href="/membros/agendar" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                         <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                    </Link>
+
+                                    <div className="border-t border-soft my-0.5" />
+                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Ensino</p>
+                                    <Link href="/pregacao" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <BookOpen size={12} className="text-indigo-400" /> Pregacao
+                                    </Link>
+                                    <Link href="/ebd" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <GraduationCap size={12} className="text-indigo-400" /> Escola Biblica
                                     </Link>
 
                                     {mostraServico && <div className="border-t border-soft my-0.5" />}
