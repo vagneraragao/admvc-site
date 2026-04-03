@@ -89,44 +89,17 @@ export default async function GestaoCantinaPage() {
                 </div>
             </header>
 
-            {/* --- ACESSOS RÁPIDOS (Menu, TV, Backoffice) --- */}
-            <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-                {/* 1. Menu Público */}
-                <Link href="/departamentos/cantina/menu" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-figueira hover:shadow-lg hover:shadow-figueira/10 transition-all group flex flex-col justify-between gap-4 h-full">
-                    <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Smartphone size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-black uppercase text-fg">Menu Digital</h3>
-                        <p className="text-[10px] font-bold text-muted mt-1 leading-relaxed">Ver o menu como os membros o veem nos seus telemóveis.</p>
-                    </div>
+            {/* --- ACESSOS RÁPIDOS (compactos) --- */}
+            <section className="flex flex-wrap gap-2">
+                <Link href="/departamentos/cantina/menu" target="_blank" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
+                    <Smartphone size={14} className="text-figueira" /> Menu Digital
                 </Link>
-
-                {/* 2. TV / Video Wall */}
-                <Link href="/departamentos/cantina/tv" target="_blank" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 transition-all group flex flex-col justify-between gap-4 h-full">
-                    <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <MonitorPlay size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-black uppercase text-fg">Ecrã TV (Video Wall)</h3>
-                        <p className="text-[10px] font-bold text-muted mt-1 leading-relaxed">Abrir painel para o ecrã pendurado na zona da cantina.</p>
-                    </div>
+                <Link href="/departamentos/cantina/tv" target="_blank" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-blue-500/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
+                    <MonitorPlay size={14} className="text-blue-500" /> Ecra TV
                 </Link>
-
-                {/* 3. Loyverse Backoffice */}
-                <a href="https://r.loyverse.com/dashboard" target="_blank" rel="noopener noreferrer" className="bg-bg2 border border-soft p-6 rounded-[2rem] hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/10 transition-all group flex flex-col justify-between gap-4 h-full">
-                    <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Settings size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-black uppercase text-fg flex items-center gap-2">
-                            Backoffice Loyverse <ExternalLink size={12} className="opacity-50" />
-                        </h3>
-                        <p className="text-[10px] font-bold text-muted mt-1 leading-relaxed">Aceder ao sistema central para gerir impressoras e caixas.</p>
-                    </div>
+                <a href="https://r.loyverse.com/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-emerald-500/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
+                    <Settings size={14} className="text-emerald-500" /> Loyverse <ExternalLink size={10} className="text-muted" />
                 </a>
-
             </section>
 
             {/* --- GESTOR DE PRODUTOS --- */}

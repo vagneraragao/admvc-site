@@ -21,26 +21,32 @@ export default function CantinaManager({ produtos, categorias }: { produtos: any
     });
 
     const esgotadosCount = produtos.filter(p => p.stock <= 0).length;
+    const destaquesCount = produtos.filter(p => p.isDestaque).length;
+    const ocultosCount = produtos.filter(p => !p.isAvailable).length;
+    const categoriasCount = [...new Set(produtos.map(p => p.categoria))].length;
 
     return (
-        <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-bg2 border border-soft p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm">
-                    <div className="p-4 bg-figueira/10 text-figueira rounded-2xl"><Package size={24} /></div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">Total de Produtos</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-fg">{produtos.length}</p>
-                    </div>
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
+                    <Package size={16} className="mx-auto text-figueira mb-1" />
+                    <p className="text-lg font-black text-fg">{produtos.length}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Produtos</p>
                 </div>
-
-                <div className={`border p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm transition-colors ${esgotadosCount > 0 ? 'bg-red-50 border-red-100' : 'bg-bg2 border-soft'}`}>
-                    <div className={`p-4 rounded-2xl ${esgotadosCount > 0 ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                        {esgotadosCount > 0 ? <AlertCircle size={24} /> : <Check size={24} />}
-                    </div>
-                    <div>
-                        <p className={`text-[10px] font-black uppercase tracking-widest ${esgotadosCount > 0 ? 'text-red-500' : 'text-muted'}`}>Ruptura de Stock</p>
-                        <p className={`text-3xl font-black italic tracking-tighter ${esgotadosCount > 0 ? 'text-red-600' : 'text-fg'}`}>{esgotadosCount}</p>
-                    </div>
+                <div className={`rounded-2xl p-4 text-center border ${esgotadosCount > 0 ? 'bg-red-500/5 border-red-500/20' : 'bg-bg2 border-soft'}`}>
+                    <AlertCircle size={16} className={`mx-auto mb-1 ${esgotadosCount > 0 ? 'text-red-500' : 'text-emerald-500'}`} />
+                    <p className={`text-lg font-black ${esgotadosCount > 0 ? 'text-red-500' : 'text-fg'}`}>{esgotadosCount}</p>
+                    <p className={`text-[8px] font-bold uppercase tracking-widest ${esgotadosCount > 0 ? 'text-red-400' : 'text-muted'}`}>Esgotados</p>
+                </div>
+                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
+                    <Star size={16} className="mx-auto text-yellow-500 mb-1" />
+                    <p className="text-lg font-black text-fg">{destaquesCount}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Destaques</p>
+                </div>
+                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
+                    <EyeOff size={16} className="mx-auto text-muted mb-1" />
+                    <p className="text-lg font-black text-fg">{ocultosCount}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Fora de Venda</p>
                 </div>
             </div>
 
