@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma'
-import { getSessionData, isAdmin } from '@/lib/auth-utils'
+import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
+import { podeGerirCursos } from '@/lib/cursos-permissoes'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,27 +26,19 @@ export default async function EBDPage({
     const inicio = new Date(ano, mes - 1, 1)
     const fim = new Date(ano, mes, 1)
 
-    // Verificar se é admin ou membro da diaconia
+    const podeGerir = await podeGerirCursos(session.membroId, session.role)
+
+    // IDs do membro para verificar restricoes de inscricao
     const membroData = await prisma.membro.findUnique({
         where: { id: session.membroId },
         select: {
-            ministerios: { include: { departamento: { select: { id: true, nome: true } } } },
-            departamentos_liderados: { select: { id: true, nome: true } },
+            ministerios: { select: { departamento_id: true } },
+            departamentos_liderados: { select: { id: true } },
             grupos: { select: { id: true } },
         },
     })
-
-    const checkDepto = (termos: string[]) => {
-        const inMin = membroData?.ministerios?.some((m: any) => termos.some(t => m.departamento?.nome.toLowerCase().includes(t))) || false
-        const inLid = membroData?.departamentos_liderados?.some((d: any) => termos.some(t => d.nome.toLowerCase().includes(t))) || false
-        return inMin || inLid
-    }
-
-    const podeGerir = isAdmin(session.role) || checkDepto(['diaconia', 'diácono', 'diacono'])
-
-    // IDs do membro para verificar restricoes
     const membroDeptIds = [
-        ...(membroData?.ministerios?.map((m: any) => m.departamento?.id).filter(Boolean) || []),
+        ...(membroData?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []),
         ...(membroData?.departamentos_liderados?.map((d: any) => d.id) || []),
     ]
     const membroGrupoIds = membroData?.grupos?.map((g: any) => g.id) || []

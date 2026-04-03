@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma'
-import { getSessionData, isAdmin } from '@/lib/auth-utils'
+import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import TurmaClient from '@/components/pregacao/TurmaClient'
+import { podeGerirCursos } from '@/lib/cursos-permissoes'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,21 +19,7 @@ export default async function TurmaPage({
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
 
-    const membroData = await prisma.membro.findUnique({
-        where: { id: session.membroId },
-        select: {
-            ministerios: { include: { departamento: { select: { nome: true } } } },
-            departamentos_liderados: { select: { nome: true } },
-        },
-    })
-
-    const checkDepto = (termos: string[]) => {
-        const inMin = membroData?.ministerios?.some((m: any) => termos.some(t => m.departamento?.nome.toLowerCase().includes(t))) || false
-        const inLid = membroData?.departamentos_liderados?.some((d: any) => termos.some(t => d.nome.toLowerCase().includes(t))) || false
-        return inMin || inLid
-    }
-
-    const podeGerir = isAdmin(session.role) || checkDepto(['diaconia', 'diácono', 'diacono'])
+    const podeGerir = await podeGerirCursos(session.membroId, session.role)
 
     const [turma, membros, sermoes] = await Promise.all([
         prisma.turmaEBD.findFirst({
