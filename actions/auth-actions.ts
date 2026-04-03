@@ -16,20 +16,20 @@ import { enviarEmailBoasVindas } from '@/lib/mail'
 // ============================================================================
 
 // Rate limit por email: 5 tentativas em 15 minutos
-const ratelimitPorEmail = new Ratelimit({
+const ratelimitPorEmail = redis ? new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(5, "15 m"),
     prefix: "rl:login:email",
     analytics: true,
-});
+}) : null;
 
 // Rate limit por IP: 15 tentativas em 15 minutos (mais permissivo, cobre múltiplos users)
-const ratelimitPorIp = new Ratelimit({
+const ratelimitPorIp = redis ? new Ratelimit({
     redis: redis,
     limiter: Ratelimit.slidingWindow(15, "15 m"),
     prefix: "rl:login:ip",
     analytics: true,
-});
+}) : null;
 
 export async function validarLoginGeral(email: string, pass: string, redirectPath: string = '/membros/dashboard') {
     console.log(`\n=============================================`);
@@ -139,6 +139,7 @@ async function verificarRateLimit(email: string): Promise<{ permitido: boolean; 
             || 'unknown'
 
         // 2. Verificar rate limit por IP (proteção global)
+        if (!ratelimitPorIp || !ratelimitPorEmail) return { permitido: true, erro: null }
         const ipResult = await ratelimitPorIp.limit(ip)
         if (!ipResult.success) {
             await audit({
