@@ -82,12 +82,13 @@ interface Props {
     mes: number; ano: number; sermaoIdInicial: string | null
     podeGerir?: boolean; membroId: number
     meusCursoIds: string[]; membroDeptIds: number[]; membroGrupoIds: number[]
+    basePath?: string
 }
 
 export default function EBDDashboard({
     cursos, aulas, membros, sermoes, departamentos, grupos,
     mes, ano, sermaoIdInicial, podeGerir = false, membroId,
-    meusCursoIds, membroDeptIds, membroGrupoIds
+    meusCursoIds, membroDeptIds, membroGrupoIds, basePath = '/ebd'
 }: Props) {
     const router = useRouter()
     const pathname = usePathname()
@@ -287,7 +288,7 @@ export default function EBDDashboard({
                         {modo === 'meu' && (
                             <>
                                 {curso.turmas[0] && (
-                                    <Link href={`/ebd/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                    <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
                                         <GraduationCap size={10} /> Minha Turma
                                     </Link>
                                 )}
@@ -311,7 +312,7 @@ export default function EBDDashboard({
                                     <Plus size={10} /> Turma
                                 </button>
                                 {curso.turmas.map(t => (
-                                    <Link key={t.id} href={`/ebd/turma/${t.id}`} className="text-[8px] font-bold text-figueira hover:underline flex items-center gap-1">
+                                    <Link key={t.id} href={`${basePath}/turma/${t.id}`} className="text-[8px] font-bold text-figueira hover:underline flex items-center gap-1">
                                         <Layers size={9} /> {t.nome} ({t._count.matriculas})
                                     </Link>
                                 ))}

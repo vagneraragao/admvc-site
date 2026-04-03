@@ -98,9 +98,10 @@ interface Props {
     membros: Membro[]
     sermoes: Sermao[]
     podeGerir?: boolean
+    basePath?: string
 }
 
-export default function TurmaClient({ turma, membros, sermoes, podeGerir = false }: Props) {
+export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ebd' }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -459,7 +460,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 pb-24 animate-in fade-in duration-700">
             {/* Back + Header */}
             <div>
-                <Link href="/ebd" className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors mb-4">
+                <Link href={basePath} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors mb-4">
                     <ChevronLeft size={14} /> Voltar a EBD
                 </Link>
                 <header className="space-y-2">
