@@ -6,8 +6,6 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { Building2, Save, ArrowLeft, ChevronRight } from 'lucide-react'
 
-export const revalidate = 60
-
 export default async function GestaoObraFinanceiro() {
     const session = await getSessionData();
     if (!session || (session.role !== 'ADMIN' && session.role !== 'FINANCE')) {

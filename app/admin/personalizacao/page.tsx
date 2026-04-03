@@ -4,8 +4,6 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import PersonalizacaoClient from '@/components/admin/PersonalizacaoClient'
 
-export const revalidate = 60
-
 export default async function PersonalizacaoPage() {
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)

@@ -13,24 +13,35 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         redirect('/membros/dashboard?error=Acesso Restrito a Administradores')
     }
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    let admin: any = null
+    let tenant: any = null
+    let congregacoes: any[] = []
 
-    const [admin, tenant, congregacoes] = await Promise.all([
-        prisma.membro.findUnique({
-            where: { id: session.membroId },
-            select: { first_name: true, congregacao_id: true, congregacao: { select: { nome: true } } }
-        }),
-        tenantId ? prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { nome: true, logo_url: true }
-        }) : null,
-        tenantId ? prisma.congregacao.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, nome: true, cidade: true },
-            orderBy: { nome: 'asc' }
-        }) : [],
-    ])
+    try {
+        const headersList = await headers()
+        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+
+        const results = await Promise.all([
+            prisma.membro.findUnique({
+                where: { id: session.membroId },
+                select: { first_name: true, congregacao_id: true, congregacao: { select: { nome: true } } }
+            }),
+            tenantId ? prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { nome: true, logo_url: true }
+            }) : null,
+            tenantId ? prisma.congregacao.findMany({
+                where: { tenant_id: tenantId },
+                select: { id: true, nome: true, cidade: true },
+                orderBy: { nome: 'asc' }
+            }) : [],
+        ])
+        admin = results[0]
+        tenant = results[1]
+        congregacoes = results[2] as any[]
+    } catch (err) {
+        console.error('[ADMIN LAYOUT] Erro ao carregar dados:', err)
+    }
 
     const isCongAdmin = session.role === 'CONGREGATION_ADMIN'
     const congFixa = isCongAdmin ? admin?.congregacao_id : undefined

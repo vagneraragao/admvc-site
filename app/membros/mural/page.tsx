@@ -7,8 +7,6 @@ import Link from 'next/link'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import MuralClient from '@/components/membros/MuralClient'
 
-export const revalidate = 45
-
 export default async function MuralPage() {
     const session = await getSessionData();
     if (!session) redirect('/membros/login');

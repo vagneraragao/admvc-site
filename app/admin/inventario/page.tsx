@@ -4,8 +4,6 @@ import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import InventarioClient from '@/components/inventario/InventarioClient'
 
-export const revalidate = 45
-
 export default async function InventarioPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams
     const session = await getSessionData()

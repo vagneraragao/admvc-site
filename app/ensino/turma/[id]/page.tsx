@@ -6,8 +6,6 @@ import TurmaClient from '@/components/pregacao/TurmaClient'
 import { podeGerirCursos } from '@/lib/cursos-permissoes'
 import { getCachedMembrosAtivos, getCachedSermoes } from '@/lib/cache'
 
-export const revalidate = 45
-
 export default async function TurmaPage({
     params,
 }: {

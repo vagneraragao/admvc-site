@@ -6,8 +6,6 @@ import EBDDashboard from '@/components/pregacao/EBDDashboard'
 import { podeGerirCursos } from '@/lib/cursos-permissoes'
 import { getCachedMembrosAtivos, getCachedSermoes, getCachedDepartamentos, getCachedGrupos } from '@/lib/cache'
 
-export const revalidate = 45
-
 export default async function EBDPage({
     searchParams,
 }: {

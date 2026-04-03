@@ -5,8 +5,6 @@ import { headers } from 'next/headers'
 import TurmaClient from '@/components/pregacao/TurmaClient'
 import { getCachedMembrosAtivos, getCachedSermoes } from '@/lib/cache'
 
-export const revalidate = 45
-
 export default async function AdminTurmaPage({
     params,
 }: {

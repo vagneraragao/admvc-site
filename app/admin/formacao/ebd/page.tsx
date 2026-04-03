@@ -5,8 +5,6 @@ import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
 import { getCachedMembrosAtivos, getCachedSermoes, getCachedDepartamentos, getCachedGrupos } from '@/lib/cache'
 
-export const revalidate = 45
-
 export default async function AdminEBDPage({
     searchParams,
 }: {

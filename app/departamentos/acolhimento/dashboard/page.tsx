@@ -12,8 +12,6 @@ import ModalAcompanhamento from '@/components/acolhimento/ModalAcompanhamento'
 import ModalHistorico from '@/components/acolhimento/ModalHistorico'
 import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolidados'
 
-export const revalidate = 45
-
 export default async function AcolhimentoDashboard() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login')

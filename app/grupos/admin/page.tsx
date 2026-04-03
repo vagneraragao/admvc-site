@@ -18,8 +18,6 @@ const MapaGrupos = nextDynamic(() => import('@/components/grupos/MapaGrupos'), {
     )
 })
 
-export const revalidate = 45;
-
 const REGIOES_DEFAULT = ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
 
 const COR_REGIAO: Record<string, string> = {

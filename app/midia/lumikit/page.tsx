@@ -6,8 +6,6 @@ import { getSessionData } from '@/lib/auth-utils'
 import LumikitClient from '@/components/midia/LumikitClient'
 import type { LumikitConfig } from '@/actions/midia-actions'
 
-export const revalidate = 60
-
 export default async function LumikitPage() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login')

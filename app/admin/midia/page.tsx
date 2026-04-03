@@ -11,8 +11,6 @@ import Link from 'next/link'
 import { Music2, Lightbulb, MonitorPlay, Download, Terminal, ArrowRight, Sliders } from 'lucide-react'
 import type { LumikitConfig, X32CenasConfig } from '@/actions/midia-actions'
 
-export const revalidate = 60
-
 export default async function MidiaConfigPage() {
     const session = await getSessionData()
     if (!session || !['ADMIN'].includes(session.role)) redirect('/membros/dashboard')

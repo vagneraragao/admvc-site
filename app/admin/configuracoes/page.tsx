@@ -7,8 +7,6 @@ import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import { Plus, Briefcase, LayoutGrid, Users, MapPin, Settings } from 'lucide-react'
 import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
 
-export const revalidate = 60
-
 export default async function EstruturaPage() {
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)

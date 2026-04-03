@@ -3,8 +3,6 @@ import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 import MembrosListClient from '@/components/admin/MembrosListClient'
 
-export const revalidate = 45
-
 export default async function ListaMembrosAdmin({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams
     const session = await getSessionData()

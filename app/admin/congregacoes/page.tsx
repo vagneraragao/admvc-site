@@ -4,8 +4,6 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import GestaoCongregacoesClient from '@/components/igreja/GestaoCongregacoesClient'
 
-export const revalidate = 60
-
 export default async function CongregacoesPage() {
     const headersList = await headers()
     const tenantIdStr = headersList.get('x-tenant-id')

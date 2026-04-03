@@ -15,8 +15,6 @@ import BotoesAcaoCompromisso from '@/components/admin/BotoesAcaoCompromisso'
 import HorariosEditor from '@/components/admin/HorariosEditor'
 import BotaoSyncCalendar from '@/components/admin/BotaoSyncCalendar'
 
-export const revalidate = 45
-
 // Função auxiliar para mapear as categorias para Cores e Ícones
 function getCategoriaEstilo(categoria: string) {
     switch (categoria) {

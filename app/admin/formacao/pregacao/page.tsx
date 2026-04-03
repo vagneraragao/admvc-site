@@ -4,8 +4,6 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import PregacaoClient from '@/components/pregacao/PregacaoClient'
 
-export const revalidate = 45
-
 export default async function AdminPregacaoPage({
     searchParams,
 }: {

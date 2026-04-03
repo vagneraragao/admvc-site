@@ -11,8 +11,6 @@ import {
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import FiltroAuditoria from '@/components/admin/FiltroAuditoria'
 
-export const revalidate = 60
-
 const ICONE_ACAO: Record<string, any> = {
     CRIAR: { icon: CheckCircle2, cor: 'text-emerald-600', bg: 'bg-emerald-500/10' },
     EDITAR: { icon: Edit3, cor: 'text-blue-600', bg: 'bg-blue-500/10' },

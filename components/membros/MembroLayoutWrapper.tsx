@@ -14,54 +14,68 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
     const tenantIdStr = headersList.get('x-tenant-id')
     if (!tenantIdStr) return <>{children}</>
 
-    const db = getTenantClient(Number(tenantIdStr))
+    let membro: any = null
+    let tenantData: any = null
+    let escolaridades: any[] = []
+    let ultimosAvisos: any[] = []
+    let visitantesAtualizados: any[] = []
 
-    // IDs de departamentos e grupos do membro para filtrar avisos
-    const membroBasico = await db.membro.findUnique({
-        where: { id: session.membroId },
-        select: {
-            ministerios: { select: { departamento_id: true } },
-            grupos: { select: { id: true } },
-        }
-    })
-    const deptIds = membroBasico?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []
-    const grupoIds = membroBasico?.grupos?.map((g: any) => g.id).filter(Boolean) || []
+    try {
+        const db = getTenantClient(Number(tenantIdStr))
 
-    const [membro, tenantData, escolaridades, ultimosAvisos, visitantesAtualizados] = await Promise.all([
-        db.membro.findUnique({
+        // IDs de departamentos e grupos do membro para filtrar avisos
+        const membroBasico = await db.membro.findUnique({
             where: { id: session.membroId },
-            include: {
-                congregacao: { select: { nome: true } },
-                ministerios: { include: { departamento: true } },
-                departamentos_liderados: true,
+            select: {
+                ministerios: { select: { departamento_id: true } },
+                grupos: { select: { id: true } },
             }
-        }),
-        db.tenant.findFirst({ select: { nome: true } }),
-        db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
-        // Avisos do mural (departamentos e grupos do membro)
-        db.avisoMural.findMany({
-            where: {
-                OR: [
-                    { departamento_id: { in: deptIds.length > 0 ? deptIds : [-1] } },
-                    { grupo_id: { in: grupoIds.length > 0 ? grupoIds : [-1] } }
-                ]
-            },
-            include: {
-                autor: { select: { first_name: true, last_name: true, avatar_file: true } },
-                departamento: { select: { nome: true } },
-                grupo: { select: { nome: true } }
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 5
-        }),
-        // Visitantes pendentes (só para acolhimento/admin)
-        db.visitante.findMany({
-            where: { status: { in: ['NOVO', 'EM_CONTACTO'] } },
-            select: { id: true, nome: true, data_ultima_visita: true, status: true },
-            orderBy: { data_ultima_visita: 'desc' },
-            take: 5
-        }),
-    ])
+        })
+        const deptIds = membroBasico?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []
+        const grupoIds = membroBasico?.grupos?.map((g: any) => g.id).filter(Boolean) || []
+
+        const results = await Promise.all([
+            db.membro.findUnique({
+                where: { id: session.membroId },
+                include: {
+                    congregacao: { select: { nome: true } },
+                    ministerios: { include: { departamento: true } },
+                    departamentos_liderados: true,
+                }
+            }),
+            db.tenant.findFirst({ select: { nome: true } }),
+            db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
+            db.avisoMural.findMany({
+                where: {
+                    OR: [
+                        { departamento_id: { in: deptIds.length > 0 ? deptIds : [-1] } },
+                        { grupo_id: { in: grupoIds.length > 0 ? grupoIds : [-1] } }
+                    ]
+                },
+                include: {
+                    autor: { select: { first_name: true, last_name: true, avatar_file: true } },
+                    departamento: { select: { nome: true } },
+                    grupo: { select: { nome: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            }),
+            db.visitante.findMany({
+                where: { status: { in: ['NOVO', 'EM_CONTACTO'] } },
+                select: { id: true, nome: true, data_ultima_visita: true, status: true },
+                orderBy: { data_ultima_visita: 'desc' },
+                take: 5
+            }),
+        ])
+        membro = results[0]
+        tenantData = results[1]
+        escolaridades = results[2] as any[]
+        ultimosAvisos = results[3] as any[]
+        visitantesAtualizados = results[4] as any[]
+    } catch (err) {
+        console.error('[MEMBRO LAYOUT] Erro ao carregar dados:', err)
+        return <>{children}</>
+    }
 
     if (!membro) return <>{children}</>
 

@@ -13,8 +13,6 @@ import {
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
 import HolyricsLogPanel from '@/components/admin/HolyricsLogPanel'
 
-export const revalidate = 45
-
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams
     const session = await getSessionData()

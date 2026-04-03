@@ -6,8 +6,6 @@ import X32HolyricsClient from '@/components/midia/X32HolyricsClient'
 import X32Client from '@/components/midia/X32Client'
 import type { X32CenasConfig } from '@/actions/midia-actions'
 
-export const revalidate = 60
-
 export default async function X32Page() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login')

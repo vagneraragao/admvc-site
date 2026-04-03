@@ -6,8 +6,6 @@ import PregacaoClient from '@/components/pregacao/PregacaoClient'
 import { podeGerirSermoes } from '@/lib/cursos-permissoes'
 import { getCachedMembrosAtivos } from '@/lib/cache'
 
-export const revalidate = 45
-
 export default async function PregacaoPage({
     searchParams,
 }: {
