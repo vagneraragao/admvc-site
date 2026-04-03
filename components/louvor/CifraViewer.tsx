@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, AlignLeft, AlignCenter } from 'lucide-react'
+import { ArrowLeft, Plus, Minus, Play, Pause, Hash, X, AlignLeft, AlignCenter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { parseCifra, transporCifra, calcularSemitons, notaRaiz, importarCifraClub, TONS_DISPONIVEIS } from '@/lib/cifra'
 
 interface Props {
@@ -11,9 +11,13 @@ interface Props {
     tomOriginal?: string | null
     tomTocado?: string
     onClose: () => void
+    onPrev?: () => void
+    onNext?: () => void
+    hasPrev?: boolean
+    hasNext?: boolean
 }
 
-export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTocado, onClose }: Props) {
+export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTocado, onClose, onPrev, onNext, hasPrev, hasNext }: Props) {
     const [semitons, setSemitons] = useState(() => {
         if (tomOriginal && tomTocado) return calcularSemitons(tomOriginal, tomTocado)
         return 0
@@ -21,10 +25,43 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
     const [scrolling, setScrolling] = useState(false)
     const [velocidade, setVelocidade] = useState(0.8)
     const scrollWasActive = useRef(false)
-    const [fontSize, setFontSize] = useState(14)
-    const [modoSeparado, setModoSeparado] = useState(false)
+    const [fontSize, setFontSize] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('cifra_font_size')
+            return saved ? Number(saved) : 14
+        }
+        return 14
+    })
+    const [modoSeparado, setModoSeparado] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('cifra_modo_separado')
+            return saved !== null ? saved === 'true' : true // separado por padrao
+        }
+        return true
+    })
     const scrollRef = useRef<HTMLDivElement>(null)
     const rafRef = useRef<number | null>(null)
+
+    // Pinch-to-zoom
+    const initialPinchDistance = useRef<number | null>(null)
+    const initialFontSize = useRef<number>(14)
+
+    // Persistir fontSize e modo
+    useEffect(() => { localStorage.setItem('cifra_font_size', String(fontSize)) }, [fontSize])
+    useEffect(() => { localStorage.setItem('cifra_modo_separado', String(modoSeparado)) }, [modoSeparado])
+
+    // Reset semitons quando a cifra muda (navegacao entre musicas)
+    useEffect(() => {
+        if (tomOriginal && tomTocado) setSemitons(calcularSemitons(tomOriginal, tomTocado))
+        else setSemitons(0)
+        // Scroll to top
+        if (scrollRef.current) scrollRef.current.scrollTop = 0
+    }, [cifra, tomOriginal, tomTocado])
+
+    // Pinch helpers
+    function getPinchDistance(touches: React.TouchList) {
+        return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+    }
 
     // Se a cifra não tem brackets, converter primeiro
     const cifraNormalizada = cifra.includes('[') ? cifra : importarCifraClub(cifra)
@@ -98,9 +135,23 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                     <ArrowLeft size={16} />
                 </button>
 
-                <div className="text-center flex-1 mx-3">
-                    <p className="text-xs font-black uppercase tracking-tighter truncate">{titulo}</p>
-                    {artista && <p className="text-[8px] text-white/40 uppercase tracking-widest">{artista}</p>}
+                <div className="flex items-center flex-1 mx-2 gap-1.5">
+                    {onPrev && (
+                        <button onClick={onPrev} disabled={!hasPrev}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 disabled:opacity-15 active:scale-90 shrink-0">
+                            <ChevronLeft size={16} />
+                        </button>
+                    )}
+                    <div className="text-center flex-1 min-w-0">
+                        <p className="text-xs font-black uppercase tracking-tighter truncate">{titulo}</p>
+                        {artista && <p className="text-[8px] text-white/40 uppercase tracking-widest truncate">{artista}</p>}
+                    </div>
+                    {onNext && (
+                        <button onClick={onNext} disabled={!hasNext}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white/60 disabled:opacity-15 active:scale-90 shrink-0">
+                            <ChevronRight size={16} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -173,10 +224,27 @@ export default function CifraViewer({ cifra, titulo, artista, tomOriginal, tomTo
                 </div>
             </div>
 
-            {/* CIFRA — dedo na tela pausa, ao tirar retoma */}
+            {/* CIFRA — 1 dedo pausa scroll, 2 dedos zoom */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar"
-                onTouchStart={() => { if (scrolling) { scrollWasActive.current = true; setScrolling(false) } else { scrollWasActive.current = false } }}
-                onTouchEnd={() => { if (scrollWasActive.current) { setScrolling(true); scrollWasActive.current = false } }}>
+                onTouchStart={(e) => {
+                    if (e.touches.length === 2) {
+                        initialPinchDistance.current = getPinchDistance(e.touches)
+                        initialFontSize.current = fontSize
+                    } else if (e.touches.length === 1) {
+                        if (scrolling) { scrollWasActive.current = true; setScrolling(false) } else { scrollWasActive.current = false }
+                    }
+                }}
+                onTouchMove={(e) => {
+                    if (e.touches.length === 2 && initialPinchDistance.current !== null) {
+                        const currentDistance = getPinchDistance(e.touches)
+                        const ratio = currentDistance / initialPinchDistance.current
+                        setFontSize(Math.min(32, Math.max(8, Math.round(initialFontSize.current * ratio))))
+                    }
+                }}
+                onTouchEnd={() => {
+                    if (initialPinchDistance.current !== null) { initialPinchDistance.current = null; return }
+                    if (scrollWasActive.current) { setScrolling(true); scrollWasActive.current = false }
+                }}>
                 <div className="max-w-2xl mx-auto font-mono whitespace-pre-wrap" style={{ fontSize }}>
                     {modoSeparado ? (
                         /* MODO SEPARADO: acordes numa linha, letra na outra */

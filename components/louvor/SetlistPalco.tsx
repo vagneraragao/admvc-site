@@ -584,6 +584,10 @@ export default function SetlistPalco({ evento }: Props) {
                     tomOriginal={musica.tom}
                     tomTocado={item.tom_tocado}
                     onClose={() => setCifraAberta(false)}
+                    onPrev={() => { if (indexActual > 0) setIndexActual(i => i - 1) }}
+                    onNext={() => { if (indexActual < total - 1) setIndexActual(i => i + 1) }}
+                    hasPrev={indexActual > 0}
+                    hasNext={indexActual < total - 1}
                 />
             )}
 
