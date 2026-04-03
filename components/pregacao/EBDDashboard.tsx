@@ -302,54 +302,34 @@ export default function EBDDashboard({
                             <Eye size={10} /> Detalhes
                         </button>
 
-                        {/* Interesse do membro */}
-                        {modo === 'disponivel' && !jaInscrito && !emBreve && !curso.is_externo && !interesseStatus && (
+                        {/* Botao 2: Interesse / Externo */}
+                        {curso.is_externo && curso.link_externo ? (
+                            <a href={curso.link_externo} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-4 py-2 bg-sky-600/10 border border-sky-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-sky-400 hover:bg-sky-600/20 transition-colors">
+                                <ExternalLink size={10} /> Ver Externo
+                            </a>
+                        ) : modo === 'meu' && curso.turmas[0] ? (
+                            <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                <GraduationCap size={10} /> Minha Turma
+                            </Link>
+                        ) : interesseStatus === 'PENDENTE' ? (
+                            <button onClick={() => handleCancelarInteresse(curso.id)} disabled={loadingInscricao === curso.id}
+                                className="group flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-400 hover:bg-red-600/10 hover:border-red-600/20 hover:text-red-400 transition-all disabled:opacity-50">
+                                {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <><Clock size={10} className="group-hover:hidden" /><XCircle size={10} className="hidden group-hover:block" /></>}
+                                <span className="group-hover:hidden">Interesse Enviado</span>
+                                <span className="hidden group-hover:inline">Cancelar Interesse</span>
+                            </button>
+                        ) : interesseStatus === 'REJEITADO' ? (
+                            <span className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400">
+                                <XCircle size={10} /> Nao Aprovado
+                            </span>
+                        ) : modo === 'disponivel' && !jaInscrito && !emBreve ? (
                             <button onClick={() => handleInteresse(curso.id)} disabled={loadingInscricao === curso.id}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-figueira text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">
                                 {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <UserPlus size={10} />}
                                 Tenho Interesse
                             </button>
-                        )}
-                        {/* Interesse enviado */}
-                        {interesseStatus === 'PENDENTE' && (
-                            <span className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-amber-400">
-                                <Clock size={10} /> Interesse Enviado
-                            </span>
-                        )}
-                        {interesseStatus === 'REJEITADO' && (
-                            <span className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400">
-                                <XCircle size={10} /> Nao Aprovado
-                            </span>
-                        )}
-
-                        {/* Curso externo */}
-                        {curso.is_externo && curso.link_externo && (
-                            <a href={curso.link_externo} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-4 py-2 bg-sky-600/10 border border-sky-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-sky-400 hover:bg-sky-600/20 transition-colors">
-                                <ExternalLink size={10} /> Ver Externo
-                            </a>
-                        )}
-                        {curso.is_externo && curso.responsavel_nome && (
-                            <span className="flex items-center gap-1.5 px-4 py-2 text-[9px] font-bold text-muted">
-                                <User size={10} /> {curso.responsavel_nome} {curso.responsavel_tel && `· ${curso.responsavel_tel}`}
-                            </span>
-                        )}
-
-                        {/* Meus cursos: ver turma */}
-                        {modo === 'meu' && curso.turmas[0] && (
-                            <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
-                                <GraduationCap size={10} /> Minha Turma
-                            </Link>
-                        )}
-
-                        {/* Cancelar interesse (se pendente) */}
-                        {interesseStatus === 'PENDENTE' && (
-                            <button onClick={() => handleCancelarInteresse(curso.id)} disabled={loadingInscricao === curso.id}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto disabled:opacity-50">
-                                {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
-                                Cancelar Interesse
-                            </button>
-                        )}
+                        ) : null}
 
                         {/* Gestao: aprovar, turmas, remover */}
                         {modo === 'gestao' && podeGerir && (

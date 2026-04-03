@@ -127,6 +127,9 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     // Notas
     const [notasEdit, setNotasEdit] = useState<Record<number, { nota: string; entregue: boolean }>>({})
 
+    // Editor de perguntas (professor)
+    const [perguntasEditor, setPerguntasEditor] = useState<any[]>([])
+
     // Questionario (aluno)
     const [questionarioAberto, setQuestionarioAberto] = useState<string | null>(null)
     const [respostasAluno, setRespostasAluno] = useState<Record<string, any>>({})
@@ -184,9 +187,12 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         setLoading(true)
         const form = new FormData(e.currentTarget)
         form.set('turma_id', turma.id)
+        if (perguntasEditor.length > 0) {
+            form.set('perguntas', JSON.stringify(perguntasEditor))
+        }
         const res = await criarAtividade(form)
         setLoading(false)
-        if (res.ok) { setModalAtividade(false); router.refresh() }
+        if (res.ok) { setModalAtividade(false); setPerguntasEditor([]); router.refresh() }
         else alert(res.error)
     }
 
@@ -406,6 +412,62 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label>
                         <textarea name="descricao" rows={2} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" />
                     </div>
+
+                    {/* EDITOR DE PERGUNTAS */}
+                    <div className="space-y-3 pt-2 border-t border-soft">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted">Questionario ({perguntasEditor.length} perguntas)</p>
+                            <div className="flex gap-1">
+                                <button type="button" onClick={() => setPerguntasEditor(prev => [...prev, { id: crypto.randomUUID(), texto: '', tipo: 'ESCRITA', opcoes: [], correta: null }])}
+                                    className="px-2 py-1 bg-bg border border-soft rounded-lg text-[7px] font-black uppercase text-muted hover:text-fg transition-colors">+ Escrita</button>
+                                <button type="button" onClick={() => setPerguntasEditor(prev => [...prev, { id: crypto.randomUUID(), texto: '', tipo: 'MULTIPLA', opcoes: ['', '', '', ''], correta: 0 }])}
+                                    className="px-2 py-1 bg-bg border border-soft rounded-lg text-[7px] font-black uppercase text-muted hover:text-fg transition-colors">+ Multipla</button>
+                                <button type="button" onClick={() => setPerguntasEditor(prev => [...prev, { id: crypto.randomUUID(), texto: '', tipo: 'VERDADEIRO_FALSO', opcoes: [], correta: true }])}
+                                    className="px-2 py-1 bg-bg border border-soft rounded-lg text-[7px] font-black uppercase text-muted hover:text-fg transition-colors">+ V/F</button>
+                            </div>
+                        </div>
+
+                        {perguntasEditor.map((p, idx) => (
+                            <div key={p.id} className="bg-bg border border-soft rounded-xl p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[8px] font-black text-muted">{idx + 1}.</span>
+                                    <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                                        p.tipo === 'ESCRITA' ? 'bg-blue-500/10 text-blue-400' : p.tipo === 'MULTIPLA' ? 'bg-purple-500/10 text-purple-400' : 'bg-amber-500/10 text-amber-400'
+                                    }`}>{p.tipo === 'ESCRITA' ? 'Escrita' : p.tipo === 'MULTIPLA' ? 'Multipla' : 'V/F'}</span>
+                                    <button type="button" onClick={() => setPerguntasEditor(prev => prev.filter((_, i) => i !== idx))} className="ml-auto text-red-400 hover:text-red-300"><Trash2 size={12} /></button>
+                                </div>
+                                <input value={p.texto} onChange={e => { const n = [...perguntasEditor]; n[idx].texto = e.target.value; setPerguntasEditor(n) }}
+                                    placeholder="Texto da pergunta..." className="w-full bg-bg2 border border-soft rounded-lg px-3 py-2 text-xs text-fg focus:border-figueira outline-none placeholder:text-muted/30" />
+
+                                {p.tipo === 'MULTIPLA' && (
+                                    <div className="space-y-1.5 pl-2">
+                                        {(p.opcoes as string[]).map((op: string, oi: number) => (
+                                            <div key={oi} className="flex items-center gap-2">
+                                                <button type="button" onClick={() => { const n = [...perguntasEditor]; n[idx].correta = oi; setPerguntasEditor(n) }}
+                                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${p.correta === oi ? 'border-emerald-500 bg-emerald-500' : 'border-soft'}`}>
+                                                    {p.correta === oi && <Check size={10} className="text-white" />}
+                                                </button>
+                                                <span className="text-[9px] font-bold text-muted w-4">{String.fromCharCode(65 + oi)})</span>
+                                                <input value={op} onChange={e => { const n = [...perguntasEditor]; (n[idx].opcoes as string[])[oi] = e.target.value; setPerguntasEditor(n) }}
+                                                    placeholder={`Opcao ${String.fromCharCode(65 + oi)}`} className="flex-1 bg-bg2 border border-soft rounded-lg px-2 py-1.5 text-xs text-fg focus:border-figueira outline-none placeholder:text-muted/30" />
+                                            </div>
+                                        ))}
+                                        <p className="text-[7px] text-emerald-500 font-bold">Clique no circulo para marcar a resposta correcta</p>
+                                    </div>
+                                )}
+
+                                {p.tipo === 'VERDADEIRO_FALSO' && (
+                                    <div className="flex gap-2 pl-2">
+                                        <button type="button" onClick={() => { const n = [...perguntasEditor]; n[idx].correta = true; setPerguntasEditor(n) }}
+                                            className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${p.correta === true ? 'bg-emerald-500 text-white' : 'bg-bg2 border border-soft text-muted'}`}>Verdadeiro</button>
+                                        <button type="button" onClick={() => { const n = [...perguntasEditor]; n[idx].correta = false; setPerguntasEditor(n) }}
+                                            className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${p.correta === false ? 'bg-red-500 text-white' : 'bg-bg2 border border-soft text-muted'}`}>Falso</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
                     <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         {loading ? 'A criar...' : 'Criar Atividade'}
@@ -617,26 +679,49 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {turma.aulas.map(a => (
-                                <div key={a.id} className="flex items-center gap-3 bg-bg2 border border-soft rounded-xl px-4 py-3">
-                                    <div className="flex-shrink-0 w-10 h-10 bg-bg border border-soft rounded-lg flex flex-col items-center justify-center">
-                                        <span className="text-[9px] font-black text-figueira leading-none">{new Date(a.data).getDate()}</span>
-                                        <span className="text-[7px] font-bold text-muted uppercase">{new Date(a.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[11px] font-black uppercase tracking-wide text-fg truncate">{a.titulo}</p>
-                                        <p className="text-[9px] text-muted font-bold">{a.professor.first_name} {a.professor.last_name}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {(a as any).link_aula && (
-                                            <a href={(a as any).link_aula} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase text-blue-400 hover:underline flex items-center gap-0.5"><Video size={10} /> Aula</a>
+                            {turma.aulas.map(a => {
+                                const aulaAny = a as any
+                                return (
+                                <details key={a.id} className="group bg-bg2 border border-soft rounded-xl overflow-hidden hover:border-figueira/30 transition-all">
+                                    <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-3 px-4 py-3">
+                                        <div className="flex-shrink-0 w-10 h-10 bg-bg border border-soft rounded-lg flex flex-col items-center justify-center">
+                                            <span className="text-[9px] font-black text-figueira leading-none">{new Date(a.data).getDate()}</span>
+                                            <span className="text-[7px] font-bold text-muted uppercase">{new Date(a.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[11px] font-black uppercase tracking-wide text-fg truncate">{a.titulo}</p>
+                                            <p className="text-[9px] text-muted font-bold">{a.professor.first_name} {a.professor.last_name}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {aulaAny.link_aula && <Video size={10} className="text-blue-400" />}
+                                            <span className="text-[9px] font-bold text-muted"><Users size={10} className="inline mr-0.5" />{a._count.presencas}</span>
+                                            <ChevronDown size={12} className="text-muted group-open:rotate-180 transition-transform" />
+                                        </div>
+                                    </summary>
+                                    <div className="px-4 pb-4 pt-2 border-t border-soft space-y-3">
+                                        {aulaAny.tema && <div><p className="text-[8px] font-black uppercase tracking-widest text-muted mb-0.5">Tema</p><p className="text-[10px] text-fg/80">{aulaAny.tema}</p></div>}
+                                        {aulaAny.conteudo && <div><p className="text-[8px] font-black uppercase tracking-widest text-muted mb-0.5">Conteudo</p><p className="text-[10px] text-fg/80 whitespace-pre-wrap">{aulaAny.conteudo}</p></div>}
+                                        {aulaAny.material_apoio && <div><p className="text-[8px] font-black uppercase tracking-widest text-muted mb-0.5">Material de Apoio</p><p className="text-[10px] text-fg/80 whitespace-pre-wrap">{aulaAny.material_apoio}</p></div>}
+                                        {aulaAny.perguntas_discussao && Array.isArray(aulaAny.perguntas_discussao) && aulaAny.perguntas_discussao.length > 0 && (
+                                            <div><p className="text-[8px] font-black uppercase tracking-widest text-muted mb-0.5">Perguntas de Discussao</p>
+                                                <ol className="list-decimal list-inside space-y-0.5">{(aulaAny.perguntas_discussao as string[]).map((p, i) => <li key={i} className="text-[10px] text-fg/80">{p}</li>)}</ol>
+                                            </div>
                                         )}
-                                        <span className="text-[9px] font-bold text-muted"><Users size={10} className="inline mr-0.5" />{a._count.presencas}</span>
-                                        {podeGerir && <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline">Presencas</button>}
-                                        {podeGerir && <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
+                                        {aulaAny.link_aula && (
+                                            <a href={aulaAny.link_aula} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-600/20 transition-colors">
+                                                <ExternalLink size={10} /> Assistir Aula
+                                            </a>
+                                        )}
+                                        {podeGerir && (
+                                            <div className="flex items-center gap-2 pt-2 border-t border-soft/50">
+                                                <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline flex items-center gap-1"><Users size={10} /> Presencas</button>
+                                                <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1 ml-auto"><Trash2 size={12} /></button>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                </details>
+                                )
+                            })}
                         </div>
                     )}
                 </section>

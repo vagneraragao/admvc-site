@@ -546,6 +546,7 @@ export async function atualizarCurso(id: string, formData: FormData) {
 
         const titulo = formData.get('titulo') as string
         const descricao = formData.get('descricao') as string | null
+        const ementa = formData.get('ementa') as string | null
         const categoria = (formData.get('categoria') as string) || 'EBD'
         const trimestreRaw = formData.get('trimestre') as string | null
         const trimestre = trimestreRaw ? Number(trimestreRaw) : null
@@ -554,25 +555,41 @@ export async function atualizarCurso(id: string, formData: FormData) {
         const data_fim = formData.get('data_fim') as string
         const carga_horariaRaw = formData.get('carga_horaria') as string | null
         const carga_horaria = carga_horariaRaw ? Number(carga_horariaRaw) : null
+        const vagas_maximasRaw = formData.get('vagas_maximas') as string | null
+        const vagas_maximas = vagas_maximasRaw ? Number(vagas_maximasRaw) : null
         const material_ref = formData.get('material_ref') as string | null
         const nota_minima = Number(formData.get('nota_minima') || 7)
         const presenca_minima = Number(formData.get('presenca_minima') || 75)
         const status = formData.get('status') as string | null
+        const is_externo = formData.get('is_externo') === 'true' || formData.get('is_externo') === 'on'
+        const link_externo = formData.get('link_externo') as string | null
+        const responsavel_nome = formData.get('responsavel_nome') as string | null
+        const responsavel_tel = formData.get('responsavel_tel') as string | null
+        const tipo_inscricao = (formData.get('tipo_inscricao') as string) || 'LIVRE'
+        const data_abertura_raw = formData.get('data_abertura_inscricoes') as string | null
 
         const curso = await db.cursoEBD.update({
             where: { id },
             data: {
                 titulo,
                 descricao: descricao || null,
+                ementa: ementa || null,
                 categoria: categoria as any,
                 trimestre: trimestre || null,
                 ano,
                 data_inicio: new Date(data_inicio),
                 data_fim: new Date(data_fim),
                 carga_horaria: carga_horaria || null,
+                vagas_maximas: vagas_maximas || null,
                 material_ref: material_ref || null,
                 nota_minima,
                 presenca_minima,
+                is_externo,
+                link_externo: link_externo || null,
+                responsavel_nome: responsavel_nome || null,
+                responsavel_tel: responsavel_tel || null,
+                tipo_inscricao: tipo_inscricao as any,
+                data_abertura_inscricoes: data_abertura_raw ? new Date(data_abertura_raw) : null,
                 ...(status ? { status: status as any } : {}),
             },
         })
@@ -750,6 +767,7 @@ export async function criarAtividade(formData: FormData) {
         const titulo = formData.get('titulo') as string
         const tipo = formData.get('tipo') as string
         const descricao = formData.get('descricao') as string | null
+        const perguntasRaw = formData.get('perguntas') as string | null
         const data_entrega = formData.get('data_entrega') as string | null
         const peso = Number(formData.get('peso') || 1)
         const nota_maxima = Number(formData.get('nota_maxima') || 10)
@@ -764,6 +782,7 @@ export async function criarAtividade(formData: FormData) {
                 titulo,
                 tipo: tipo as any,
                 descricao: descricao || null,
+                perguntas: perguntasRaw ? JSON.parse(perguntasRaw) : undefined,
                 data_entrega: data_entrega ? new Date(data_entrega) : null,
                 peso,
                 nota_maxima,
