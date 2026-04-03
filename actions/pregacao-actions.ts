@@ -461,12 +461,12 @@ export async function listarCursos(ano?: number) {
 
 export async function criarCurso(formData: FormData) {
     try {
-        await requireAuth()
+        const session = await requireAuth()
         const db = await getDb()
         const tenantId = Number((await headers()).get('x-tenant-id') || 0)
-
         const titulo = formData.get('titulo') as string
         const descricao = formData.get('descricao') as string | null
+        const ementa = formData.get('ementa') as string | null
         const categoria = (formData.get('categoria') as string) || 'EBD'
         const trimestreRaw = formData.get('trimestre') as string | null
         const trimestre = trimestreRaw ? Number(trimestreRaw) : null
@@ -475,9 +475,25 @@ export async function criarCurso(formData: FormData) {
         const data_fim = formData.get('data_fim') as string
         const carga_horariaRaw = formData.get('carga_horaria') as string | null
         const carga_horaria = carga_horariaRaw ? Number(carga_horariaRaw) : null
+        const vagas_maximasRaw = formData.get('vagas_maximas') as string | null
+        const vagas_maximas = vagas_maximasRaw ? Number(vagas_maximasRaw) : null
         const material_ref = formData.get('material_ref') as string | null
         const nota_minima = Number(formData.get('nota_minima') || 7)
         const presenca_minima = Number(formData.get('presenca_minima') || 75)
+
+        // Curso externo
+        const is_externo = formData.get('is_externo') === 'true' || formData.get('is_externo') === 'on'
+        const link_externo = formData.get('link_externo') as string | null
+        const responsavel_nome = formData.get('responsavel_nome') as string | null
+        const responsavel_tel = formData.get('responsavel_tel') as string | null
+
+        // Restricao inscricao
+        const tipo_inscricao = (formData.get('tipo_inscricao') as string) || 'LIVRE'
+        const departamento_idsRaw = formData.get('departamento_ids') as string | null
+        const grupo_idsRaw = formData.get('grupo_ids') as string | null
+
+        // Agendamento
+        const data_abertura_raw = formData.get('data_abertura_inscricoes') as string | null
 
         if (!titulo || !ano || !data_inicio || !data_fim) {
             return { ok: false, error: 'Preencha todos os campos obrigatórios.' }
@@ -487,15 +503,26 @@ export async function criarCurso(formData: FormData) {
             data: {
                 titulo,
                 descricao: descricao || null,
+                ementa: ementa || null,
                 categoria: categoria as any,
                 trimestre: trimestre || undefined,
                 ano,
                 data_inicio: new Date(data_inicio),
                 data_fim: new Date(data_fim),
                 carga_horaria: carga_horaria || undefined,
+                vagas_maximas: vagas_maximas || undefined,
                 material_ref: material_ref || null,
                 nota_minima,
                 presenca_minima,
+                is_externo,
+                link_externo: link_externo || null,
+                responsavel_nome: responsavel_nome || null,
+                responsavel_tel: responsavel_tel || null,
+                tipo_inscricao: tipo_inscricao as any,
+                departamento_ids: departamento_idsRaw ? JSON.parse(departamento_idsRaw) : undefined,
+                grupo_ids: grupo_idsRaw ? JSON.parse(grupo_idsRaw) : undefined,
+                data_abertura_inscricoes: data_abertura_raw ? new Date(data_abertura_raw) : undefined,
+                criado_por_id: session.membroId,
                 tenant_id: tenantId,
             },
         })
@@ -878,5 +905,169 @@ export async function calcularAprovacao(turmaId: string) {
     } catch (error: any) {
         console.error('Erro ao calcular aprovação:', error)
         return { ok: false, error: error.message || 'Erro ao calcular aprovação.' }
+    }
+}
+
+// ── WORKFLOW DE APROVAÇÃO ────────────────────────────────────────────────────
+
+export async function aprovarCurso(cursoId: string) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+
+        await db.cursoEBD.update({
+            where: { id: cursoId },
+            data: {
+                aprovado: true,
+                aprovado_por_id: session.membroId,
+                aprovado_em: new Date(),
+                status: 'EM_CURSO',
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao aprovar curso:', error)
+        return { ok: false, error: error.message || 'Erro ao aprovar curso.' }
+    }
+}
+
+export async function agendarAberturaCurso(cursoId: string, dataAbertura: string) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        await db.cursoEBD.update({
+            where: { id: cursoId },
+            data: {
+                data_abertura_inscricoes: new Date(dataAbertura),
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao agendar abertura:', error)
+        return { ok: false, error: error.message || 'Erro ao agendar abertura.' }
+    }
+}
+
+// ── AUTO-INSCRIÇÃO PELO MEMBRO ──────────────────────────────────────────────
+
+export async function inscreverMeCurso(cursoId: string) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        const curso = await db.cursoEBD.findUnique({
+            where: { id: cursoId },
+            include: {
+                turmas: {
+                    include: {
+                        _count: { select: { matriculas: true } },
+                        matriculas: { where: { membro_id: session.membroId }, select: { id: true } },
+                    },
+                },
+            },
+        })
+
+        if (!curso) return { ok: false, error: 'Curso não encontrado.' }
+        if (!curso.aprovado) return { ok: false, error: 'Este curso ainda não foi aprovado.' }
+
+        // Verificar data de abertura
+        if (curso.data_abertura_inscricoes && new Date() < new Date(curso.data_abertura_inscricoes)) {
+            return { ok: false, error: 'As inscrições ainda não abriram para este curso.' }
+        }
+
+        // Verificar se já está inscrito em alguma turma
+        const jaInscrito = curso.turmas.some(t => t.matriculas.length > 0)
+        if (jaInscrito) return { ok: false, error: 'Já está inscrito neste curso.' }
+
+        // Verificar restrição por departamento/grupo
+        if (curso.tipo_inscricao === 'DEPARTAMENTO' && curso.departamento_ids) {
+            const deptIds = curso.departamento_ids as number[]
+            const membro = await db.membro.findUnique({
+                where: { id: session.membroId },
+                select: { ministerios: { select: { departamento_id: true } } },
+            })
+            const membroDeptIds = membro?.ministerios?.map((m: any) => m.departamento_id).filter(Boolean) || []
+            const temAcesso = deptIds.some(id => membroDeptIds.includes(id))
+            if (!temAcesso) return { ok: false, error: 'Este curso é exclusivo para departamentos específicos.' }
+        }
+
+        if (curso.tipo_inscricao === 'GRUPO' && curso.grupo_ids) {
+            const grpIds = curso.grupo_ids as number[]
+            const membro = await db.membro.findUnique({
+                where: { id: session.membroId },
+                select: { grupos: { select: { id: true } } },
+            })
+            const membroGrpIds = membro?.grupos?.map((g: any) => g.id) || []
+            const temAcesso = grpIds.some(id => membroGrpIds.includes(id))
+            if (!temAcesso) return { ok: false, error: 'Este curso é exclusivo para grupos específicos.' }
+        }
+
+        // Encontrar turma com vagas (primeira disponível)
+        let turmaAlvo = curso.turmas.find(t => {
+            if (curso.vagas_maximas) {
+                const totalInscritos = curso.turmas.reduce((acc, tt) => acc + tt._count.matriculas, 0)
+                return totalInscritos < curso.vagas_maximas
+            }
+            return true
+        })
+
+        if (!turmaAlvo) {
+            // Se não há turma disponível, tentar a primeira turma
+            turmaAlvo = curso.turmas[0]
+            if (!turmaAlvo) return { ok: false, error: 'Este curso não tem turmas disponíveis.' }
+
+            // Verificar vagas
+            if (curso.vagas_maximas) {
+                const totalInscritos = curso.turmas.reduce((acc, t) => acc + t._count.matriculas, 0)
+                if (totalInscritos >= curso.vagas_maximas) {
+                    return { ok: false, error: 'Não há mais vagas disponíveis.' }
+                }
+            }
+        }
+
+        await db.matriculaEBD.create({
+            data: {
+                turma_id: turmaAlvo.id,
+                membro_id: session.membroId,
+                tenant_id: tenantId,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao inscrever no curso:', error)
+        return { ok: false, error: error.message || 'Erro ao inscrever no curso.' }
+    }
+}
+
+export async function cancelarInscricao(cursoId: string) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+
+        // Encontrar a matrícula do membro neste curso
+        const matricula = await db.matriculaEBD.findFirst({
+            where: {
+                membro_id: session.membroId,
+                turma: { curso_id: cursoId },
+            },
+        })
+
+        if (!matricula) return { ok: false, error: 'Inscrição não encontrada.' }
+
+        await db.matriculaEBD.delete({ where: { id: matricula.id } })
+
+        revalidatePath('/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao cancelar inscrição:', error)
+        return { ok: false, error: error.message || 'Erro ao cancelar inscrição.' }
     }
 }

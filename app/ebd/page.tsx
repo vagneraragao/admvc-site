@@ -29,8 +29,9 @@ export default async function EBDPage({
     const membroData = await prisma.membro.findUnique({
         where: { id: session.membroId },
         select: {
-            ministerios: { include: { departamento: { select: { nome: true } } } },
-            departamentos_liderados: { select: { nome: true } },
+            ministerios: { include: { departamento: { select: { id: true, nome: true } } } },
+            departamentos_liderados: { select: { id: true, nome: true } },
+            grupos: { select: { id: true } },
         },
     })
 
@@ -42,7 +43,14 @@ export default async function EBDPage({
 
     const podeGerir = isAdmin(session.role) || checkDepto(['diaconia', 'diácono', 'diacono'])
 
-    const [cursos, aulas, membros, sermoes] = await Promise.all([
+    // IDs do membro para verificar restricoes
+    const membroDeptIds = [
+        ...(membroData?.ministerios?.map((m: any) => m.departamento?.id).filter(Boolean) || []),
+        ...(membroData?.departamentos_liderados?.map((d: any) => d.id) || []),
+    ]
+    const membroGrupoIds = membroData?.grupos?.map((g: any) => g.id) || []
+
+    const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas] = await Promise.all([
         prisma.cursoEBD.findMany({
             where: { tenant_id: tenantId },
             include: {
@@ -52,15 +60,14 @@ export default async function EBDPage({
                         _count: { select: { matriculas: true, aulas: true, atividades: true } },
                     },
                 },
+                criado_por: { select: { first_name: true, last_name: true } },
+                aprovado_por: { select: { first_name: true, last_name: true } },
                 _count: { select: { turmas: true } },
             },
-            orderBy: [{ ano: 'desc' }, { trimestre: 'desc' }],
+            orderBy: [{ ano: 'desc' }, { created_at: 'desc' }],
         }),
         prisma.escolaBiblica.findMany({
-            where: {
-                tenant_id: tenantId,
-                data: { gte: inicio, lt: fim },
-            },
+            where: { tenant_id: tenantId, data: { gte: inicio, lt: fim } },
             include: {
                 professor: { select: { first_name: true, last_name: true } },
                 sermao: { select: { id: true, titulo: true } },
@@ -81,18 +88,34 @@ export default async function EBDPage({
             orderBy: { data_pregacao: 'desc' },
             take: 100,
         }),
+        prisma.departamento.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, nome: true },
+            orderBy: { nome: 'asc' },
+        }),
+        prisma.grupo.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, nome: true },
+            orderBy: { nome: 'asc' },
+        }),
+        // Matriculas do membro actual
+        prisma.matriculaEBD.findMany({
+            where: { membro_id: session.membroId, tenant_id: tenantId },
+            select: { turma: { select: { curso_id: true } } },
+        }),
     ])
+
+    const meusCursoIds = new Set(minhasMatriculas.map(m => m.turma.curso_id))
 
     const cursosSerializados = cursos.map(c => ({
         ...c,
         data_inicio: c.data_inicio.toISOString(),
         data_fim: c.data_fim.toISOString(),
+        data_abertura_inscricoes: c.data_abertura_inscricoes?.toISOString() || null,
+        aprovado_em: c.aprovado_em?.toISOString() || null,
         created_at: c.created_at.toISOString(),
         updated_at: c.updated_at.toISOString(),
-        turmas: c.turmas.map(t => ({
-            ...t,
-            created_at: t.created_at.toISOString(),
-        })),
+        turmas: c.turmas.map(t => ({ ...t, created_at: t.created_at.toISOString() })),
     }))
 
     const aulasSerializadas = aulas.map(a => ({
@@ -112,10 +135,16 @@ export default async function EBDPage({
             aulas={aulasSerializadas}
             membros={membros}
             sermoes={sermoesSerializados}
+            departamentos={departamentos}
+            grupos={grupos}
             mes={mes}
             ano={ano}
             sermaoIdInicial={params.sermao_id || null}
             podeGerir={podeGerir}
+            membroId={session.membroId}
+            meusCursoIds={Array.from(meusCursoIds)}
+            membroDeptIds={membroDeptIds}
+            membroGrupoIds={membroGrupoIds}
         />
     )
 }

@@ -8,11 +8,13 @@ import {
     ChevronLeft, ChevronRight, Plus, GraduationCap,
     Calendar, User, Users, BookOpen, Trash2,
     X, Loader2, Check, ChevronDown, Layers, Clock,
-    Award, TrendingUp, AlertTriangle
+    Award, TrendingUp, ExternalLink, Lock, ShieldCheck,
+    UserPlus, XCircle, Eye
 } from 'lucide-react'
 import {
-    criarCurso, removerCurso,
-    criarTurma, criarEBD, removerEBD, registarPresencasEBD
+    criarCurso, removerCurso, aprovarCurso,
+    criarTurma, criarEBD, removerEBD, registarPresencasEBD,
+    inscreverMeCurso, cancelarInscricao
 } from '@/actions/pregacao-actions'
 
 const MESES = [
@@ -20,11 +22,11 @@ const MESES = [
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
 
-const CATEGORIA_LABELS: Record<string, { label: string; icon: string }> = {
-    EBD: { label: 'EBD', icon: 'bg-indigo-600/10 text-indigo-400 border-indigo-600/20' },
-    LIVRE: { label: 'Livre', icon: 'bg-emerald-600/10 text-emerald-400 border-emerald-600/20' },
-    DISCIPULADO: { label: 'Discipulado', icon: 'bg-amber-600/10 text-amber-400 border-amber-600/20' },
-    SEMINARIO: { label: 'Seminario', icon: 'bg-purple-600/10 text-purple-400 border-purple-600/20' },
+const CATEGORIA_LABELS: Record<string, { label: string; color: string }> = {
+    EBD: { label: 'EBD', color: 'bg-indigo-600/10 text-indigo-400 border-indigo-600/20' },
+    LIVRE: { label: 'Livre', color: 'bg-emerald-600/10 text-emerald-400 border-emerald-600/20' },
+    DISCIPULADO: { label: 'Discipulado', color: 'bg-amber-600/10 text-amber-400 border-amber-600/20' },
+    SEMINARIO: { label: 'Seminario', color: 'bg-purple-600/10 text-purple-400 border-purple-600/20' },
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -34,127 +36,132 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     CANCELADO: { label: 'Cancelado', color: 'text-red-400 bg-red-600/10 border-red-600/20' },
 }
 
+const INSCRICAO_LABELS: Record<string, string> = {
+    LIVRE: 'Aberto a todos',
+    DEPARTAMENTO: 'Departamento exclusivo',
+    GRUPO: 'Grupo exclusivo',
+}
+
 interface Turma {
-    id: string
-    nome: string
-    faixa_etaria: string | null
+    id: string; nome: string; faixa_etaria: string | null
     professor: { first_name: string; last_name: string }
     _count: { matriculas: number; aulas: number; atividades: number }
 }
 
 interface Curso {
-    id: string
-    titulo: string
-    descricao: string | null
-    categoria: string
-    trimestre: number | null
-    ano: number
-    data_inicio: string
-    data_fim: string
-    carga_horaria: number | null
-    material_ref: string | null
-    nota_minima: number
-    presenca_minima: number
-    status: string
-    turmas: Turma[]
-    _count: { turmas: number }
+    id: string; titulo: string; descricao: string | null; ementa: string | null
+    categoria: string; trimestre: number | null; ano: number
+    data_inicio: string; data_fim: string; carga_horaria: number | null
+    vagas_maximas: number | null; material_ref: string | null
+    nota_minima: number; presenca_minima: number; status: string
+    is_externo: boolean; link_externo: string | null
+    responsavel_nome: string | null; responsavel_tel: string | null
+    tipo_inscricao: string; departamento_ids: any; grupo_ids: any
+    aprovado: boolean; aprovado_em: string | null
+    data_abertura_inscricoes: string | null
+    criado_por: { first_name: string; last_name: string } | null
+    aprovado_por: { first_name: string; last_name: string } | null
+    turmas: Turma[]; _count: { turmas: number }
 }
 
 interface Aula {
-    id: string
-    titulo: string
-    tema: string | null
-    data: string
+    id: string; titulo: string; tema: string | null; data: string
     professor: { first_name: string; last_name: string }
     sermao: { id: string; titulo: string } | null
     turma: { id: string; nome: string } | null
-    _count: { presencas: number }
-    presencas: { membro_id: number }[]
+    _count: { presencas: number }; presencas: { membro_id: number }[]
 }
 
 interface Membro { id: number; first_name: string; last_name: string }
 interface Sermao { id: string; titulo: string; data_pregacao: string }
+interface DeptGrupo { id: number; nome: string }
 
 interface Props {
-    cursos: Curso[]
-    aulas: Aula[]
-    membros: Membro[]
-    sermoes: Sermao[]
-    mes: number
-    ano: number
-    sermaoIdInicial: string | null
-    podeGerir?: boolean
+    cursos: Curso[]; aulas: Aula[]; membros: Membro[]; sermoes: Sermao[]
+    departamentos: DeptGrupo[]; grupos: DeptGrupo[]
+    mes: number; ano: number; sermaoIdInicial: string | null
+    podeGerir?: boolean; membroId: number
+    meusCursoIds: string[]; membroDeptIds: number[]; membroGrupoIds: number[]
 }
 
-export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano, sermaoIdInicial, podeGerir = false }: Props) {
+export default function EBDDashboard({
+    cursos, aulas, membros, sermoes, departamentos, grupos,
+    mes, ano, sermaoIdInicial, podeGerir = false, membroId,
+    meusCursoIds, membroDeptIds, membroGrupoIds
+}: Props) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
-    const [tab, setTab] = useState<'cursos' | 'aulas'>('cursos')
+    const [tab, setTab] = useState<'disponiveis' | 'meus' | 'gestao'>('disponiveis')
     const [filtroCategoria, setFiltroCategoria] = useState<string>('TODOS')
     const [modalCurso, setModalCurso] = useState(false)
-    const [modalTurma, setModalTurma] = useState<string | null>(null) // curso_id
-    const [modalAula, setModalAula] = useState(false)
+    const [modalTurma, setModalTurma] = useState<string | null>(null)
     const [mounted, setMounted] = useState(false)
     const [loading, setLoading] = useState(false)
-
-    // Presence
-    const [presencaAulaId, setPresencaAulaId] = useState<string | null>(null)
-    const [presentes, setPresentes] = useState<number[]>([])
-    const [presencaLoading, setPresencaLoading] = useState(false)
-    const [presencaSearch, setPresencaSearch] = useState('')
+    const [detalhesCurso, setDetalhesCurso] = useState<string | null>(null)
+    const [loadingInscricao, setLoadingInscricao] = useState<string | null>(null)
 
     useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
-        if (sermaoIdInicial) {
-            setTab('aulas')
-            setModalAula(true)
-        }
-    }, [sermaoIdInicial])
-
-    useEffect(() => {
-        if (modalCurso || modalTurma || modalAula || presencaAulaId) {
-            document.body.style.overflow = 'hidden'
-        } else {
-            document.body.style.overflow = ''
-        }
+        if (modalCurso || modalTurma || detalhesCurso) document.body.style.overflow = 'hidden'
+        else document.body.style.overflow = ''
         return () => { document.body.style.overflow = '' }
-    }, [modalCurso, modalTurma, modalAula, presencaAulaId])
+    }, [modalCurso, modalTurma, detalhesCurso])
 
-    function navegar(params: Record<string, string | undefined>) {
-        const sp = new URLSearchParams(searchParams.toString())
-        Object.entries(params).forEach(([k, v]) => {
-            if (v === undefined) sp.delete(k)
-            else sp.set(k, v)
-        })
-        sp.delete('sermao_id')
-        const qs = sp.toString()
-        router.push(qs ? `${pathname}?${qs}` : pathname)
+    const agora = new Date()
+
+    // Helpers
+    function cursoDisponivel(c: Curso) {
+        if (!c.aprovado) return false
+        if (c.data_abertura_inscricoes && new Date(c.data_abertura_inscricoes) > agora) return false
+        if (c.status === 'CANCELADO' || c.status === 'CONCLUIDO') return false
+        return true
     }
 
-    function mesAnterior() {
-        const m = mes === 1 ? 12 : mes - 1
-        const a = mes === 1 ? ano - 1 : ano
-        navegar({ mes: String(m), ano: String(a) })
+    function membroPodeInscrever(c: Curso) {
+        if (meusCursoIds.includes(c.id)) return false
+        if (c.tipo_inscricao === 'DEPARTAMENTO' && c.departamento_ids) {
+            const ids = c.departamento_ids as number[]
+            if (!ids.some(id => membroDeptIds.includes(id))) return false
+        }
+        if (c.tipo_inscricao === 'GRUPO' && c.grupo_ids) {
+            const ids = c.grupo_ids as number[]
+            if (!ids.some(id => membroGrupoIds.includes(id))) return false
+        }
+        return true
     }
 
-    function mesSeguinte() {
-        const m = mes === 12 ? 1 : mes + 1
-        const a = mes === 12 ? ano + 1 : ano
-        navegar({ mes: String(m), ano: String(a) })
+    function totalInscritos(c: Curso) {
+        return c.turmas.reduce((acc, t) => acc + t._count.matriculas, 0)
     }
 
-    // ── Handlers ──
+    function temVagas(c: Curso) {
+        if (!c.vagas_maximas) return true
+        return totalInscritos(c) < c.vagas_maximas
+    }
 
+    function cursoEmBreve(c: Curso) {
+        return c.aprovado && c.data_abertura_inscricoes && new Date(c.data_abertura_inscricoes) > agora
+    }
+
+    // Listas filtradas
+    const cursosDisponiveis = cursos.filter(c => cursoDisponivel(c) && membroPodeInscrever(c) && temVagas(c))
+    const cursosEmBreve = cursos.filter(c => cursoEmBreve(c) && membroPodeInscrever(c))
+    const meusCursos = cursos.filter(c => meusCursoIds.includes(c.id))
+    const cursosFiltrados = (tab === 'gestao' ? cursos : tab === 'meus' ? meusCursos : [...cursosDisponiveis, ...cursosEmBreve])
+        .filter(c => filtroCategoria === 'TODOS' || c.categoria === filtroCategoria)
+
+    // Handlers
     async function handleCriarCurso(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setLoading(true)
-        const res = await criarCurso(new FormData(e.currentTarget))
+        const form = new FormData(e.currentTarget)
+        const res = await criarCurso(form)
         setLoading(false)
         if (res.ok) { setModalCurso(false); router.refresh() }
-        else alert(res.error || 'Erro ao criar curso.')
+        else alert(res.error)
     }
 
     async function handleCriarTurma(e: React.FormEvent<HTMLFormElement>) {
@@ -165,133 +172,255 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
         const res = await criarTurma(form)
         setLoading(false)
         if (res.ok) { setModalTurma(null); router.refresh() }
-        else alert(res.error || 'Erro ao criar turma.')
+        else alert(res.error)
     }
 
-    async function handleCriarAula(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
+    async function handleAprovar(id: string) {
+        if (!confirm('Aprovar este curso e abrir para inscrições?')) return
         setLoading(true)
-        const form = new FormData(e.currentTarget)
-        const perguntasRaw = form.get('perguntas_discussao') as string
-        if (perguntasRaw) {
-            form.set('perguntas_discussao', JSON.stringify(perguntasRaw.split('\n').map(p => p.trim()).filter(Boolean)))
-        }
-        const res = await criarEBD(form)
+        const res = await aprovarCurso(id)
         setLoading(false)
-        if (res.ok) { setModalAula(false); router.refresh() }
-        else alert(res.error || 'Erro ao criar aula.')
-    }
-
-    async function handleRemoverCurso(id: string) {
-        if (!confirm('Remover este curso e todas as turmas associadas?')) return
-        const res = await removerCurso(id)
         if (res.ok) router.refresh()
-        else alert(res.error || 'Erro ao remover.')
+        else alert(res.error)
     }
 
-    async function handleRemoverAula(id: string) {
-        if (!confirm('Remover esta aula?')) return
-        const res = await removerEBD(id)
+    async function handleInscrever(cursoId: string) {
+        setLoadingInscricao(cursoId)
+        const res = await inscreverMeCurso(cursoId)
+        setLoadingInscricao(null)
         if (res.ok) router.refresh()
-        else alert(res.error || 'Erro ao remover.')
+        else alert(res.error)
     }
 
-    function abrirPresencas(aula: Aula) {
-        setPresencaAulaId(aula.id)
-        setPresentes(aula.presencas.map(p => p.membro_id))
-        setPresencaSearch('')
+    async function handleCancelar(cursoId: string) {
+        if (!confirm('Cancelar a sua inscrição neste curso?')) return
+        setLoadingInscricao(cursoId)
+        const res = await cancelarInscricao(cursoId)
+        setLoadingInscricao(null)
+        if (res.ok) router.refresh()
+        else alert(res.error)
     }
 
-    async function salvarPresencas() {
-        if (!presencaAulaId) return
-        setPresencaLoading(true)
-        const res = await registarPresencasEBD(presencaAulaId, presentes)
-        setPresencaLoading(false)
-        if (res.ok) { setPresencaAulaId(null); setPresentes([]); router.refresh() }
-        else alert(res.error || 'Erro ao registar presencas.')
+    // Curso card (reutilizavel)
+    function CursoCard({ curso, modo }: { curso: Curso; modo: 'disponivel' | 'meu' | 'gestao' }) {
+        const cat = CATEGORIA_LABELS[curso.categoria]
+        const st = STATUS_LABELS[curso.status] || STATUS_LABELS.PLANEADO
+        const inscritos = totalInscritos(curso)
+        const emBreve = cursoEmBreve(curso)
+        const jaInscrito = meusCursoIds.includes(curso.id)
+
+        return (
+            <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden transition-all hover:border-figueira/30">
+                <div className="px-5 py-4 space-y-3">
+                    {/* Top line */}
+                    <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-11 h-11 bg-bg border border-soft rounded-xl flex flex-col items-center justify-center">
+                            {curso.trimestre ? (
+                                <><span className="text-[9px] font-black text-figueira leading-none">T{curso.trimestre}</span><span className="text-[7px] font-bold text-muted">{curso.ano}</span></>
+                            ) : (
+                                <span className="text-[9px] font-black text-figueira">{curso.ano}</span>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-xs font-black uppercase tracking-wide text-fg truncate">{curso.titulo}</h3>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                {cat && <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${cat.color}`}>{cat.label}</span>}
+                                {modo === 'gestao' && <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${st.color}`}>{st.label}</span>}
+                                {!curso.aprovado && modo === 'gestao' && <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-600/20 bg-amber-600/10 text-amber-400">Pendente</span>}
+                                {curso.is_externo && <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-sky-600/20 bg-sky-600/10 text-sky-400">Externo</span>}
+                                {curso.tipo_inscricao !== 'LIVRE' && <Lock size={9} className="text-muted" />}
+                                {emBreve && <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-600/20 bg-blue-600/10 text-blue-400">Em breve</span>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex flex-wrap gap-3 text-[9px] text-muted font-bold">
+                        <span><Calendar size={9} className="inline mr-0.5" />{new Date(curso.data_inicio).toLocaleDateString('pt-PT')} — {new Date(curso.data_fim).toLocaleDateString('pt-PT')}</span>
+                        {curso.carga_horaria && <span><Clock size={9} className="inline mr-0.5" />{curso.carga_horaria}h</span>}
+                        {curso.vagas_maximas && <span><Users size={9} className="inline mr-0.5" />{inscritos}/{curso.vagas_maximas} vagas</span>}
+                        {!curso.vagas_maximas && <span><Users size={9} className="inline mr-0.5" />{inscritos} inscritos</span>}
+                        <span className="text-[8px]">{INSCRICAO_LABELS[curso.tipo_inscricao]}</span>
+                    </div>
+
+                    {/* Descricao curta */}
+                    {curso.descricao && <p className="text-[10px] text-fg/70 line-clamp-2">{curso.descricao}</p>}
+
+                    {/* Agendamento */}
+                    {emBreve && curso.data_abertura_inscricoes && (
+                        <p className="text-[9px] font-bold text-blue-400">
+                            <Clock size={9} className="inline mr-1" />
+                            Inscricoes abrem em {new Date(curso.data_abertura_inscricoes).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        {/* Ver detalhes / ementa */}
+                        <button onClick={() => setDetalhesCurso(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-bg border border-soft rounded-2xl text-[9px] font-black uppercase tracking-widest text-fg hover:border-figueira/50 transition-colors">
+                            <Eye size={10} /> Detalhes
+                        </button>
+
+                        {/* Inscricao do membro */}
+                        {modo === 'disponivel' && !jaInscrito && !emBreve && !curso.is_externo && (
+                            <button onClick={() => handleInscrever(curso.id)} disabled={loadingInscricao === curso.id}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-figueira text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50">
+                                {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <UserPlus size={10} />}
+                                Inscrever-me
+                            </button>
+                        )}
+
+                        {/* Curso externo */}
+                        {curso.is_externo && curso.link_externo && (
+                            <a href={curso.link_externo} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-4 py-2 bg-sky-600/10 border border-sky-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-sky-400 hover:bg-sky-600/20 transition-colors">
+                                <ExternalLink size={10} /> Ver Externo
+                            </a>
+                        )}
+                        {curso.is_externo && curso.responsavel_nome && (
+                            <span className="flex items-center gap-1.5 px-4 py-2 text-[9px] font-bold text-muted">
+                                <User size={10} /> {curso.responsavel_nome} {curso.responsavel_tel && `· ${curso.responsavel_tel}`}
+                            </span>
+                        )}
+
+                        {/* Meus cursos: cancelar ou ver turma */}
+                        {modo === 'meu' && (
+                            <>
+                                {curso.turmas[0] && (
+                                    <Link href={`/ebd/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                        <GraduationCap size={10} /> Minha Turma
+                                    </Link>
+                                )}
+                                <button onClick={() => handleCancelar(curso.id)} disabled={loadingInscricao === curso.id}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto disabled:opacity-50">
+                                    {loadingInscricao === curso.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
+                                    Cancelar
+                                </button>
+                            </>
+                        )}
+
+                        {/* Gestao: aprovar, turmas, remover */}
+                        {modo === 'gestao' && podeGerir && (
+                            <>
+                                {!curso.aprovado && (
+                                    <button onClick={() => handleAprovar(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-green-600/10 border border-green-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-green-400 hover:bg-green-600/20 transition-colors">
+                                        <ShieldCheck size={10} /> Aprovar
+                                    </button>
+                                )}
+                                <button onClick={() => setModalTurma(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                                    <Plus size={10} /> Turma
+                                </button>
+                                {curso.turmas.map(t => (
+                                    <Link key={t.id} href={`/ebd/turma/${t.id}`} className="text-[8px] font-bold text-figueira hover:underline flex items-center gap-1">
+                                        <Layers size={9} /> {t.nome} ({t._count.matriculas})
+                                    </Link>
+                                ))}
+                                <button onClick={async () => { if (confirm('Remover este curso?')) { const r = await removerCurso(curso.id); if (r.ok) router.refresh() } }}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
+                                    <Trash2 size={10} /> Remover
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
     }
 
-    const membrosFiltrados = presencaSearch
-        ? membros.filter(m => `${m.first_name} ${m.last_name}`.toLowerCase().includes(presencaSearch.toLowerCase()))
-        : membros
+    // Modal detalhes/ementa
+    const detalhesModal = detalhesCurso && mounted ? (() => {
+        const c = cursos.find(x => x.id === detalhesCurso)
+        if (!c) return null
+        return createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="relative w-full max-w-2xl bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                    <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">{c.titulo}</h2>
+                        <button onClick={() => setDetalhesCurso(null)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        {c.descricao && <div><p className="text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</p><p className="text-[11px] text-fg/80">{c.descricao}</p></div>}
+                        {c.ementa && <div><p className="text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ementa / Conteudo Programatico</p><p className="text-[11px] text-fg/80 whitespace-pre-wrap">{c.ementa}</p></div>}
+                        <div className="grid grid-cols-2 gap-4 text-[10px]">
+                            <div><span className="font-black text-muted uppercase text-[8px]">Periodo</span><p className="text-fg">{new Date(c.data_inicio).toLocaleDateString('pt-PT')} — {new Date(c.data_fim).toLocaleDateString('pt-PT')}</p></div>
+                            {c.carga_horaria && <div><span className="font-black text-muted uppercase text-[8px]">Carga Horaria</span><p className="text-fg">{c.carga_horaria} horas</p></div>}
+                            <div><span className="font-black text-muted uppercase text-[8px]">Nota Minima</span><p className="text-fg">{c.nota_minima}</p></div>
+                            <div><span className="font-black text-muted uppercase text-[8px]">Presenca Minima</span><p className="text-fg">{c.presenca_minima}%</p></div>
+                            {c.vagas_maximas && <div><span className="font-black text-muted uppercase text-[8px]">Vagas</span><p className="text-fg">{totalInscritos(c)}/{c.vagas_maximas}</p></div>}
+                            <div><span className="font-black text-muted uppercase text-[8px]">Inscricao</span><p className="text-fg">{INSCRICAO_LABELS[c.tipo_inscricao]}</p></div>
+                        </div>
+                        {c.material_ref && <div><span className="font-black text-muted uppercase text-[8px]">Material</span><p className="text-[11px] text-fg/80">{c.material_ref}</p></div>}
+                        {c.is_externo && (
+                            <div className="bg-sky-600/5 border border-sky-600/20 rounded-xl p-4 space-y-1">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-sky-400">Curso Externo</p>
+                                {c.responsavel_nome && <p className="text-[10px] text-fg">Responsavel: {c.responsavel_nome} {c.responsavel_tel && `· ${c.responsavel_tel}`}</p>}
+                                {c.link_externo && <a href={c.link_externo} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-400 hover:underline flex items-center gap-1"><ExternalLink size={10} /> {c.link_externo}</a>}
+                            </div>
+                        )}
+                        {c.turmas.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted mb-2">Turmas</p>
+                                <div className="space-y-1.5">
+                                    {c.turmas.map(t => (
+                                        <div key={t.id} className="flex items-center gap-2 bg-bg border border-soft rounded-xl px-3 py-2 text-[10px]">
+                                            <span className="font-black text-fg">{t.nome}</span>
+                                            <span className="text-muted">{t.professor.first_name} {t.professor.last_name}</span>
+                                            <span className="text-muted ml-auto"><Users size={9} className="inline mr-0.5" />{t._count.matriculas}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )
+    })() : null
 
-    const cursosFiltrados = filtroCategoria === 'TODOS' ? cursos : cursos.filter(c => c.categoria === filtroCategoria)
-    const cursosEmCurso = cursos.filter(c => c.status === 'EM_CURSO')
-    const totalAlunos = cursosEmCurso.reduce((acc, c) => acc + c.turmas.reduce((a, t) => a + t._count.matriculas, 0), 0)
-
-    // ── Modais ──
-
+    // Modal criar curso
     const cursoModal = modalCurso && mounted ? createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="relative w-full max-w-2xl bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                 <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Novo Curso EBD</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Novo Curso</h2>
                     <button onClick={() => setModalCurso(false)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleCriarCurso} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label>
-                        <input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Frutos do Espirito, Fotografia, Musica" />
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label>
-                        <textarea name="descricao" rows={2} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="Descricao do curso..." />
-                    </div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label><input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Frutos do Espirito, Fotografia" /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label><textarea name="descricao" rows={2} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="Descricao breve..." /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ementa / Conteudo Programatico</label><textarea name="ementa" rows={5} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="Aula 1 - Introducao&#10;Aula 2 - Fundamentos&#10;..." /></div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Categoria *</label>
-                            <select name="categoria" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                                <option value="EBD">Escola Biblica (EBD)</option>
-                                <option value="LIVRE">Curso Livre</option>
-                                <option value="DISCIPULADO">Discipulado</option>
-                                <option value="SEMINARIO">Seminario</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Carga Horaria (h)</label>
-                            <input name="carga_horaria" type="number" min="1" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: 40" />
-                        </div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Categoria *</label><select name="categoria" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="EBD">EBD</option><option value="LIVRE">Curso Livre</option><option value="DISCIPULADO">Discipulado</option><option value="SEMINARIO">Seminario</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Vagas Maximas</label><input name="vagas_maximas" type="number" min="1" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ilimitado" /></div>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Trimestre</label>
-                            <select name="trimestre" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                                <option value="">N/A</option>
-                                <option value="1">1o (Jan-Mar)</option>
-                                <option value="2">2o (Abr-Jun)</option>
-                                <option value="3">3o (Jul-Set)</option>
-                                <option value="4">4o (Out-Dez)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ano *</label>
-                            <input name="ano" type="number" required defaultValue={ano} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
-                        </div>
-                        <div />
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Carga Horaria (h)</label><input name="carga_horaria" type="number" min="1" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Trimestre</label><select name="trimestre" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="">N/A</option><option value="1">1o</option><option value="2">2o</option><option value="3">3o</option><option value="4">4o</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Ano *</label><input name="ano" type="number" required defaultValue={ano} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Inicio *</label>
-                            <input name="data_inicio" type="date" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
-                        </div>
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Fim *</label>
-                            <input name="data_fim" type="date" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
-                        </div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Inicio *</label><input name="data_inicio" type="date" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Fim *</label><input name="data_fim" type="date" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
                     </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Material de Referencia</label>
-                        <input name="material_ref" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Revista CPAD - Adultos T2/2026" />
-                    </div>
+                    {/* Inscricao */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nota Minima</label>
-                            <input name="nota_minima" type="number" step="0.1" defaultValue={7} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Tipo Inscricao</label><select name="tipo_inscricao" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="LIVRE">Livre (todos)</option><option value="DEPARTAMENTO">Departamento exclusivo</option><option value="GRUPO">Grupo exclusivo</option></select></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Abertura Inscricoes</label><input name="data_abertura_inscricoes" type="datetime-local" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                    </div>
+                    {/* Externo */}
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-3 cursor-pointer"><input name="is_externo" type="checkbox" className="w-4 h-4 rounded border-soft accent-figueira" /><span className="text-[10px] font-black uppercase tracking-widest text-muted">Curso Externo</span></label>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Link Externo</label><input name="link_externo" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="https://..." /></div>
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Responsavel</label><input name="responsavel_nome" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" /></div>
+                            <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Telefone</label><input name="responsavel_tel" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" /></div>
                         </div>
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Presenca Minima (%)</label>
-                            <input name="presenca_minima" type="number" step="1" defaultValue={75} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
-                        </div>
+                    </div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Material de Referencia</label><input name="material_ref" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nota Minima</label><input name="nota_minima" type="number" step="0.1" defaultValue={7} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
+                        <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Presenca Minima (%)</label><input name="presenca_minima" type="number" step="1" defaultValue={75} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" /></div>
                     </div>
                     <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
@@ -303,6 +432,7 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
         document.body
     ) : null
 
+    // Modal turma
     const turmaModal = modalTurma && mounted ? createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="relative w-full max-w-lg bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
@@ -311,23 +441,9 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
                     <button onClick={() => setModalTurma(null)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleCriarTurma} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nome da Turma *</label>
-                        <input name="nome" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Adultos, Jovens, Criancas" />
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Faixa Etaria</label>
-                        <input name="faixa_etaria" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: 18-35 anos" />
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professor *</label>
-                        <select name="professor_id" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                            <option value="">Selecionar...</option>
-                            {membros.map(m => (
-                                <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nome *</label><input name="nome" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Turma A, Adultos" /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Faixa Etaria</label><input name="faixa_etaria" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: 18-35 anos" /></div>
+                    <div><label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professor *</label><select name="professor_id" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors"><option value="">Selecionar...</option>{membros.map(m => (<option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>))}</select></div>
                     <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         {loading ? 'A criar...' : 'Criar Turma'}
@@ -338,103 +454,12 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
         document.body
     ) : null
 
-    const aulaModal = modalAula && mounted ? createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="relative w-full max-w-2xl bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
-                <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Nova Aula EBD</h2>
-                    <button onClick={() => setModalAula(false)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
-                </div>
-                <form onSubmit={handleCriarAula} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label>
-                        <input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Titulo da aula" />
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Tema</label>
-                        <input name="tema" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Tema da aula" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Professor *</label>
-                            <select name="professor_id" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                                <option value="">Selecionar...</option>
-                                {membros.map(m => (<option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data *</label>
-                            <input name="data" type="date" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Sermao base (opcional)</label>
-                        <select name="sermao_id" defaultValue={sermaoIdInicial || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                            <option value="">Nenhum</option>
-                            {sermoes.map(s => (<option key={s.id} value={s.id}>{s.titulo} — {new Date(s.data_pregacao).toLocaleDateString('pt-PT')}</option>))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Perguntas de Discussao (uma por linha)</label>
-                        <textarea name="perguntas_discussao" rows={3} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="O que significa este texto?" />
-                    </div>
-                    <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Material de Apoio</label>
-                        <textarea name="material_apoio" rows={2} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="Links, livros, recursos..." />
-                    </div>
-                    <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
-                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                        {loading ? 'A criar...' : 'Criar Aula'}
-                    </button>
-                </form>
-            </div>
-        </div>,
-        document.body
-    ) : null
-
-    const presencaModal = presencaAulaId && mounted ? createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="relative w-full max-w-lg bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Marcar Presencas</h2>
-                    <button onClick={() => { setPresencaAulaId(null); setPresentes([]) }} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
-                </div>
-                <div className="px-6 pt-4 flex-shrink-0">
-                    <input value={presencaSearch} onChange={e => setPresencaSearch(e.target.value)} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Pesquisar membro..." />
-                    <p className="text-[9px] font-bold text-figueira mt-2">{presentes.length} presente{presentes.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div className="flex-1 overflow-y-auto px-6 py-3 space-y-1">
-                    {membrosFiltrados.map(m => {
-                        const isP = presentes.includes(m.id)
-                        return (
-                            <button key={m.id} onClick={() => setPresentes(prev => isP ? prev.filter(id => id !== m.id) : [...prev, m.id])}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all ${isP ? 'bg-figueira/10 border border-figueira/30' : 'bg-bg border border-soft hover:border-figueira/20'}`}>
-                                <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${isP ? 'bg-figueira text-white' : 'border border-soft'}`}>
-                                    {isP && <Check size={12} />}
-                                </div>
-                                <span className="text-[11px] font-bold text-fg">{m.first_name} {m.last_name}</span>
-                            </button>
-                        )
-                    })}
-                </div>
-                <div className="px-6 py-4 border-t border-soft flex-shrink-0">
-                    <button onClick={salvarPresencas} disabled={presencaLoading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
-                        {presencaLoading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                        {presencaLoading ? 'A guardar...' : 'Guardar Presencas'}
-                    </button>
-                </div>
-            </div>
-        </div>,
-        document.body
-    ) : null
-
     return (
         <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 pb-24 animate-in fade-in duration-700">
-            {/* Header */}
             <header className="space-y-4">
                 <div className="flex items-center gap-2 text-figueira">
                     <GraduationCap size={16} />
-                    <span className="font-black text-[10px] uppercase tracking-[0.3em]">Cursos & Escola Biblica</span>
+                    <span className="font-black text-[10px] uppercase tracking-[0.3em]">Cursos & Formacao</span>
                 </div>
                 <h1 className="text-4xl sm:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
                     Cursos<span className="text-muted/20">.</span>
@@ -445,237 +470,80 @@ export default function EBDDashboard({ cursos, aulas, membros, sermoes, mes, ano
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
                     <Layers size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{cursos.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Cursos</p>
+                    <p className="text-lg font-black text-fg">{cursosDisponiveis.length}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Disponiveis</p>
+                </div>
+                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
+                    <GraduationCap size={16} className="mx-auto text-figueira mb-1" />
+                    <p className="text-lg font-black text-fg">{meusCursos.length}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Meus Cursos</p>
                 </div>
                 <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
                     <Clock size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{cursosEmCurso.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Em Curso</p>
+                    <p className="text-lg font-black text-fg">{cursosEmBreve.length}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Em Breve</p>
                 </div>
                 <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <Users size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{totalAlunos}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Alunos</p>
-                </div>
-                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <BookOpen size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{aulas.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Aulas / Mes</p>
+                    <Award size={16} className="mx-auto text-figueira mb-1" />
+                    <p className="text-lg font-black text-fg">{cursos.length}</p>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Total</p>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="flex gap-1 bg-bg2 border border-soft rounded-2xl p-1">
-                <button onClick={() => setTab('cursos')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'cursos' ? 'bg-figueira text-white' : 'text-muted hover:text-fg'}`}>
-                    Cursos & Turmas
+                <button onClick={() => setTab('disponiveis')} className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'disponiveis' ? 'bg-figueira text-white' : 'text-muted hover:text-fg'}`}>
+                    Disponiveis
                 </button>
-                <button onClick={() => setTab('aulas')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'aulas' ? 'bg-figueira text-white' : 'text-muted hover:text-fg'}`}>
-                    Aulas do Mes
+                <button onClick={() => setTab('meus')} className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'meus' ? 'bg-figueira text-white' : 'text-muted hover:text-fg'}`}>
+                    Meus Cursos
                 </button>
+                {podeGerir && (
+                    <button onClick={() => setTab('gestao')} className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'gestao' ? 'bg-figueira text-white' : 'text-muted hover:text-fg'}`}>
+                        Gestao
+                    </button>
+                )}
             </div>
 
-            {/* Tab: Cursos */}
-            {tab === 'cursos' && (
-                <section className="space-y-4">
-                    {/* Filtros por categoria */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-                        {['TODOS', 'EBD', 'LIVRE', 'DISCIPULADO', 'SEMINARIO'].map(cat => (
-                            <button key={cat} onClick={() => setFiltroCategoria(cat)}
-                                className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filtroCategoria === cat ? 'bg-figueira text-white' : 'bg-bg border border-soft text-muted hover:text-fg'}`}>
-                                {cat === 'TODOS' ? 'Todos' : CATEGORIA_LABELS[cat]?.label || cat}
-                            </button>
-                        ))}
-                    </div>
+            {/* Filtros por categoria */}
+            <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                {['TODOS', 'EBD', 'LIVRE', 'DISCIPULADO', 'SEMINARIO'].map(cat => (
+                    <button key={cat} onClick={() => setFiltroCategoria(cat)}
+                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filtroCategoria === cat ? 'bg-figueira text-white' : 'bg-bg border border-soft text-muted hover:text-fg'}`}>
+                        {cat === 'TODOS' ? 'Todos' : CATEGORIA_LABELS[cat]?.label || cat}
+                    </button>
+                ))}
+            </div>
 
-                    <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">{cursosFiltrados.length} {cursosFiltrados.length === 1 ? 'curso' : 'cursos'}</p>
-                        {podeGerir && (
-                            <button onClick={() => setModalCurso(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                                <Plus size={12} /> Novo Curso
-                            </button>
-                        )}
-                    </div>
-
-                    {cursosFiltrados.length === 0 ? (
-                        <div className="py-20 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
-                            <Layers size={32} className="mx-auto text-muted/30 mb-4" />
-                            <p className="text-xs font-black uppercase text-muted tracking-widest">Nenhum curso encontrado.</p>
-                            <p className="text-[10px] text-muted/60 mt-1">{cursos.length === 0 ? 'Crie o primeiro curso para comecar.' : 'Nenhum curso nesta categoria.'}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {cursosFiltrados.map(curso => {
-                                const st = STATUS_LABELS[curso.status] || STATUS_LABELS.PLANEADO
-                                return (
-                                    <details key={curso.id} className="group bg-bg2 border border-soft rounded-2xl overflow-hidden transition-all hover:border-figueira/30" open={curso.status === 'EM_CURSO'}>
-                                        <summary className="cursor-pointer px-5 py-4 flex items-center gap-4 list-none [&::-webkit-details-marker]:hidden">
-                                            <div className="flex-shrink-0 w-12 h-12 bg-bg border border-soft rounded-xl flex flex-col items-center justify-center">
-                                                {curso.trimestre ? (
-                                                    <>
-                                                        <span className="text-[10px] font-black text-figueira leading-none">T{curso.trimestre}</span>
-                                                        <span className="text-[8px] font-bold text-muted">{curso.ano}</span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-[10px] font-black text-figueira leading-none">{curso.ano}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-xs font-black uppercase tracking-wide text-fg truncate">{curso.titulo}</h3>
-                                                <p className="text-[9px] font-bold text-muted mt-0.5">
-                                                    {curso._count.turmas} turma{curso._count.turmas !== 1 ? 's' : ''}
-                                                    {curso.carga_horaria && <span className="ml-2">{curso.carga_horaria}h</span>}
-                                                    {curso.material_ref && <span className="ml-2 text-figueira/70">{curso.material_ref}</span>}
-                                                </p>
-                                            </div>
-                                            {(() => { const cat = CATEGORIA_LABELS[curso.categoria]; return cat ? (
-                                                <span className={`hidden sm:inline text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${cat.icon}`}>{cat.label}</span>
-                                            ) : null })()}
-                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${st.color}`}>
-                                                {st.label}
-                                            </span>
-                                            <ChevronDown size={14} className="text-muted group-open:rotate-180 transition-transform flex-shrink-0" />
-                                        </summary>
-
-                                        <div className="px-5 pb-5 pt-2 border-t border-soft space-y-4">
-                                            {curso.descricao && (
-                                                <p className="text-[10px] text-fg/70">{curso.descricao}</p>
-                                            )}
-                                            <div className="flex flex-wrap gap-3 text-[9px] text-muted font-bold">
-                                                <span><Calendar size={10} className="inline mr-1" />{new Date(curso.data_inicio).toLocaleDateString('pt-PT')} — {new Date(curso.data_fim).toLocaleDateString('pt-PT')}</span>
-                                                {curso.carga_horaria && <span><Clock size={10} className="inline mr-1" />{curso.carga_horaria}h</span>}
-                                                <span><TrendingUp size={10} className="inline mr-1" />Nota min: {curso.nota_minima}</span>
-                                                <span><Users size={10} className="inline mr-1" />Presenca min: {curso.presenca_minima}%</span>
-                                            </div>
-
-                                            {/* Turmas */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Turmas</p>
-                                                    {podeGerir && (
-                                                        <button onClick={() => setModalTurma(curso.id)} className="text-[8px] font-black uppercase tracking-widest text-figueira hover:underline flex items-center gap-1">
-                                                            <Plus size={10} /> Adicionar Turma
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                {curso.turmas.length === 0 ? (
-                                                    <p className="text-[10px] text-muted/50 text-center py-4">Nenhuma turma criada para este curso.</p>
-                                                ) : (
-                                                    <div className="grid gap-2">
-                                                        {curso.turmas.map(turma => (
-                                                            <Link key={turma.id} href={`/ebd/turma/${turma.id}`}
-                                                                className="flex items-center gap-3 bg-bg border border-soft rounded-xl px-4 py-3 hover:border-figueira/30 transition-all">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-[11px] font-black uppercase tracking-wide text-fg">{turma.nome}</p>
-                                                                    <p className="text-[9px] text-muted font-bold">
-                                                                        <User size={9} className="inline mr-0.5" />
-                                                                        {turma.professor.first_name} {turma.professor.last_name}
-                                                                        {turma.faixa_etaria && <span className="ml-2">{turma.faixa_etaria}</span>}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-[9px] font-bold text-muted">
-                                                                    <span><Users size={10} className="inline mr-0.5" />{turma._count.matriculas}</span>
-                                                                    <span><BookOpen size={10} className="inline mr-0.5" />{turma._count.aulas}</span>
-                                                                    <span><Award size={10} className="inline mr-0.5" />{turma._count.atividades}</span>
-                                                                </div>
-                                                                <ChevronRight size={14} className="text-muted flex-shrink-0" />
-                                                            </Link>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {podeGerir && (
-                                                <div className="flex flex-wrap gap-2 pt-2">
-                                                    <button onClick={() => handleRemoverCurso(curso.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
-                                                        <Trash2 size={10} /> Remover
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </details>
-                                )
-                            })}
-                        </div>
-                    )}
-                </section>
+            {/* Action bar (gestao only) */}
+            {tab === 'gestao' && podeGerir && (
+                <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">{cursosFiltrados.length} curso{cursosFiltrados.length !== 1 ? 's' : ''}</p>
+                    <button onClick={() => setModalCurso(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
+                        <Plus size={12} /> Novo Curso
+                    </button>
+                </div>
             )}
 
-            {/* Tab: Aulas do Mês */}
-            {tab === 'aulas' && (
-                <section className="space-y-4">
-                    {/* Month Navigation */}
-                    <div className="flex items-center justify-between bg-bg2 border border-soft rounded-2xl px-4 py-3">
-                        <button onClick={mesAnterior} className="p-2 hover:bg-bg rounded-xl transition-colors text-muted hover:text-fg"><ChevronLeft size={18} /></button>
-                        <div className="text-center">
-                            <p className="text-sm font-black uppercase tracking-widest text-fg">{MESES[mes - 1]}</p>
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-muted">{ano}</p>
-                        </div>
-                        <button onClick={mesSeguinte} className="p-2 hover:bg-bg rounded-xl transition-colors text-muted hover:text-fg"><ChevronRight size={18} /></button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted">{aulas.length} {aulas.length === 1 ? 'aula' : 'aulas'}</p>
-                        {podeGerir && (
-                            <button onClick={() => setModalAula(true)} className="flex items-center gap-2 px-5 py-2.5 bg-figueira text-white text-[9px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity">
-                                <Plus size={12} /> Nova Aula
-                            </button>
-                        )}
-                    </div>
-
-                    {aulas.length === 0 ? (
-                        <div className="py-20 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
-                            <GraduationCap size={32} className="mx-auto text-muted/30 mb-4" />
-                            <p className="text-xs font-black uppercase text-muted tracking-widest">Nenhuma aula neste mes.</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {aulas.map(a => (
-                                <details key={a.id} className="group bg-bg2 border border-soft rounded-2xl overflow-hidden transition-all hover:border-figueira/30">
-                                    <summary className="cursor-pointer px-5 py-4 flex items-center gap-4 list-none [&::-webkit-details-marker]:hidden">
-                                        <div className="flex-shrink-0 w-12 h-12 bg-bg border border-soft rounded-xl flex flex-col items-center justify-center">
-                                            <span className="text-[10px] font-black text-figueira leading-none">{new Date(a.data).getDate()}</span>
-                                            <span className="text-[8px] font-bold text-muted uppercase">{new Date(a.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="text-xs font-black uppercase tracking-wide text-fg truncate">{a.titulo}</h3>
-                                            <p className="text-[9px] font-bold text-muted mt-0.5">
-                                                <User size={9} className="inline mr-1" />{a.professor.first_name} {a.professor.last_name}
-                                                {a.turma && <span className="ml-2 text-figueira"><Layers size={9} className="inline mr-0.5" />{a.turma.nome}</span>}
-                                                {a.sermao && <span className="ml-2 text-figueira/70"><BookOpen size={9} className="inline mr-0.5" />{a.sermao.titulo}</span>}
-                                            </p>
-                                        </div>
-                                        <div className="hidden sm:flex items-center gap-1.5 bg-bg border border-soft rounded-full px-3 py-1">
-                                            <Users size={10} className="text-figueira" />
-                                            <span className="text-[9px] font-black text-fg">{a._count.presencas}</span>
-                                        </div>
-                                        <ChevronDown size={14} className="text-muted group-open:rotate-180 transition-transform flex-shrink-0" />
-                                    </summary>
-                                    <div className="px-5 pb-5 pt-2 border-t border-soft">
-                                        <div className="flex flex-wrap gap-2 pt-2">
-                                            {podeGerir && (
-                                                <button onClick={() => abrirPresencas(a)} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
-                                                    <Users size={10} /> Marcar Presencas
-                                                </button>
-                                            )}
-                                            {podeGerir && (
-                                                <button onClick={() => handleRemoverAula(a.id)} className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
-                                                    <Trash2 size={10} /> Remover
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </details>
-                            ))}
-                        </div>
-                    )}
-                </section>
+            {/* Course list */}
+            {cursosFiltrados.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
+                    <GraduationCap size={32} className="mx-auto text-muted/30 mb-4" />
+                    <p className="text-xs font-black uppercase text-muted tracking-widest">
+                        {tab === 'disponiveis' ? 'Nenhum curso disponivel de momento.' : tab === 'meus' ? 'Ainda nao esta inscrito em nenhum curso.' : 'Nenhum curso encontrado.'}
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {cursosFiltrados.map(c => (
+                        <CursoCard key={c.id} curso={c} modo={tab === 'gestao' ? 'gestao' : meusCursoIds.includes(c.id) ? 'meu' : 'disponivel'} />
+                    ))}
+                </div>
             )}
 
             {cursoModal}
             {turmaModal}
-            {aulaModal}
-            {presencaModal}
+            {detalhesModal}
         </main>
     )
 }

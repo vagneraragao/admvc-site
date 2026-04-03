@@ -222,6 +222,8 @@ model Membro {
   turmasEBD                  TurmaEBD[]                  @relation("ProfessorTurmaEBD")
   matriculasEBD              MatriculaEBD[]              @relation("MatriculaEBD")
   notasEBD                   NotaEBD[]                   @relation("NotaEBD")
+  cursosAprovados            CursoEBD[]                  @relation("AprovadorCurso")
+  cursosCriados              CursoEBD[]                  @relation("CriadorCurso")
 
   @@index([tenant_id])
   @@map("membros")
@@ -704,16 +706,37 @@ model CursoEBD {
   id              String          @id @default(uuid())
   titulo          String          // "Frutos do Espírito" ou "Fotografia para Midia"
   descricao       String?
+  ementa          String?         // Conteúdo programático completo
   categoria       CategoriaCurso  @default(EBD)
   trimestre       Int?            // 1, 2, 3, 4 (opcional para cursos livres)
   ano             Int             // 2026
   data_inicio     DateTime
   data_fim        DateTime
   carga_horaria   Int?            // horas totais (para diploma)
+  vagas_maximas   Int?            // Limite de inscritos (null = ilimitado)
   material_ref    String?         // "Revista CPAD - Adultos T2/2026"
   nota_minima     Float           @default(7.0)
   presenca_minima Float           @default(75.0) // percentual
   status          StatusCurso     @default(PLANEADO)
+
+  // Curso externo
+  is_externo        Boolean       @default(false)
+  link_externo      String?       // URL para info/inscricao externa
+  responsavel_nome  String?       // Contacto do responsavel
+  responsavel_tel   String?
+
+  // Restricao de inscricao
+  tipo_inscricao    TipoInscricao @default(LIVRE)
+  departamento_ids  Json?         // [1, 5] — se tipo = DEPARTAMENTO
+  grupo_ids         Json?         // [2, 3] — se tipo = GRUPO
+
+  // Workflow de aprovacao
+  aprovado                 Boolean   @default(false)
+  aprovado_por_id          Int?
+  aprovado_em              DateTime?
+  data_abertura_inscricoes DateTime? // Abre inscricoes automaticamente nesta data/hora
+  criado_por_id            Int?
+
   congregacao_id  Int?
   tenant_id       Int
   created_at      DateTime        @default(now())
@@ -721,10 +744,13 @@ model CursoEBD {
   turmas          TurmaEBD[]
   congregacao     Congregacao?    @relation(fields: [congregacao_id], references: [id])
   tenant          Tenant          @relation(fields: [tenant_id], references: [id])
+  aprovado_por    Membro?         @relation("AprovadorCurso", fields: [aprovado_por_id], references: [id])
+  criado_por      Membro?         @relation("CriadorCurso", fields: [criado_por_id], references: [id])
 
   @@index([tenant_id])
   @@index([ano])
   @@index([categoria])
+  @@index([aprovado])
   @@map("cursos_ebd")
 }
 
@@ -805,6 +831,12 @@ model NotaEBD {
   @@unique([atividade_id, membro_id])
   @@index([tenant_id])
   @@map("notas_ebd")
+}
+
+enum TipoInscricao {
+  LIVRE         // Qualquer membro pode inscrever-se
+  DEPARTAMENTO  // Apenas membros de departamentos especificos
+  GRUPO         // Apenas membros de grupos especificos
 }
 
 enum CategoriaCurso {
