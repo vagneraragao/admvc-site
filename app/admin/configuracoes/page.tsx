@@ -70,17 +70,19 @@ export default async function EstruturaPage() {
             </header>
 
             {/* DEPARTAMENTOS */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
+            <details className="group bg-bg2 border border-soft rounded-2xl overflow-hidden" open>
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center justify-between px-5 py-4 border-b border-soft hover:bg-soft/10 transition-colors">
                     <div className="flex items-center gap-2">
-                        <LayoutGrid size={14} className="text-blue-500" />
+                        <LayoutGrid size={14} className="text-blue-500 group-open:rotate-0 transition-transform" />
                         <h2 className="text-sm font-black uppercase tracking-widest text-fg">Departamentos</h2>
                         <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{deptos.length}</span>
                     </div>
-                    <Popover titulo="Departamento" cor="blue">
-                        <FormCriarDepartamento congregacoes={congregacoes} />
-                    </Popover>
-                </div>
+                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <Popover titulo="Departamento" cor="blue">
+                            <FormCriarDepartamento congregacoes={congregacoes} />
+                        </Popover>
+                    </div>
+                </summary>
                 <div className="p-5">
                 {deptos.length > 0 ? (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
@@ -98,15 +100,15 @@ export default async function EstruturaPage() {
                     <Empty message="Nenhum departamento registado." />
                 )}
                 </div>
-            </section>
+            </details>
 
             {/* GRUPOS */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
+            <details className="group bg-bg2 border border-soft rounded-2xl overflow-hidden" open>
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 px-5 py-4 border-b border-soft hover:bg-soft/10 transition-colors">
                     <Users size={14} className="text-emerald-500" />
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Grupos & PGs</h2>
                     <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{grupos.length}</span>
-                </div>
+                </summary>
                 <div className="p-5">
                     <GerenciadorGrupos
                         grupos={grupos}
@@ -115,7 +117,7 @@ export default async function EstruturaPage() {
                         regioes={(tenantConfig?.regioes_custom as string[]) || ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']}
                     />
                 </div>
-            </section>
+            </details>
         </main>
     )
 }
