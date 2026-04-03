@@ -673,6 +673,8 @@ model EscolaBiblica {
   titulo              String
   tema                String?
   data                DateTime
+  link_aula           String?         // URL Teams, YouTube, Zoom, etc.
+  conteudo            String?         // Conteudo detalhado da aula
   material_apoio      String?         // Texto livre, links, etc.
   perguntas_discussao Json?           // ["pergunta 1", "pergunta 2", ...]
   professor_id        Int
@@ -833,6 +835,7 @@ model AtividadeEBD {
   titulo          String            // "Exercicio Licao 3"
   tipo            TipoAtividade     @default(EXERCICIO)
   descricao       String?
+  perguntas       Json?             // [{id, texto, tipo: ESCRITA|MULTIPLA|VERDADEIRO_FALSO, opcoes?, correta?}]
   data_entrega    DateTime?
   peso            Float             @default(1.0)
   nota_maxima     Float             @default(10.0)
@@ -854,6 +857,7 @@ model NotaEBD {
   membro_id       Int
   nota            Float?
   entregue        Boolean           @default(false)
+  respostas       Json?             // [{pergunta_id, resposta}] — respostas do aluno
   observacao      String?
   tenant_id       Int
   created_at      DateTime          @default(now())

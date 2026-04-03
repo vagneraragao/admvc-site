@@ -104,6 +104,7 @@ export default async function TurmaPage({
             membros={membros}
             sermoes={sermoesSerializados}
             podeGerir={podeGerir}
+            membroId={session.membroId}
         />
     )
 }

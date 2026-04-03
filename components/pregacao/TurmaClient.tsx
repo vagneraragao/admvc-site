@@ -7,13 +7,14 @@ import Link from 'next/link'
 import {
     ChevronLeft, Plus, GraduationCap, Users, User,
     BookOpen, Trash2, X, Loader2, Check, ChevronDown,
-    Award, FileText, Calculator, Search, ClipboardList
+    Award, FileText, Calculator, Search, ClipboardList,
+    ExternalLink, Video, Send
 } from 'lucide-react'
 import {
     matricularAlunos, removerMatricula,
     criarAtividade, removerAtividade, salvarNotas,
     criarEBD, registarPresencasEBD, removerEBD,
-    calcularAprovacao
+    calcularAprovacao, responderAtividade
 } from '@/actions/pregacao-actions'
 
 const TIPO_LABELS: Record<string, string> = {
@@ -55,6 +56,7 @@ interface Nota {
     membro_id: number
     nota: number | null
     entregue: boolean
+    respostas: any
     observacao: string | null
 }
 
@@ -63,6 +65,7 @@ interface Atividade {
     titulo: string
     tipo: string
     descricao: string | null
+    perguntas: any
     data_entrega: string | null
     peso: number
     nota_maxima: number
@@ -99,9 +102,10 @@ interface Props {
     sermoes: Sermao[]
     podeGerir?: boolean
     basePath?: string
+    membroId?: number
 }
 
-export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ebd' }: Props) {
+export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ebd', membroId }: Props) {
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -123,16 +127,21 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     // Notas
     const [notasEdit, setNotasEdit] = useState<Record<number, { nota: string; entregue: boolean }>>({})
 
+    // Questionario (aluno)
+    const [questionarioAberto, setQuestionarioAberto] = useState<string | null>(null)
+    const [respostasAluno, setRespostasAluno] = useState<Record<string, any>>({})
+    const [enviandoResposta, setEnviandoResposta] = useState(false)
+
     useEffect(() => { setMounted(true) }, [])
 
     useEffect(() => {
-        if (modalMatricula || modalAula || modalAtividade || modalNotas || presencaAulaId) {
+        if (modalMatricula || modalAula || modalAtividade || modalNotas || presencaAulaId || questionarioAberto) {
             document.body.style.overflow = 'hidden'
         } else {
             document.body.style.overflow = ''
         }
         return () => { document.body.style.overflow = '' }
-    }, [modalMatricula, modalAula, modalAtividade, modalNotas, presencaAulaId])
+    }, [modalMatricula, modalAula, modalAtividade, modalNotas, presencaAulaId, questionarioAberto])
 
     const jaMatriculados = new Set(turma.matriculas.map(m => m.membro_id))
     const membrosDisponiveis = membros.filter(m => !jaMatriculados.has(m.id))
@@ -224,6 +233,39 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         else alert(res.error)
     }
 
+    function abrirQuestionario(atividadeId: string) {
+        const atv = turma.atividades.find(a => a.id === atividadeId)
+        if (!atv || !atv.perguntas) return
+        const perguntas = atv.perguntas as any[]
+        // Pre-fill com respostas existentes
+        const notaExistente = membroId ? atv.notas.find(n => n.membro_id === membroId) : null
+        const respostasExistentes = (notaExistente?.respostas as any[]) || []
+        const initial: Record<string, any> = {}
+        for (const p of perguntas) {
+            const r = respostasExistentes.find((x: any) => x.pergunta_id === p.id)
+            initial[p.id] = r?.resposta ?? ''
+        }
+        setRespostasAluno(initial)
+        setQuestionarioAberto(atividadeId)
+    }
+
+    async function handleEnviarRespostas() {
+        if (!questionarioAberto) return
+        const atv = turma.atividades.find(a => a.id === questionarioAberto)
+        if (!atv) return
+        const perguntas = (atv.perguntas as any[]) || []
+        const respostas = perguntas.map(p => ({ pergunta_id: p.id, resposta: respostasAluno[p.id] ?? '' }))
+        setEnviandoResposta(true)
+        const res = await responderAtividade(questionarioAberto, respostas)
+        setEnviandoResposta(false)
+        if (res.ok) {
+            setQuestionarioAberto(null)
+            if (res.nota != null) alert(`Respostas enviadas! Nota: ${res.nota}`)
+            else alert('Respostas enviadas! A nota será atribuída pelo professor.')
+            router.refresh()
+        } else alert(res.error)
+    }
+
     async function handleCalcularAprovacao() {
         if (!confirm('Calcular aprovacao para todos os alunos desta turma?')) return
         setLoading(true)
@@ -302,14 +344,15 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         <input name="tema" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" />
                     </div>
                     <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Sermao base</label>
-                        <select name="sermao_id" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
-                            <option value="">Nenhum</option>
-                            {sermoes.map(s => (<option key={s.id} value={s.id}>{s.titulo}</option>))}
-                        </select>
+                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Link da Aula (Teams, YouTube, Zoom...)</label>
+                        <input name="link_aula" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="https://..." />
                     </div>
                     <div>
-                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Perguntas (uma por linha)</label>
+                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Conteudo da Aula</label>
+                        <textarea name="conteudo" rows={4} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" placeholder="Conteudo detalhado da aula..." />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Perguntas de Discussao (uma por linha)</label>
                         <textarea name="perguntas_discussao" rows={3} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" />
                     </div>
                     <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
@@ -585,6 +628,9 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                         <p className="text-[9px] text-muted font-bold">{a.professor.first_name} {a.professor.last_name}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        {(a as any).link_aula && (
+                                            <a href={(a as any).link_aula} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase text-blue-400 hover:underline flex items-center gap-0.5"><Video size={10} /> Aula</a>
+                                        )}
                                         <span className="text-[9px] font-bold text-muted"><Users size={10} className="inline mr-0.5" />{a._count.presencas}</span>
                                         {podeGerir && <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline">Presencas</button>}
                                         {podeGerir && <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
@@ -625,6 +671,12 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] font-bold text-muted">{atv._count.notas} notas</span>
+                                        {/* Aluno: responder questionario */}
+                                        {!podeGerir && (atv.perguntas as any[])?.length > 0 && (
+                                            <button onClick={() => abrirQuestionario(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline flex items-center gap-0.5">
+                                                <ClipboardList size={10} /> Responder
+                                            </button>
+                                        )}
                                         {podeGerir && <button onClick={() => abrirNotas(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline">Lancar Notas</button>}
                                         {podeGerir && <button onClick={async () => { if (confirm('Remover atividade?')) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
                                     </div>
@@ -650,14 +702,16 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         )}
                     </div>
 
-                    {turma.matriculas.length === 0 ? (
+                    {(() => {
+                        const matriculasVisiveis = podeGerir ? turma.matriculas : turma.matriculas.filter(m => m.membro_id === membroId)
+                        return matriculasVisiveis.length === 0 ? (
                         <div className="py-16 text-center border-2 border-dashed border-soft rounded-[2.5rem]">
                             <Award size={28} className="mx-auto text-muted/30 mb-3" />
-                            <p className="text-xs font-black uppercase text-muted tracking-widest">Nenhum aluno matriculado.</p>
+                            <p className="text-xs font-black uppercase text-muted tracking-widest">{podeGerir ? 'Nenhum aluno matriculado.' : 'Sem resultados disponiveis.'}</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {turma.matriculas.map(mat => {
+                            {matriculasVisiveis.map(mat => {
                                 const aprovado = mat.aprovado
                                 return (
                                     <div key={mat.membro_id} className={`flex items-center gap-3 bg-bg2 border rounded-xl px-4 py-3 ${aprovado === true ? 'border-green-600/30' : aprovado === false ? 'border-red-600/30' : 'border-soft'}`}>
@@ -679,7 +733,8 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                 )
                             })}
                         </div>
-                    )}
+                    )
+                    })()}
                 </section>
             )}
 
@@ -688,6 +743,99 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
             {atividadeModalEl}
             {notasModalEl}
             {presencaModalEl}
+
+            {/* QUESTIONÁRIO (aluno responde) */}
+            {questionarioAberto && mounted && (() => {
+                const atv = turma.atividades.find(a => a.id === questionarioAberto)
+                if (!atv) return null
+                const perguntas = (atv.perguntas as any[]) || []
+                const jaRespondeu = membroId ? atv.notas.some(n => n.membro_id === membroId && n.entregue) : false
+
+                return createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="relative w-full max-w-2xl bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
+                                <div>
+                                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">{atv.titulo}</h2>
+                                    <p className="text-[9px] text-muted font-bold">{TIPO_LABELS[atv.tipo]} — Nota max: {atv.nota_maxima}</p>
+                                </div>
+                                <button onClick={() => setQuestionarioAberto(null)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+                                {jaRespondeu && (
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-[10px] font-bold text-emerald-400">
+                                        <Check size={12} className="inline mr-1" /> Ja respondeu esta atividade. Pode alterar as respostas.
+                                    </div>
+                                )}
+
+                                {perguntas.map((p: any, idx: number) => (
+                                    <div key={p.id} className="space-y-2">
+                                        <p className="text-[11px] font-black text-fg">
+                                            <span className="text-muted mr-1">{idx + 1}.</span> {p.texto}
+                                        </p>
+
+                                        {p.tipo === 'ESCRITA' && (
+                                            <textarea
+                                                value={respostasAluno[p.id] || ''}
+                                                onChange={e => setRespostasAluno(prev => ({ ...prev, [p.id]: e.target.value }))}
+                                                rows={3}
+                                                className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y"
+                                                placeholder="Escreva a sua resposta..."
+                                            />
+                                        )}
+
+                                        {p.tipo === 'MULTIPLA' && p.opcoes && (
+                                            <div className="space-y-1.5">
+                                                {(p.opcoes as string[]).map((opcao: string, oi: number) => (
+                                                    <button key={oi} onClick={() => setRespostasAluno(prev => ({ ...prev, [p.id]: oi }))}
+                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                                            respostasAluno[p.id] === oi
+                                                                ? 'bg-figueira/10 border-2 border-figueira text-figueira'
+                                                                : 'bg-bg border border-soft text-fg hover:border-figueira/30'
+                                                        }`}>
+                                                        <span className="text-muted mr-2">{String.fromCharCode(65 + oi)})</span> {opcao}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {p.tipo === 'VERDADEIRO_FALSO' && (
+                                            <div className="flex gap-3">
+                                                <button onClick={() => setRespostasAluno(prev => ({ ...prev, [p.id]: true }))}
+                                                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                                        respostasAluno[p.id] === true
+                                                            ? 'bg-emerald-500/10 border-2 border-emerald-500 text-emerald-400'
+                                                            : 'bg-bg border border-soft text-fg hover:border-emerald-500/30'
+                                                    }`}>
+                                                    Verdadeiro
+                                                </button>
+                                                <button onClick={() => setRespostasAluno(prev => ({ ...prev, [p.id]: false }))}
+                                                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                                        respostasAluno[p.id] === false
+                                                            ? 'bg-red-500/10 border-2 border-red-500 text-red-400'
+                                                            : 'bg-bg border border-soft text-fg hover:border-red-500/30'
+                                                    }`}>
+                                                    Falso
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="px-6 py-4 border-t border-soft flex-shrink-0">
+                                <button onClick={handleEnviarRespostas} disabled={enviandoResposta}
+                                    className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {enviandoResposta ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                    {enviandoResposta ? 'A enviar...' : 'Enviar Respostas'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )
+            })()}
         </main>
     )
 }

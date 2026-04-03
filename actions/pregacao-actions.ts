@@ -257,6 +257,8 @@ export async function criarEBD(formData: FormData) {
         const titulo = formData.get('titulo') as string
         const tema = formData.get('tema') as string | null
         const data = formData.get('data') as string
+        const link_aula = formData.get('link_aula') as string | null
+        const conteudo = formData.get('conteudo') as string | null
         const material_apoio = formData.get('material_apoio') as string | null
         const perguntas_discussao = formData.get('perguntas_discussao') as string | null
         const professor_id = Number(formData.get('professor_id'))
@@ -274,6 +276,8 @@ export async function criarEBD(formData: FormData) {
                 titulo,
                 tema: tema || null,
                 data: new Date(data),
+                link_aula: link_aula || null,
+                conteudo: conteudo || null,
                 material_apoio: material_apoio || null,
                 perguntas_discussao: perguntas_discussao ? JSON.parse(perguntas_discussao) : undefined,
                 professor_id,
@@ -819,6 +823,64 @@ export async function salvarNotas(atividadeId: string, notas: { membro_id: numbe
     } catch (error: any) {
         console.error('Erro ao salvar notas:', error)
         return { ok: false, error: error.message || 'Erro ao salvar notas.' }
+    }
+}
+
+// ── RESPONDER ATIVIDADE (pelo aluno) ─────────────────────────────────────────
+
+export async function responderAtividade(atividadeId: string, respostas: any[]) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+        const tenantId = Number((await headers()).get('x-tenant-id') || 0)
+
+        // Verificar se a atividade tem perguntas
+        const atividade = await db.atividadeEBD.findUnique({ where: { id: atividadeId } })
+        if (!atividade) return { ok: false, error: 'Atividade não encontrada.' }
+
+        const perguntas = (atividade.perguntas as any[]) || []
+
+        // Auto-correcção para multipla escolha e verdadeiro/falso
+        let acertos = 0
+        let totalCorrigiveis = 0
+        for (const p of perguntas) {
+            if (p.tipo === 'MULTIPLA' || p.tipo === 'VERDADEIRO_FALSO') {
+                totalCorrigiveis++
+                const resposta = respostas.find((r: any) => r.pergunta_id === p.id)
+                if (resposta && String(resposta.resposta) === String(p.correta)) {
+                    acertos++
+                }
+            }
+        }
+
+        // Calcular nota automatica se todas as perguntas sao corrigiveis
+        const temEscrita = perguntas.some(p => p.tipo === 'ESCRITA')
+        const notaAuto = !temEscrita && totalCorrigiveis > 0
+            ? (acertos / totalCorrigiveis) * atividade.nota_maxima
+            : null
+
+        await db.notaEBD.upsert({
+            where: { atividade_id_membro_id: { atividade_id: atividadeId, membro_id: session.membroId } },
+            create: {
+                atividade_id: atividadeId,
+                membro_id: session.membroId,
+                respostas: respostas,
+                entregue: true,
+                nota: notaAuto != null ? Math.round(notaAuto * 100) / 100 : null,
+                tenant_id: tenantId,
+            },
+            update: {
+                respostas: respostas,
+                entregue: true,
+                nota: notaAuto != null ? Math.round(notaAuto * 100) / 100 : undefined,
+            },
+        })
+
+        revalidatePath('/ebd')
+        return { ok: true, nota: notaAuto }
+    } catch (error: any) {
+        console.error('Erro ao responder atividade:', error)
+        return { ok: false, error: error.message || 'Erro ao responder.' }
     }
 }
 

@@ -82,6 +82,7 @@ export default async function AdminTurmaPage({
             sermoes={sermoesSerializados}
             podeGerir={true}
             basePath="/admin/formacao/ebd"
+            membroId={session.membroId}
         />
     )
 }
