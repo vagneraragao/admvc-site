@@ -16,7 +16,6 @@ import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
 import ModalRelatorioLouvor from '@/components/louvor/ModalRelatorioLouvor'
 import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
-import PushNotificationSetup from '@/components/ui/PushNotificationSetup'
 
 interface Props {
     membro: any
@@ -219,7 +218,6 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                             title="Mural">
                             <MessageSquare size={14} />
                         </Link>
-                        <PushNotificationSetup />
                         <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
 
                         <form action={logoutMembro}>

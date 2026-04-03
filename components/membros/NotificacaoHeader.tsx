@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, X, Heart, MessageSquare, Hash, Users, ArrowRight, UserCircle } from 'lucide-react'
+import { Bell, BellRing, X, Heart, MessageSquare, Hash, Users, ArrowRight, UserCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -71,6 +71,51 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
         }
     }, [open, avisos, alertasAcolhimento])
 
+    // ── Push Notification ──
+    const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'granted' | 'denied' | 'unsupported' | 'no-key'>('idle')
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) { setPushStatus('unsupported'); return }
+        if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) { setPushStatus('no-key'); return }
+        navigator.serviceWorker.ready.then(reg => {
+            reg.pushManager.getSubscription().then(sub => {
+                if (sub) setPushStatus('granted')
+                else if (Notification.permission === 'denied') setPushStatus('denied')
+            })
+        })
+    }, [])
+
+    function urlBase64ToUint8Array(base64String: string): Uint8Array {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+        const rawData = window.atob(base64)
+        const outputArray = new Uint8Array(rawData.length)
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
+        return outputArray
+    }
+
+    async function subscribePush() {
+        setPushStatus('loading')
+        try {
+            const permission = await Notification.requestPermission()
+            if (permission !== 'granted') { setPushStatus('denied'); return }
+            const registration = await navigator.serviceWorker.ready
+            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+            if (!vapidPublicKey) { setPushStatus('no-key'); return }
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer,
+            })
+            const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(subscription.toJSON()) })
+            setPushStatus(res.ok ? 'granted' : 'idle')
+        } catch (err) {
+            console.error('[PUSH]', err)
+            setPushStatus('idle')
+        }
+    }
+
+    const showPushBanner = pushStatus === 'idle' || pushStatus === 'denied' || pushStatus === 'loading'
+
     if (!mounted) return null
 
     const totalAlertas = avisos.length + alertasAcolhimento.length
@@ -135,6 +180,33 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
                         </div>
 
                         <div className="max-h-[50vh] overflow-y-auto custom-scrollbar p-2 space-y-2">
+
+                            {/* BANNER ACTIVAR ALERTAS */}
+                            {showPushBanner && (
+                                <button onClick={subscribePush} disabled={pushStatus === 'loading'}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                                        pushStatus === 'denied'
+                                            ? 'bg-red-500/10 border border-red-500/20'
+                                            : 'bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20'
+                                    }`}>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                        pushStatus === 'denied' ? 'bg-red-500/20' : 'bg-orange-500/20'
+                                    }`}>
+                                        {pushStatus === 'loading'
+                                            ? <Loader2 size={14} className="text-orange-500 animate-spin" />
+                                            : <BellRing size={14} className={pushStatus === 'denied' ? 'text-red-400' : 'text-orange-500'} />
+                                        }
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className={`text-[10px] font-black uppercase tracking-widest ${pushStatus === 'denied' ? 'text-red-400' : 'text-orange-500'}`}>
+                                            {pushStatus === 'denied' ? 'Alertas Bloqueados' : pushStatus === 'loading' ? 'A activar...' : 'Activar Alertas'}
+                                        </p>
+                                        <p className="text-[8px] font-bold text-muted">
+                                            {pushStatus === 'denied' ? 'Desbloqueie nas definicoes do browser' : 'Receba notificacoes no telemovel'}
+                                        </p>
+                                    </div>
+                                </button>
+                            )}
 
                             {/* ALERTAS ACOLHIMENTO */}
                             {alertasAcolhimento.length > 0 && (
