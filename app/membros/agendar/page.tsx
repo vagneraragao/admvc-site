@@ -6,7 +6,7 @@ import { headers } from 'next/headers'
 import { getTenantClient } from '@/lib/prisma'
 import AgendarClient from '@/components/membros/AgendarClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function AgendarPage() {
     const session = await getSessionData()

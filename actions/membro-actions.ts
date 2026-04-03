@@ -456,7 +456,6 @@ export async function exportarMembrosCSV() {
 
         const membros = await prisma.membro.findMany({
             orderBy: { first_name: 'asc' },
-            include: { escolaridade: true, congregacao: true, familia: true },
         })
 
         // Cabeçalho — exactamente os mesmos campos do CABECALHOS_CSV da página

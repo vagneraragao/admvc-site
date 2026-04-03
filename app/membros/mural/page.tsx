@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ArrowLeft, MessageSquare } from 'lucide-react'
 import MuralClient from '@/components/membros/MuralClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function MuralPage() {
     const session = await getSessionData();

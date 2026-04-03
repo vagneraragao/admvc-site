@@ -11,7 +11,7 @@ import {
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import FiltroAuditoria from '@/components/admin/FiltroAuditoria'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 const ICONE_ACAO: Record<string, any> = {
     CRIAR: { icon: CheckCircle2, cor: 'text-emerald-600', bg: 'bg-emerald-500/10' },

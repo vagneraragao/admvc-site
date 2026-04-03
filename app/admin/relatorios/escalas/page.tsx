@@ -4,7 +4,7 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import RelatorioEscalasClient from '@/components/relatorios/RelatorioEscalasClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function RelatorioEscalasPage({
     searchParams,

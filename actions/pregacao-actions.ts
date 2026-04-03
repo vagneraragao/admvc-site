@@ -672,7 +672,14 @@ export async function buscarTurma(id: string) {
         const turma = await db.turmaEBD.findUnique({
             where: { id },
             include: {
-                curso: true,
+                curso: {
+                    select: {
+                        id: true, titulo: true, categoria: true, trimestre: true, ano: true,
+                        carga_horaria: true, nota_minima: true, presenca_minima: true, status: true,
+                        data_inicio: true, data_fim: true, data_abertura_inscricoes: true,
+                        aprovado_em: true, created_at: true, updated_at: true,
+                    },
+                },
                 professores: { select: { id: true, first_name: true, last_name: true } },
                 matriculas: {
                     include: {
@@ -690,7 +697,9 @@ export async function buscarTurma(id: string) {
                 },
                 atividades: {
                     include: {
-                        notas: true,
+                        notas: {
+                            select: { id: true, atividade_id: true, membro_id: true, nota: true, entregue: true, respostas: true, observacao: true },
+                        },
                         _count: { select: { notas: true } },
                     },
                     orderBy: { created_at: 'desc' },

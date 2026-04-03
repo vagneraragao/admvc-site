@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import PregacaoClient from '@/components/pregacao/PregacaoClient'
 import { podeGerirSermoes } from '@/lib/cursos-permissoes'
+import { getCachedMembrosAtivos } from '@/lib/cache'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function PregacaoPage({
     searchParams,
@@ -40,11 +41,7 @@ export default async function PregacaoPage({
             },
             orderBy: { data_pregacao: 'desc' },
         }),
-        prisma.membro.findMany({
-            where: { tenant_id: tenantId, is_active: true },
-            select: { id: true, first_name: true, last_name: true },
-            orderBy: { first_name: 'asc' },
-        }),
+        getCachedMembrosAtivos(tenantId),
         prisma.evento.findMany({
             where: {
                 tenant_id: tenantId,

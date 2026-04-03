@@ -7,7 +7,7 @@ import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import { Plus, Briefcase, LayoutGrid, Users, MapPin, Settings } from 'lucide-react'
 import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function EstruturaPage() {
     const headersList = await headers()

@@ -6,7 +6,7 @@ import { getSessionData } from '@/lib/auth-utils'
 import LumikitClient from '@/components/midia/LumikitClient'
 import type { LumikitConfig } from '@/actions/midia-actions'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function LumikitPage() {
     const session = await getSessionData()

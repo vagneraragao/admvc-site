@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import EditorSermao from '@/components/pregacao/EditorSermao'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function EditorSermaoPage({
     params,

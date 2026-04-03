@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import SelecionarCongregacaoClient from '@/components/membros/SelecionarCongregacaoClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function SelecionarCongregacaoPage() {
     const session = await getSessionData()

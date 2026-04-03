@@ -4,7 +4,7 @@ import { pt } from 'date-fns/locale'
 import { Printer, CalendarDays } from 'lucide-react'
 import BotaoImprimir from '@/components/BotaoImprimir' // Importando o componente que criaremos abaixo
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function RelatorioEscalasPage({
     searchParams,

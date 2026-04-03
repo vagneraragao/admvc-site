@@ -18,7 +18,7 @@ const MapaGrupos = nextDynamic(() => import('@/components/grupos/MapaGrupos'), {
     )
 })
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 45;
 
 const REGIOES_DEFAULT = ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
 

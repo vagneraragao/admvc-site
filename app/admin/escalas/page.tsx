@@ -8,7 +8,7 @@ import ListaEscalados from '@/components/escalas/ListaEscalados'
 import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
 import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams

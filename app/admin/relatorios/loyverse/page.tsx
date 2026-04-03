@@ -4,7 +4,7 @@ import Link from 'next/link';
 import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse';
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 async function getLoyverseData() {
     const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;

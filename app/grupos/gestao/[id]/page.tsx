@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import GestaoGrupoClient from '@/components/membros/GestaoGrupoClient'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function GestaoGrupoPage({ params }: { params: { id: string } }) {
     const session = await getSessionData();

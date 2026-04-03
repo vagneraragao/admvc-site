@@ -8,7 +8,7 @@ import {
     TrendingUp, HeartHandshake, Calendar
 } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function RelatorioAcolhimentoPage() {
     const session = await getSessionData()

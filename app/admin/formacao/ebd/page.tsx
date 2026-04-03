@@ -3,8 +3,9 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
+import { getCachedMembrosAtivos, getCachedSermoes, getCachedDepartamentos, getCachedGrupos } from '@/lib/cache'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function AdminEBDPage({
     searchParams,
@@ -71,27 +72,10 @@ export default async function AdminEBDPage({
             },
             orderBy: { data: 'desc' },
         }),
-        prisma.membro.findMany({
-            where: { tenant_id: tenantId, is_active: true },
-            select: { id: true, first_name: true, last_name: true },
-            orderBy: { first_name: 'asc' },
-        }),
-        prisma.sermao.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, titulo: true, data_pregacao: true },
-            orderBy: { data_pregacao: 'desc' },
-            take: 100,
-        }),
-        prisma.departamento.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, nome: true },
-            orderBy: { nome: 'asc' },
-        }),
-        prisma.grupo.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, nome: true },
-            orderBy: { nome: 'asc' },
-        }),
+        getCachedMembrosAtivos(tenantId),
+        getCachedSermoes(tenantId),
+        getCachedDepartamentos(tenantId),
+        getCachedGrupos(tenantId),
         prisma.matriculaEBD.findMany({
             where: { membro_id: session.membroId, tenant_id: tenantId },
             select: { turma: { select: { curso_id: true } } },

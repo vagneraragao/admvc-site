@@ -3,8 +3,9 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import TurmaClient from '@/components/pregacao/TurmaClient'
+import { getCachedMembrosAtivos, getCachedSermoes } from '@/lib/cache'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 45
 
 export default async function AdminTurmaPage({
     params,
@@ -43,17 +44,8 @@ export default async function AdminTurmaPage({
                 },
             },
         }),
-        prisma.membro.findMany({
-            where: { tenant_id: tenantId, is_active: true },
-            select: { id: true, first_name: true, last_name: true },
-            orderBy: { first_name: 'asc' },
-        }),
-        prisma.sermao.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, titulo: true, data_pregacao: true },
-            orderBy: { data_pregacao: 'desc' },
-            take: 100,
-        }),
+        getCachedMembrosAtivos(tenantId),
+        getCachedSermoes(tenantId),
     ])
 
     if (!turma) redirect('/admin/formacao/ebd')

@@ -4,7 +4,7 @@ import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import HolyricsController from '@/components/midia/HolyricsController'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function HolyricsPage() {
     const session = await getSessionData()

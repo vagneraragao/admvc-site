@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import GestaoModulosClient from '@/components/superadmin/GestaoModulosClient'
 import { requireSAAuth } from '@/lib/sa-auth'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function GestaoModulosPage({ params }: { params: Promise<{ id: string }> }) {
     await requireSAAuth()
