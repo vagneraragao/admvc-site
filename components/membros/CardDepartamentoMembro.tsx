@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
     ShieldCheck, Calendar, Users, ChevronDown, ChevronUp,
-    LayoutGrid, Edit3, ArrowRight, X, Phone, Loader2
+    LayoutGrid, Edit3, ArrowRight, X, Phone, MessageCircle, Loader2
 } from 'lucide-react'
 import { buscarEquipaPorDepartamentoId } from '@/actions/admin-actions'
 import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
@@ -233,7 +233,7 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
                                                         target="_blank" rel="noopener noreferrer"
                                                         className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-500 hover:text-white flex items-center justify-center transition-all"
                                                         title="WhatsApp">
-                                                        <Phone size={13} />
+                                                        <MessageCircle size={13} />
                                                     </a>
                                                     <a href={`tel:${integrante.membro.phone_1}`}
                                                         className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all"

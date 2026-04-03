@@ -75,19 +75,20 @@ export default function LumikitClient({ holyricsUrl, holyricsToken, scenes }: Pr
         connect()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Executar script no Holyrics
-    const executeScript = async (scriptId: string, label: string) => {
-        if (!scriptId) {
-            addLog(`[ERRO] Script ID vazio para "${label}"`, 'error')
+    // Executar acao no Holyrics (endpoint dinamico)
+    const executeAction = async (endpoint: string, actionId: string, label: string) => {
+        if (!actionId) {
+            addLog(`[ERRO] ID vazio para "${label}"`, 'error')
             return false
         }
-        const url = `${baseUrl}/api/ScriptAction?token=${holyricsToken}`
-        addLog(`[POST] ScriptAction → ${scriptId} (${label})`, 'request')
+        const ep = endpoint || 'FavoriteAction'
+        const url = `${baseUrl}/api/${ep}?token=${holyricsToken}`
+        addLog(`[POST] ${ep} → ${actionId} (${label})`, 'request')
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: scriptId }),
+                body: JSON.stringify({ id: actionId }),
             })
             if (res.ok) {
                 const text = await res.text()
@@ -112,12 +113,12 @@ export default function LumikitClient({ holyricsUrl, holyricsToken, scenes }: Pr
         setEnviando(scene.id)
 
         if (scene.tipo === 'push') {
-            await executeScript(scene.scriptOn, scene.nome)
+            await executeAction(scene.endpoint, scene.scriptOn, scene.nome)
         } else {
             const isOn = toggleStates[scene.id] || false
-            const scriptId = isOn ? (scene.scriptOff || '') : scene.scriptOn
+            const actionId = isOn ? (scene.scriptOff || '') : scene.scriptOn
             const action = isOn ? 'OFF' : 'ON'
-            const ok = await executeScript(scriptId, `${scene.nome} ${action}`)
+            const ok = await executeAction(scene.endpoint, actionId, `${scene.nome} ${action}`)
             if (ok) {
                 setToggleStates(prev => ({ ...prev, [scene.id]: !isOn }))
             }

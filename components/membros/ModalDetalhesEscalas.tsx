@@ -86,12 +86,12 @@ export default function ModalDetalhesEscala({ escala }: Props) {
 
     const modal = (
         <div
-            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             style={{ zIndex: 9999 }}
             onClick={fechar}
         >
             <div
-                className="bg-bg w-full sm:max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-soft shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto relative"
+                className="bg-bg w-full max-w-md rounded-[2.5rem] border border-soft shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto relative"
                 onClick={e => e.stopPropagation()}
             >
                 {/* FEEDBACK */}

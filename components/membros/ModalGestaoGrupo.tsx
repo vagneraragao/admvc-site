@@ -194,8 +194,8 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
             </button>
 
             {aberto && (
-                <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setAberto(false)}>
-                    <div className="bg-bg w-full sm:max-w-2xl rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl border border-soft flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 max-h-[92vh]" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setAberto(false)}>
+                    <div className="bg-bg w-full max-w-2xl rounded-[2.5rem] shadow-2xl border border-soft flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh]" onClick={e => e.stopPropagation()}>
 
                         {/* CABEÇALHO */}
                         <div className="p-6 border-b border-soft flex items-start justify-between gap-4 shrink-0 bg-bg2 rounded-t-[2.5rem]">
@@ -336,42 +336,35 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
 
                             {/* NOVO ENCONTRO */}
                             {aba === 'novo' && isLider && (
-                                <form onSubmit={handleRegistarEncontro} className="space-y-5 animate-in fade-in duration-200">
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest">Data do Encontro</label>
-                                            <input type="date" name="data" required value={dataEncontro} onChange={e => setDataEncontro(e.target.value)}
-                                                className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none transition-all" />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-black text-muted uppercase tracking-widest">Tema / Título</label>
-                                            <input type="text" name="tema" required placeholder="Ex: Oração e Fé..." value={tema} onChange={e => setTema(e.target.value)}
-                                                className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none placeholder:text-muted/40" />
-                                        </div>
+                                <form onSubmit={handleRegistarEncontro} className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted uppercase tracking-widest">Data do Encontro</label>
+                                        <input type="date" name="data" required value={dataEncontro} onChange={e => setDataEncontro(e.target.value)}
+                                            className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none transition-all" />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-muted uppercase tracking-widest">Tema / Título</label>
+                                        <input type="text" name="tema" required placeholder="Ex: Oração e Fé..." value={tema} onChange={e => setTema(e.target.value)}
+                                            className="w-full bg-bg border border-soft rounded-xl px-4 py-3 text-sm font-bold focus:border-figueira outline-none placeholder:text-muted/40" />
                                     </div>
 
                                     {/* UPLOAD FOTO */}
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-muted uppercase tracking-widest flex items-center gap-2">
-                                            <Camera size={11} /> Foto do Encontro <span className="text-muted/50">(opcional)</span>
+                                            <Camera size={11} /> Foto <span className="text-muted/50">(opcional)</span>
                                         </label>
                                         {fotoPreview ? (
                                             <div className="relative rounded-2xl overflow-hidden border border-soft">
-                                                <img src={fotoPreview} alt="Preview" className="w-full h-48 object-cover" />
-                                                <div className="absolute inset-0 bg-black/20" />
-                                                <button type="button" onClick={removerFoto} className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center hover:bg-red-600 transition-all shadow-md">
-                                                    <Trash2 size={14} />
+                                                <img src={fotoPreview} alt="Preview" className="w-full h-36 object-cover" />
+                                                <button type="button" onClick={removerFoto} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-all shadow-md">
+                                                    <Trash2 size={12} />
                                                 </button>
-                                                <span className="absolute bottom-3 left-3 text-[9px] font-black uppercase tracking-widest text-white bg-black/50 px-2 py-1 rounded-lg">{fotoFile?.name}</span>
                                             </div>
                                         ) : (
                                             <button type="button" onClick={() => fileInputRef.current?.click()}
-                                                className="w-full h-32 border-2 border-dashed border-soft rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-figueira/40 hover:bg-figueira/5 transition-all group">
-                                                <div className="w-10 h-10 bg-soft rounded-xl flex items-center justify-center group-hover:bg-figueira/10 transition-all">
-                                                    <ImageIcon size={18} className="text-muted group-hover:text-figueira transition-colors" />
-                                                </div>
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-muted group-hover:text-figueira transition-colors">Clica para adicionar foto</span>
-                                                <span className="text-[8px] text-muted/50 uppercase tracking-widest">JPG, PNG ou WEBP · máx. 5MB</span>
+                                                className="w-full h-20 border-2 border-dashed border-soft rounded-2xl flex items-center justify-center gap-3 hover:border-figueira/40 hover:bg-figueira/5 transition-all group">
+                                                <ImageIcon size={16} className="text-muted group-hover:text-figueira transition-colors" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-muted group-hover:text-figueira transition-colors">Adicionar foto</span>
                                             </button>
                                         )}
                                         <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFotoChange} className="hidden" />
@@ -384,26 +377,26 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
                                                 <UserCheck size={11} /> Presenças ({presentes.length}/{grupo.membros.length})
                                             </label>
                                             <button type="button" onClick={selecionarTodos} className="text-[8px] font-black uppercase tracking-widest text-figueira hover:underline">
-                                                {presentes.length === grupo.membros.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                                                {presentes.length === grupo.membros.length ? 'Desmarcar' : 'Todos'}
                                             </button>
                                         </div>
-                                        <div className="bg-bg border border-soft rounded-2xl overflow-hidden divide-y divide-soft/50">
+                                        <div className="bg-bg border border-soft rounded-2xl overflow-hidden divide-y divide-soft/50 max-h-48 overflow-y-auto">
                                             {grupo.membros.length === 0
                                                 ? <p className="text-[10px] text-muted italic p-4 text-center">Nenhum membro no grupo.</p>
                                                 : grupo.membros.map(m => {
                                                     const presente = presentes.includes(m.id)
                                                     return (
                                                         <button key={m.id} type="button" onClick={() => togglePresente(m.id)}
-                                                            className={`w-full flex items-center justify-between px-4 py-3 transition-all text-left ${presente ? 'bg-emerald-500/5' : 'hover:bg-soft/30'}`}>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-xl bg-bg2 border border-soft flex items-center justify-center text-xs font-black text-muted overflow-hidden shrink-0">
+                                                            className={`w-full flex items-center justify-between px-3 py-2.5 transition-all text-left ${presente ? 'bg-emerald-500/5' : 'hover:bg-soft/30'}`}>
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="w-7 h-7 rounded-lg bg-bg2 border border-soft flex items-center justify-center text-[10px] font-black text-muted overflow-hidden shrink-0">
                                                                     {m.avatar_file ? <img src={m.avatar_file} alt="" className="w-full h-full object-cover" /> : m.first_name[0]}
                                                                 </div>
-                                                                <span className={`text-[11px] font-black uppercase tracking-wide transition-colors ${presente ? 'text-emerald-700' : 'text-fg'}`}>
+                                                                <span className={`text-[10px] font-black uppercase tracking-wide transition-colors ${presente ? 'text-emerald-700' : 'text-fg'}`}>
                                                                     {m.first_name} {m.last_name}
                                                                 </span>
                                                             </div>
-                                                            {presente ? <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> : <Circle size={18} className="text-soft shrink-0" />}
+                                                            {presente ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" /> : <Circle size={16} className="text-soft shrink-0" />}
                                                         </button>
                                                     )
                                                 })

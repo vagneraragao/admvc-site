@@ -482,9 +482,9 @@ export default function ModalRelatorioEscalaLider({
         <>
             <button
                 onClick={() => setAberto(true)}
-                className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-4 py-3 rounded-xl transition-all flex items-center gap-3 w-full"
+                className="px-4 py-2.5 rounded-xl bg-fg text-bg text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all flex items-center gap-2 active:scale-95 shadow-sm shrink-0"
             >
-                <BarChart2 size={14} className="text-figueira" /> Relatório Estratégico
+                <BarChart2 size={13} /> Relatorio
             </button>
 
             {mounted && aberto && createPortal(modal, document.body)}

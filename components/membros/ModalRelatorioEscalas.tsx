@@ -9,6 +9,13 @@ export default function ModalRelatorioEscalas({ membroId, isMenuItem }: { membro
     const [loading, setLoading] = useState(false);
     const [escalas, setEscalas] = useState<any[]>([]);
 
+    // Bloquear scroll do body quando modal está aberto
+    useEffect(() => {
+        if (isOpen) document.body.style.overflow = 'hidden'
+        else document.body.style.overflow = ''
+        return () => { document.body.style.overflow = '' }
+    }, [isOpen])
+
     // Filtros
     const hoje = new Date();
     const [mes, setMes] = useState(hoje.getMonth() + 1); // 1 a 12
@@ -54,48 +61,49 @@ export default function ModalRelatorioEscalas({ membroId, isMenuItem }: { membro
 
             {/* O Modal */}
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-bg2 w-full max-w-3xl border border-soft p-6 md:p-8 rounded-[3rem] shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-
-                        {/* Botão Fechar */}
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="absolute top-6 right-6 p-2 bg-bg text-muted border border-soft rounded-2xl hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors z-10 shadow-sm"
-                        >
-                            <X size={16} />
-                        </button>
-
-                        {/* Cabeçalho do Modal */}
-                        <div className="mb-8 pr-12 shrink-0">
-                            <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg flex items-center gap-2">
-                                <Filter size={20} className="text-figueira" /> Filtro de Escalas
-                            </h2>
-                            <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">
-                                Consulta o teu histórico e programação futura.
-                            </p>
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setIsOpen(false)}
+                >
+                    <div
+                        className="bg-bg w-full max-w-lg rounded-[2.5rem] border border-soft shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* HEADER */}
+                        <div className="flex items-center justify-between p-5 border-b border-soft shrink-0 bg-bg2 rounded-t-[2.5rem]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center shrink-0">
+                                    <CalendarSearch size={18} />
+                                </div>
+                                <div>
+                                    <h2 className="text-sm font-black uppercase italic tracking-tighter text-fg leading-none">
+                                        Relatorio de Escalas
+                                    </h2>
+                                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5">
+                                        Historico e programacao
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-bg border border-soft text-muted hover:bg-soft rounded-xl transition-all shrink-0">
+                                <X size={15} />
+                            </button>
                         </div>
 
-                        {/* Barra de Filtros */}
-                        <div className="flex flex-col sm:flex-row gap-4 mb-6 shrink-0 bg-bg p-4 rounded-3xl border border-soft shadow-sm">
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2">Mês</label>
-                                <select
-                                    value={mes}
-                                    onChange={(e) => setMes(Number(e.target.value))}
-                                    className="w-full bg-bg2 border border-soft rounded-2xl px-4 py-3 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm"
-                                >
+                        {/* FILTROS */}
+                        <div className="flex gap-3 p-4 border-b border-soft shrink-0">
+                            <div className="flex-1 space-y-1">
+                                <label className="text-[8px] font-black uppercase text-muted tracking-widest">Mes</label>
+                                <select value={mes} onChange={(e) => setMes(Number(e.target.value))}
+                                    className="w-full bg-bg2 border border-soft rounded-xl px-3 py-2.5 text-xs font-bold text-fg focus:border-figueira outline-none">
                                     {mesesNome.map((m, index) => (
                                         <option key={index + 1} value={index + 1}>{m}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2">Ano</label>
-                                <select
-                                    value={ano}
-                                    onChange={(e) => setAno(Number(e.target.value))}
-                                    className="w-full bg-bg2 border border-soft rounded-2xl px-4 py-3 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm"
-                                >
+                            <div className="w-24 space-y-1">
+                                <label className="text-[8px] font-black uppercase text-muted tracking-widest">Ano</label>
+                                <select value={ano} onChange={(e) => setAno(Number(e.target.value))}
+                                    className="w-full bg-bg2 border border-soft rounded-xl px-3 py-2.5 text-xs font-bold text-fg focus:border-figueira outline-none">
                                     {anosOpcoes.map(a => (
                                         <option key={a} value={a}>{a}</option>
                                     ))}
@@ -103,74 +111,58 @@ export default function ModalRelatorioEscalas({ membroId, isMenuItem }: { membro
                             </div>
                         </div>
 
-                        {/* Lista de Resultados com Scroll */}
-                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {/* LISTA */}
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2">
                             {loading ? (
-                                <div className="flex flex-col items-center justify-center py-20 text-figueira gap-4">
-                                    <Loader2 size={32} className="animate-spin" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">A carregar dados...</span>
+                                <div className="flex items-center justify-center py-12 gap-2">
+                                    <Loader2 size={18} className="animate-spin text-figueira" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted">A carregar...</span>
                                 </div>
                             ) : escalas.length > 0 ? (
-                                <div className="space-y-4">
-                                    {escalas.map((esc) => {
-                                        const dataEvento = new Date(esc.evento.data);
-                                        const jaPassou = dataEvento < new Date();
+                                escalas.map((esc) => {
+                                    const dataEvento = new Date(esc.evento.data);
+                                    const jaPassou = dataEvento < new Date();
+                                    return (
+                                        <div key={esc.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${jaPassou ? 'bg-bg2/50 border-soft/50 opacity-60' : 'bg-bg2 border-soft hover:border-figueira/30'}`}>
+                                            {/* Data */}
+                                            <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 ${jaPassou ? 'bg-soft text-muted' : 'bg-fg text-bg'}`}>
+                                                <span className="text-[7px] font-black uppercase opacity-70">{dataEvento.toLocaleDateString('pt-PT', { month: 'short' })}</span>
+                                                <span className="text-base font-black italic leading-none">{dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
+                                            </div>
 
-                                        return (
-                                            <div key={esc.id} className={`p-5 rounded-[2rem] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm ${jaPassou ? 'bg-bg/50 border-soft opacity-70' : 'bg-bg border-soft hover:border-figueira/50'}`}>
-                                                
-                                                {/* Data e Evento */}
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-sm ${jaPassou ? 'bg-soft text-muted' : 'bg-fg text-bg'}`}>
-                                                        <span className="text-[8px] font-black uppercase tracking-widest opacity-80">{dataEvento.toLocaleDateString('pt-PT', { month: 'short' })}</span>
-                                                        <span className="text-xl font-black italic leading-none">{dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-black uppercase italic tracking-tighter text-fg">{esc.evento.nome}</h4>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-[9px] font-bold uppercase tracking-widest text-figueira bg-figueira/10 px-2 py-0.5 rounded-md border border-figueira/20">
-                                                                {esc.departamento.nome}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Função, Horário e Status */}
-                                                <div className="flex flex-wrap items-center sm:justify-end gap-3 text-[9px] font-black uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1.5 bg-bg2 px-3 py-2 rounded-xl border border-soft text-blue-600">
-                                                        <ShieldCheck size={12} /> {esc.funcao}
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] font-black uppercase text-fg truncate leading-tight">{esc.evento.nome}</p>
+                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                    <span className="text-[8px] font-bold bg-figueira/10 text-figueira px-1.5 py-0.5 rounded border border-figueira/20 uppercase tracking-widest">
+                                                        {esc.departamento.nome}
                                                     </span>
-                                                    <span className="flex items-center gap-1.5 bg-bg2 px-3 py-2 rounded-xl border border-soft text-muted">
-                                                        <Clock size={12} /> {esc.horario || "Sem hora"}
+                                                    <span className="text-[8px] font-bold bg-bg border border-soft px-1.5 py-0.5 rounded text-muted uppercase tracking-widest flex items-center gap-1">
+                                                        <ShieldCheck size={8} /> {esc.funcao}
                                                     </span>
-                                                    
-                                                    {/* Status da Escala */}
-                                                    {esc.confirmado ? (
-                                                        <span className="flex items-center gap-1.5 text-emerald-500 bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/20">
-                                                            <CheckCircle2 size={12} /> Confirmado
-                                                        </span>
-                                                    ) : jaPassou ? (
-                                                        <span className="flex items-center gap-1.5 text-red-500 bg-red-500/10 px-3 py-2 rounded-xl border border-red-500/20">
-                                                            <AlertCircle size={12} /> Faltou Confirmação
-                                                        </span>
-                                                    ) : (
-                                                        <span className="flex items-center gap-1.5 text-orange-500 bg-orange-500/10 px-3 py-2 rounded-xl border border-orange-500/20">
-                                                            <Clock size={12} /> Pendente
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
+
+                                            {/* Status */}
+                                            <div className="shrink-0">
+                                                {esc.confirmado ? (
+                                                    <CheckCircle2 size={16} className="text-emerald-500" />
+                                                ) : jaPassou ? (
+                                                    <AlertCircle size={16} className="text-red-400" />
+                                                ) : (
+                                                    <Clock size={16} className="text-orange-500" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             ) : (
-                                <div className="text-center py-20 border-2 border-dashed border-soft rounded-[2.5rem]">
-                                    <CalendarSearch size={40} className="mx-auto text-muted/30 mb-4" />
-                                    <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">Nenhuma escala encontrada para este período.</p>
+                                <div className="text-center py-12">
+                                    <CalendarSearch size={28} className="mx-auto text-muted/30 mb-3" />
+                                    <p className="text-[10px] font-black text-muted uppercase tracking-widest">Nenhuma escala neste periodo.</p>
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </div>
             )}

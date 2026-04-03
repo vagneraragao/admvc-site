@@ -51,6 +51,7 @@ export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: bo
     const [horaInicio, setHoraInicio] = useState('')
     const [horaFim, setHoraFim] = useState('')
     const [motivo, setMotivo] = useState('')
+    const [diaInteiro, setDiaInteiro] = useState(true)
 
     useEffect(() => { setMounted(true) }, [])
 
@@ -74,6 +75,7 @@ export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: bo
         setHoraInicio('')
         setHoraFim('')
         setMotivo('')
+        setDiaInteiro(true)
         setAdicionando(false)
     }
 
@@ -134,12 +136,12 @@ export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: bo
 
     const modal = (
         <div
-            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             style={{ zIndex: 9999 }}
             onClick={() => { setAberto(false); resetForm() }}
         >
             <div
-                className="bg-bg w-full sm:max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] border border-soft shadow-2xl flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300"
+                className="bg-bg w-full max-w-lg rounded-[2.5rem] border border-soft shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* HEADER */}
@@ -307,36 +309,47 @@ export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: bo
                                 </div>
                             )}
 
-                            {/* HORÁRIO OPCIONAL */}
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                                    <Clock size={10} /> Restringir horário <span className="text-muted/50">(opcional)</span>
-                                </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-bold text-muted uppercase tracking-widest">Das</label>
-                                        <input
-                                            type="time"
-                                            name="hora_inicio"
-                                            value={horaInicio}
-                                            onChange={e => setHoraInicio(e.target.value)}
-                                            className="w-full bg-bg border border-soft rounded-xl px-4 py-2.5 text-sm font-bold text-fg focus:border-figueira outline-none"
-                                        />
+                            {/* DIA INTEIRO / HORÁRIO */}
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() => { setDiaInteiro(!diaInteiro); if (!diaInteiro) { setHoraInicio(''); setHoraFim('') } }}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${diaInteiro ? 'bg-orange-500/10 border-orange-500/30 text-orange-600' : 'bg-bg border-soft text-muted'}`}
+                                >
+                                    <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Clock size={12} /> Dia inteiro
+                                    </span>
+                                    <div className={`w-9 h-5 rounded-full transition-all flex items-center px-0.5 ${diaInteiro ? 'bg-orange-500 justify-end' : 'bg-soft justify-start'}`}>
+                                        <div className="w-4 h-4 bg-white rounded-full shadow-sm" />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-bold text-muted uppercase tracking-widest">Até às</label>
-                                        <input
-                                            type="time"
-                                            name="hora_fim"
-                                            value={horaFim}
-                                            onChange={e => setHoraFim(e.target.value)}
-                                            className="w-full bg-bg border border-soft rounded-xl px-4 py-2.5 text-sm font-bold text-fg focus:border-figueira outline-none"
-                                        />
+                                </button>
+
+                                {!diaInteiro && (
+                                    <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-bold text-muted uppercase tracking-widest">Das</label>
+                                            <input
+                                                type="time"
+                                                name="hora_inicio"
+                                                value={horaInicio}
+                                                onChange={e => setHoraInicio(e.target.value)}
+                                                required
+                                                className="w-full bg-bg border border-soft rounded-xl px-4 py-2.5 text-sm font-bold text-fg focus:border-figueira outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-bold text-muted uppercase tracking-widest">Até às</label>
+                                            <input
+                                                type="time"
+                                                name="hora_fim"
+                                                value={horaFim}
+                                                onChange={e => setHoraFim(e.target.value)}
+                                                required
+                                                className="w-full bg-bg border border-soft rounded-xl px-4 py-2.5 text-sm font-bold text-fg focus:border-figueira outline-none"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <p className="text-[8px] text-muted font-medium">
-                                    Deixa em branco para bloquear o dia inteiro
-                                </p>
+                                )}
                             </div>
 
                             {/* MOTIVO */}

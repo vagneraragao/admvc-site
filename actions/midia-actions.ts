@@ -76,8 +76,9 @@ export type LumikitScene = {
     cor: string
     icone: string
     tipo: 'push' | 'toggle'
-    scriptOn: string       // ID do script no Holyrics (executar / ligar)
-    scriptOff?: string     // ID do script no Holyrics (desligar — só para toggle)
+    endpoint: string       // Endpoint da API Holyrics (ex: FavoriteAction, ScriptAction)
+    scriptOn: string       // ID para executar / ligar
+    scriptOff?: string     // ID para desligar (só para toggle)
 }
 
 export type LumikitConfig = {

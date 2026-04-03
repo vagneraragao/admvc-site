@@ -1,10 +1,9 @@
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
-import Breadcrumb from '@/components/ui/Breadcrumb'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
-import { ShieldCheck, Users, Award, Calendar, Activity } from 'lucide-react'
+import { ShieldCheck, Calendar, Activity, BarChart2 } from 'lucide-react'
 //import RelatorioEscalasDepartamento from '@/components/escalas/RelatorioEscalasDepartamento'
 import ModalRelatorioEscalaLider from '@/components/escalas/ModalRelatorioEscalaLider'
 
@@ -122,11 +121,6 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-            <Breadcrumb items={[
-                { label: "Dashboard", href: "/membros/dashboard", isBackIcon: true },
-                { label: "Gestão de Escalas" }
-            ]} />
-
             {/* HEADER */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">
                 <div className="space-y-2">
@@ -145,39 +139,6 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                     equipaDoDepartamento={equipaDoDepartamento}
                 />
             </header>
-
-            {/* CARDS DE ESTATÍSTICAS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4">
-                <div className="bg-bg2 border border-soft p-6 rounded-[2rem] flex items-center gap-5 shadow-sm">
-                    <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center shrink-0">
-                        <Users size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase text-muted tracking-widest">Voluntários Aptos</p>
-                        <p className="text-2xl font-black text-fg tracking-tighter">{equipaDoDepartamento.length}</p>
-                    </div>
-                </div>
-                <div className="bg-bg2 border border-soft p-6 rounded-[2rem] flex items-center gap-5 shadow-sm">
-                    <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0">
-                        <Award size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase text-muted tracking-widest">Cargos Criados</p>
-                        <p className="text-2xl font-black text-fg tracking-tighter">{depto.funcoes.length}</p>
-                    </div>
-                </div>
-                <div className="bg-bg2 border border-soft p-6 rounded-[2rem] flex items-center gap-5 shadow-sm">
-                    <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center shrink-0">
-                        <Calendar size={20} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase text-muted tracking-widest">Próximo Evento</p>
-                        <p className="text-sm font-black text-fg tracking-tighter truncate mt-1">
-                            {proximoEvento ? proximoEvento.nome : 'Nenhum agendado'}
-                        </p>
-                    </div>
-                </div>
-            </div>
 
             {/* MONTADOR — FULL WIDTH */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm relative">

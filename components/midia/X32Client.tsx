@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Wifi, WifiOff, Sliders, Volume2, VolumeX, Settings, Loader2 } from 'lucide-react'
+import { Wifi, WifiOff, Volume2, VolumeX, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
     port: number
 }
 
-// Canais padrão do X32 (32 canais + 16 mix bus)
 const CANAIS = Array.from({ length: 32 }, (_, i) => ({
     id: `ch/${String(i + 1).padStart(2, '0')}`,
     label: `CH ${i + 1}`,
@@ -30,23 +29,22 @@ const MASTERS = [
 type Fader = {
     id: string
     label: string
+    syncLabel?: string
     tipo: 'channel' | 'bus' | 'master'
     value: number
     muted: boolean
 }
 
 export default function X32Client({ ip, port }: Props) {
-    const [modo, setModo] = useState<'proxy' | 'directo'>('proxy')
     const [proxyUrl, setProxyUrl] = useState('ws://localhost:8080')
     const [connected, setConnected] = useState(false)
     const [connecting, setConnecting] = useState(false)
     const [faders, setFaders] = useState<Fader[]>([])
     const [vista, setVista] = useState<'channels' | 'bus' | 'master'>('channels')
-    const [visiveisCh, setVisiveisCh] = useState(8) // Quantos canais mostrar
+    const [visiveisCh, setVisiveisCh] = useState(8)
     const [offsetCh, setOffsetCh] = useState(0)
     const wsRef = useRef<WebSocket | null>(null)
 
-    // Inicializar faders
     useEffect(() => {
         const all = [...CANAIS, ...MIX_BUS, ...MASTERS].map(c => ({
             ...c, value: 0.75, muted: false
@@ -54,7 +52,6 @@ export default function X32Client({ ip, port }: Props) {
         setFaders(all)
     }, [])
 
-    // Conectar via WebSocket ao proxy local
     const connect = useCallback(async () => {
         if (!ip) return
         setConnecting(true)
@@ -65,7 +62,6 @@ export default function X32Client({ ip, port }: Props) {
                 setConnected(true)
                 setConnecting(false)
                 wsRef.current = ws
-                // Pedir valores actuais de todos os faders
                 ws.send(JSON.stringify({ type: 'subscribe', target: ip, port }))
             }
             ws.onmessage = (event) => {
@@ -79,6 +75,11 @@ export default function X32Client({ ip, port }: Props) {
                     if (msg.type === 'mute') {
                         setFaders(prev => prev.map(f =>
                             f.id === msg.channel ? { ...f, muted: msg.muted } : f
+                        ))
+                    }
+                    if (msg.type === 'label') {
+                        setFaders(prev => prev.map(f =>
+                            f.id === msg.channel ? { ...f, syncLabel: msg.name || undefined } : f
                         ))
                     }
                 } catch { }
@@ -95,7 +96,6 @@ export default function X32Client({ ip, port }: Props) {
         setConnected(false)
     }
 
-    // Enviar comando de fader
     const sendFader = (channelId: string, value: number) => {
         setFaders(prev => prev.map(f => f.id === channelId ? { ...f, value } : f))
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -133,7 +133,6 @@ export default function X32Client({ ip, port }: Props) {
         )
     }
 
-    // Faders da vista actual
     const fadersVista = vista === 'channels'
         ? faders.filter(f => f.tipo === 'channel').slice(offsetCh, offsetCh + visiveisCh)
         : vista === 'bus'
@@ -142,39 +141,37 @@ export default function X32Client({ ip, port }: Props) {
 
     return (
         <div className="space-y-4">
-            {/* BARRA DE CONEXÃO */}
-            <div className="bg-bg2 border border-soft rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${connected ? 'bg-emerald-500/10 text-emerald-500' : 'bg-soft text-muted'}`}>
-                        {connected ? <Wifi size={18} /> : <WifiOff size={18} />}
+            {/* BARRA DE CONEXÃO — compacta */}
+            {!connected ? (
+                <div className="bg-bg2 border border-soft rounded-2xl px-4 py-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-soft text-muted flex items-center justify-center shrink-0">
+                        <WifiOff size={14} />
                     </div>
-                    <div>
-                        <p className="text-sm font-black text-fg uppercase tracking-widest">{ip}:{port}</p>
-                        <p className="text-[8px] font-bold text-muted uppercase tracking-widest">
-                            {connected ? 'Conectado via WebSocket' : 'Desconectado'}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
                     <input type="text" value={proxyUrl} onChange={e => setProxyUrl(e.target.value)}
                         placeholder="ws://localhost:8080"
-                        className="flex-1 sm:w-48 bg-bg border border-soft rounded-lg px-3 py-2 text-[10px] font-mono text-fg outline-none focus:border-figueira" />
-                    {connected ? (
-                        <button onClick={disconnect} className="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">
-                            Desligar
-                        </button>
-                    ) : (
-                        <button onClick={connect} disabled={connecting}
-                            className="px-4 py-2 rounded-lg bg-figueira text-white text-[9px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all disabled:opacity-50 flex items-center gap-1.5">
-                            {connecting ? <Loader2 size={12} className="animate-spin" /> : <Wifi size={12} />}
-                            Conectar
-                        </button>
-                    )}
+                        className="flex-1 min-w-0 bg-bg border border-soft rounded-lg px-3 py-1.5 text-[10px] font-mono text-fg outline-none focus:border-figueira" />
+                    <button onClick={connect} disabled={connecting}
+                        className="px-3 py-1.5 rounded-lg bg-figueira text-white text-[8px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all disabled:opacity-50 flex items-center gap-1.5 shrink-0">
+                        {connecting ? <Loader2 size={10} className="animate-spin" /> : <Wifi size={10} />}
+                        Conectar
+                    </button>
                 </div>
-            </div>
+            ) : (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">
+                            Conectado — {ip}:{port}
+                        </span>
+                    </div>
+                    <button onClick={disconnect}
+                        className="text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-500 transition-colors">
+                        Desligar
+                    </button>
+                </div>
+            )}
 
-            {/* TABS: Channels / Bus / Master */}
+            {/* TABS */}
             <div className="flex gap-1.5">
                 {[
                     { id: 'channels' as const, label: 'Canais', count: 32 },
@@ -188,25 +185,25 @@ export default function X32Client({ ip, port }: Props) {
                 ))}
             </div>
 
-            {/* PAGINAÇÃO DE CANAIS */}
+            {/* PAGINAÇÃO */}
             {vista === 'channels' && (
                 <div className="flex items-center gap-2">
                     <button onClick={() => setOffsetCh(Math.max(0, offsetCh - visiveisCh))} disabled={offsetCh === 0}
                         className="px-3 py-1.5 rounded-lg bg-bg2 border border-soft text-[9px] font-black uppercase text-muted disabled:opacity-30">
-                        ← Ant
+                        ←
                     </button>
                     <span className="text-[8px] font-bold text-muted uppercase tracking-widest">
                         CH {offsetCh + 1}-{Math.min(offsetCh + visiveisCh, 32)}
                     </span>
                     <button onClick={() => setOffsetCh(Math.min(32 - visiveisCh, offsetCh + visiveisCh))} disabled={offsetCh + visiveisCh >= 32}
                         className="px-3 py-1.5 rounded-lg bg-bg2 border border-soft text-[9px] font-black uppercase text-muted disabled:opacity-30">
-                        Seg →
+                        →
                     </button>
                     <select value={visiveisCh} onChange={e => { setVisiveisCh(Number(e.target.value)); setOffsetCh(0) }}
                         className="ml-auto bg-bg2 border border-soft rounded-lg px-2 py-1.5 text-[9px] font-bold text-muted outline-none">
-                        <option value={8}>8 canais</option>
-                        <option value={16}>16 canais</option>
-                        <option value={32}>32 canais</option>
+                        <option value={8}>8</option>
+                        <option value={16}>16</option>
+                        <option value={32}>32</option>
                     </select>
                 </div>
             )}
@@ -214,49 +211,47 @@ export default function X32Client({ ip, port }: Props) {
             {/* FADERS */}
             <div className="bg-bg2 border border-soft rounded-2xl p-4 overflow-x-auto">
                 <div className="flex gap-3 min-w-min">
-                    {fadersVista.map(fader => (
-                        <div key={fader.id} className="flex flex-col items-center gap-2 w-16 shrink-0">
-                            {/* VALOR */}
-                            <span className="text-[8px] font-black text-muted uppercase tracking-widest">
-                                {Math.round(fader.value * 100)}%
-                            </span>
+                    {fadersVista.map(fader => {
+                        const displayLabel = fader.syncLabel || fader.label
+                        return (
+                            <div key={fader.id} className="flex flex-col items-center gap-2 w-16 shrink-0">
+                                <span className="text-[8px] font-black text-muted uppercase tracking-widest">
+                                    {Math.round(fader.value * 100)}%
+                                </span>
 
-                            {/* FADER VERTICAL */}
-                            <div className="relative h-40 w-8 bg-bg border border-soft rounded-lg overflow-hidden">
-                                <div className="absolute bottom-0 left-0 right-0 transition-all duration-100 rounded-b-lg"
-                                    style={{
-                                        height: `${fader.value * 100}%`,
-                                        backgroundColor: fader.muted ? '#ef4444' : fader.value > 0.85 ? '#ef4444' : fader.value > 0.6 ? '#f59e0b' : '#22c55e',
-                                        opacity: fader.muted ? 0.3 : 0.6,
-                                    }} />
-                                <input type="range" min="0" max="1" step="0.01" value={fader.value}
-                                    onChange={e => sendFader(fader.id, Number(e.target.value))}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-ns-resize"
-                                    style={{ writingMode: 'vertical-lr', direction: 'rtl' }} />
+                                <div className="relative h-40 w-8 bg-bg border border-soft rounded-lg overflow-hidden">
+                                    <div className="absolute bottom-0 left-0 right-0 transition-all duration-100 rounded-b-lg"
+                                        style={{
+                                            height: `${fader.value * 100}%`,
+                                            backgroundColor: fader.muted ? '#ef4444' : fader.value > 0.85 ? '#ef4444' : fader.value > 0.6 ? '#f59e0b' : '#22c55e',
+                                            opacity: fader.muted ? 0.3 : 0.6,
+                                        }} />
+                                    <input type="range" min="0" max="1" step="0.01" value={fader.value}
+                                        onChange={e => sendFader(fader.id, Number(e.target.value))}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-ns-resize"
+                                        style={{ writingMode: 'vertical-lr', direction: 'rtl' }} />
+                                </div>
+
+                                <button onClick={() => sendMute(fader.id)}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all text-[7px] font-black ${fader.muted ? 'bg-red-500 text-white' : 'bg-bg border border-soft text-muted hover:border-red-500/30'}`}>
+                                    {fader.muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                                </button>
+
+                                <span className="text-[7px] font-black uppercase tracking-widest text-muted text-center leading-tight w-16 truncate" title={displayLabel}>
+                                    {displayLabel}
+                                </span>
                             </div>
-
-                            {/* MUTE */}
-                            <button onClick={() => sendMute(fader.id)}
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all text-[7px] font-black ${fader.muted ? 'bg-red-500 text-white' : 'bg-bg border border-soft text-muted hover:border-red-500/30'}`}>
-                                {fader.muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                            </button>
-
-                            {/* LABEL */}
-                            <span className="text-[7px] font-black uppercase tracking-widest text-muted text-center leading-tight">
-                                {fader.label}
-                            </span>
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             </div>
 
             {/* INFO */}
             <div className="bg-bg2 border border-soft rounded-2xl p-4 text-[9px] text-muted/60 space-y-1">
                 <p className="font-black uppercase tracking-widest text-muted text-[8px]">Como conectar:</p>
-                <p>1. Descarregue o proxy local: <code className="bg-bg px-1.5 py-0.5 rounded text-fg font-mono">npx admvc-x32-proxy</code></p>
-                <p>2. Execute no PC da igreja (mesma rede que o X32)</p>
-                <p>3. Clique "Conectar" acima com o endereco do proxy (default: ws://localhost:8080)</p>
-                <p>4. Os faders sincronizam automaticamente com a mesa</p>
+                <p>1. Descarregue e execute o proxy no PC da igreja (mesma rede que o X32)</p>
+                <p>2. Clique "Conectar" com o endereco do proxy (default: ws://localhost:8080)</p>
+                <p>3. Os nomes dos canais, faders e mutes sincronizam automaticamente</p>
             </div>
         </div>
     )

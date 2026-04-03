@@ -82,6 +82,12 @@ function parseOSCMessage(buf) {
         let value
         if (type === 'f') value = buf.readFloatBE(i)
         else if (type === 'i') value = buf.readInt32BE(i)
+        else if (type === 's') {
+            // Ler string OSC
+            let j = i
+            while (j < buf.length && buf[j] !== 0) j++
+            value = buf.toString('ascii', i, j)
+        }
         else value = null
         return { address, type, value }
     } catch {
@@ -116,14 +122,20 @@ wss.on('connection', (ws) => {
                 socket.on('message', (buf) => {
                     const osc = parseOSCMessage(buf)
                     if (osc && ws.readyState === 1) {
-                        // Determinar tipo de mensagem
+                        // Fader value
                         if (osc.address.includes('/mix/fader')) {
                             const channel = osc.address.replace('/mix/fader', '').replace(/^\//, '')
                             ws.send(JSON.stringify({ type: 'fader', channel, value: osc.value }))
                         }
+                        // Mute status
                         if (osc.address.includes('/mix/on')) {
                             const channel = osc.address.replace('/mix/on', '').replace(/^\//, '')
                             ws.send(JSON.stringify({ type: 'mute', channel, muted: osc.value === 0 }))
+                        }
+                        // Channel/bus name
+                        if (osc.address.includes('/config/name') && osc.type === 's') {
+                            const channel = osc.address.replace('/config/name', '').replace(/^\//, '')
+                            ws.send(JSON.stringify({ type: 'label', channel, name: osc.value || '' }))
                         }
                     }
                 })
@@ -131,18 +143,25 @@ wss.on('connection', (ws) => {
                 udpClients.set(ws, { socket, target })
                 console.log(`📡 Subscrito ao X32 em ${target.ip}:${target.port}`)
 
-                // Pedir valores iniciais dos primeiros 32 canais
+                // Pedir valores iniciais dos primeiros 32 canais (fader, mute, nome)
                 for (let i = 1; i <= 32; i++) {
                     const ch = String(i).padStart(2, '0')
-                    const reqBuf = encodeOSCString(`/ch/${ch}/mix/fader`)
-                    socket.send(reqBuf, target.port, target.ip)
+                    socket.send(encodeOSCString(`/ch/${ch}/mix/fader`), target.port, target.ip)
+                    socket.send(encodeOSCString(`/ch/${ch}/mix/on`), target.port, target.ip)
+                    socket.send(encodeOSCString(`/ch/${ch}/config/name`), target.port, target.ip)
                 }
-                // Mix bus
+                // Mix bus (fader, mute, nome)
                 for (let i = 1; i <= 16; i++) {
                     const ch = String(i).padStart(2, '0')
-                    const reqBuf = encodeOSCString(`/bus/${ch}/mix/fader`)
-                    socket.send(reqBuf, target.port, target.ip)
+                    socket.send(encodeOSCString(`/bus/${ch}/mix/fader`), target.port, target.ip)
+                    socket.send(encodeOSCString(`/bus/${ch}/mix/on`), target.port, target.ip)
+                    socket.send(encodeOSCString(`/bus/${ch}/config/name`), target.port, target.ip)
                 }
+                // Main/mono fader e mute
+                socket.send(encodeOSCString('/main/st/mix/fader'), target.port, target.ip)
+                socket.send(encodeOSCString('/main/st/mix/on'), target.port, target.ip)
+                socket.send(encodeOSCString('/main/m/mix/fader'), target.port, target.ip)
+                socket.send(encodeOSCString('/main/m/mix/on'), target.port, target.ip)
             }
 
             if (msg.type === 'fader' && udpClients.has(ws)) {

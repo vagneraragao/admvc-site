@@ -58,6 +58,7 @@ export default function LumikitCenasEditor({ initialConfig }: Props) {
             cor: 'blue',
             icone: 'lightbulb',
             tipo: 'push',
+            endpoint: 'FavoriteAction',
             scriptOn: '',
             scriptOff: '',
         }])
@@ -168,22 +169,42 @@ export default function LumikitCenasEditor({ initialConfig }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Linha 3: Script IDs */}
+                                {/* Linha 3: Endpoint + Script IDs */}
                                 <div className="flex flex-col sm:flex-row gap-3">
+                                    <div className="w-full sm:w-48 space-y-1">
+                                        <label className="text-[7px] font-black uppercase tracking-widest text-muted">Endpoint API</label>
+                                        <select value={['FavoriteAction', 'ScriptAction', 'MediaPlaylistAction'].includes(scene.endpoint) ? scene.endpoint : '__custom'}
+                                            onChange={e => {
+                                                if (e.target.value === '__custom') return
+                                                update(scene.id, 'endpoint', e.target.value)
+                                            }}
+                                            className="w-full bg-bg2 border border-soft rounded-lg px-2 py-2 text-xs font-bold text-fg focus:border-figueira outline-none">
+                                            <option value="FavoriteAction">FavoriteAction</option>
+                                            <option value="ScriptAction">ScriptAction</option>
+                                            <option value="MediaPlaylistAction">MediaPlaylistAction</option>
+                                            <option value="__custom">Personalizado...</option>
+                                        </select>
+                                        {!['FavoriteAction', 'ScriptAction', 'MediaPlaylistAction'].includes(scene.endpoint) && (
+                                            <input type="text" value={scene.endpoint} onChange={e => update(scene.id, 'endpoint', e.target.value)}
+                                                placeholder="NomeDaAction"
+                                                className="w-full bg-bg2 border border-soft rounded-lg px-3 py-2 text-xs font-mono text-fg focus:border-figueira outline-none placeholder:text-muted/30 mt-1" />
+                                        )}
+                                    </div>
+
                                     <div className="flex-1 space-y-1">
                                         <label className="text-[7px] font-black uppercase tracking-widest text-muted">
-                                            {scene.tipo === 'toggle' ? 'Script ID (Ligar)' : 'Script ID (Holyrics)'}
+                                            {scene.tipo === 'toggle' ? 'ID (Ligar)' : 'ID'}
                                         </label>
                                         <input type="text" value={scene.scriptOn} onChange={e => update(scene.id, 'scriptOn', e.target.value)}
-                                            placeholder="ID do script no Holyrics"
+                                            placeholder="ID do favorito ou script"
                                             className="w-full bg-bg2 border border-soft rounded-lg px-3 py-2 text-xs font-mono text-fg focus:border-figueira outline-none placeholder:text-muted/30" />
                                     </div>
 
                                     {scene.tipo === 'toggle' && (
                                         <div className="flex-1 space-y-1">
-                                            <label className="text-[7px] font-black uppercase tracking-widest text-muted">Script ID (Desligar)</label>
+                                            <label className="text-[7px] font-black uppercase tracking-widest text-muted">ID (Desligar)</label>
                                             <input type="text" value={scene.scriptOff || ''} onChange={e => update(scene.id, 'scriptOff', e.target.value)}
-                                                placeholder="ID do script para desligar"
+                                                placeholder="ID para desligar"
                                                 className="w-full bg-bg2 border border-soft rounded-lg px-3 py-2 text-xs font-mono text-fg focus:border-figueira outline-none placeholder:text-muted/30" />
                                         </div>
                                     )}
