@@ -467,29 +467,6 @@ export default function EBDDashboard({
                 </h1>
             </header>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <Layers size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{cursosDisponiveis.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Disponiveis</p>
-                </div>
-                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <GraduationCap size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{meusCursos.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Meus Cursos</p>
-                </div>
-                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <Clock size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{cursosEmBreve.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Em Breve</p>
-                </div>
-                <div className="bg-bg2 border border-soft rounded-2xl p-4 text-center">
-                    <Award size={16} className="mx-auto text-figueira mb-1" />
-                    <p className="text-lg font-black text-fg">{cursos.length}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Total</p>
-                </div>
-            </div>
 
             {/* Tabs */}
             <div className="flex gap-1 bg-bg2 border border-soft rounded-2xl p-1">
