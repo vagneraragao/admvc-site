@@ -252,11 +252,12 @@ export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: s
 export async function getEstatisticasEscalas(departamentoId: number) {
     try {
         await requireAuth()
+        const db = await getDb()
         const trintaDiasAtras = new Date();
         trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
 
         // Busca todas as escalas passadas do departamento
-        const historico = await prisma.escala.findMany({
+        const historico = await db.escala.findMany({
             where: {
                 departamento_id: departamentoId,
                 evento: { data: { lte: new Date() } } // Apenas eventos que já passaram ou são hoje

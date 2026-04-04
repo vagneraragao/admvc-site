@@ -1,18 +1,17 @@
 // app/midia/lumikit/page.tsx
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import LumikitClient from '@/components/midia/LumikitClient'
 import type { LumikitConfig } from '@/actions/midia-actions'
 
 export default async function LumikitPage() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
-    const tenant = await prisma.tenant.findUnique({
+    const tenantId = await getTenantIdFromHeaders()
+    const tenant = await db.tenant.findUnique({
         where: { id: tenantId },
         select: { holyrics_url: true, holyrics_token: true, lumikit_cenas: true }
     })

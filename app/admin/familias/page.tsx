@@ -1,6 +1,6 @@
 // app/admin/familias/page.tsx
 import Link from 'next/link'
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import NovaFamiliaModal from '@/components/familias/NovaFamiliaModal'
 import FamiliasGrid from '@/components/familias/FamiliasGrid'
 import { UserX } from 'lucide-react'
@@ -8,8 +8,9 @@ import { UserX } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminFamiliasPage() {
+    const db = await getDb()
     const [familias, qtdMembrosSemVinculo] = await Promise.all([
-        prisma.familia.findMany({
+        db.familia.findMany({
             include: {
                 members: {
                     select: {
@@ -20,7 +21,7 @@ export default async function AdminFamiliasPage() {
             },
             orderBy: { surname: 'asc' }
         }),
-        prisma.membro.count({ where: { familia_id: null } }),
+        db.membro.count({ where: { familia_id: null } }),
     ])
 
     const nomesFamiliasExistentes = familias.map(f => f.surname)

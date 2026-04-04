@@ -1,9 +1,13 @@
 // app/api/loyverse/sync/route.ts
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma'
 
 export async function POST(request: Request) {
     try {
+        const tenantId = Number(request.headers.get('x-tenant-id') || 0)
+        if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
+        const db = getTenantClient(tenantId)
+
         const body = await request.json()
         const { membroId } = body
 
@@ -12,7 +16,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Busca o membro no seu banco de dados
-        const membro = await prisma.membro.findUnique({
+        const membro = await db.membro.findUnique({
             where: { id: Number(membroId) }
         })
 
@@ -58,7 +62,7 @@ export async function POST(request: Request) {
         const novoLoyverseId = data.id
 
         // 5. Salva o ID gerado pelo Loyverse no perfil do membro no SEU banco
-        await prisma.membro.update({
+        await db.membro.update({
             where: { id: membro.id },
             data: { loyverse_id: novoLoyverseId }
         })

@@ -1,5 +1,5 @@
 // app/departamentos/financeiro/dashboard/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import {
     Target, Wallet, Ticket, Archive, CheckCircle2, AlertCircle,
     Coffee, ChevronDown, HandCoins, History, Users,
@@ -33,6 +33,7 @@ const formatarData = (data: any) =>
     }).format(new Date(data)).replace(',', ' às')
 
 export default async function DashboardFinanceiro() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session || !['FINANCE', 'ADMIN'].includes(session.role)) {
         redirect('/membros/dashboard?error=Acesso negado ao módulo financeiro')
@@ -54,13 +55,13 @@ export default async function DashboardFinanceiro() {
         rifasAtivasCount,
     ] = await Promise.all([
         // Membro logado
-        prisma.membro.findUnique({
+        db.membro.findUnique({
             where: { id: session.membroId },
             select: { first_name: true }
         }),
 
         // Carnês/objetivos — inclui membro e lançamentos completos
-        prisma.objetivoFinanceiro.findMany({
+        db.objetivoFinanceiro.findMany({
             include: {
                 membro: { select: { id: true, first_name: true, last_name: true } },
                 lancamentos: { orderBy: { data_recebimento: 'desc' } }
@@ -69,13 +70,13 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Membros para selects
-        prisma.membro.findMany({
+        db.membro.findMany({
             select: { id: true, first_name: true, last_name: true, loyverse_id: true },
             orderBy: { first_name: 'asc' }
         }),
 
         // Últimos lançamentos confirmados (histórico)
-        prisma.lancamentoFinanceiro.findMany({
+        db.lancamentoFinanceiro.findMany({
             take: 8,
             where: { NOT: { forma_pagamento: 'MBWAY' } },
             include: {
@@ -90,7 +91,7 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Pendentes MBWay — inclui nome do objetivo e membro
-        prisma.lancamentoFinanceiro.findMany({
+        db.lancamentoFinanceiro.findMany({
             where: { forma_pagamento: 'MBWAY' },
             include: {
                 objetivo: {
@@ -104,7 +105,7 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Rifa ativa — inclui TODOS os campos que GrelhaRifa precisa
-        prisma.rifa.findFirst({
+        db.rifa.findFirst({
             where: { status: 'ATIVA' },
             include: {
                 numeros_vendidos: {
@@ -117,7 +118,7 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Rifas finalizadas — mesma estrutura da ativa
-        prisma.rifa.findMany({
+        db.rifa.findMany({
             where: { status: 'FINALIZADA' },
             orderBy: { createdAt: 'desc' },
             include: {
@@ -130,7 +131,7 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Pedidos cantina pendentes
-        prisma.pedidoSaldoCantina.findMany({
+        db.pedidoSaldoCantina.findMany({
             where: { status: 'PENDENTE' },
             include: {
                 membro: { select: { id: true, first_name: true, last_name: true, loyverse_id: true } }
@@ -139,19 +140,19 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Carregamentos aprovados (só para totalizar transações)
-        prisma.pedidoSaldoCantina.findMany({
+        db.pedidoSaldoCantina.findMany({
             where: { status: 'APROVADO' },
             select: { valor: true, createdAt: true }
         }),
 
         // Contribuições (dízimos/ofertas)
-        prisma.contribuicao.findMany({
+        db.contribuicao.findMany({
             include: { membro: { select: { id: true, first_name: true, last_name: true } } },
             orderBy: { data: 'desc' }
         }),
 
         // ✅ CORRIGIDO: só select, sem include em simultâneo
-        prisma.rifaNumero.findMany({
+        db.rifaNumero.findMany({
             select: {
                 createdAt: true,
                 rifa: { select: { valor_numero: true } }
@@ -159,7 +160,7 @@ export default async function DashboardFinanceiro() {
         }),
 
         // Contagem rifas ativas
-        prisma.rifa.count({ where: { status: 'ATIVA' } }),
+        db.rifa.count({ where: { status: 'ATIVA' } }),
     ])
 
     // ── PROCESSAMENTO ────────────────────────────────────────────────────────

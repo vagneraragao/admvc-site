@@ -1,7 +1,6 @@
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import PregacaoClient from '@/components/pregacao/PregacaoClient'
 
 export default async function AdminPregacaoPage({
@@ -9,12 +8,12 @@ export default async function AdminPregacaoPage({
 }: {
     searchParams: Promise<{ mes?: string; ano?: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
     const params = await searchParams
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const agora = new Date()
     const mes = params.mes ? Number(params.mes) : agora.getMonth() + 1
@@ -24,7 +23,7 @@ export default async function AdminPregacaoPage({
     const fim = new Date(ano, mes, 1)
 
     const [sermoes, membros, eventos] = await Promise.all([
-        prisma.sermao.findMany({
+        db.sermao.findMany({
             where: { tenant_id: tenantId, data_pregacao: { gte: inicio, lt: fim } },
             include: {
                 pregador: { select: { first_name: true, last_name: true, avatar_file: true } },
@@ -32,12 +31,12 @@ export default async function AdminPregacaoPage({
             },
             orderBy: { data_pregacao: 'desc' },
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: { tenant_id: tenantId, is_active: true },
             select: { id: true, first_name: true, last_name: true },
             orderBy: { first_name: 'asc' },
         }),
-        prisma.evento.findMany({
+        db.evento.findMany({
             where: { tenant_id: tenantId, data: { gte: new Date() } },
             select: { id: true, nome: true, data: true },
             orderBy: { data: 'asc' },

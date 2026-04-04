@@ -1,15 +1,14 @@
 // app/admin/personalizacao/page.tsx
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import PersonalizacaoClient from '@/components/admin/PersonalizacaoClient'
 
 export default async function PersonalizacaoPage() {
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
     if (!tenantId) redirect('/membros/login')
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
         where: { id: tenantId },
         select: {
             cor_primaria: true,

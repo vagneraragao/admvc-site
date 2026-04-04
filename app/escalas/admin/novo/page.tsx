@@ -1,5 +1,5 @@
 // app/escalas/admin/novo/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ChevronLeft, Calendar as CalendarIcon, Users } from 'lucide-react'
@@ -7,6 +7,7 @@ import Link from 'next/link'
 import GestaoEscalasDepto from '@/components/admin/GestaoEscalasDepto'
 
 export default async function NovaEscalaPage({ searchParams }: { searchParams: { depto?: string } }) {
+    const db = await getDb()
     const cookieStore = await cookies()
     const session = cookieStore.get('admvc_session')
     if (!session) redirect('/membros/login')
@@ -15,7 +16,7 @@ export default async function NovaEscalaPage({ searchParams }: { searchParams: {
     if (!deptoId) redirect('/membros/dashboard')
 
     // 1. Busca o Departamento, Membros e Escalas Atuais
-    const departamento = await prisma.departamento.findUnique({
+    const departamento = await db.departamento.findUnique({
         where: { id: deptoId || 0 },
         include: {
             integrantes: {
@@ -36,7 +37,7 @@ export default async function NovaEscalaPage({ searchParams }: { searchParams: {
     ).values());
 
     // 2. Busca Eventos para o formulário
-    const eventos = await prisma.evento.findMany({
+    const eventos = await db.evento.findMany({
         where: { data: { gte: new Date() } },
         orderBy: { data: 'asc' }
     })

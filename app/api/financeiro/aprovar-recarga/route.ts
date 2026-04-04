@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma'
 // 7b7958b8-70ba-4573-9844-bc7fc957759e UID de MEMBRO (Tipo de Pagamento do Loyverse)
 
 
 export async function POST(request: Request) {
     try {
+        const tenantId = Number(request.headers.get('x-tenant-id') || 0)
+        if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
+        const db = getTenantClient(tenantId)
+
         const { lancamentoId, membroId, valor } = await request.json()
-        const membro = await prisma.membro.findUnique({ where: { id: membroId } })
+        const membro = await db.membro.findUnique({ where: { id: membroId } })
 
         if (!membro?.loyverse_id) {
             return NextResponse.json({ error: 'Membro sem UUID Loyverse' }, { status: 400 })
@@ -15,7 +19,7 @@ export async function POST(request: Request) {
         const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
 
         // 1. ATUALIZAR NOSSO BANCO PRIMEIRO (Para evitar cliques duplos)
-        await prisma.lancamentoFinanceiro.update({
+        await db.lancamentoFinanceiro.update({
             where: { id: lancamentoId },
             data: { forma_pagamento: 'MBWAY_CONFIRMADO' }
         });

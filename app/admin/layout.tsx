@@ -1,8 +1,7 @@
 // app/admin/layout.tsx
 import { redirect } from 'next/navigation'
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
-import { headers } from 'next/headers'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import CongregacaoFilter from '@/components/admin/CongregacaoFilter'
 
@@ -18,19 +17,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     let congregacoes: any[] = []
 
     try {
-        const headersList = await headers()
-        const tenantId = Number(headersList.get('x-tenant-id') || 0)
+        const db = await getDb()
+        const tenantId = await getTenantIdFromHeaders()
 
         const results = await Promise.all([
-            prisma.membro.findUnique({
+            db.membro.findUnique({
                 where: { id: session.membroId },
                 select: { first_name: true, congregacao_id: true, congregacao: { select: { nome: true } } }
             }),
-            tenantId ? prisma.tenant.findUnique({
+            tenantId ? db.tenant.findUnique({
                 where: { id: tenantId },
                 select: { nome: true, logo_url: true }
             }) : null,
-            tenantId ? prisma.congregacao.findMany({
+            tenantId ? db.congregacao.findMany({
                 where: { tenant_id: tenantId },
                 select: { id: true, nome: true, cidade: true },
                 orderBy: { nome: 'asc' }

@@ -1,9 +1,13 @@
 // app/api/escalas/criar/route.ts
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma'
 
 export async function POST(request: Request) {
     try {
+        const tenantId = Number(request.headers.get('x-tenant-id') || 0)
+        if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
+        const db = getTenantClient(tenantId)
+
         const body = await request.json()
         const { eventoId, membroId, departamentoId, funcao, funcaoId, horario } = body
 
@@ -13,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         // Criar a escala no banco
-        const novaEscala = await prisma.escala.create({
+        const novaEscala = await db.escala.create({
             data: {
                 evento_id: Number(eventoId),
                 membro_id: Number(membroId),
@@ -21,7 +25,7 @@ export async function POST(request: Request) {
                 funcao: String(funcao),
                 funcao_id: funcaoId ? Number(funcaoId) : null,
                 horario: String(horario),
-                tenant_id: 0,
+                tenant_id: tenantId,
             },
             include: {
                 evento: true,

@@ -1,25 +1,21 @@
 // app/membros/selecionar-congregacao/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import SelecionarCongregacaoClient from '@/components/membros/SelecionarCongregacaoClient'
 
 export default async function SelecionarCongregacaoPage() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
-
     const [congregacoes, tenant] = await Promise.all([
-        prisma.congregacao.findMany({
-            where: { tenant_id: tenantId },
+        db.congregacao.findMany({
             select: { id: true, nome: true, cidade: true },
             orderBy: { nome: 'asc' },
         }),
-        prisma.tenant.findUnique({
-            where: { id: tenantId },
+        db.tenant.findUnique({
+            where: { id: await getTenantIdFromHeaders() },
             select: { nome: true }
         })
     ])

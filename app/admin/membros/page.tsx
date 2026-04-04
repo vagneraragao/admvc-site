@@ -1,16 +1,17 @@
 // app/admin/membros/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import MembrosListClient from '@/components/admin/MembrosListClient'
 
 export default async function ListaMembrosAdmin({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const db = await getDb()
     const params = await searchParams
     const session = await getSessionData()
     const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
 
-    const membros = await prisma.membro.findMany({
+    const membros = await db.membro.findMany({
         where: congFilter ? { congregacao_id: congFilter } : undefined,
         orderBy: { created_at: 'desc' },
         select: {

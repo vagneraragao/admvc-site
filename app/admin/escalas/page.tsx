@@ -1,6 +1,5 @@
 // app/admin/escalas/page.tsx
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { CalendarDays, Settings2, Users } from 'lucide-react'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
@@ -9,14 +8,14 @@ import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
 import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
 
 export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const db = await getDb()
     const params = await searchParams
     const session = await getSessionData()
     const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const dataInicioMes = new Date()
     dataInicioMes.setDate(1)
@@ -24,7 +23,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
     const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
     const [eventos, departamentos, membrosComFuncoes, congregacoes] = await Promise.all([
-        prisma.evento.findMany({
+        db.evento.findMany({
             where: { data: { gte: dataInicioMes }, ...congWhere },
             include: {
                 mensagemEvento: {
@@ -46,14 +45,14 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
             },
             orderBy: { data: 'asc' }
         }),
-        prisma.departamento.findMany({
+        db.departamento.findMany({
             where: congFilter
                 ? { OR: [{ congregacaoId: congFilter }, { is_global: true }] }
                 : undefined,
             select: { id: true, nome: true, congregacaoId: true, is_global: true, funcoes: { select: { id: true, nome: true }, orderBy: { nome: 'asc' as const } } },
             orderBy: { nome: 'asc' }
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: { status: 'ATIVO', ...congWhere },
             include: {
                 ministerios: {
@@ -68,7 +67,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
             },
             orderBy: { first_name: 'asc' }
         }),
-        tenantId ? prisma.congregacao.findMany({
+        tenantId ? db.congregacao.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true, cidade: true },
             orderBy: { nome: 'asc' }

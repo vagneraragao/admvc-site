@@ -1,18 +1,13 @@
 // app/membros/agendar/page.tsx — Vista do membro para pedir agendamento
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
-import { getTenantClient } from '@/lib/prisma'
 import AgendarClient from '@/components/membros/AgendarClient'
 
 export default async function AgendarPage() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
-
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
-    const db = getTenantClient(tenantId)
 
     // Buscar agendas publicas com horarios dos proximos dias
     const agendas = await db.agenda.findMany({

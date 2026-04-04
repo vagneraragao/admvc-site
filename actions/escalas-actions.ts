@@ -6,7 +6,6 @@ import { headers } from 'next/headers'
 import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 import { enviarNotificacaoEscala } from '@/lib/email-escalas'
 import { sendPushToMembro } from '@/lib/web-push'
-import prisma from '@/lib/prisma'
 import { audit } from '@/lib/audit'
 
 async function getDb() {
@@ -215,7 +214,8 @@ export async function recusarEscala(ids: number[], motivo: string) {
 
 // ── HELPER: Notificar lider do departamento ─────────────────────────────────
 async function notificarLiderEscala(escalaId: number, membroId: number, tipo: 'CONFIRMADO' | 'RECUSADO', motivo?: string) {
-    const escala = await prisma.escala.findUnique({
+    const { db } = await getDb()
+    const escala = await db.escala.findUnique({
         where: { id: escalaId },
         include: {
             membro: { select: { first_name: true, last_name: true } },

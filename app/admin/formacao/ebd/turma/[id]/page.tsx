@@ -1,7 +1,6 @@
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import TurmaClient from '@/components/pregacao/TurmaClient'
 import { getCachedMembrosAtivos, getCachedSermoes } from '@/lib/cache'
 
@@ -10,15 +9,15 @@ export default async function AdminTurmaPage({
 }: {
     params: Promise<{ id: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
     const { id } = await params
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const [turma, membros, sermoes] = await Promise.all([
-        prisma.turmaEBD.findFirst({
+        db.turmaEBD.findFirst({
             where: { id, tenant_id: tenantId },
             include: {
                 curso: true,

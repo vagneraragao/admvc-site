@@ -1,17 +1,18 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import { ShieldCheck, Anchor, Fingerprint, CheckCircle2, FileText, Download, CalendarCheck } from 'lucide-react'
 import { BotaoAssinarDocumento } from '@/components/membros/BotaoAssinar'
 
 export default async function TermosPage() {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session) redirect('/membros/login');
 
     const membroId = session.membroId;
 
     // 1. Busca os novos campos de validade da Base de Dados
-    const membro = await prisma.membro.findUnique({
+    const membro = await db.membro.findUnique({
         where: { id: membroId },
         select: {
             first_name: true,

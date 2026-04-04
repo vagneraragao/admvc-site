@@ -1,5 +1,5 @@
 // app/membros/mural/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -8,11 +8,12 @@ import { ArrowLeft, MessageSquare } from 'lucide-react'
 import MuralClient from '@/components/membros/MuralClient'
 
 export default async function MuralPage() {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session) redirect('/membros/login');
 
     // 1. Busca o membro e os grupos/departamentos a que pertence
-    const membro = await prisma.membro.findUnique({
+    const membro = await db.membro.findUnique({
         where: { id: session.membroId },
         include: {
             ministerios: { include: { departamento: true } },
@@ -42,7 +43,7 @@ export default async function MuralPage() {
     const idsGrupos = canaisUnicos.filter(c => c.tipo === 'Grupo').map(c => Number(c.id.replace('GRP_', '')));
 
     // 3. Busca diretamente no AvisoMural
-    const avisos = await prisma.avisoMural.findMany({
+    const avisos = await db.avisoMural.findMany({
         where: {
             OR: [
                 { departamento_id: { in: idsDepartamentos.length > 0 ? idsDepartamentos : [-1] } },
@@ -92,10 +93,11 @@ export default async function MuralPage() {
 
 async function apagarAviso(id: string) {
     try {
+        const db = await getDb()
         const session = await getSessionData();
         if (!session) return { error: 'Não autorizado' };
 
-        const aviso = await prisma.avisoMural.findUnique({ where: { id } });
+        const aviso = await db.avisoMural.findUnique({ where: { id } });
         if (!aviso) return { error: 'Aviso não encontrado.' };
 
         // Verifica se é o autor da mensagem ou um Administrador
@@ -103,7 +105,7 @@ async function apagarAviso(id: string) {
             return { error: 'Não tens permissão para apagar esta mensagem.' };
         }
 
-        await prisma.avisoMural.delete({ where: { id } });
+        await db.avisoMural.delete({ where: { id } });
 
         revalidatePath('/membros/mural');
         revalidatePath('/membros/dashboard');

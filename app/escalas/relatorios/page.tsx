@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { startOfWeek, endOfWeek, format } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Printer, CalendarDays } from 'lucide-react'
@@ -11,12 +11,14 @@ export default async function RelatorioEscalasPage({
 }: {
     searchParams: { inicio?: string; fim?: string }
 }) {
+    const db = await getDb()
+
     // 1. Período ajustado
     const dataInicio = searchParams.inicio ? new Date(searchParams.inicio) : startOfWeek(new Date(), { weekStartsOn: 0 });
     const dataFim = searchParams.fim ? new Date(searchParams.fim) : endOfWeek(new Date(), { weekStartsOn: 6 });
 
     // 2. Busca no Servidor (Prisma)
-    const escalas = await prisma.escala.findMany({
+    const escalas = await db.escala.findMany({
         where: {
             evento: {
                 data: {

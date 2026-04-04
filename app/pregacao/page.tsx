@@ -1,7 +1,6 @@
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import PregacaoClient from '@/components/pregacao/PregacaoClient'
 import { podeGerirSermoes } from '@/lib/cursos-permissoes'
 import { getCachedMembrosAtivos } from '@/lib/cache'
@@ -11,12 +10,12 @@ export default async function PregacaoPage({
 }: {
     searchParams: Promise<{ mes?: string; ano?: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
     const params = await searchParams
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const agora = new Date()
     const mes = params.mes ? Number(params.mes) : agora.getMonth() + 1
@@ -28,7 +27,7 @@ export default async function PregacaoPage({
     const podeGerir = await podeGerirSermoes(session.membroId, session.role)
 
     const [sermoes, membros, eventos] = await Promise.all([
-        prisma.sermao.findMany({
+        db.sermao.findMany({
             where: {
                 tenant_id: tenantId,
                 data_pregacao: { gte: inicio, lt: fim },
@@ -40,7 +39,7 @@ export default async function PregacaoPage({
             orderBy: { data_pregacao: 'desc' },
         }),
         getCachedMembrosAtivos(tenantId),
-        prisma.evento.findMany({
+        db.evento.findMany({
             where: {
                 tenant_id: tenantId,
                 data: { gte: new Date() },

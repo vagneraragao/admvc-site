@@ -1,12 +1,11 @@
 // app/grupos/admin/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import nextDynamic from 'next/dynamic'
 import Link from 'next/link'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import GeocodificarBotao from '@/components/grupos/GeocodificarBotao'
 import { Users, MapPin, Map, Globe, Settings } from 'lucide-react'
-import { headers } from 'next/headers'
 
 // Carregamento lazy — o Leaflet só funciona no browser
 const MapaGrupos = nextDynamic(() => import('@/components/grupos/MapaGrupos'), {
@@ -29,16 +28,16 @@ const COR_REGIAO: Record<string, string> = {
 }
 
 export default async function AdminGruposPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const db = await getDb()
     const params = await searchParams
     const session = await getSessionData()
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
     const congFilter = session?.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
 
     const [grupos, tenantConfig] = await Promise.all([
-        prisma.grupo.findMany({
+        db.grupo.findMany({
             where: congFilter ? { congregacaoId: congFilter } : undefined,
             include: {
                 lideres: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },
@@ -46,7 +45,7 @@ export default async function AdminGruposPage({ searchParams }: { searchParams: 
             },
             orderBy: [{ regiao: 'asc' }, { nome: 'asc' }]
         }),
-        tenantId ? prisma.tenant.findUnique({
+        tenantId ? db.tenant.findUnique({
             where: { id: tenantId },
             select: { regioes_custom: true }
         }) : null,

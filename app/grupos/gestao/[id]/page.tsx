@@ -1,16 +1,17 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import GestaoGrupoClient from '@/components/membros/GestaoGrupoClient'
 
 export default async function GestaoGrupoPage({ params }: { params: { id: string } }) {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session) redirect('/login');
 
     const grupoId = Number(params.id);
 
     // Busca os dados do grupo
-    const grupo = await prisma.grupo.findUnique({
+    const grupo = await db.grupo.findUnique({
         where: { id: grupoId },
         include: {
             lideres: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },

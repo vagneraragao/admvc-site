@@ -1,10 +1,14 @@
 // app/api/financeiro/lancar/route.ts
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 
 export async function POST(request: Request) {
     try {
+        const tenantId = Number(request.headers.get('x-tenant-id') || 0)
+        if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
+        const db = getTenantClient(tenantId)
+
         const session = await getSessionData();
         const registradoPorId = session?.membroId || 1;
 
@@ -20,7 +24,7 @@ export async function POST(request: Request) {
         }
 
         // 2. Operação em Transação (Garante que ou faz tudo, ou não faz nada)
-        const resultado = await prisma.$transaction(async (tx) => {
+        const resultado = await db.$transaction(async (tx) => {
 
             // Buscamos o objetivo primeiro para pegar o tenant_id
             const objetivo = await tx.objetivoFinanceiro.findUnique({

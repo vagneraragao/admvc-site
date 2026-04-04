@@ -1,6 +1,5 @@
 // app/admin/midia/page.tsx
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import { getModulosAtivos, MODULOS } from '@/lib/planos'
@@ -15,10 +14,10 @@ export default async function MidiaConfigPage() {
     const session = await getSessionData()
     if (!session || !['ADMIN'].includes(session.role)) redirect('/membros/dashboard')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
         where: { id: tenantId },
         select: {
             plano: true,

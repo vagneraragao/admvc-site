@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import Link from 'next/link'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
@@ -28,11 +28,12 @@ function getCategoriaEstilo(categoria: string) {
 }
 
 export default async function AgendasDashboard() {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session) redirect('/login'); // Se não tiver logado, manda para o login
 
     // NOVA SEGURANÇA: Verifica se este membro é dono ou gestor de alguma agenda
-    const isGestor = await prisma.agenda.findFirst({
+    const isGestor = await db.agenda.findFirst({
         where: {
             OR: [
                 { dono_id: session.membroId },
@@ -47,7 +48,7 @@ export default async function AgendasDashboard() {
     }
 
     // 1. Vai buscar as Agendas (Se for ADMIN vê todas, se for Líder vê só a dele)
-    const agendas = await prisma.agenda.findMany({
+    const agendas = await db.agenda.findMany({
         where: isAdmin(session.role) ? {} : { 
             OR: [
                 { dono_id: session.membroId },
@@ -70,20 +71,20 @@ export default async function AgendasDashboard() {
     });
 
     // Buscar listas para o Modal de Marcação
-    const membros = await prisma.membro.findMany({
+    const membros = await db.membro.findMany({
         where: { status: 'ATIVO' },
         orderBy: { first_name: 'asc' }
     });
     
-    const visitantes = await prisma.visitante.findMany({
+    const visitantes = await db.visitante.findMany({
         orderBy: { nome: 'asc' }
     });
 
-    const departamentos = await prisma.departamento.findMany({
+    const departamentos = await db.departamento.findMany({
         orderBy: { nome: 'asc' }
     });
 
-    const grupos = await prisma.grupo.findMany({ 
+    const grupos = await db.grupo.findMany({ 
         orderBy: { nome: 'asc' } 
     });
 

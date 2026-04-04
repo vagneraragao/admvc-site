@@ -1,7 +1,6 @@
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
 import { podeGerirCursos } from '@/lib/cursos-permissoes'
 import { getCachedMembrosAtivos, getCachedSermoes, getCachedDepartamentos, getCachedGrupos } from '@/lib/cache'
@@ -11,12 +10,12 @@ export default async function EBDPage({
 }: {
     searchParams: Promise<{ ano?: string; mes?: string; sermao_id?: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
     const params = await searchParams
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const agora = new Date()
     const ano = params.ano ? Number(params.ano) : agora.getFullYear()
@@ -28,7 +27,7 @@ export default async function EBDPage({
     const podeGerir = await podeGerirCursos(session.membroId, session.role)
 
     // IDs do membro para verificar restricoes de inscricao
-    const membroData = await prisma.membro.findUnique({
+    const membroData = await db.membro.findUnique({
         where: { id: session.membroId },
         select: {
             ministerios: { select: { departamento_id: true } },
@@ -43,7 +42,7 @@ export default async function EBDPage({
     const membroGrupoIds = membroData?.grupos?.map((g: any) => g.id) || []
 
     const [cursos, aulas, membros, sermoes, departamentos, grupos, minhasMatriculas, meusInteressesRaw] = await Promise.all([
-        prisma.cursoEBD.findMany({
+        db.cursoEBD.findMany({
             where: { tenant_id: tenantId },
             include: {
                 turmas: {
@@ -62,7 +61,7 @@ export default async function EBDPage({
             },
             orderBy: [{ ano: 'desc' }, { created_at: 'desc' }],
         }),
-        prisma.escolaBiblica.findMany({
+        db.escolaBiblica.findMany({
             where: { tenant_id: tenantId, data: { gte: inicio, lt: fim } },
             include: {
                 professor: { select: { first_name: true, last_name: true } },
@@ -78,12 +77,12 @@ export default async function EBDPage({
         getCachedDepartamentos(tenantId),
         getCachedGrupos(tenantId),
         // Matriculas do membro actual
-        prisma.matriculaEBD.findMany({
+        db.matriculaEBD.findMany({
             where: { membro_id: session.membroId, tenant_id: tenantId },
             select: { turma: { select: { curso_id: true } } },
         }),
         // Interesses do membro actual
-        prisma.interesseCurso.findMany({
+        db.interesseCurso.findMany({
             where: { membro_id: session.membroId, tenant_id: tenantId },
             select: { curso_id: true, status: true },
         }),

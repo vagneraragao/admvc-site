@@ -1,5 +1,5 @@
 // app/financeiro/obra/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -7,12 +7,13 @@ import Link from 'next/link'
 import { Building2, Save, ArrowLeft, ChevronRight } from 'lucide-react'
 
 export default async function GestaoObraFinanceiro() {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session || (session.role !== 'ADMIN' && session.role !== 'FINANCE')) {
         redirect('/membros/dashboard?error=Acesso Negado');
     }
 
-    const membro = await prisma.membro.findUnique({
+    const membro = await db.membro.findUnique({
         where: { id: session.membroId },
         select: { tenant_id: true }
     });
@@ -22,13 +23,13 @@ export default async function GestaoObraFinanceiro() {
     }
 
     // Busca o projeto ou cria um padrão se não existir
-    let projeto = await prisma.projetoObra.findFirst({
+    let projeto = await db.projetoObra.findFirst({
         where: { tenant_id: membro.tenant_id },
         include: { etapas: { orderBy: { ordem: 'asc' } } }
     });
 
     if (!projeto) {
-        projeto = await prisma.projetoObra.create({
+        projeto = await db.projetoObra.create({
             data: {
                 tenant_id: membro.tenant_id,
                 titulo: "Campanha de Construção: Nossa Sede",
@@ -49,12 +50,13 @@ export default async function GestaoObraFinanceiro() {
     // Action para guardar os valores
     async function salvarProgresso(formData: FormData) {
         'use server'
+        const db = await getDb()
         const objFinal = Number(formData.get('objetivoFinal'));
         const projetoId = formData.get('projetoId') as string;
 
         // Atualiza objetivo global
         if (objFinal > 0) {
-            await prisma.projetoObra.update({ where: { id: projetoId }, data: { objetivoFinal: objFinal } });
+            await db.projetoObra.update({ where: { id: projetoId }, data: { objetivoFinal: objFinal } });
         }
 
         // Atualiza as etapas individualmente
@@ -62,7 +64,7 @@ export default async function GestaoObraFinanceiro() {
             if (key.startsWith('etapa_')) {
                 const etapaId = key.replace('etapa_', '');
                 const valorAtual = Number(value);
-                await prisma.etapaObra.update({
+                await db.etapaObra.update({
                     where: { id: etapaId },
                     data: { atual: valorAtual }
                 });

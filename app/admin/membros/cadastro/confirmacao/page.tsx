@@ -1,5 +1,5 @@
 // app/admin/membros/cadastro/confirmacao/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import BotaoImprimir from "@/components/BotaoImprimir";
@@ -9,12 +9,13 @@ interface ConfirmacaoPageProps {
 }
 
 export default async function PaginaConfirmacao({ searchParams }: ConfirmacaoPageProps) {
+    const db = await getDb()
     const idParam = searchParams.id
     const membroId = idParam ? parseInt(idParam) : null
 
     if (!membroId) return notFound()
 
-    const membro = await prisma.membro.findUnique({
+    const membro = await db.membro.findUnique({
         where: { id: membroId },
     })
 

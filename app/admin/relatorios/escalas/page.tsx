@@ -1,5 +1,5 @@
 // app/admin/relatorios/escalas/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import RelatorioEscalasClient from '@/components/relatorios/RelatorioEscalasClient'
@@ -9,6 +9,7 @@ export default async function RelatorioEscalasPage({
 }: {
     searchParams: Promise<{ mes?: string; ano?: string; departamento?: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
@@ -22,7 +23,7 @@ export default async function RelatorioEscalasPage({
     const fimMes = new Date(ano, mes, 0, 23, 59, 59)
 
     const [escalas, departamentos] = await Promise.all([
-        prisma.escala.findMany({
+        db.escala.findMany({
             where: {
                 evento: { data: { gte: inicioMes, lte: fimMes } },
                 ...(deptoFiltro ? { departamento_id: deptoFiltro } : {}),
@@ -37,7 +38,7 @@ export default async function RelatorioEscalasPage({
             },
             orderBy: { evento: { data: 'asc' } },
         }),
-        prisma.departamento.findMany({
+        db.departamento.findMany({
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' },
         }),

@@ -1,15 +1,16 @@
 // app/louvor/setlist/[eventoId]/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import SetlistPalco from '@/components/louvor/SetlistPalco'
 
 export const dynamic = 'force-dynamic'
 
 export default async function SetlistPage({ params }: { params: { eventoId: string } }) {
+    const db = await getDb()
     const eventoId = Number(params.eventoId)
     if (isNaN(eventoId)) notFound()
 
-    const evento = await prisma.evento.findUnique({
+    const evento = await db.evento.findUnique({
         where: { id: eventoId },
         include: {
             repertorio: {

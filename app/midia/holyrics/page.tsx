@@ -1,17 +1,16 @@
-import { headers } from 'next/headers'
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import HolyricsController from '@/components/midia/HolyricsController'
 
 export default async function HolyricsPage() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
         where: { id: tenantId },
         select: {
             holyrics_url: true,

@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -10,10 +10,11 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDespensaPage() {
+    const db = await getDb()
     const session = await getSessionData();
     if (!session) redirect('/membros/login?error=Sessão expirada');
 
-    const membroLogado = await prisma.membro.findUnique({
+    const membroLogado = await db.membro.findUnique({
         where: { id: session.membroId },
         include: { ministerios: { include: { departamento: true } } }
     });

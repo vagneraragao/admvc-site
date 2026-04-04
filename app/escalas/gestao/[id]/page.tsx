@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
@@ -8,6 +8,7 @@ import { ShieldCheck, Calendar, Activity, BarChart2 } from 'lucide-react'
 import ModalRelatorioEscalaLider from '@/components/escalas/ModalRelatorioEscalaLider'
 
 export default async function GestaoEscalaLider({ params }: { params: { id: string } }) {
+    const db = await getDb()
     const { id } = await params;
     const deptoId = parseInt(id);
 
@@ -16,14 +17,14 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
     if (!session) redirect('/membros/login');
     const { membroId, role } = session;
 
-    const depto = await prisma.departamento.findUnique({
+    const depto = await db.departamento.findUnique({
         where: { id: deptoId },
         include: { funcoes: true }
     });
 
     if (!depto) redirect('/membros/dashboard?error=departamento_nao_encontrado');
 
-    const vinculoLider = await prisma.integranteDepartamento.findFirst({
+    const vinculoLider = await db.integranteDepartamento.findFirst({
         where: {
             membro_id: membroId,
             departamento_id: deptoId,
@@ -51,7 +52,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
         ]
     }
 
-    const eventos = await prisma.evento.findMany({
+    const eventos = await db.evento.findMany({
         where: eventoWhere,
         include: {
             repertorio: {
@@ -69,7 +70,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
         orderBy: { data: 'asc' }
     });
 
-    const equipaDoDepartamento = await prisma.integranteDepartamento.findMany({
+    const equipaDoDepartamento = await db.integranteDepartamento.findMany({
         where: { departamento_id: deptoId },
         include: {
             membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
@@ -87,7 +88,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
     // 3. IDENTIFICAR SE É LOUVOR
     const isLouvor = depto.nome.toLowerCase().includes('louvor') || depto.nome.toLowerCase().includes('música') || depto.nome.toLowerCase().includes('musica');
 
-    const historicoEscalas = await prisma.escala.findMany({
+    const historicoEscalas = await db.escala.findMany({
         where: {
             departamento_id: deptoId,
             // Busca os últimos 6 meses + próximos 3 meses para ter contexto completo

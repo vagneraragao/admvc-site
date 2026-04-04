@@ -1,5 +1,4 @@
-import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData } from '@/lib/auth-utils'
 import X32HolyricsClient from '@/components/midia/X32HolyricsClient'
@@ -7,12 +6,12 @@ import X32Client from '@/components/midia/X32Client'
 import type { X32CenasConfig } from '@/actions/midia-actions'
 
 export default async function X32Page() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
-    const tenant = await prisma.tenant.findUnique({
+    const tenantId = await getTenantIdFromHeaders()
+    const tenant = await db.tenant.findUnique({
         where: { id: tenantId },
         select: {
             x32_ip: true,

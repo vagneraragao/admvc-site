@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import { getDb } from '@/lib/db';
 import { ShieldCheck, ArrowLeft, RefreshCw, AlertTriangle, CheckCircle2, User } from 'lucide-react';
 import Link from 'next/link';
 import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse';
@@ -18,10 +18,11 @@ async function getLoyverseData() {
 }
 
 export default async function DiagnosticoLoyversePage() {
+    const db = await getDb();
     const clientesLoyverse = await getLoyverseData();
 
     // 1. BUSCAR TODOS OS MEMBROS NO BANCO DE DADOS
-    const membrosApp = await prisma.membro.findMany({
+    const membrosApp = await db.membro.findMany({
         select: { id: true, first_name: true, last_name: true, email: true, loyverse_id: true }
     });
 

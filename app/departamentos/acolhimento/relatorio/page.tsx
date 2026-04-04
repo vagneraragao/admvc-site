@@ -1,5 +1,5 @@
 // app/departamentos/acolhimento/relatorio/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 
 export default async function RelatorioAcolhimentoPage() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
@@ -28,26 +29,26 @@ export default async function RelatorioAcolhimentoPage() {
         visitantesPorMes,
         ultimosConsolidados,
     ] = await Promise.all([
-        prisma.visitante.count(),
-        prisma.visitante.count({ where: { data_primeira_visita: { gte: inicioMes } } }),
-        prisma.visitante.count({ where: { data_primeira_visita: { gte: inicioMesAnterior, lte: fimMesAnterior } } }),
-        prisma.visitante.count({ where: { status: 'EM_CONTACTO' } }),
-        prisma.visitante.count({ where: { status: 'CONSOLIDADO' } }),
-        prisma.acompanhamentoVisitante.count(),
-        prisma.acompanhamentoVisitante.count({ where: { data_contacto: { gte: inicioMes } } }),
+        db.visitante.count(),
+        db.visitante.count({ where: { data_primeira_visita: { gte: inicioMes } } }),
+        db.visitante.count({ where: { data_primeira_visita: { gte: inicioMesAnterior, lte: fimMesAnterior } } }),
+        db.visitante.count({ where: { status: 'EM_CONTACTO' } }),
+        db.visitante.count({ where: { status: 'CONSOLIDADO' } }),
+        db.acompanhamentoVisitante.count(),
+        db.acompanhamentoVisitante.count({ where: { data_contacto: { gte: inicioMes } } }),
         // Visitantes por mes (ultimos 6 meses)
         Promise.all(
             Array.from({ length: 6 }, (_, i) => {
                 const inicio = new Date(agora.getFullYear(), agora.getMonth() - 5 + i, 1)
                 const fim = new Date(agora.getFullYear(), agora.getMonth() - 4 + i, 0, 23, 59, 59)
-                return prisma.visitante.count({ where: { data_primeira_visita: { gte: inicio, lte: fim } } })
+                return db.visitante.count({ where: { data_primeira_visita: { gte: inicio, lte: fim } } })
                     .then(count => ({
                         mes: inicio.toLocaleDateString('pt-PT', { month: 'short' }),
                         count,
                     }))
             })
         ),
-        prisma.visitante.findMany({
+        db.visitante.findMany({
             where: { status: 'CONSOLIDADO' },
             select: { id: true, nome: true, data_primeira_visita: true, data_ultima_visita: true },
             orderBy: { data_ultima_visita: 'desc' },

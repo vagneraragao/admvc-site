@@ -1,5 +1,5 @@
 // app/admin/auditoria/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
@@ -60,6 +60,7 @@ export default async function AuditoriaPage({
 }: {
     searchParams: { categoria?: string; acao?: string; q?: string; pagina?: string }
 }) {
+    const db = await getDb()
     const cookieStore = await cookies()
     const session = cookieStore.get('admvc_session')
     if (!session) redirect('/membros/login')
@@ -90,14 +91,14 @@ export default async function AuditoriaPage({
     }
 
     const [logs, total, estatisticas] = await Promise.all([
-        prisma.auditLog.findMany({
+        db.auditLog.findMany({
             where,
             orderBy: { criado_em: 'desc' },
             take: porPagina,
             skip,
         }),
-        prisma.auditLog.count({ where }),
-        prisma.auditLog.groupBy({
+        db.auditLog.count({ where }),
+        db.auditLog.groupBy({
             by: ['categoria'],
             where: { tenant_id: Number(tenantId) },
             _count: { id: true },

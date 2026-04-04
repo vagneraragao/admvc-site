@@ -1,10 +1,11 @@
 // app/admin/inventario/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import InventarioClient from '@/components/inventario/InventarioClient'
 
 export default async function InventarioPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+    const db = await getDb()
     const params = await searchParams
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
@@ -16,7 +17,7 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
     const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
     const [itens, departamentos, grupos, membros] = await Promise.all([
-        prisma.itemInventario.findMany({
+        db.itemInventario.findMany({
             where: { ativo: true, ...congWhere },
             include: {
                 dono_departamento: { select: { id: true, nome: true } },
@@ -26,19 +27,19 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
             },
             orderBy: [{ categoria: 'asc' }, { nome: 'asc' }]
         }),
-        prisma.departamento.findMany({
+        db.departamento.findMany({
             where: congFilter
                 ? { OR: [{ congregacaoId: congFilter }, { is_global: true }] }
                 : undefined,
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' }
         }),
-        prisma.grupo.findMany({
+        db.grupo.findMany({
             where: congFilter ? { congregacaoId: congFilter } : undefined,
             select: { id: true, nome: true },
             orderBy: { nome: 'asc' }
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: { status: 'ATIVO', ...congWhere },
             select: { id: true, first_name: true, last_name: true },
             orderBy: { first_name: 'asc' }

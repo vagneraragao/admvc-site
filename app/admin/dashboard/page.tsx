@@ -1,9 +1,8 @@
 // app/admin/dashboard/page.tsx
 import Link from 'next/link'
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { format } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import {
@@ -18,15 +17,15 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
 
     const congFilter = session.role === 'CONGREGATION_ADMIN' && session.congregacaoId
         ? session.congregacaoId
         : params.congregacao ? Number(params.congregacao) : undefined
     const congWhere = congFilter ? { congregacao_id: congFilter } : {}
 
-    const adminLogado = await prisma.membro.findUnique({
+    const adminLogado = await db.membro.findUnique({
         where: { id: session.membroId },
         select: { first_name: true, last_name: true }
     })
@@ -39,11 +38,11 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         proximasEscalas, todosMembros, membrosPendentesDocs,
         escalasPendentesConfirmacao, tenantConfig,
     ] = await Promise.all([
-        prisma.membro.count({ where: { status: statusAtivo, ...congWhere } }),
-        prisma.membro.count({ where: { status: statusPendente, ...congWhere } }),
-        prisma.membro.count({ where: { baptism_status: 'Batizado', status: statusAtivo, ...congWhere } }),
-        prisma.familia.count(),
-        prisma.evento.findMany({
+        db.membro.count({ where: { status: statusAtivo, ...congWhere } }),
+        db.membro.count({ where: { status: statusPendente, ...congWhere } }),
+        db.membro.count({ where: { baptism_status: 'Batizado', status: statusAtivo, ...congWhere } }),
+        db.familia.count(),
+        db.evento.findMany({
             where: { data: { gte: new Date() }, ...congWhere },
             orderBy: { data: 'asc' },
             take: 6,
@@ -54,11 +53,11 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                 }
             }
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: { status: statusAtivo, ...congWhere },
             select: { first_name: true, last_name: true, birthdate: true }
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: {
                 ...congWhere,
                 OR: [
@@ -75,10 +74,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             },
             orderBy: { first_name: 'asc' }
         }),
-        prisma.escala.count({
+        db.escala.count({
             where: { confirmado: false, ...congWhere, evento: { data: { gte: new Date() } } }
         }),
-        tenantId ? prisma.tenant.findUnique({
+        tenantId ? db.tenant.findUnique({
             where: { id: tenantId },
             select: { holyrics_url: true, holyrics_token: true }
         }) : null,

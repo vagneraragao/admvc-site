@@ -1,11 +1,12 @@
 // app/admin/relatorios/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import RelatoriosClient from '@/components/relatorios/RelatoriosClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function RelatoriosPage() {
-    const membros = await prisma.membro.findMany({
+    const db = await getDb()
+    const membros = await db.membro.findMany({
         where: { status: { in: ['Ativo', 'ATIVO'] } },
         select: {
             id: true,

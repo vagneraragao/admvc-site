@@ -1,5 +1,5 @@
 // app/departamentos/acolhimento/dashboard/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
@@ -13,10 +13,11 @@ import ModalHistorico from '@/components/acolhimento/ModalHistorico'
 import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolidados'
 
 export default async function AcolhimentoDashboard() {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
-    const membroLogado = await prisma.membro.findUnique({
+    const membroLogado = await db.membro.findUnique({
         where: { id: session.membroId },
         include: {
             ministerios: { include: { departamento: true } },
@@ -36,12 +37,12 @@ export default async function AcolhimentoDashboard() {
     }
 
     const [novos, emContactoRaw, consolidados] = await Promise.all([
-        prisma.visitante.findMany({ where: { status: 'NOVO' }, orderBy: { data_primeira_visita: 'desc' } }),
-        prisma.visitante.findMany({
+        db.visitante.findMany({ where: { status: 'NOVO' }, orderBy: { data_primeira_visita: 'desc' } }),
+        db.visitante.findMany({
             where: { status: 'EM_CONTACTO' },
             include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } }
         }),
-        prisma.visitante.findMany({
+        db.visitante.findMany({
             where: { status: 'CONSOLIDADO' },
             include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } }
         })

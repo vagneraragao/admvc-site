@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import Image from 'next/image'
@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Phone, Mail, ArrowLeft, UserPlus } from 'lucide-react'
 
 export default async function EquipaDepartamento({ params }: { params: { id: string } }) {
+    const db = await getDb()
     const { id } = await params;
     const deptoId = parseInt(id);
     const session = await getSessionData();
@@ -14,7 +15,7 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
     const { membroId, role } = session;
 
     // 1. Busca o Departamento e seus Integrantes
-    const depto = await prisma.departamento.findUnique({
+    const depto = await db.departamento.findUnique({
         where: { id: deptoId },
         include: {
             integrantes: {
@@ -35,7 +36,7 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
     });
 
     // 2. Segurança: Verifica se é o Líder ou Admin
-    const vinculoLider = await prisma.integranteDepartamento.findFirst({
+    const vinculoLider = await db.integranteDepartamento.findFirst({
         where: {
             membro_id: membroId,
             departamento_id: deptoId,

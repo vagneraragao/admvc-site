@@ -104,7 +104,8 @@ export async function atualizarDadosMembroAction(id: number, formData: FormData)
 export async function confirmarPresenca(escalaId: number, status: boolean) {
     try {
         await requireAuth()
-        await prisma.escala.update({
+        const db = await getDb()
+        await db.escala.update({
             where: { id: escalaId },
             data: { confirmado: status }
         });
@@ -118,7 +119,8 @@ export async function confirmarPresenca(escalaId: number, status: boolean) {
 export async function assinarTermosAction(membroId: number) {
     try {
         await requireAuth()
-        await prisma.membro.update({
+        const db = await getDb()
+        await db.membro.update({
             where: { id: membroId },
             data: {
                 termo_aceite: true,
@@ -135,14 +137,15 @@ export async function assinarTermosAction(membroId: number) {
 export async function definirResponsavelFamilia(membroId: number, familiaId: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const db = await getDb()
         // 1. Retirar o poder de todos daquela família primeiro
-        await prisma.membro.updateMany({
+        await db.membro.updateMany({
             where: { familia_id: familiaId },
             data: { is_family_admin: false }
         });
 
         // 2. Dar o poder apenas ao membro selecionado
-        await prisma.membro.update({
+        await db.membro.update({
             where: { id: membroId },
             data: { is_family_admin: true }
         });
@@ -299,7 +302,8 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
         }
 
         // 3. GRAVAÇÃO
-        await prisma.membro.update({
+        const db = await getDb()
+        await db.membro.update({
             where: { id: Number(membroId) },
             data: dataToUpdate
         });
@@ -321,7 +325,8 @@ export async function atualizarDadosMembro(membroId: number, formData: FormData)
 export async function alternarConfirmacaoEscala(escalaIds: number[], statusConfirmacao: boolean) {
     try {
         await requireAuth()
-        await prisma.escala.updateMany({
+        const db = await getDb()
+        await db.escala.updateMany({
             where: {
                 id: { in: escalaIds } // Atualiza todas as escalas deste array
             },
@@ -347,8 +352,9 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
         const validade = new Date();
         validade.setMonth(validade.getMonth() + 12);
 
+        const db = await getDb()
         if (tipo === 'GDPR') {
-            await prisma.membro.update({
+            await db.membro.update({
                 where: { id: membroId },
                 data: {
                     gdpr_aceite: true,
@@ -357,7 +363,7 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
                 }
             });
         } else {
-            await prisma.membro.update({
+            await db.membro.update({
                 where: { id: membroId },
                 data: {
                     permanecer_aceite: true,
@@ -387,7 +393,8 @@ export async function renovarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
             ? { gdpr_aceite: true, gdpr_data_assinatura: hoje, gdpr_validade: validade }
             : { permanecer_aceite: true, permanecer_data_assinatura: hoje, permanecer_validade: validade }
 
-        await prisma.membro.update({ where: { id: membroId }, data })
+        const db = await getDb()
+        await db.membro.update({ where: { id: membroId }, data })
         revalidatePath('/admin/dashboard')
         revalidatePath('/admin/membros')
         return { ok: true }
@@ -402,7 +409,8 @@ export async function buscarRelatorioEscalasAction(membroId: number, mes: number
         const dataInicio = new Date(ano, mes - 1, 1);
         const dataFim = new Date(ano, mes, 0, 23, 59, 59);
 
-        const escalas = await prisma.escala.findMany({
+        const db = await getDb()
+        const escalas = await db.escala.findMany({
             where: {
                 membro_id: membroId,
                 evento: {
@@ -459,7 +467,8 @@ export async function exportarMembrosCSV() {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
 
-        const membros = await prisma.membro.findMany({
+        const db = await getDb()
+        const membros = await db.membro.findMany({
             orderBy: { first_name: 'asc' },
         })
 
@@ -545,7 +554,8 @@ export async function analisarCSV(formData: FormData) {
         const cabecalho = linhas[0].split(';').map(c => c.trim())
 
         // Busca emails ja existentes para verificar duplicados
-        const membrosActuais = await prisma.membro.findMany({ select: { email: true } })
+        const db = await getDb()
+        const membrosActuais = await db.membro.findMany({ select: { email: true } })
         const emailsExistentes = new Set(membrosActuais.map(m => m.email.toLowerCase()))
         const emailsNoFicheiro = new Set<string>()
 

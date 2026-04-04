@@ -1,7 +1,6 @@
-import prisma from '@/lib/prisma'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import EditorSermao from '@/components/pregacao/EditorSermao'
 
 export default async function EditorSermaoPage({
@@ -9,15 +8,15 @@ export default async function EditorSermaoPage({
 }: {
     params: Promise<{ id: string }>
 }) {
+    const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
 
     const { id } = await params
-    const headersList = await headers()
-    const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const tenantId = await getTenantIdFromHeaders()
 
     const [sermao, membros, eventos] = await Promise.all([
-        prisma.sermao.findFirst({
+        db.sermao.findFirst({
             where: { id, tenant_id: tenantId },
             include: {
                 pregador: { select: { id: true, first_name: true, last_name: true } },
@@ -25,12 +24,12 @@ export default async function EditorSermaoPage({
                 escolasBiblicas: { select: { id: true, titulo: true, data: true } },
             },
         }),
-        prisma.membro.findMany({
+        db.membro.findMany({
             where: { tenant_id: tenantId, is_active: true },
             select: { id: true, first_name: true, last_name: true },
             orderBy: { first_name: 'asc' },
         }),
-        prisma.evento.findMany({
+        db.evento.findMany({
             where: { tenant_id: tenantId },
             select: { id: true, nome: true, data: true },
             orderBy: { data: 'desc' },

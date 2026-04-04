@@ -1,5 +1,5 @@
 // app/admin/loyverse/diagnostico/page.tsx
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { ShieldCheck, RefreshCw, AlertTriangle, CheckCircle2, User, Link2 } from 'lucide-react'
 import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse'
 import BotaoVincularManual from '@/components/admin/BotaoVincularManual'
@@ -18,9 +18,10 @@ async function getLoyverseData() {
 }
 
 export default async function DiagnosticoLoyversePage() {
+    const db = await getDb()
     const [clientesLoyverse, membrosApp] = await Promise.all([
         getLoyverseData(),
-        prisma.membro.findMany({
+        db.membro.findMany({
             select: { id: true, first_name: true, last_name: true, email: true, loyverse_id: true },
             orderBy: { first_name: 'asc' }
         })
