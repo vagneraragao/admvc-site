@@ -11,6 +11,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Hash com bcryptjs, sessao via cookie `admvc_session`
 - Cookie contem: `id`, `role`, `tenant_id`, `plano`, `cong` (congregacao)
 - Rate limiting: 5 tentativas por email, 15 por IP a cada 15 minutos (Upstash Redis)
+- Rate limiter fail-open: se Redis estiver indisponivel, login funciona sem rate limit
 - Apos login, redireciona por role: ADMIN → `/admin/dashboard`, outros → `/membros/dashboard`
 
 ### Super-Admin (`/super-admin/login`)
@@ -29,21 +30,23 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ### Estrutura
 - **Header**: foto, nome, badge de role, nome da igreja + congregacao
-- **Menu Servico** (hamburger): Editar Perfil, Indisponibilidade, Relatorio de Escalas, Financas e Cantina, + atalhos de departamentos para lideres
+- **Nav bar**: barra de navegacao com separador visual, links Home, Igreja, Educacao e breadcrumb do modulo activo
+- **Menu Servico** (hamburger): Editar Perfil, Indisponibilidade, Relatorio de Escalas, Relatorio Louvor, Agendar Reuniao + atalhos de departamentos para lideres
 - **Notificacoes** (bell): alertas de acolhimento (visitantes novos) e avisos do mural, auto-refresh a cada 30 segundos
-- **Tabs**: Home, Igreja, Financas
+- **Mural** (balao): acesso ao mural de avisos
+- **Tabs**: Home, Igreja (departamentos)
 
 ### Tab Home
-- **Minhas Escalas**: cards dos proximos eventos onde o membro esta escalado, ordenados por confirmados primeiro e data mais proxima. Botoes de confirmar/recusar com motivo.
+- **Minhas Escalas**: cards dos proximos eventos onde o membro esta escalado, ordenados por confirmados primeiro e data mais proxima. Botoes de confirmar/recusar com motivo. Modal de detalhes com repertorio.
 - **Setlist Palco**: botao de acesso ao modo palco (fullscreen) para musicos do louvor
 - **Agenda da Igreja**: proximos eventos, colapsavel no mobile
 - **Aniversariantes do Mes**: lista com dia, colapsavel no mobile
 
 ### Tab Igreja
 - **Departamentos**: cards dos departamentos onde o membro serve, com funcoes e botao de gestao de equipa
-- **Grupos**: cards dos PGs/celulas com detalhes (dia, horario, local) e modal de gestao
+- **Grupos**: cards dos PGs/celulas com detalhes (dia, horario, local) e modal de gestao completo
 
-### Tab Financas (acessivel via menu)
+### Financas (acessivel via menu)
 - **Contribuicoes**: objectivos financeiros e historico
 - **Cantina**: saldo Loyverse, carregamentos e extrato
 
@@ -52,17 +55,19 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 ## 3. PAINEL ADMINISTRATIVO (`/admin/*`)
 
 ### Sidebar
-- Menu lateral collapsible com navegacao por seccoes
+- Menu lateral collapsible com navegacao por seccoes: Igreja, Modulos, Sistema
 - Logo da igreja (se configurado) no topo
 - Filtro de congregacao (dropdown) para admins com multiplas sedes
 - Menu mobile com hamburger + drawer animado
 - CONGREGATION_ADMIN ve apenas a sua congregacao (dropdown bloqueado)
+- Try/catch no layout: se DB falhar, sidebar degrada sem crash
 
 ### Dashboard (`/admin/dashboard`)
 - KPIs: membros activos, familias, batizados, escalas pendentes, aprovacoes
-- Proximos eventos com contagem de escalados
+- Proximos eventos com contagem de escalados e mensagem do evento
 - Aniversariantes do mes
 - Alerta de documentos pendentes (GDPR/Permanecer) com botao de renovacao
+- Painel Holyrics (se configurado)
 
 ### Gestao de Membros (`/admin/membros`)
 - Lista com filtros: status, role, cidade, genero, compliance, familia
@@ -70,12 +75,13 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Vista tabela ou cards
 - Pesquisa por nome, email, telefone, cidade, cargo
 - Paginacao configuravel (10, 25, 50, 100, todos)
-- **Imprimir**: cartoes de membro (PDF credit-card) e lista completa (PDF A4)
+- **Imprimir**: cartoes de membro (PDF credit-card) e lista completa (PDF A4) — lazy loaded
+- **Importar/Exportar CSV**: analise previa, validacao, skip duplicados
 
 ### Cadastrar Membro (`/admin/membros/cadastro`)
 - Formulario em 4 passos: Dados Pessoais, Morada, Eclesiastico, Familia e Legal
 - Codigo postal portugues com auto-preenchimento (API geoapi.pt)
-- Upload de foto (Vercel Blob)
+- Upload de foto (Vercel Blob) com Image sizes optimizado
 - Validacao de email unico
 
 ### Visualizar Membro (`/admin/membros/visualizar/[id]`)
@@ -100,19 +106,31 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Criar departamento com congregacao (local ou global)
 - Mesmo nome permitido em congregacoes diferentes (ex: "Louvor Leiria" e "Louvor Barcelos")
 - **Painel de gestao** (modal com 3 abas):
-  - **Equipa**: vincular membros com multiplas funcoes, pesquisa, delegacao de escalas
+  - **Equipa**: vincular membros com multiplas funcoes, pesquisa, delegacao de escalas. Query otimizada com select.
   - **Cargos**: criar/remover funcoes do departamento
   - **Definicoes**: nome, lider, congregacao, notas
+- Try/catch: se DB falhar, pagina carrega vazia em vez de crash
+- Invalidacao Redis ao criar/excluir departamento
 
 ### Cargos Eclesiasticos
 - Cargos globais (Diacono, Pastor, Evangelista, etc.)
-- Criar e excluir na pagina de estrutura
+- Criar e excluir via submenu na pagina de estrutura
+
+### Regioes Customizadas
+- Regioes personalizaveis por tenant (default: Norte, Centro, Sul, Lisboa, Online)
+- Invalidacao Redis ao salvar
 
 ### Grupos / PGs
 - Gestao de pequenos grupos com dia, horario, local
 - Geocodificacao automatica (OpenStreetMap)
-- Mapa de grupos com Leaflet
+- Mapa de grupos com Leaflet (dynamic import, ssr: false)
 - Publicacao no site publico (flag publico)
+- **Modal Gerir Grupo** com historico de encontros colapsavel:
+  - Apenas 5 encontros visiveis por default, restantes em "Ver mais"
+  - Cada encontro colapsavel com `<details>` (data+tema visivel, foto+presentes ao expandir)
+  - Fotos com `loading="lazy"` para evitar carregamento desnecessario
+  - Registo de presencas com checklist de membros
+- Invalidacao Redis ao atualizar grupo
 
 ---
 
@@ -138,19 +156,73 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Quando membro confirma/recusa escala, o lider do departamento recebe email via Resend
 - Template HTML dark com detalhes (nome, evento, data, funcao, motivo de recusa)
 
-### Relatorio de Escalas (`/admin/relatorios/escalas`)
-- Ranking de membros por participacao
-- KPIs: voluntarios, total escalas, confirmadas, recusadas, taxa de confirmacao
-- Filtro por mes e departamento
-- Breakdown de funcoes por membro
+### Relatorio de Escalas
+- **Admin** (`/admin/relatorios/escalas`): ranking de membros, KPIs, filtro por mes e departamento
+- **Membro** (menu hamburger): relatorio pessoal por mes/ano com query otimizada (select em evento e departamento)
 
 ---
 
-## 6. LOUVOR E CIFRAS
+## 6. EDUCACAO (`/ensino`)
 
-### Holyrics (`/louvor/holyrics`)
+### Cursos e Formacao
+- 4 categorias: EBD (escola biblica), Livre, Discipulado, Seminario
+- Workflow de aprovacao: gestor cria → admin aprova → inscricoes abrem
+- Agendamento de abertura de inscricoes (data/hora)
+- Restricao por departamento ou grupo
+- Cursos externos com link e responsavel
+- **Multiplos professores por turma** (relacao M:N)
+
+### Turmas
+- Cada curso tem 1 ou mais turmas (ex: Adultos, Jovens)
+- Multi-select de professores na criacao
+- Matricula de alunos com workflow de interesse:
+  1. Membro clica "Tenho Interesse"
+  2. Gestor aprova e atribui turma
+  3. Membro fica matriculado
+
+### Aulas (Escola Biblica)
+- Titulo, tema, data, professor (por aula)
+- Link da aula (Teams, YouTube, Zoom)
+- Conteudo detalhado e material de apoio
+- Perguntas de discussao
+- Ligacao a sermao (opcional)
+
+### Atividades e Notas
+- 4 tipos: Exercicio, Prova, Trabalho, Participacao
+- Questionarios com perguntas (escrita, multipla escolha, verdadeiro/falso)
+- Auto-correcao para multipla escolha e V/F
+- Notas com peso ponderado
+- Privacidade: aluno ve apenas a propria nota
+
+### Presencas e Aprovacao
+- Registo de presencas por aula
+- Calculo automatico de aprovacao: nota minima + presenca minima
+- Status: Ativa, Inativa, Concluida
+
+---
+
+## 7. PREGACAO (`/pregacao`)
+
+### Sermoes
+- Criacao com titulo, escritura, conteudo, pregador, evento, data
+- Publicacao (rascunho/publicado)
+- **Editor rico** (`/pregacao/editor/[id]`): edicao fullscreen com autosave
+- Ligacao a eventos e aulas de EBD
+
+---
+
+## 8. LOUVOR E CIFRAS
+
+### Holyrics (`/midia/holyrics`)
 - Integracao com o software de projeccao Holyrics
 - Sincronizacao de acervo musical
+
+### Mesa de Som X32 (`/midia/mesax32`)
+- Controlo remoto da mesa de som Behringer X32 via Holyrics
+- Sem necessidade de proxy local
+
+### Iluminacao Lumikit (`/midia/lumikit`)
+- Controlo de cenas e dimmers de iluminacao
 
 ### Setlist / Modo Palco (`/louvor/setlist/[eventoId]`)
 - Ecra fullscreen preto optimizado para palco
@@ -160,6 +232,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - **Marcar como cantada** com contador
 - **Wake Lock**: ecra nao apaga enquanto o musico esta no palco
 - Drawer com lista completa e progresso
+- **Pinch-to-zoom** na fonte + setas de navegacao no titulo
 
 ### Cifras Internas
 - **Editor fullscreen**: escrever cifra com acordes entre `[colchetes]`
@@ -169,14 +242,15 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - **Importar automatico via URL**: botao que busca a pagina do CifraClub server-side, extrai a cifra do HTML e guarda na BD (1 clique)
 - **Visualizador** com 2 modos:
   - **Inline**: `[Am]Quando eu chorei`
-  - **Separado**: acordes numa linha, letra na outra (estilo CifraClub)
+  - **Separado**: acordes numa linha, letra na outra (modo por padrao)
 - **Transposicao**: botoes +/- mudam todos os acordes (Am → Bm → Cm...)
-- **Auto-scroll**: velocidade ajustavel (0.3x a 5x), slider grande para palco, pausa ao tocar na tela com o dedo e retoma ao tirar
-- **Tamanho de fonte**: ajustavel (A- / A+)
+- **Auto-scroll**: velocidade ajustavel com botoes +/- (0.3x a 5x), slider grande para palco, pausa ao tocar na tela com o dedo e retoma ao tirar
+- **Pinch-to-zoom**: tamanho de fonte ajustavel por gesto
+- **Navegacao entre musicas**: setas no titulo para ir para a proxima/anterior do setlist
 
 ---
 
-## 7. ACOLHIMENTO DE VISITANTES
+## 9. ACOLHIMENTO DE VISITANTES
 
 ### Dashboard (`/departamentos/acolhimento/dashboard`)
 - KPIs: novos, em contacto, atrasados (+24h), consolidados
@@ -200,14 +274,22 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Bell icon no header do membro com badge animado
 - Auto-refresh a cada 30 segundos
 - Flash laranja pulsante quando chega visitante NOVO
+- Botao "Activar Alertas" dentro do dropdown para push notifications
 
 ---
 
-## 8. FINANCEIRO
+## 10. FINANCEIRO
 
 ### Dashboard (`/departamentos/financeiro/dashboard`)
 - Lancamentos com categorias e responsaveis
 - Objectivos financeiros com progresso
+- Rifas com numeros vendidos
+- Contribuicoes e pagamentos MBWay
+- Pedidos de saldo cantina
+
+### Projecto Obra (`/departamentos/financeiro/obra`)
+- Acompanhamento de projectos de construcao
+- Etapas com progresso e orcamento
 
 ### Integracao Loyverse
 - Sincronizacao de saldo da cantina via API Loyverse
@@ -215,7 +297,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 9. INVENTARIO (`/admin/inventario`)
+## 11. INVENTARIO (`/admin/inventario`)
 
 - Controlo de patrimonio e equipamentos
 - Categorias, estados, garantias
@@ -225,19 +307,21 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 10. GABINETE PASTORAL (`/gabinete`)
+## 12. GABINETE PASTORAL (`/gabinete`)
 
 - Agenda pastoral com compromissos
 - Categorias: Cafe com Pastor, Discipulado, Reuniao de Lideranca, etc.
+- Agendamento por membros (`/membros/agendar`)
 - Confirmacao por email (Resend)
 
 ---
 
-## 11. COMUNICACAO
+## 13. COMUNICACAO
 
 ### Mural (`/membros/mural`)
 - Avisos por departamento ou grupo
 - Apenas membros do departamento/grupo veem os avisos
+- Autor com avatar e data
 
 ### WhatsApp Templates (`lib/whatsapp-templates.ts`)
 - 6 mensagens padrao: boas-vindas, convite grupo, lembrete escala, aniversario, follow-up, permanecer
@@ -245,7 +329,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 12. PERSONALIZACAO VISUAL (`/admin/personalizacao`)
+## 14. PERSONALIZACAO VISUAL (`/admin/personalizacao`)
 
 ### Cores
 - **Primaria**: botoes, links, destaques
@@ -265,7 +349,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 13. SUPER-ADMIN (`/super-admin/*`)
+## 15. SUPER-ADMIN (`/super-admin/*`)
 
 ### Gestao de Igrejas
 - Criar nova igreja com tenant, admin inicial e congregacao
@@ -274,7 +358,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 14. RELATORIOS
+## 16. RELATORIOS
 
 ### Membros (`/admin/relatorios`)
 - 11 relatorios: cargos, idade, aniversarios, sexo, estado civil, batismo, evolucao entradas, cidades, bairros, compliance GDPR, permissoes
@@ -289,9 +373,13 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 ### Acolhimento (`/departamentos/acolhimento/relatorio`)
 - KPIs + grafico mensal + lista de consolidados
 
+### Loyverse (`/admin/relatorios/loyverse`)
+- Dados de vendas e clientes da API Loyverse
+- Diagnostico de correspondencia membros ↔ clientes Loyverse
+
 ---
 
-## 15. IMPRESSAO (PDF)
+## 17. IMPRESSAO (PDF)
 
 ### Cartao de Membro
 - Layout tipo cartao de credito (85x54mm)
@@ -304,9 +392,11 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Paginacao automatica
 - Respeita filtros aplicados na lista
 
+**Nota**: Componentes PDF carregados via `React.lazy()` para nao pesar no bundle inicial.
+
 ---
 
-## 16. DOCUMENTOS (GDPR / PERMANECER)
+## 18. DOCUMENTOS (GDPR / PERMANECER)
 
 - Cada membro tem flags: `aceite`, `data_assinatura`, `validade` (12 meses)
 - Dashboard admin mostra membros com documentos pendentes/expirados
@@ -315,9 +405,9 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 17. PWA (Progressive Web App)
+## 19. PWA (Progressive Web App)
 
-- `manifest.json` com icones, cores, orientacao portrait
+- `manifest.json` com icones (fundo solido para visibilidade), cores, orientacao portrait
 - Service Worker com cache network-first
 - Wake Lock no modo palco e cifras
 - Ecra completo sem barra do browser
@@ -325,12 +415,42 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 18. SEGURANCA
+## 20. PERFORMANCE E CACHE
+
+### Stack de Cache (3 camadas)
+
+| Camada | Tecnologia | TTL | Descricao |
+|---|---|---|---|
+| CDN | Vercel Edge | — | Assets estaticos |
+| Redis | Upstash (free tier) | 60-300s | Cache aplicacional (membros, deptos, grupos, sermoes, tenant) |
+| PostgreSQL | Supabase | — | Source of truth |
+
+### Redis Cache (`lib/redis.ts` + `lib/cache.ts`)
+- Client centralizado com `cached<T>(key, ttl, fn)` — fail-open
+- Keys multi-tenant: `admvc:{tenantId}:{entity}`
+- TTLs: membros 60s, departamentos/grupos 120s, sermoes 60s, congregacoes/tenant 300s
+- Invalidacao automatica via `invalidatePrefix()` e `invalidateKey()`
+- Funcoes de invalidacao por entidade: `invalidateMembros()`, `invalidateDepartamentos()`, `invalidateGrupos()`, `invalidateSermoes()`, `invalidateTenant()`
+
+### Otimizacoes de Queries
+- Connection pool `max: 2` + `idleTimeoutMillis: 20000` (serverless-friendly)
+- `select` em vez de `include: true` nas queries pesadas (EQUIPA, relatorio escalas, CSV export)
+- `Image` com `sizes` em todos os avatares
+- Lazy load: `@react-pdf/renderer` via `React.lazy()`, `leaflet` via `next/dynamic`
+
+### Resiliencia
+- Try/catch nos layouts criticos (admin, membro) com degradacao graceful
+- Error boundaries no root, /admin e /membros
+- Redis fail-open: se env vars ausentes ou Redis down, site funciona sem cache
+
+---
+
+## 21. SEGURANCA
 
 | Mecanismo | Implementacao |
 |-----------|---------------|
 | Auth | Cookie httpOnly + bcryptjs |
-| Rate Limiting | Upstash Redis (por email e IP) |
+| Rate Limiting | Upstash Redis (por email e IP), fail-open |
 | Tenant Isolation | Prisma extensions (getTenantClient) |
 | Role Check | requireAuth() / requireRole() em todas as actions |
 | Headers | HSTS, X-Frame-Options, nosniff, strict referrer |
@@ -341,24 +461,26 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 19. VARIAVEIS DE AMBIENTE
+## 22. VARIAVEIS DE AMBIENTE
 
 Ver `.env.example` para a lista completa. Principais:
 
 | Variavel | Descricao |
 |----------|-----------|
 | DATABASE_URL | PostgreSQL connection string |
-| KV_REST_API_URL | Upstash Redis URL |
-| KV_REST_API_TOKEN | Upstash Redis token |
+| UPSTASH_REDIS_REST_URL | Upstash Redis URL |
+| UPSTASH_REDIS_REST_TOKEN | Upstash Redis token |
+| KV_REST_API_URL | Alias Vercel KV (legacy) |
+| KV_REST_API_TOKEN | Alias Vercel KV (legacy) |
 | RESEND_API_KEY | API key do Resend (emails) |
 | BLOB_READ_WRITE_TOKEN | Token do Vercel Blob (uploads) |
 | LOYVERSE_ACCESS_TOKEN | Token da API Loyverse (cantina) |
 
 ---
 
-## 20. MODELOS DE DADOS (PRISMA)
+## 23. MODELOS DE DADOS (PRISMA)
 
-35 modelos organizados por area:
+44 modelos organizados por area:
 
 **Core**: Tenant, Membro, Familia, Congregacao, SuperAdmin, Escolaridade, Cargo
 
@@ -381,5 +503,9 @@ Ver `.env.example` para a lista completa. Principais:
 **Inventario**: ItemInventario, MovimentoInventario
 
 **Comunicacao**: AvisoMural
+
+**Educacao**: CursoEBD, TurmaEBD (M:N professores), MatriculaEBD, AtividadeEBD, NotaEBD, EscolaBiblica, PresencaEBD, InteresseCurso
+
+**Pregacao**: Sermao
 
 **Auditoria**: AuditLog

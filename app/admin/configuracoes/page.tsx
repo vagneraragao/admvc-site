@@ -16,8 +16,18 @@ export default async function EstruturaPage() {
     let tenantConfig: any = null
 
     try {
-        const results = await Promise.all([
+        // Batch 1: queries leves
+        const [r0, r1, r2] = await Promise.all([
             prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
+            prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
+            prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
+        ])
+        cargos = r0 as any[]
+        deptosParaSelect = r1 as any[]
+        membrosDisponiveis = r2 as any[]
+
+        // Batch 2: queries pesadas
+        const [r3, r4, r5, r6] = await Promise.all([
             prisma.departamento.findMany({
                 include: {
                     lider: { select: { first_name: true, last_name: true } },
@@ -33,8 +43,6 @@ export default async function EstruturaPage() {
                 },
                 orderBy: { nome: 'asc' }
             }),
-            prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
-            prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
             prisma.grupo.findMany({
                 orderBy: { nome: 'asc' },
                 include: {
@@ -54,13 +62,10 @@ export default async function EstruturaPage() {
                 orderBy: { nome: 'asc' }
             }) : [],
         ])
-        cargos = results[0] as any[]
-        deptos = results[1] as any[]
-        deptosParaSelect = results[2] as any[]
-        membrosDisponiveis = results[3] as any[]
-        grupos = results[4] as any[]
-        tenantConfig = results[5]
-        congregacoes = results[6] as any[]
+        deptos = r3 as any[]
+        grupos = r4 as any[]
+        tenantConfig = r5
+        congregacoes = r6 as any[]
     } catch (err) {
         console.error('[ESTRUTURA] Erro ao carregar dados:', err)
     }
