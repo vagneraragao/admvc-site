@@ -56,6 +56,8 @@ model Tenant {
   lumikit_cenas            Json?                     // { scenes: [...], dimmers: [...] }
   x32_cenas                Json?                     // { scenes: [...] } — Presets Mesa de Som via Holyrics
   regioes_custom           Json?                     // Array de strings com regioes customizadas
+  // Configuracoes Loyverse (cantina)
+  loyverse_token           String?                   // Access Token Loyverse — exclusivo por igreja
   createdAt                DateTime                  @default(now())
   agendas                  Agenda[]
   avisosMural              AvisoMural[]

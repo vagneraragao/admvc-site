@@ -1,11 +1,11 @@
 //app/cantina/dashboard/page.tsx
 
-import { getDb } from '@/lib/db'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink, MonitorPlay, Smartphone, Coffee } from 'lucide-react'
-import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
+import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink, MonitorPlay, Smartphone, Coffee, AlertTriangle } from 'lucide-react'
+import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories, getLoyverseTokenForTenant } from '@/lib/loyverse-api'
 import CantinaManager from '@/components/cantina/CantinaManager'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 export const dynamic = 'force-dynamic'
@@ -35,10 +35,25 @@ export default async function GestaoCantinaPage() {
         redirect('/membros/dashboard?error=Acesso restrito à equipa da Cantina.');
     }
 
+    const tenantId = await getTenantIdFromHeaders();
+    const token = await getLoyverseTokenForTenant(tenantId);
+
+    if (!token) {
+        return (
+            <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+                <div className="bg-orange-50 border border-orange-200 p-8 rounded-3xl text-center space-y-2">
+                    <AlertTriangle className="mx-auto text-orange-500" size={32} />
+                    <h2 className="text-lg font-black uppercase text-orange-700">Loyverse nao configurado</h2>
+                    <p className="text-sm text-orange-600">Configure o token Loyverse nas definicoes do tenant para utilizar esta funcionalidade.</p>
+                </div>
+            </main>
+        );
+    }
+
     const [items, inventory, categories] = await Promise.all([
-        getLoyverseItems(),
-        getLoyverseInventory(),
-        getLoyverseCategories()
+        getLoyverseItems(token),
+        getLoyverseInventory(token),
+        getLoyverseCategories(token)
     ]);
 
     const produtosProcessados = items.map((item: any) => {

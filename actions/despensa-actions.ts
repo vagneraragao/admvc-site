@@ -3,11 +3,21 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth-utils'
+import { getLoyverseTokenForTenant } from '@/lib/loyverse-api'
+import { headers } from 'next/headers'
+
+async function getTenantId(): Promise<number> {
+    const headersList = await headers()
+    return Number(headersList.get('x-tenant-id') || 0)
+}
 
 export async function cadastrarItemLoyverse(formData: FormData) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
-        const LOYVERSE_TOKEN = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = await getTenantId();
+        const LOYVERSE_TOKEN = await getLoyverseTokenForTenant(tenantId);
+        if (!LOYVERSE_TOKEN) return { error: "Loyverse nao configurado para este tenant." };
+
         const nome = formData.get('nome') as string;
         const categoriaId = formData.get('categoria_id') as string;
 
@@ -52,7 +62,9 @@ export async function cadastrarItemLoyverse(formData: FormData) {
 export async function atualizarStockLoyverseAction(variantId: string, novoStock: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
-        const token = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = await getTenantId();
+        const token = await getLoyverseTokenForTenant(tenantId);
+        if (!token) return { ok: false, error: "Loyverse nao configurado para este tenant." };
 
         // 1. Descobrir o ID da Loja
         const storesRes = await fetch('https://api.loyverse.com/v1.0/stores', {
@@ -104,7 +116,9 @@ export async function atualizarPropriedadesItemLoyverse(
 ) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
-        const token = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = await getTenantId();
+        const token = await getLoyverseTokenForTenant(tenantId);
+        if (!token) return { ok: false, error: "Loyverse nao configurado para este tenant." };
 
         // 1. Puxar TODOS os items (Isto garante que temos a versão completa do item, com todas as variantes)
         const getRes = await fetch(`https://api.loyverse.com/v1.0/items?limit=250`, {
@@ -169,7 +183,9 @@ export async function salvarItemLoyverseAction(formData: FormData) {
     const inicio = Date.now();
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
-        const token = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = await getTenantId();
+        const token = await getLoyverseTokenForTenant(tenantId);
+        if (!token) return { ok: false, error: "Loyverse nao configurado para este tenant." };
         const id = formData.get('id') as string;
         const nome = formData.get('nome') as string;
         const categoria_id = formData.get('categoria_id') as string;

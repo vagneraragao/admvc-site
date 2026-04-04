@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache'
 import { getSessionData, requireRole, requireAuth } from '@/lib/auth-utils'
 import prismaGlobal, { getTenantClient } from '@/lib/prisma'
+import { getLoyverseTokenForTenant } from '@/lib/loyverse-api'
 import { headers } from 'next/headers'
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -248,7 +249,9 @@ export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: st
             throw new Error("O membro não tem um ID do Loyverse associado.");
         }
 
-        const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = await getTenantId();
+        const loyverseToken = await getLoyverseTokenForTenant(tenantId);
+        if (!loyverseToken) throw new Error("Loyverse nao configurado para este tenant.");
 
         // ====================================================================
         // 1. OBTER STORE, PAYMENT E ITEM (Para gerar o recibo)
@@ -375,7 +378,9 @@ export async function getHistoricoComprasLoyverse(loyverseId: string) {
     if (!loyverseId) {
         throw new Error("O membro não tem um ID do Loyverse associado.");
     }
-    const token = process.env.LOYVERSE_ACCESS_TOKEN;
+    const tenantId = await getTenantId();
+    const token = await getLoyverseTokenForTenant(tenantId);
+    if (!token) return { error: "Loyverse nao configurado para este tenant." };
 
     try {
         const res = await fetch(`https://api.loyverse.com/v1.0/receipts?limit=250`, {

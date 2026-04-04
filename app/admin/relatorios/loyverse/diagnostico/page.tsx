@@ -1,5 +1,6 @@
 // app/admin/loyverse/diagnostico/page.tsx
-import { getDb } from '@/lib/db'
+import { getDb, getTenantIdFromHeaders } from '@/lib/db'
+import { getLoyverseTokenForTenant, getLoyverseCustomers } from '@/lib/loyverse-api'
 import { ShieldCheck, RefreshCw, AlertTriangle, CheckCircle2, User, Link2 } from 'lucide-react'
 import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse'
 import BotaoVincularManual from '@/components/admin/BotaoVincularManual'
@@ -7,20 +8,25 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 
 export const dynamic = 'force-dynamic'
 
-async function getLoyverseData() {
-    const res = await fetch('https://api.loyverse.com/v1.0/customers?limit=250', {
-        headers: { 'Authorization': `Bearer ${process.env.LOYVERSE_ACCESS_TOKEN}` },
-        next: { revalidate: 0 }
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.customers as any[]
-}
-
 export default async function DiagnosticoLoyversePage() {
     const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+    const token = await getLoyverseTokenForTenant(tenantId)
+
+    if (!token) {
+        return (
+            <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
+                <div className="bg-orange-500/5 border border-orange-500/20 p-8 rounded-[2rem] text-center space-y-2">
+                    <AlertTriangle className="mx-auto text-orange-500" size={32} />
+                    <h2 className="text-lg font-black uppercase text-orange-700">Loyverse nao configurado</h2>
+                    <p className="text-sm text-orange-600">Configure o token Loyverse nas definicoes do tenant para utilizar esta funcionalidade.</p>
+                </div>
+            </main>
+        )
+    }
+
     const [clientesLoyverse, membrosApp] = await Promise.all([
-        getLoyverseData(),
+        getLoyverseCustomers(token),
         db.membro.findMany({
             select: { id: true, first_name: true, last_name: true, email: true, loyverse_id: true },
             orderBy: { first_name: 'asc' }

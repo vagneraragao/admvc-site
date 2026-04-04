@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server'
+import { getLoyverseTokenForTenant, getLoyverseCustomers } from '@/lib/loyverse-api'
 
-export async function GET() {
+export async function GET(request: Request) {
     if (process.env.NODE_ENV === 'production') {
         return NextResponse.json({ error: 'Endpoint indisponível.' }, { status: 404 })
     }
 
     try {
-        const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
+        const tenantId = Number(request.headers.get('x-tenant-id') || 0)
+        if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
 
-        const res = await fetch(`https://api.loyverse.com/v1.0/customers?limit=250`, {
-            headers: { 'Authorization': `Bearer ${loyverseToken}` }
-        });
+        const loyverseToken = await getLoyverseTokenForTenant(tenantId);
+        if (!loyverseToken) return NextResponse.json({ error: 'Loyverse nao configurado para este tenant.' }, { status: 400 })
 
-        if (!res.ok) return NextResponse.json({ error: "Erro na API" }, { status: res.status });
+        const customers = await getLoyverseCustomers(loyverseToken);
+        if (!customers) return NextResponse.json({ error: "Erro na API" }, { status: 500 });
 
-        const data = await res.json();
-
-        const listaSimplificada = data.customers.map((c: any) => ({
+        const listaSimplificada = customers.map((c: any) => ({
             nome: c.name,
             email: c.email,
             id_real_uuid: c.id,

@@ -1,12 +1,18 @@
 // app/api/loyverse/sync/route.ts
 import { NextResponse } from 'next/server'
 import { getTenantClient } from '@/lib/prisma'
+import { getLoyverseTokenForTenant, createLoyverseCustomer } from '@/lib/loyverse-api'
 
 export async function POST(request: Request) {
     try {
         const tenantId = Number(request.headers.get('x-tenant-id') || 0)
         if (!tenantId) return NextResponse.json({ error: 'Tenant nao identificado' }, { status: 401 })
         const db = getTenantClient(tenantId)
+
+        const token = await getLoyverseTokenForTenant(tenantId)
+        if (!token) {
+            return NextResponse.json({ error: 'Loyverse nao configurado para este tenant.' }, { status: 400 })
+        }
 
         const body = await request.json()
         const { membroId } = body
@@ -40,25 +46,8 @@ export async function POST(request: Request) {
             note: "Membro integrado via App da Igreja"
         }
 
-        // 3. Faz a requisição para a API oficial do Loyverse
-        const res = await fetch('https://api.loyverse.com/v1.0/customers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // O Token de Acesso fica seguro nas variáveis de ambiente
-                'Authorization': `Bearer ${process.env.LOYVERSE_ACCESS_TOKEN}`
-            },
-            body: JSON.stringify(loyversePayload)
-        })
-
-        if (!res.ok) {
-            const errorData = await res.json()
-            console.error("ERRO API LOYVERSE:", errorData)
-            return NextResponse.json({ error: 'Falha ao criar carteira no Loyverse.' }, { status: res.status })
-        }
-
-        // 4. Extrai a resposta de sucesso do Loyverse
-        const data = await res.json()
+        // 3. Cria o cliente no Loyverse via helper centralizado
+        const data = await createLoyverseCustomer(token, loyversePayload)
         const novoLoyverseId = data.id
 
         // 5. Salva o ID gerado pelo Loyverse no perfil do membro no SEU banco

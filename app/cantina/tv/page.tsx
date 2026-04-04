@@ -1,12 +1,27 @@
-import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
+import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories, getLoyverseTokenForTenant } from '@/lib/loyverse-api'
+import { getTenantIdFromHeaders } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CantinaVideoWall() {
+    const tenantId = await getTenantIdFromHeaders();
+    const token = await getLoyverseTokenForTenant(tenantId);
+
+    if (!token) {
+        return (
+            <main className="fixed inset-0 z-[99999] w-screen h-screen flex items-center justify-center bg-black text-white">
+                <div className="text-center space-y-4">
+                    <h2 className="text-2xl font-black uppercase">Loyverse nao configurado</h2>
+                    <p className="text-white/60">Menu indisponivel de momento.</p>
+                </div>
+            </main>
+        );
+    }
+
     const [items, inventory, categories] = await Promise.all([
-        getLoyverseItems(),
-        getLoyverseInventory(),
-        getLoyverseCategories()
+        getLoyverseItems(token),
+        getLoyverseInventory(token),
+        getLoyverseCategories(token)
     ]);
 
     // 1. Filtrar categorias que não devem aparecer na TV

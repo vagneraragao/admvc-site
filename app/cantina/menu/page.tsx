@@ -1,16 +1,32 @@
-import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
+import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories, getLoyverseTokenForTenant } from '@/lib/loyverse-api'
+import { getTenantIdFromHeaders } from '@/lib/db'
 import MenuClient from '@/components/cantina/MenuClient'
-import { Coffee } from 'lucide-react'
+import { Coffee, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CantinaMenuPublico() {
+    const tenantId = await getTenantIdFromHeaders();
+    const token = await getLoyverseTokenForTenant(tenantId);
+
+    if (!token) {
+        return (
+            <main className="min-h-screen bg-bg pb-24 flex items-center justify-center">
+                <div className="bg-orange-50 border border-orange-200 p-8 rounded-3xl text-center space-y-2 max-w-md">
+                    <AlertTriangle className="mx-auto text-orange-500" size={32} />
+                    <h2 className="text-lg font-black uppercase text-orange-700">Loyverse nao configurado</h2>
+                    <p className="text-sm text-orange-600">Menu indisponivel de momento.</p>
+                </div>
+            </main>
+        );
+    }
+
     // 1. Busca dados do Loyverse
     const [items, inventory, categories] = await Promise.all([
-        getLoyverseItems(),
-        getLoyverseInventory(),
-        getLoyverseCategories()
+        getLoyverseItems(token),
+        getLoyverseInventory(token),
+        getLoyverseCategories(token)
     ]);
 
     // 2. Descobre os IDs proibidos (Despensa e Assistência)

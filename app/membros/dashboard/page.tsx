@@ -1,6 +1,7 @@
 // app/membros/dashboard/page.tsx
 import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
+import { getLoyverseTokenForTenant } from '@/lib/loyverse-api'
 import { headers } from 'next/headers'
 import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Link from 'next/link'
@@ -167,8 +168,10 @@ export default async function DashboardMembro({
     const fetchLoyverseSaldo = async () => {
         if (!membro.loyverse_id) return 0;
         try {
+            const loyverseToken = await getLoyverseTokenForTenant(Number(tenantIdStr));
+            if (!loyverseToken) return 0;
             const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, {
-                headers: { 'Authorization': `Bearer ${process.env.LOYVERSE_ACCESS_TOKEN}` },
+                headers: { 'Authorization': `Bearer ${loyverseToken}` },
                 cache: 'no-store'
             });
             return res.ok ? (await res.json()).total_points || 0 : 0;

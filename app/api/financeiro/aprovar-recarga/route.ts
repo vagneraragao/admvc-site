@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getTenantClient } from '@/lib/prisma'
+import { getLoyverseTokenForTenant } from '@/lib/loyverse-api'
 // 7b7958b8-70ba-4573-9844-bc7fc957759e UID de MEMBRO (Tipo de Pagamento do Loyverse)
 
 
@@ -16,7 +17,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Membro sem UUID Loyverse' }, { status: 400 })
         }
 
-        const loyverseToken = process.env.LOYVERSE_ACCESS_TOKEN;
+        const loyverseToken = await getLoyverseTokenForTenant(tenantId);
+        if (!loyverseToken) {
+            return NextResponse.json({ error: 'Loyverse nao configurado para este tenant.' }, { status: 400 })
+        }
 
         // 1. ATUALIZAR NOSSO BANCO PRIMEIRO (Para evitar cliques duplos)
         await db.lancamentoFinanceiro.update({

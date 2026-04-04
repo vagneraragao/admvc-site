@@ -1,14 +1,15 @@
 // actions/loyverse-actions.ts
 'use server'
 
-import prisma from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth-utils'
 
 export async function vincularLoyverseId(membroId: number, loyverseId: string) {
     try {
         await requireRole(['ADMIN'])
-        await prisma.membro.update({
+        const db = await getDb()
+        await db.membro.update({
             where: { id: membroId },
             data: { loyverse_id: loyverseId }
         })
