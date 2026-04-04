@@ -6,7 +6,8 @@ import { cookies } from 'next/headers'
 import {
     Shield, Search, Calendar, User, AlertTriangle,
     CheckCircle2, XCircle, LogIn, LogOut, Edit3,
-    Trash2, Link2, CreditCard, FileText
+    Trash2, Link2, CreditCard, FileText, Upload,
+    Settings, PenLine, Archive, Megaphone, Import
 } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import FiltroAuditoria from '@/components/admin/FiltroAuditoria'
@@ -25,7 +26,14 @@ const ICONE_ACAO: Record<string, any> = {
     ALTERAR_STATUS: { icon: AlertTriangle, cor: 'text-orange-600', bg: 'bg-orange-500/10' },
     RESET_SENHA: { icon: Shield, cor: 'text-red-600', bg: 'bg-red-500/10' },
     EXPORT: { icon: FileText, cor: 'text-purple-600', bg: 'bg-purple-500/10' },
+    IMPORTAR: { icon: Upload, cor: 'text-purple-600', bg: 'bg-purple-500/10' },
     VER_PERFIL: { icon: User, cor: 'text-muted', bg: 'bg-soft' },
+    PUBLICAR: { icon: Megaphone, cor: 'text-figueira', bg: 'bg-figueira/10' },
+    UPLOAD: { icon: Upload, cor: 'text-blue-600', bg: 'bg-blue-500/10' },
+    CONFIG: { icon: Settings, cor: 'text-indigo-600', bg: 'bg-indigo-500/10' },
+    ASSINAR: { icon: PenLine, cor: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+    ARQUIVAR: { icon: Archive, cor: 'text-orange-600', bg: 'bg-orange-500/10' },
+    REJEITAR: { icon: XCircle, cor: 'text-red-600', bg: 'bg-red-500/10' },
 }
 
 const COR_CATEGORIA: Record<string, string> = {
@@ -37,6 +45,14 @@ const COR_CATEGORIA: Record<string, string> = {
     DOCUMENTOS: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20',
     CANTINA: 'bg-pink-500/10 text-pink-700 border-pink-500/20',
     SISTEMA: 'bg-soft text-muted border-soft',
+    DEPARTAMENTOS: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
+    GRUPOS: 'bg-teal-500/10 text-teal-700 border-teal-500/20',
+    INVENTARIO: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+    CONFIGURACAO: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/20',
+    LOUVOR: 'bg-violet-500/10 text-violet-700 border-violet-500/20',
+    AGENDA: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/20',
+    VISITANTES: 'bg-rose-500/10 text-rose-700 border-rose-500/20',
+    MURAL: 'bg-lime-500/10 text-lime-700 border-lime-500/20',
 }
 
 export default async function AuditoriaPage({

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { put } from '@vercel/blob'
 import { requireRole } from '@/lib/auth-utils'
+import { audit } from '@/lib/audit'
 
 const HEX_REGEX = /^#[0-9A-Fa-f]{6}$/
 
@@ -59,6 +60,8 @@ export async function atualizarBranding(formData: FormData) {
             data,
         })
 
+        audit({ tenant_id: tenantId, categoria: 'CONFIGURACAO', acao: 'CONFIG', alvo_tipo: 'CONFIG', descricao: 'Branding atualizado' }).catch(() => {})
+
         revalidatePath('/admin')
         revalidatePath('/membros')
         revalidatePath('/', 'layout')
@@ -82,6 +85,8 @@ export async function resetBranding() {
                 logo_url: null,
             },
         })
+
+        audit({ tenant_id: tenantId, categoria: 'CONFIGURACAO', acao: 'CONFIG', alvo_tipo: 'CONFIG', descricao: 'Branding reposto para valores padrão' }).catch(() => {})
 
         revalidatePath('/admin')
         revalidatePath('/membros')

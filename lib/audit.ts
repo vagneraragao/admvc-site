@@ -5,6 +5,7 @@
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getSessionData } from '@/lib/auth-utils'
+import { createHash } from 'crypto'
 
 // ── TIPOS ─────────────────────────────────────────────────────────────────────
 
@@ -20,10 +21,16 @@ export type AuditAcao =
     | 'APROVAR'
     | 'REJEITAR'
     | 'EXPORT'
+    | 'IMPORTAR'
     | 'VER_PERFIL'
     | 'RESET_SENHA'
     | 'ALTERAR_ROLE'
     | 'ALTERAR_STATUS'
+    | 'PUBLICAR'
+    | 'UPLOAD'
+    | 'CONFIG'
+    | 'ASSINAR'
+    | 'ARQUIVAR'
 
 export type AuditCategoria =
     | 'MEMBROS'
@@ -34,6 +41,14 @@ export type AuditCategoria =
     | 'DOCUMENTOS'
     | 'CANTINA'
     | 'SISTEMA'
+    | 'DEPARTAMENTOS'
+    | 'GRUPOS'
+    | 'INVENTARIO'
+    | 'CONFIGURACAO'
+    | 'LOUVOR'
+    | 'AGENDA'
+    | 'VISITANTES'
+    | 'MURAL'
 
 export type AuditAlvoTipo =
     | 'MEMBRO'
@@ -45,6 +60,14 @@ export type AuditAlvoTipo =
     | 'RIFA'
     | 'CARNE'
     | 'SISTEMA'
+    | 'DEPARTAMENTO'
+    | 'GRUPO'
+    | 'ITEM_INVENTARIO'
+    | 'AGENDA'
+    | 'VISITANTE'
+    | 'MUSICA'
+    | 'CONFIG'
+    | 'AVISO'
 
 interface AuditParams {
     // Contexto (obrigatorio)
@@ -92,6 +115,28 @@ export async function audit(params: AuditParams): Promise<void> {
             }
         }
 
+        const dadosAntes = params.dados_antes
+            ? JSON.stringify(sanitizar(params.dados_antes))
+            : null
+        const dadosApos = params.dados_apos
+            ? JSON.stringify(sanitizar(params.dados_apos))
+            : null
+        const ipLimpo = ip.split(',')[0].trim()
+
+        // Hash de integridade — garante que o registo nao foi adulterado
+        const integrityPayload = [
+            params.tenant_id,
+            actorId || 0,
+            params.acao,
+            params.categoria,
+            params.alvo_id || 0,
+            params.descricao || '',
+            dadosAntes || '',
+            dadosApos || '',
+            ipLimpo,
+        ].join('|')
+        const hash = createHash('sha256').update(integrityPayload).digest('hex').slice(0, 16)
+
         await prisma.auditLog.create({
             data: {
                 tenant_id: params.tenant_id,
@@ -103,14 +148,11 @@ export async function audit(params: AuditParams): Promise<void> {
                 acao: params.acao,
                 categoria: params.categoria,
                 descricao: params.descricao || null,
-                dados_antes: params.dados_antes
-                    ? JSON.stringify(params.dados_antes)
-                    : null,
-                dados_apos: params.dados_apos
-                    ? JSON.stringify(params.dados_apos)
-                    : null,
-                ip: ip.split(',')[0].trim(), // pega o primeiro IP da chain
+                dados_antes: dadosAntes,
+                dados_apos: dadosApos,
+                ip: ipLimpo,
                 user_agent: userAgent,
+                hash,
             }
         })
     } catch (err: any) {
@@ -151,10 +193,53 @@ export function diffCampos(
 
 // Para sanitizar dados sensiveis antes de guardar no log
 export function sanitizar(dados: Record<string, any>): Record<string, any> {
-    const CAMPOS_SENSIVEIS = ['password', 'nova_senha', 'token', 'secret']
+    const CAMPOS_SENSIVEIS = [
+        'password', 'nova_senha', 'token', 'secret',
+        'holyrics_token', 'api_key', 'cookie', 'session',
+    ]
     const resultado = { ...dados }
     CAMPOS_SENSIVEIS.forEach(campo => {
         if (campo in resultado) resultado[campo] = '[OCULTO]'
     })
     return resultado
+}
+
+// ── LIMPEZA POR RETENCAO ────────────────────────────────────────────────────
+
+export async function limparLogsAntigos(): Promise<{ removidos: number }> {
+    try {
+        const tenants = await prisma.tenant.findMany({
+            select: { id: true, plano: true }
+        })
+
+        const RETENCAO: Record<string, number> = {
+            FREE: 7,
+            BASIC: 30,
+            PRO: 90,
+            ENTERPRISE: 0, // 0 = ilimitado
+        }
+
+        let totalRemovidos = 0
+
+        for (const t of tenants) {
+            const dias = RETENCAO[t.plano] ?? 30
+            if (dias === 0) continue // ilimitado
+
+            const limite = new Date()
+            limite.setDate(limite.getDate() - dias)
+
+            const { count } = await prisma.auditLog.deleteMany({
+                where: {
+                    tenant_id: t.id,
+                    criado_em: { lt: limite },
+                },
+            })
+            totalRemovidos += count
+        }
+
+        return { removidos: totalRemovidos }
+    } catch (err: any) {
+        console.error('[AUDIT CLEANUP] Erro:', err.message)
+        return { removidos: 0 }
+    }
 }

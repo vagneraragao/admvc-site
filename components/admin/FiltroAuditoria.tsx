@@ -4,8 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { Search, Filter, X, Loader2 } from 'lucide-react'
 
-const CATEGORIAS = ['MEMBROS', 'FAMILIAS', 'ESCALAS', 'FINANCEIRO', 'ACESSO', 'DOCUMENTOS', 'CANTINA', 'SISTEMA']
-const ACOES = ['CRIAR', 'EDITAR', 'APAGAR', 'LOGIN', 'LOGIN_FALHOU', 'VINCULAR', 'APROVAR', 'ALTERAR_ROLE', 'RESET_SENHA', 'EXPORT']
+const CATEGORIAS = ['MEMBROS', 'FAMILIAS', 'ESCALAS', 'FINANCEIRO', 'ACESSO', 'DOCUMENTOS', 'CANTINA', 'SISTEMA', 'DEPARTAMENTOS', 'GRUPOS', 'INVENTARIO', 'CONFIGURACAO', 'LOUVOR', 'AGENDA', 'VISITANTES', 'MURAL']
+const ACOES = ['CRIAR', 'EDITAR', 'APAGAR', 'LOGIN', 'LOGIN_FALHOU', 'VINCULAR', 'DESVINCULAR', 'APROVAR', 'ALTERAR_ROLE', 'RESET_SENHA', 'EXPORT', 'IMPORTAR', 'PUBLICAR', 'CONFIG', 'ASSINAR', 'ARQUIVAR']
 
 export default function FiltroAuditoria({
     categoriaActual,

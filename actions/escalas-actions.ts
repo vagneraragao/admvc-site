@@ -7,6 +7,7 @@ import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 import { enviarNotificacaoEscala } from '@/lib/email-escalas'
 import { sendPushToMembro } from '@/lib/web-push'
 import prisma from '@/lib/prisma'
+import { audit } from '@/lib/audit'
 
 async function getDb() {
     const headersList = await headers()
@@ -24,22 +25,20 @@ export async function deletarEscalaAction(escalaId: number) {
         const session = await getSessionData();
         if (!session) return { ok: false };
 
-        const { db } = await getDb()
+        const { db, tenantId } = await getDb()
 
-        // Buscamos a escala para saber de qual depto ela é e validar a permissão
         const escala = await db.escala.findUnique({
             where: { id: escalaId },
-            select: { departamento_id: true }
+            select: { departamento_id: true, membro: { select: { first_name: true, last_name: true } } }
         });
 
         if (!escala) return { ok: false };
 
-        // Validação de segurança (mesma lógica acima)
-        // ... (pode ser simplificada aqui para brevidade, mas o ideal é repetir a checagem)
-
         await db.escala.delete({
             where: { id: escalaId }
         });
+
+        audit({ tenant_id: tenantId, categoria: 'ESCALAS', acao: 'APAGAR', alvo_id: escalaId, alvo_tipo: 'ESCALA', descricao: `Escala #${escalaId} removida` }).catch(() => {})
 
         revalidatePath(`/escalas/gestao/${escala.departamento_id}`);
         revalidatePath('/membros/dashboard');
@@ -140,7 +139,8 @@ export async function criarEscalaAction(formData: FormData) {
             }
         });
 
-        // 5. ATUALIZAR CACHE
+        audit({ tenant_id: depto.tenant_id, categoria: 'ESCALAS', acao: 'CRIAR', alvo_id: membroEscaladoId, alvo_tipo: 'ESCALA', descricao: `Membro escalado para evento #${eventoId} — ${funcaoRef?.nome || 'Serviço'}` }).catch(() => {})
+
         revalidatePath(`/escalas/gestao/${deptoId}`);
         revalidatePath('/membros/dashboard');
 

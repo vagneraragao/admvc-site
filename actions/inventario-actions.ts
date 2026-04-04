@@ -2,6 +2,7 @@
 // actions/inventario-actions.ts
 
 import prisma, { getTenantClient } from '@/lib/prisma'
+import { audit } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { getSessionData } from '@/lib/auth-utils'
@@ -153,6 +154,9 @@ export async function criarItemInventario(formData: FormData) {
             }
         })
 
+        const nome = formData.get('nome') as string
+        audit({ tenant_id: tenantId, categoria: 'INVENTARIO', acao: 'CRIAR', alvo_id: item.id, alvo_tipo: 'ITEM_INVENTARIO', alvo_nome: nome, descricao: `Item "${nome}" criado (qtd: ${quantidade})` }).catch(() => {})
+
         revalidatePath('/inventario')
         return { ok: true, data: item }
     } catch (err: any) {
@@ -165,7 +169,7 @@ export async function criarItemInventario(formData: FormData) {
 export async function editarItemInventario(id: number, formData: FormData) {
     try {
         await verificarAcesso()
-        const { db } = await getDb()
+        const { db, tenantId } = await getDb()
 
         const dono_tipo = formData.get('dono_tipo') as string || 'IGREJA'
         const tem_garantia = formData.get('tem_garantia') === 'true'
@@ -204,6 +208,8 @@ export async function editarItemInventario(id: number, formData: FormData) {
                 dono_membro_id: dono_tipo === 'MEMBRO' && dono_membro_id ? Number(dono_membro_id) : null,
             }
         })
+
+        audit({ tenant_id: tenantId, categoria: 'INVENTARIO', acao: 'EDITAR', alvo_id: id, alvo_tipo: 'ITEM_INVENTARIO', descricao: `Item #${id} editado` }).catch(() => {})
 
         revalidatePath('/inventario')
         return { ok: true }
@@ -267,6 +273,8 @@ export async function registarMovimento(formData: FormData) {
             })
         ])
 
+        audit({ tenant_id: tenantId, categoria: 'INVENTARIO', acao: 'EDITAR', alvo_id: itemId, alvo_tipo: 'ITEM_INVENTARIO', descricao: `Movimento ${tipo} registado no item #${itemId} (qtd: ${quantidade})` }).catch(() => {})
+
         revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {
@@ -278,8 +286,9 @@ export async function registarMovimento(formData: FormData) {
 export async function arquivarItemInventario(id: number) {
     try {
         await verificarAcesso()
-        const { db } = await getDb()
+        const { db, tenantId } = await getDb()
         await db.itemInventario.update({ where: { id }, data: { ativo: false } })
+        audit({ tenant_id: tenantId, categoria: 'INVENTARIO', acao: 'ARQUIVAR', alvo_id: id, alvo_tipo: 'ITEM_INVENTARIO', descricao: `Item #${id} arquivado` }).catch(() => {})
         revalidatePath('/inventario')
         return { ok: true }
     } catch (err: any) {

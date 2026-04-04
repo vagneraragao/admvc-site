@@ -995,6 +995,7 @@ model AuditLog {
   dados_apos  String? // JSON snapshot apos a alteracao
   ip          String?
   user_agent  String?
+  hash        String?  // SHA-256 truncado — integridade do registo
   criado_em   DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])

@@ -6,6 +6,7 @@ import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getSessionData, requireRole, requireAuth } from '@/lib/auth-utils'
 import { invalidateGrupos } from '@/lib/cache'
+import { audit } from '@/lib/audit'
 
 
 async function getDb() {
@@ -94,6 +95,8 @@ export async function atualizarDadosGrupoAction(formData: FormData) {
 export async function gerirMembroGrupoAction(grupoId: number, membroId: number, acao: 'ADICIONAR' | 'REMOVER') {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        const hdr = await headers()
+        const tenantId = Number(hdr.get('x-tenant-id') || 0)
         if (acao === 'ADICIONAR') {
             await prisma.grupo.update({
                 where: { id: grupoId },
@@ -105,6 +108,7 @@ export async function gerirMembroGrupoAction(grupoId: number, membroId: number, 
                 data: { membros: { disconnect: { id: membroId } } }
             });
         }
+        audit({ tenant_id: tenantId, categoria: 'GRUPOS', acao: acao === 'ADICIONAR' ? 'VINCULAR' : 'DESVINCULAR', alvo_id: grupoId, alvo_tipo: 'GRUPO', descricao: `Membro #${membroId} ${acao === 'ADICIONAR' ? 'adicionado ao' : 'removido do'} grupo #${grupoId}` }).catch(() => {})
         revalidatePath(`/grupos/gestao/${grupoId}`);
         return { sucesso: true };
     } catch (error) {
@@ -168,6 +172,8 @@ export async function registarEncontro(formData: FormData) {
 
         console.log('✅ [ACTION registarEncontro] Encontro criado:', encontro.id, '| foto_url:', encontro.foto_url)
 
+        audit({ tenant_id: tenantId, categoria: 'GRUPOS', acao: 'CRIAR', alvo_id: encontro.id, alvo_tipo: 'GRUPO', descricao: `Encontro registado no grupo #${grupo_id}` }).catch(() => {})
+
         revalidatePath('/membros/dashboard')
         return { sucesso: true }
 
@@ -207,6 +213,8 @@ export async function atualizarHorarioGrupo(formData: FormData) {
             where: { id: grupo_id },
             data: { dia_semana, horario }
         })
+
+        audit({ tenant_id: tenantId, categoria: 'GRUPOS', acao: 'EDITAR', alvo_id: grupo_id, alvo_tipo: 'GRUPO', descricao: `Horário do grupo #${grupo_id} atualizado` }).catch(() => {})
 
         revalidatePath('/membros/dashboard')
         return { sucesso: true }

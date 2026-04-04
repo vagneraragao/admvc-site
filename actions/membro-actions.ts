@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs'
 import { put } from '@vercel/blob'
 import { getSessionData, requireAuth, requireRole } from '@/lib/auth-utils'
 import { invalidateMembros } from '@/lib/cache'
+import { audit } from '@/lib/audit'
 
 
 // ============================================================================
@@ -209,6 +210,8 @@ export async function cadastrarMembroCompleto(formData: FormData) {
             }
         });
 
+        audit({ tenant_id: tenantId, categoria: 'MEMBROS', acao: 'CRIAR', alvo_id: novo.id, alvo_tipo: 'MEMBRO', alvo_nome: `${formData.get('first_name')} ${formData.get('last_name')}`, descricao: `Membro "${formData.get('first_name')} ${formData.get('last_name')}" cadastrado` }).catch(() => {})
+
         revalidatePath('/admin/membros');
         invalidateMembros(tenantId).catch(() => {})
         return { sucesso: true, id: novo.id };
@@ -336,6 +339,8 @@ export async function alternarConfirmacaoEscala(escalaIds: number[], statusConfi
 export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'PERMANECER') {
     try {
         await requireAuth()
+        const hdr = await headers()
+        const tenantId = Number(hdr.get('x-tenant-id') || 0)
         const hoje = new Date();
 
         // Define a validade (Ex: 12 meses a partir de hoje)
@@ -361,6 +366,8 @@ export async function assinarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
                 }
             });
         }
+
+        audit({ tenant_id: tenantId, categoria: 'DOCUMENTOS', acao: 'ASSINAR', alvo_id: membroId, alvo_tipo: 'MEMBRO', descricao: `Documento ${tipo} assinado pelo membro #${membroId}` }).catch(() => {})
 
         revalidatePath('/membros/dashboard');
         return { ok: true };
@@ -508,6 +515,10 @@ export async function exportarMembrosCSV() {
             (m.notes || '').replace(/;/g, ',').replace(/\n/g, ' '),
             m.avatar_file || '',
         ].join(';'))
+
+        const hdrExport = await headers()
+        const tenantIdExport = Number(hdrExport.get('x-tenant-id') || 0)
+        audit({ tenant_id: tenantIdExport, categoria: 'MEMBROS', acao: 'EXPORT', alvo_tipo: 'MEMBRO', descricao: `Exportação CSV de ${membros.length} membros` }).catch(() => {})
 
         return { csv: cabecalho + '\n' + linhas.join('\n') }
     } catch (err: any) {
@@ -677,10 +688,12 @@ export async function confirmarImportacao(membrosValidos: any[]) {
             }
         })
 
-        await db.membro.createMany({
+        const result = await db.membro.createMany({
             data: dados as any,
             skipDuplicates: true,
         })
+
+        audit({ tenant_id: tenantId, categoria: 'MEMBROS', acao: 'IMPORTAR', alvo_tipo: 'MEMBRO', descricao: `Importação CSV: ${result.count} membros importados` }).catch(() => {})
 
         revalidatePath('/admin/membros')
         const hdr2 = await headers()

@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
+import { audit } from '@/lib/audit'
 
 // ATUALIZA ESTA LINHA ABAIXO:
 import { enviarEmailNotificacaoEquipa } from '@/lib/mail';
@@ -26,6 +27,8 @@ export async function registarVisitante(formData: FormData) {
                 pedido_oracao: pedido,
             }
         });
+
+        audit({ tenant_id: tenant.id, categoria: 'VISITANTES', acao: 'CRIAR', alvo_nome: nome, alvo_tipo: 'VISITANTE', descricao: `Visitante "${nome}" registado` }).catch(() => {})
 
         // Agora a função será reconhecida
         await enviarEmailNotificacaoEquipa({
@@ -87,6 +90,8 @@ export async function salvarRelatoRapido(formData: FormData) {
                 data_ultima_visita: new Date()
             }
         });
+
+        audit({ tenant_id: membro.tenant_id, categoria: 'VISITANTES', acao: 'EDITAR', alvo_id: visitante_id, alvo_tipo: 'VISITANTE', descricao: `Relato registado para visitante #${visitante_id}` }).catch(() => {})
 
         // 5. Revalidação das páginas para atualizar os dados no ecrã
         revalidatePath('/departamentos/acolhimento/dashboard');

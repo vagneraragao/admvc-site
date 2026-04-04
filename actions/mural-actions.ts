@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma'
 import { getSessionData } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
+import { audit } from '@/lib/audit'
 
 export async function publicarAviso(formData: FormData) {
     try {
@@ -38,6 +39,8 @@ export async function publicarAviso(formData: FormData) {
             }
         });
 
+        audit({ tenant_id: membro.tenant_id, categoria: 'MURAL', acao: 'PUBLICAR', alvo_tipo: 'AVISO', descricao: `Aviso publicado: "${texto.trim()}"` }).catch(() => {})
+
         revalidatePath('/membros/mural');
         return { ok: true };
     } catch (error) {
@@ -61,7 +64,12 @@ export async function apagarAviso(avisoId: string) {
             return { error: 'Não tens permissão para apagar esta mensagem.' };
         }
 
+        const hdr = await (await import('next/headers')).headers()
+        const tenantId = Number(hdr.get('x-tenant-id') || 0)
+
         await prisma.avisoMural.delete({ where: { id: avisoId } });
+
+        audit({ tenant_id: tenantId, categoria: 'MURAL', acao: 'APAGAR', alvo_id: Number(avisoId), alvo_tipo: 'AVISO', descricao: `Aviso #${avisoId} removido` }).catch(() => {})
 
         revalidatePath('/membros/mural');
         revalidatePath('/membros/dashboard'); // Para atualizar o widget

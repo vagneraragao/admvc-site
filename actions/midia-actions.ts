@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth-utils'
+import { audit } from '@/lib/audit'
 
 export async function salvarConfigMidia(formData: FormData) {
     try {
@@ -22,6 +23,8 @@ export async function salvarConfigMidia(formData: FormData) {
                 lumikit_url: (formData.get('lumikit_url') as string)?.trim() || null,
             }
         })
+
+        audit({ tenant_id: tenantId, categoria: 'CONFIGURACAO', acao: 'CONFIG', alvo_tipo: 'CONFIG', descricao: 'Configuração de mídia atualizada' }).catch(() => {})
 
         revalidatePath('/admin/midia')
         return { ok: true }
@@ -99,6 +102,8 @@ export async function salvarX32Cenas(config: X32CenasConfig) {
             data: { x32_cenas: config as any }
         })
 
+        audit({ tenant_id: tenantId, categoria: 'CONFIGURACAO', acao: 'CONFIG', alvo_tipo: 'CONFIG', descricao: `Presets X32 atualizados (${config.scenes.length} cenas)` }).catch(() => {})
+
         revalidatePath('/admin/midia')
         revalidatePath('/midia/mesax32')
         return { ok: true }
@@ -135,6 +140,8 @@ export async function salvarLumikitCenas(config: LumikitConfig) {
             where: { id: tenantId },
             data: { lumikit_cenas: config as any }
         })
+
+        audit({ tenant_id: tenantId, categoria: 'CONFIGURACAO', acao: 'CONFIG', alvo_tipo: 'CONFIG', descricao: `Botões Lumikit atualizados (${config.scenes.length} cenas)` }).catch(() => {})
 
         revalidatePath('/admin/midia')
         revalidatePath('/midia/lumikit')
