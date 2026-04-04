@@ -98,6 +98,10 @@ model Tenant {
   interessesCurso          InteresseCurso[]
   boleiasOfertas           BoleiaOferta[]
   boleiasReservas          BoleiaReserva[]
+  produtosCantina          ProdutoCantina[]
+  categoriasCantina        CategoriaCantina[]
+  saldosCantina            SaldoCantina[]
+  transacoesCantina        TransacaoCantina[]
 }
 
 model Congregacao {
@@ -234,6 +238,8 @@ model Membro {
   interessesAprovados        InteresseCurso[]            @relation("AprovadorInteresse")
   boleiasOferecidas          BoleiaOferta[]              @relation("MotoristaOferta")
   boleiasReservadas          BoleiaReserva[]             @relation("PassageiroReserva")
+  saldoCantina               SaldoCantina?
+  transacoesCantina          TransacaoCantina[]
 
   @@index([tenant_id])
   @@map("membros")
@@ -1184,4 +1190,94 @@ model BoleiaReserva {
   @@index([tenant_id])
   @@index([passageiro_id])
   @@map("boleia_reservas")
+}
+
+// ── SISTEMA DE VENDAS INTERNO (Cantina) ──────────────────────────────────────
+
+model CategoriaCantina {
+  id          Int               @id @default(autoincrement())
+  tenant_id   Int
+  nome        String
+  ordem       Int               @default(0)    // Para ordenar no menu
+  ativa       Boolean           @default(true)
+  criado_em   DateTime          @default(now())
+
+  tenant      Tenant            @relation(fields: [tenant_id], references: [id])
+  produtos    ProdutoCantina[]
+
+  @@unique([tenant_id, nome])
+  @@index([tenant_id])
+  @@map("cantina_categorias")
+}
+
+model ProdutoCantina {
+  id              Int                @id @default(autoincrement())
+  tenant_id       Int
+  categoria_id    Int?
+  nome            String
+  preco           Float
+  imagem_url      String?
+  stock           Int                @default(0)
+  stock_minimo    Int                @default(0)     // Alerta quando stock <= stock_minimo
+  controla_stock  Boolean            @default(true)
+  disponivel      Boolean            @default(true)  // Visivel no menu/POS
+  criado_em       DateTime           @default(now())
+  atualizado_em   DateTime           @updatedAt
+
+  tenant          Tenant             @relation(fields: [tenant_id], references: [id])
+  categoria       CategoriaCantina?  @relation(fields: [categoria_id], references: [id])
+  itensTransacao  ItemTransacaoCantina[]
+
+  @@index([tenant_id])
+  @@index([categoria_id])
+  @@map("cantina_produtos")
+}
+
+model SaldoCantina {
+  id          Int      @id @default(autoincrement())
+  tenant_id   Int
+  membro_id   Int      @unique   // 1 saldo por membro
+  saldo       Float    @default(0)
+  atualizado  DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+  membro      Membro   @relation(fields: [membro_id], references: [id])
+
+  @@index([tenant_id])
+  @@map("cantina_saldos")
+}
+
+model TransacaoCantina {
+  id            Int                    @id @default(autoincrement())
+  tenant_id     Int
+  membro_id     Int
+  tipo          String                 // RECARGA, CONSUMO, ESTORNO
+  valor         Float                  // Positivo para recarga, negativo para consumo
+  saldo_apos    Float                  // Saldo apos esta transacao
+  descricao     String?
+  operador_id   Int?                   // Quem operou (admin/operador do POS)
+  criado_em     DateTime               @default(now())
+
+  tenant        Tenant                 @relation(fields: [tenant_id], references: [id])
+  membro        Membro                 @relation(fields: [membro_id], references: [id])
+  itens         ItemTransacaoCantina[]
+
+  @@index([tenant_id])
+  @@index([membro_id])
+  @@index([criado_em])
+  @@map("cantina_transacoes")
+}
+
+model ItemTransacaoCantina {
+  id              Int                @id @default(autoincrement())
+  transacao_id    Int
+  produto_id      Int
+  quantidade      Int
+  preco_unitario  Float
+
+  transacao       TransacaoCantina   @relation(fields: [transacao_id], references: [id], onDelete: Cascade)
+  produto         ProdutoCantina     @relation(fields: [produto_id], references: [id])
+
+  @@index([transacao_id])
+  @@map("cantina_itens_transacao")
 }

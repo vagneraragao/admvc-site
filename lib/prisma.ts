@@ -38,6 +38,7 @@ const PROTECTED_MODELS = [
     'ItemInventario', 'MovimentoInventario',
     'IndisponibilidadeMembro', 'MensagemEvento',
     'BoleiaOferta', 'BoleiaReserva',
+    'CategoriaCantina', 'ProdutoCantina', 'SaldoCantina', 'TransacaoCantina',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)
