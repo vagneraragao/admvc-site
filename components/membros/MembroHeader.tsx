@@ -8,7 +8,7 @@ import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
     Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare,
-    BookOpen, GraduationCap, ChevronDown, ChevronUp
+    BookOpen, GraduationCap, ChevronDown, ChevronUp, Car, Coffee
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -88,6 +88,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const isLumikit = pathname.startsWith('/midia/lumikit')
     const isPregacao = pathname.startsWith('/pregacao')
     const isEBD = pathname.startsWith('/ensino')
+    const isBoleia = pathname.startsWith('/boleia')
 
     // Breadcrumb do modulo activo
     const moduloPath = isTesouraria ? 'Tesouraria'
@@ -99,6 +100,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
         : isLumikit ? 'Midia / Iluminacao'
         : isMidiaRoute ? 'Midia'
         : isPregacao ? 'Pregacao'
+        : isBoleia ? 'Boleia Solidaria'
         : null
 
     const podePregacao = permissoes.isAdmin || permissoes.isDiaconia
@@ -160,6 +162,15 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                     )}
                                     <Link href="/membros/agendar" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                         <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                    </Link>
+
+                                    <div className="border-t border-soft my-0.5" />
+                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Comunidade</p>
+                                    <Link href="/boleia" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Car size={12} className="text-figueira" /> Boleia Solidaria
+                                    </Link>
+                                    <Link href="/cantina/menu-local" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Coffee size={12} className="text-orange-500" /> Menu Cantina
                                     </Link>
 
                                     {mostraServico && <div className="border-t border-soft my-0.5" />}
