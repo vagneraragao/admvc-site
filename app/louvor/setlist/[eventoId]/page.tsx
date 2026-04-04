@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import SetlistPalco from '@/components/louvor/SetlistPalco'
 
-export const revalidate = 45
+export const dynamic = 'force-dynamic'
 
 export default async function SetlistPage({ params }: { params: { eventoId: string } }) {
     const eventoId = Number(params.eventoId)

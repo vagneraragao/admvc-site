@@ -1,6 +1,6 @@
 import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories } from '@/lib/loyverse-api'
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic'
 
 export default async function CantinaVideoWall() {
     const [items, inventory, categories] = await Promise.all([

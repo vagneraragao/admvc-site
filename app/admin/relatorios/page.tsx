@@ -2,7 +2,7 @@
 import prisma from '@/lib/prisma'
 import RelatoriosClient from '@/components/relatorios/RelatoriosClient'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function RelatoriosPage() {
     const membros = await prisma.membro.findMany({

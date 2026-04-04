@@ -5,7 +5,7 @@ import BotaoVincularLoyverse from '@/components/admin/BotaoVincularLoyverse'
 import BotaoVincularManual from '@/components/admin/BotaoVincularManual'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 async function getLoyverseData() {
     const res = await fetch('https://api.loyverse.com/v1.0/customers?limit=250', {

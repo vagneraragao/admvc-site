@@ -5,7 +5,7 @@ import NovaFamiliaModal from '@/components/familias/NovaFamiliaModal'
 import FamiliasGrid from '@/components/familias/FamiliasGrid'
 import { UserX } from 'lucide-react'
 
-export const revalidate = 45
+export const dynamic = 'force-dynamic'
 
 export default async function AdminFamiliasPage() {
     const [familias, qtdMembrosSemVinculo] = await Promise.all([

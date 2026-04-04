@@ -3,7 +3,7 @@ import MenuClient from '@/components/cantina/MenuClient'
 import { Coffee } from 'lucide-react'
 import Link from 'next/link'
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic'
 
 export default async function CantinaMenuPublico() {
     // 1. Busca dados do Loyverse
