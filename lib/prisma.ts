@@ -37,6 +37,7 @@ const PROTECTED_MODELS = [
     'Compromisso', 'RepertorioEvento',
     'ItemInventario', 'MovimentoInventario',
     'IndisponibilidadeMembro', 'MensagemEvento',
+    'BoleiaOferta', 'BoleiaReserva',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)

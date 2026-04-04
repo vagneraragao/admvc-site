@@ -96,6 +96,8 @@ model Tenant {
   atividadesEBD            AtividadeEBD[]
   notasEBD                 NotaEBD[]
   interessesCurso          InteresseCurso[]
+  boleiasOfertas           BoleiaOferta[]
+  boleiasReservas          BoleiaReserva[]
 }
 
 model Congregacao {
@@ -230,6 +232,8 @@ model Membro {
   cursosCriados              CursoEBD[]                  @relation("CriadorCurso")
   interessesCurso            InteresseCurso[]            @relation("InteresseCurso")
   interessesAprovados        InteresseCurso[]            @relation("AprovadorInteresse")
+  boleiasOferecidas          BoleiaOferta[]              @relation("MotoristaOferta")
+  boleiasReservadas          BoleiaReserva[]             @relation("PassageiroReserva")
 
   @@index([tenant_id])
   @@map("membros")
@@ -365,6 +369,7 @@ model Evento {
   repertorio     RepertorioEvento[]
   mensagemEvento MensagemEvento?
   sermoes        Sermao[]
+  boleias        BoleiaOferta[]
 
   @@index([tenant_id])
 }
@@ -1131,4 +1136,52 @@ model MovimentoInventario {
   @@index([item_id])
   @@index([tenant_id])
   @@map("inventario_movimentos")
+}
+
+// ── BOLEIA SOLIDARIA ─────────────────────────────────────────────────────────
+
+model BoleiaOferta {
+  id                Int              @id @default(autoincrement())
+  tenant_id         Int
+  motorista_id      Int
+  evento_id         Int?
+  data_hora_saida   DateTime
+  endereco_partida  String
+  zona_partida      String?          // Bairro/zona visivel na listagem (privacidade)
+  latitude          Float?
+  longitude         Float?
+  vagas_total       Int
+  nota              String?
+  recorrente        Boolean          @default(false)  // Repetir semanalmente
+  status            String           @default("ATIVA") // ATIVA, CANCELADA, CONCLUIDA
+  criado_em         DateTime         @default(now())
+
+  tenant            Tenant           @relation(fields: [tenant_id], references: [id])
+  motorista         Membro           @relation("MotoristaOferta", fields: [motorista_id], references: [id])
+  evento            Evento?          @relation(fields: [evento_id], references: [id])
+  reservas          BoleiaReserva[]
+
+  @@index([tenant_id])
+  @@index([motorista_id])
+  @@index([evento_id])
+  @@index([data_hora_saida])
+  @@map("boleia_ofertas")
+}
+
+model BoleiaReserva {
+  id              Int            @id @default(autoincrement())
+  tenant_id       Int
+  oferta_id       Int
+  passageiro_id   Int
+  status          String         @default("CONFIRMADA") // CONFIRMADA, CANCELADA
+  criado_em       DateTime       @default(now())
+
+  tenant          Tenant         @relation(fields: [tenant_id], references: [id])
+  oferta          BoleiaOferta   @relation(fields: [oferta_id], references: [id], onDelete: Cascade)
+  passageiro      Membro         @relation("PassageiroReserva", fields: [passageiro_id], references: [id])
+
+  @@unique([oferta_id, passageiro_id])
+  @@index([tenant_id])
+  @@index([passageiro_id])
+  @@map("boleia_reservas")
 }
