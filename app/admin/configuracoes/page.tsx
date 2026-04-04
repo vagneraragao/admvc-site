@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'
+import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { criarCargo, excluirCargo, criarDepartamento, excluirDepartamento } from '@/actions/admin-actions'
 import FormCriarDepartamento from '@/components/admin/FormCriarDepartamento'
@@ -10,6 +10,7 @@ import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
 export default async function EstruturaPage() {
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
+    const db = getTenantClient(tenantId)
 
     let cargos: any[] = [], deptos: any[] = [], deptosParaSelect: any[] = []
     let membrosDisponiveis: any[] = [], grupos: any[] = [], congregacoes: any[] = []
@@ -18,9 +19,9 @@ export default async function EstruturaPage() {
     try {
         // Batch 1: queries leves
         const [r0, r1, r2] = await Promise.all([
-            prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
-            prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
-            prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
+            db.cargo.findMany({ orderBy: { nome: 'asc' } }),
+            db.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
+            db.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
         ])
         cargos = r0 as any[]
         deptosParaSelect = r1 as any[]
@@ -28,7 +29,7 @@ export default async function EstruturaPage() {
 
         // Batch 2: queries pesadas
         const [r3, r4, r5, r6] = await Promise.all([
-            prisma.departamento.findMany({
+            db.departamento.findMany({
                 include: {
                     lider: { select: { first_name: true, last_name: true } },
                     congregacao: { select: { nome: true } },
@@ -43,7 +44,7 @@ export default async function EstruturaPage() {
                 },
                 orderBy: { nome: 'asc' }
             }),
-            prisma.grupo.findMany({
+            db.grupo.findMany({
                 orderBy: { nome: 'asc' },
                 include: {
                     membros: { select: { id: true, first_name: true, last_name: true } },
@@ -52,20 +53,20 @@ export default async function EstruturaPage() {
                     _count: { select: { membros: true } }
                 }
             }),
-            tenantId ? prisma.tenant.findUnique({
+            tenantId ? db.tenant.findUnique({
                 where: { id: tenantId },
                 select: { regioes_custom: true }
             }) : null,
-            tenantId ? prisma.congregacao.findMany({
+            tenantId ? db.congregacao.findMany({
                 where: { tenant_id: tenantId },
                 select: { id: true, nome: true, cidade: true },
                 orderBy: { nome: 'asc' }
-            }) : [],
+            }) : null,
         ])
         deptos = r3 as any[]
         grupos = r4 as any[]
         tenantConfig = r5
-        congregacoes = r6 as any[]
+        congregacoes = (r6 as any[]) || []
     } catch (err) {
         console.error('[ESTRUTURA] Erro ao carregar dados:', err)
     }
