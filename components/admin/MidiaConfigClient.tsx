@@ -56,19 +56,14 @@ export default function MidiaConfigClient({ config }: { config: Config | null })
     }
 
     return (
-        <>
-            <header className="space-y-1">
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Configuracoes de Midia</h1>
-                <p className="text-xs text-muted">Equipamentos de som, iluminacao e projeccao da igreja.</p>
-            </header>
-
+        <div className="p-5 space-y-5">
             {msg && (
                 <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold ${msg.includes('guardadas') ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                     <CheckCircle2 size={14} /> {msg}
                 </div>
             )}
 
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={handleSave} className="space-y-4">
 
                 {/* HOLYRICS */}
                 <DeviceCard
@@ -129,7 +124,7 @@ export default function MidiaConfigClient({ config }: { config: Config | null })
                     </button>
                 </div>
             </form>
-        </>
+        </div>
     )
 }
 

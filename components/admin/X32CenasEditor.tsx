@@ -79,27 +79,21 @@ export default function X32CenasEditor({ initialConfig }: Props) {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {msg && (
                 <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold ${msg.includes('guardados') ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                     <CheckCircle2 size={14} /> {msg}
                 </div>
             )}
 
-            <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
-                    <div className="flex items-center gap-2">
-                        <Sliders size={16} className="text-blue-500" />
-                        <h3 className="text-xs font-black uppercase tracking-widest text-fg">Presets Mesa de Som</h3>
-                        <span className="text-[8px] font-bold bg-soft px-2 py-0.5 rounded text-muted">{scenes.length}</span>
-                    </div>
-                    <button onClick={addScene} type="button"
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-figueira text-white text-[8px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all">
-                        <Plus size={12} /> Adicionar
-                    </button>
-                </div>
+            <div className="flex items-center justify-end">
+                <button onClick={addScene} type="button"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-figueira text-white text-[8px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all">
+                    <Plus size={12} /> Adicionar
+                </button>
+            </div>
 
-                <div className="p-5 space-y-4">
+            <div className="space-y-4">
                     {scenes.length === 0 && (
                         <p className="text-[10px] text-muted text-center py-4 font-bold uppercase tracking-widest">
                             Nenhum preset configurado. Clique em "Adicionar" para criar.
@@ -214,10 +208,9 @@ export default function X32CenasEditor({ initialConfig }: Props) {
                             </div>
                         )
                     })}
-                </div>
             </div>
 
-            <div className="bg-bg2 border border-soft rounded-2xl p-4 text-[9px] text-muted/60 space-y-1">
+            <div className="bg-bg border border-soft rounded-xl p-4 text-[9px] text-muted/60 space-y-1">
                 <p className="font-black uppercase tracking-widest text-muted text-[8px]">Como funciona:</p>
                 <p><strong>Push:</strong> Executa o preset uma vez (ex: "Preset Louvor" que ajusta todos os faders).</p>
                 <p><strong>Toggle:</strong> Liga/desliga — usa 2 scripts (ex: "Mute Banda" / "Unmute Banda").</p>

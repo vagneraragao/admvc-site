@@ -4,6 +4,7 @@ import { criarCargo, excluirCargo, criarDepartamento, excluirDepartamento } from
 import FormCriarDepartamento from '@/components/admin/FormCriarDepartamento'
 import DeptoItem from '@/components/DeptoItem'
 import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
+import StopPropagation from '@/components/ui/StopPropagation'
 import { Plus, Briefcase, LayoutGrid, Users, MapPin, Settings } from 'lucide-react'
 import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
 
@@ -96,11 +97,11 @@ export default async function EstruturaPage() {
                         <h2 className="text-sm font-black uppercase tracking-widest text-fg">Departamentos</h2>
                         <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{deptos.length}</span>
                     </div>
-                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                    <StopPropagation className="flex items-center gap-2">
                         <Popover titulo="Departamento" cor="blue">
                             <FormCriarDepartamento congregacoes={congregacoes} />
                         </Popover>
-                    </div>
+                    </StopPropagation>
                 </summary>
                 <div className="p-5">
                 {deptos.length > 0 ? (
