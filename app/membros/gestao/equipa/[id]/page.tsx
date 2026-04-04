@@ -18,8 +18,13 @@ export default async function EquipaDepartamento({ params }: { params: { id: str
         where: { id: deptoId },
         include: {
             integrantes: {
-                include: { 
-                    membro: true,
+                include: {
+                    membro: {
+                        select: {
+                            id: true, first_name: true, last_name: true,
+                            avatar_file: true, email: true, phone_1: true,
+                        }
+                    },
                     funcoes: {
                         include: { funcao: true }
                     }

@@ -11,44 +11,59 @@ export default async function EstruturaPage() {
     const headersList = await headers()
     const tenantId = Number(headersList.get('x-tenant-id') || 0)
 
-    const [cargos, deptos, deptosParaSelect, membrosDisponiveis, grupos, tenantConfig, congregacoes] = await Promise.all([
-        prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
-        prisma.departamento.findMany({
-            include: {
-                lider: { select: { first_name: true, last_name: true } },
-                congregacao: { select: { nome: true } },
-                funcoes: { orderBy: { nome: 'asc' } },
-                integrantes: {
-                    include: {
-                        membro: { select: { id: true, first_name: true, last_name: true } },
-                        funcoes: { include: { funcao: true } }
-                    }
+    let cargos: any[] = [], deptos: any[] = [], deptosParaSelect: any[] = []
+    let membrosDisponiveis: any[] = [], grupos: any[] = [], congregacoes: any[] = []
+    let tenantConfig: any = null
+
+    try {
+        const results = await Promise.all([
+            prisma.cargo.findMany({ orderBy: { nome: 'asc' } }),
+            prisma.departamento.findMany({
+                include: {
+                    lider: { select: { first_name: true, last_name: true } },
+                    congregacao: { select: { nome: true } },
+                    funcoes: { orderBy: { nome: 'asc' } },
+                    integrantes: {
+                        include: {
+                            membro: { select: { id: true, first_name: true, last_name: true } },
+                            funcoes: { include: { funcao: true } }
+                        }
+                    },
+                    _count: { select: { integrantes: true } }
                 },
-                _count: { select: { integrantes: true } }
-            },
-            orderBy: { nome: 'asc' }
-        }),
-        prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
-        prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
-        prisma.grupo.findMany({
-            orderBy: { nome: 'asc' },
-            include: {
-                membros: { select: { id: true, first_name: true, last_name: true } },
-                lideres: { select: { id: true, first_name: true, last_name: true } },
-                departamento: { select: { id: true, nome: true } },
-                _count: { select: { membros: true } }
-            }
-        }),
-        tenantId ? prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { regioes_custom: true }
-        }) : null,
-        tenantId ? prisma.congregacao.findMany({
-            where: { tenant_id: tenantId },
-            select: { id: true, nome: true, cidade: true },
-            orderBy: { nome: 'asc' }
-        }) : [],
-    ])
+                orderBy: { nome: 'asc' }
+            }),
+            prisma.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
+            prisma.membro.findMany({ select: { id: true, first_name: true, last_name: true }, orderBy: { first_name: 'asc' } }),
+            prisma.grupo.findMany({
+                orderBy: { nome: 'asc' },
+                include: {
+                    membros: { select: { id: true, first_name: true, last_name: true } },
+                    lideres: { select: { id: true, first_name: true, last_name: true } },
+                    departamento: { select: { id: true, nome: true } },
+                    _count: { select: { membros: true } }
+                }
+            }),
+            tenantId ? prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { regioes_custom: true }
+            }) : null,
+            tenantId ? prisma.congregacao.findMany({
+                where: { tenant_id: tenantId },
+                select: { id: true, nome: true, cidade: true },
+                orderBy: { nome: 'asc' }
+            }) : [],
+        ])
+        cargos = results[0] as any[]
+        deptos = results[1] as any[]
+        deptosParaSelect = results[2] as any[]
+        membrosDisponiveis = results[3] as any[]
+        grupos = results[4] as any[]
+        tenantConfig = results[5]
+        congregacoes = results[6] as any[]
+    } catch (err) {
+        console.error('[ESTRUTURA] Erro ao carregar dados:', err)
+    }
 
     const cargosSerializados = cargos.map((c: any) => ({ id: c.id, nome: c.nome }))
 

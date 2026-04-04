@@ -392,7 +392,6 @@ export async function renovarDocumentoAction(membroId: number, tipo: 'GDPR' | 'P
 export async function buscarRelatorioEscalasAction(membroId: number, mes: number, ano: number) {
     try {
         await requireAuth()
-        // Define o primeiro e o último dia do mês escolhido
         const dataInicio = new Date(ano, mes - 1, 1);
         const dataFim = new Date(ano, mes, 0, 23, 59, 59);
 
@@ -400,19 +399,14 @@ export async function buscarRelatorioEscalasAction(membroId: number, mes: number
             where: {
                 membro_id: membroId,
                 evento: {
-                    data: {
-                        gte: dataInicio,
-                        lte: dataFim
-                    }
+                    data: { gte: dataInicio, lte: dataFim }
                 }
             },
             include: {
-                evento: true,
-                departamento: true
+                evento: { select: { id: true, nome: true, data: true } },
+                departamento: { select: { id: true, nome: true } }
             },
-            orderBy: {
-                evento: { data: 'asc' }
-            }
+            orderBy: { evento: { data: 'asc' } }
         });
 
         return { sucesso: true, escalas };

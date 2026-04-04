@@ -71,7 +71,7 @@ export default async function DashboardMembro({
                             }
                         },
                         orderBy: { data: 'desc' },
-                        take: 20
+                        take: 10
                     }
                 }
             },
@@ -91,7 +91,7 @@ export default async function DashboardMembro({
                             }
                         },
                         orderBy: { data: 'desc' },
-                        take: 20
+                        take: 10
                     }
                 }
             },

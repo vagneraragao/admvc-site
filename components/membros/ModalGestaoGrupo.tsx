@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import {
-    X, Users, Clock, BookOpen, Camera,
+    X, Users, Clock, BookOpen, Camera, ChevronDown,
     Plus, Loader2, Check, MapPin,
     UserCheck, ClipboardList, Pencil,
     CheckCircle2, Circle, Image as ImageIcon, Trash2
@@ -251,71 +251,89 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
                                                 </button>
                                             )}
                                         </div>
-                                    ) : (
-                                        encontros.slice().sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).map(enc => (
-                                            <div key={enc.id} className="bg-bg2 border border-soft rounded-[1.5rem] overflow-hidden hover:border-figueira/30 transition-all">
-                                                <div className="p-5 space-y-3">
-                                                    <div className="flex items-start justify-between gap-3">
-
-                                                        {/* DATA + TEMA */}
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            <div className="bg-fg text-bg rounded-xl p-2.5 text-center shrink-0 min-w-[50px]">
-                                                                <span className="block text-[8px] font-black uppercase opacity-60">{new Date(enc.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
-                                                                <span className="block text-lg font-black italic leading-none">{new Date(enc.data).toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
+                                    ) : (() => {
+                                        const sorted = encontros.slice().sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+                                        return (
+                                            <>
+                                                {sorted.slice(0, 5).map((enc, idx) => (
+                                                    <details key={enc.id} className="group/enc bg-bg2 border border-soft rounded-[1.5rem] overflow-hidden hover:border-figueira/30 transition-all" open={idx === 0}>
+                                                        <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-4 flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                <div className="bg-fg text-bg rounded-xl p-2 text-center shrink-0 min-w-[44px]">
+                                                                    <span className="block text-[7px] font-black uppercase opacity-60">{new Date(enc.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
+                                                                    <span className="block text-base font-black italic leading-none">{new Date(enc.data).toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <h4 className="text-xs font-black uppercase italic tracking-tight text-fg leading-tight truncate">{enc.tema}</h4>
+                                                                    <p className="text-[8px] font-bold text-muted">{formatarData(enc.data)}</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="min-w-0">
-                                                                <h4 className="text-sm font-black uppercase italic tracking-tight text-fg leading-tight truncate">{enc.tema}</h4>
-                                                                <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-0.5">{formatarData(enc.data)}</p>
-                                                                {/* BADGE DE FOTO (quando não há thumbnail visível) */}
-                                                                {enc.foto_url && (
-                                                                    <button
-                                                                        onClick={() => setFotoAmpliada({ url: enc.foto_url!, tema: enc.tema })}
-                                                                        className="mt-1.5 flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-figueira hover:underline"
-                                                                    >
-                                                                        <Camera size={10} /> Ver foto
-                                                                    </button>
-                                                                )}
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                {enc.foto_url && <Camera size={10} className="text-figueira" />}
+                                                                <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 px-2 py-1 rounded-lg">
+                                                                    <UserCheck size={10} />
+                                                                    <span className="text-[8px] font-black">{enc.presentes.length}</span>
+                                                                </div>
+                                                                <ChevronDown size={12} className="text-muted group-open/enc:rotate-180 transition-transform" />
                                                             </div>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            {/* THUMBNAIL CLICÁVEL */}
+                                                        </summary>
+                                                        <div className="px-4 pb-4 space-y-3 animate-in fade-in duration-200">
                                                             {enc.foto_url && (
                                                                 <button
                                                                     onClick={() => setFotoAmpliada({ url: enc.foto_url!, tema: enc.tema })}
-                                                                    className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-soft hover:border-figueira transition-all group/thumb shrink-0 shadow-sm"
+                                                                    className="relative w-full h-40 rounded-xl overflow-hidden border border-soft hover:border-figueira transition-all group/thumb"
                                                                     title="Ver foto ampliada"
                                                                 >
-                                                                    <img src={enc.foto_url} alt={enc.tema} className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-300" />
-                                                                    <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/30 transition-all flex items-center justify-center">
-                                                                        <Camera size={14} className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity" />
+                                                                    <img src={enc.foto_url} alt={enc.tema} loading="lazy" className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" />
+                                                                    <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-all flex items-center justify-center">
+                                                                        <Camera size={20} className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity" />
                                                                     </div>
                                                                 </button>
                                                             )}
-                                                            {/* BADGE PRESENÇAS */}
-                                                            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 px-3 py-1.5 rounded-xl">
-                                                                <UserCheck size={12} />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest">{enc.presentes.length}</span>
-                                                            </div>
+                                                            {enc.presentes.length > 0 && (
+                                                                <div className="pt-2 border-t border-soft">
+                                                                    <p className="text-[8px] font-black uppercase tracking-widest text-muted mb-2">Presentes</p>
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {enc.presentes.map(p => (
+                                                                            <span key={p.id} className="text-[8px] font-black uppercase tracking-wide bg-bg border border-soft px-2 py-1 rounded-lg text-fg">
+                                                                                {p.first_name} {p.last_name}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </div>
-
-                                                    {enc.presentes.length > 0 && (
-                                                        <div className="pt-2 border-t border-soft">
-                                                            <p className="text-[8px] font-black uppercase tracking-widest text-muted mb-2">Presentes</p>
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {enc.presentes.map(p => (
-                                                                    <span key={p.id} className="text-[8px] font-black uppercase tracking-wide bg-bg border border-soft px-2 py-1 rounded-lg text-fg">
-                                                                        {p.first_name} {p.last_name}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
+                                                    </details>
+                                                ))}
+                                                {sorted.length > 5 && (
+                                                    <details className="group/more">
+                                                        <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden text-center py-3">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-figueira hover:underline">
+                                                                Ver mais {sorted.length - 5} encontros <ChevronDown size={10} className="inline group-open/more:rotate-180 transition-transform" />
+                                                            </span>
+                                                        </summary>
+                                                        <div className="space-y-3 pt-2 animate-in fade-in duration-300">
+                                                            {sorted.slice(5).map(enc => (
+                                                                <div key={enc.id} className="flex items-center gap-3 bg-bg2 border border-soft rounded-xl px-4 py-3">
+                                                                    <div className="bg-fg text-bg rounded-lg p-1.5 text-center shrink-0 min-w-[36px]">
+                                                                        <span className="block text-[7px] font-black uppercase opacity-60">{new Date(enc.data).toLocaleDateString('pt-PT', { month: 'short' })}</span>
+                                                                        <span className="block text-sm font-black italic leading-none">{new Date(enc.data).toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-[10px] font-black uppercase text-fg truncate">{enc.tema}</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5 text-muted text-[8px] font-bold">
+                                                                        {enc.foto_url && <Camera size={9} className="text-figueira" />}
+                                                                        <UserCheck size={9} /> {enc.presentes.length}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
+                                                    </details>
+                                                )}
+                                            </>
+                                        )
+                                    })()}
                                 </div>
                             )}
 
