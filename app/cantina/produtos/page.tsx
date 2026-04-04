@@ -7,6 +7,7 @@ import BotaoEliminarCategoria from '@/components/cantina/BotaoEliminarCategoria'
 import InputStock from '@/components/cantina/InputStock'
 import FormAdicionarCategoria from '@/components/cantina/FormAdicionarCategoria'
 import FormAdicionarProduto from '@/components/cantina/FormAdicionarProduto'
+import BotaoImportarLoyverse from '@/components/cantina/BotaoImportarLoyverse'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,7 @@ export default async function ProdutosPage() {
                             Gerir categorias, produtos e stock da cantina.
                         </p>
                     </div>
+                    <BotaoImportarLoyverse />
                 </div>
 
                 {/* Stats */}
