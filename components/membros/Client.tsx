@@ -278,7 +278,7 @@ export default function EditarMembroClient({
                             <div className="relative group shrink-0">
                                 <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-xl bg-soft relative">
                                     {previewFoto
-                                        ? <Image src={previewFoto} alt="Perfil" fill className="object-cover" />
+                                        ? <Image src={previewFoto} alt="Perfil" fill sizes="128px" className="object-cover" />
                                         : <div className="w-full h-full flex items-center justify-center text-muted bg-bg"><User size={40} /></div>
                                     }
                                 </div>

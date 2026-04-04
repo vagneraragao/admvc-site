@@ -111,7 +111,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                     <Link href="/membros/dashboard" className="flex items-center gap-3 min-w-0">
                         <div className={`relative shrink-0 transition-all duration-300 ${expandido ? 'w-14 h-14' : 'w-9 h-9'}`}>
                             {membro.avatar_file ? (
-                                <Image src={membro.avatar_file} alt="" fill className="rounded-lg object-cover border border-soft" />
+                                <Image src={membro.avatar_file} alt="" fill sizes="56px" className="rounded-lg object-cover border border-soft" />
                             ) : (
                                 <div className={`w-full h-full rounded-lg bg-fg text-bg flex items-center justify-center font-black border border-soft transition-all duration-300 ${expandido ? 'text-base rounded-xl' : 'text-[10px]'}`}>
                                     {iniciais}

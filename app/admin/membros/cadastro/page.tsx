@@ -260,7 +260,7 @@ export default function AdminCadastroMembroPage() {
                             <div className="relative shrink-0">
                                 <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl bg-soft">
                                     {previewFoto
-                                        ? <Image src={previewFoto} alt="Preview" fill className="object-cover" />
+                                        ? <Image src={previewFoto} alt="Preview" fill sizes="128px" className="object-cover" />
                                         : <div className="w-full h-full flex items-center justify-center text-muted"><User size={32} /></div>
                                     }
                                 </div>

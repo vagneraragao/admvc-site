@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
 import { audit, diffCampos, sanitizar } from '@/lib/audit'
 import { geocodificarComFallback } from '@/lib/geocode'
+import { invalidateDepartamentos, invalidateGrupos, invalidateTenant } from '@/lib/cache'
 import { requireAuth, requireRole } from '@/lib/auth-utils'
 
 async function getDb() {
@@ -81,6 +82,7 @@ export async function criarDepartamento(formData: FormData) {
         }
     });
     revalidatePath('/admin/configuracoes');
+    invalidateDepartamentos(tenantId).catch(() => {})
 }
 
 export async function criarGrupo(formData: FormData) {
@@ -114,6 +116,7 @@ export async function criarGrupo(formData: FormData) {
     });
 
     revalidatePath('/admin/configuracoes');
+    invalidateGrupos(tenantId).catch(() => {})
 }
 
 export async function excluirGrupo(id: number) {
@@ -633,6 +636,7 @@ export async function excluirDepartamento(id: number) {
         const { db, tenantId } = await getDb();
         await db.departamento.delete({ where: { id } });
         revalidatePath('/admin/configuracoes');
+        invalidateDepartamentos(tenantId).catch(() => {})
         return { ok: true };
     } catch (error: any) {
         if (error.code === 'P2003') return { ok: false, error: "Não é possível excluir: existem membros vinculados." };
@@ -1812,6 +1816,7 @@ export async function salvarRegioesAction(regioes: string[]) {
         })
 
         revalidatePath('/admin/configuracoes')
+        invalidateTenant(tenantId).catch(() => {})
         return { ok: true }
     } catch (error: any) {
         return { ok: false, error: 'Erro ao guardar regioes.' }

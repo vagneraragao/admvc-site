@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getSessionData, requireRole, requireAuth } from '@/lib/auth-utils'
+import { invalidateGrupos } from '@/lib/cache'
 
 
 async function getDb() {
@@ -82,6 +83,8 @@ export async function atualizarDadosGrupoAction(formData: FormData) {
         });
 
         revalidatePath(`/grupos/gestao/${id}`);
+        const hdr = await headers()
+        invalidateGrupos(Number(hdr.get('x-tenant-id'))).catch(() => {})
         return { sucesso: true };
     } catch (error) {
         return { sucesso: false, erro: "Erro ao atualizar dados." };

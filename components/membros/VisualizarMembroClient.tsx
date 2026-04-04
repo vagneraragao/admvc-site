@@ -93,7 +93,7 @@ export default function VisualizarMembroClient({ membro }: any) {
                 <div className="relative shrink-0">
                     <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 border-soft shadow-sm bg-soft">
                         {membro.avatar_file ? (
-                            <Image src={membro.avatar_file} alt="Foto de Perfil" fill className="object-cover" />
+                            <Image src={membro.avatar_file} alt="Foto de Perfil" fill sizes="128px" className="object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-muted bg-bg">
                                 <User size={32} strokeWidth={1.5} />

@@ -233,7 +233,7 @@ export default function MeuPerfilClient({
                             <div className="relative group shrink-0">
                                 <div className="w-28 h-28 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl bg-soft relative">
                                     {previewFoto ? (
-                                        <Image src={previewFoto} alt="Perfil" fill className="object-cover" />
+                                        <Image src={previewFoto} alt="Perfil" fill sizes="128px" className="object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-muted bg-bg">
                                             <User size={36} />
