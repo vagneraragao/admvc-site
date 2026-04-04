@@ -92,6 +92,20 @@ export default async function GestaoCantinaPage() {
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
+            {/* Banner Sistema Interno */}
+            <div className="bg-figueira/5 border border-figueira/20 rounded-[2rem] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-figueira">Sistema Interno Ativo</h3>
+                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">
+                        Gestao de produtos e ponto de venda agora disponiveis sem Loyverse.
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <Link href="/cantina/produtos" className="px-4 py-2.5 bg-figueira text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all">Produtos</Link>
+                    <Link href="/cantina/pos" className="px-4 py-2.5 bg-bg2 border border-soft text-fg rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/50 transition-all">Abrir POS</Link>
+                </div>
+            </div>
+
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Cantina</h1>

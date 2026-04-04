@@ -7,7 +7,7 @@ import {
     LayoutDashboard, Users, Home, Calendar, HeartHandshake,
     BarChart3, Settings, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
-    Menu, X, MonitorPlay, BookOpen, GraduationCap
+    Menu, X, MonitorPlay, BookOpen, GraduationCap, Car
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
@@ -27,6 +27,8 @@ const NAV_MODULOS = [
     { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
     { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen, adminOnly: false },
     { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap, adminOnly: false },
+    { label: 'Produtos', href: '/cantina/produtos', icon: Package, adminOnly: false },
+    { label: 'POS', href: '/cantina/pos', icon: CreditCard, adminOnly: false },
 ]
 
 const NAV_SISTEMA = [

@@ -1,7 +1,7 @@
 // app/membros/dashboard/page.tsx
 import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
-import { getLoyverseTokenForTenant } from '@/lib/loyverse-api'
+import CardSaldoLocal from '@/components/cantina/CardSaldoLocal'
 import { headers } from 'next/headers'
 import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Link from 'next/link'
@@ -14,7 +14,6 @@ import {
     Users, Clock, MapPin
 } from 'lucide-react'
 
-import CardWalletCantina from '@/components/membros/CardWalletCantina'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import PainelFinanceiroMembro from '@/components/membros/PainelFinanceiroMembro'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
@@ -165,17 +164,11 @@ export default async function DashboardMembro({
     }
 
     // 4. DADOS PARALELOS
-    const fetchLoyverseSaldo = async () => {
-        if (!membro.loyverse_id) return 0;
+    const fetchSaldoLocal = async () => {
         try {
-            const loyverseToken = await getLoyverseTokenForTenant(Number(tenantIdStr));
-            if (!loyverseToken) return 0;
-            const res = await fetch(`https://api.loyverse.com/v1.0/customers/${membro.loyverse_id}`, {
-                headers: { 'Authorization': `Bearer ${loyverseToken}` },
-                cache: 'no-store'
-            });
-            return res.ok ? (await res.json()).total_points || 0 : 0;
-        } catch { return 0; }
+            const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
+            return saldo?.saldo || 0
+        } catch { return 0 }
     };
 
     const [
@@ -248,7 +241,7 @@ export default async function DashboardMembro({
         }) : Promise.resolve([]),
 
         // INDEX 7 - saldoCantina
-        fetchLoyverseSaldo(),
+        fetchSaldoLocal(),
 
         // INDEX 8 - visitantesAtualizados
         permissoes.isAcolhimento ? db.visitante.findMany({
@@ -760,7 +753,7 @@ export default async function DashboardMembro({
                             </h2>
                             <div className="grid lg:grid-cols-12 gap-8 items-start">
                                 <div className="lg:col-span-4 flex flex-col gap-6">
-                                    <CardWalletCantina membro={membro} saldoLoyverse={saldoCantina} />
+                                    <CardSaldoLocal membroId={membro.id} />
                                 </div>
                                 <div className="lg:col-span-8 bg-bg border border-soft rounded-[2rem] p-6 shadow-inner relative overflow-hidden">
                                     <h3 className="text-sm font-black uppercase italic text-fg mb-4 flex items-center gap-2">
