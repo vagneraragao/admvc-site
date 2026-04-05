@@ -3,6 +3,7 @@
 import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
+import { sendPushToMembro } from '@/lib/web-push'
 
 // ── CRIAR OFERTA ─────────────────────────────────────────────────────────────
 
@@ -91,7 +92,10 @@ export async function reservarBoleia(ofertaId: number) {
     try {
         const oferta = await db.boleiaOferta.findUnique({
             where: { id: ofertaId },
-            include: { reservas: { where: { status: 'CONFIRMADA' } } },
+            include: {
+                reservas: { where: { status: 'CONFIRMADA' } },
+                evento: { select: { nome: true } },
+            },
         })
 
         if (!oferta || oferta.status !== 'ATIVA') {
@@ -113,6 +117,12 @@ export async function reservarBoleia(ofertaId: number) {
         }
 
         const tenantId = await getTenantIdFromHeaders()
+
+        const passageiro = await db.membro.findUnique({
+            where: { id: session.membroId },
+            select: { first_name: true, last_name: true },
+        })
+
         await (db as any).boleiaReserva.create({
             data: {
                 tenant_id: tenantId,
@@ -121,6 +131,17 @@ export async function reservarBoleia(ofertaId: number) {
                 status: 'CONFIRMADA',
             },
         })
+
+        // Enviar push notification ao motorista
+        const nomePassageiro = passageiro ? `${passageiro.first_name} ${passageiro.last_name}` : 'Alguem'
+        const dataInfo = oferta.evento?.nome
+            ? oferta.evento.nome
+            : new Date(oferta.data_hora_saida).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
+        sendPushToMembro(oferta.motorista_id, {
+            title: 'Nova reserva na sua boleia',
+            body: `${nomePassageiro} reservou lugar na sua boleia para ${dataInfo}`,
+            url: '/boleia/minhas',
+        }).catch(() => {}) // fire and forget
 
         revalidatePath('/boleia')
         return { success: true }
@@ -137,7 +158,13 @@ export async function cancelarReservaBoleia(reservaId: number) {
     const db = await getDb()
 
     try {
-        const reserva = await db.boleiaReserva.findUnique({ where: { id: reservaId } })
+        const reserva = await db.boleiaReserva.findUnique({
+            where: { id: reservaId },
+            include: {
+                oferta: { select: { motorista_id: true, data_hora_saida: true, evento: { select: { nome: true } } } },
+                passageiro: { select: { first_name: true, last_name: true } },
+            },
+        })
 
         if (!reserva || reserva.passageiro_id !== session.membroId) {
             return { error: 'Reserva nao encontrada ou sem permissao.' }
@@ -148,10 +175,104 @@ export async function cancelarReservaBoleia(reservaId: number) {
             data: { status: 'CANCELADA' },
         })
 
+        // Enviar push notification ao motorista
+        const nomePassageiro = `${reserva.passageiro.first_name} ${reserva.passageiro.last_name}`
+        const dataInfo = reserva.oferta.evento?.nome
+            ? reserva.oferta.evento.nome
+            : new Date(reserva.oferta.data_hora_saida).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })
+        sendPushToMembro(reserva.oferta.motorista_id, {
+            title: 'Reserva cancelada',
+            body: `${nomePassageiro} cancelou a reserva na sua boleia para ${dataInfo}`,
+            url: '/boleia/minhas',
+        }).catch(() => {}) // fire and forget
+
         revalidatePath('/boleia')
         return { success: true }
     } catch (error) {
         console.error('Erro ao cancelar reserva:', error)
         return { error: 'Erro ao cancelar. Tente novamente.' }
+    }
+}
+
+// ── AGRADECER BOLEIA ────────────────────────────────────────────────────────
+
+export async function agradecerBoleia(reservaId: number) {
+    const session = await requireAuth()
+    const db = await getDb()
+
+    try {
+        const reserva = await db.boleiaReserva.findUnique({ where: { id: reservaId } })
+
+        if (!reserva || reserva.passageiro_id !== session.membroId) {
+            return { error: 'Reserva nao encontrada ou sem permissao.' }
+        }
+
+        await db.boleiaReserva.update({
+            where: { id: reservaId },
+            data: { agradecimento: true },
+        })
+
+        revalidatePath('/boleia')
+        return { success: true }
+    } catch (error) {
+        console.error('Erro ao agradecer boleia:', error)
+        return { error: 'Erro ao agradecer. Tente novamente.' }
+    }
+}
+
+// ── GERAR BOLEIAS RECORRENTES ───────────────────────────────────────────────
+// Encontra ofertas recorrentes que ja passaram e cria novas para a proxima semana.
+// Pode ser chamada manualmente por admin ou via cron job.
+
+export async function gerarBoleiasRecorrentes() {
+    const db = await getDb()
+    const agora = new Date()
+
+    try {
+        const ofertasRecorrentes = await db.boleiaOferta.findMany({
+            where: {
+                recorrente: true,
+                status: 'ATIVA',
+                data_hora_saida: { lt: agora },
+            },
+        })
+
+        let criadas = 0
+
+        for (const oferta of ofertasRecorrentes) {
+            // Marcar a oferta antiga como CONCLUIDA
+            await db.boleiaOferta.update({
+                where: { id: oferta.id },
+                data: { status: 'CONCLUIDA' },
+            })
+
+            // Criar nova oferta para a proxima semana (+7 dias)
+            const novaData = new Date(oferta.data_hora_saida.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+            await (db as any).boleiaOferta.create({
+                data: {
+                    tenant_id: oferta.tenant_id,
+                    motorista_id: oferta.motorista_id,
+                    evento_id: null, // Eventos sao unicos, nao repetir
+                    data_hora_saida: novaData,
+                    endereco_partida: oferta.endereco_partida,
+                    zona_partida: oferta.zona_partida,
+                    latitude: oferta.latitude,
+                    longitude: oferta.longitude,
+                    vagas_total: oferta.vagas_total,
+                    nota: oferta.nota,
+                    recorrente: true,
+                    status: 'ATIVA',
+                },
+            })
+
+            criadas++
+        }
+
+        revalidatePath('/boleia')
+        return { success: true, criadas }
+    } catch (error) {
+        console.error('Erro ao gerar boleias recorrentes:', error)
+        return { error: 'Erro ao gerar boleias recorrentes.' }
     }
 }

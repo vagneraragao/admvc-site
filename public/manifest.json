@@ -1,46 +1,13 @@
 {
-  "name": "ADMVC – Assembleia de Deus Ministerio Visao de Conquista",
-  "short_name": "ADMVC",
-  "description": "Plataforma de gestao integrada para igrejas",
-  "start_url": "/membros/login",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0b0d0c",
-  "theme_color": "#3F6B4F",
-  "scope": "/",
-  "icons": [
-    {
-      "src": "/images/favicon-48x48.png",
-      "sizes": "48x48",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/images/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "categories": ["productivity", "social", "religion"],
-  "lang": "pt-PT",
-  "dir": "ltr"
+    "name": "ADMVC Cloud",
+    "short_name": "ADMVC",
+    "description": "Plataforma de gestao para igrejas",
+    "start_url": "/membros/dashboard",
+    "display": "standalone",
+    "background_color": "#0b0d0c",
+    "theme_color": "#3f6b4f",
+    "icons": [
+        { "src": "/images/logo_admvc.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "/images/logo_admvc.png", "sizes": "512x512", "type": "image/png" }
+    ]
 }

@@ -1,6 +1,7 @@
 // app/api/upload/encontro-foto/route.ts
 import { put } from '@vercel/blob'
 import { NextRequest, NextResponse } from 'next/server'
+import { comprimirImagem } from '@/lib/image-utils'
 
 export async function POST(request: NextRequest) {
     console.log('🟡 [API UPLOAD] Recebido pedido POST')
@@ -37,16 +38,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Configuração de storage em falta.' }, { status: 500 })
         }
 
-        // Gera nome único
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        // Comprimir imagem antes do upload
+        const arrayBuffer = await file.arrayBuffer()
+        const compressedBuffer = await comprimirImagem(Buffer.from(arrayBuffer))
+
+        // Gera nome único (sempre .webp após compressão)
         const timestamp = Date.now()
-        const filename = `encontros/grupo-${grupo_id || 'unknown'}/${timestamp}.${ext}`
+        const filename = `encontros/grupo-${grupo_id || 'unknown'}/${timestamp}.webp`
 
         console.log('🔵 [API UPLOAD] A fazer upload para Vercel Blob:', filename)
 
-        const blob = await put(filename, file, {
+        const blob = await put(filename, compressedBuffer, {
             access: 'public',
-            contentType: file.type,
+            contentType: 'image/webp',
         })
 
         console.log('✅ [API UPLOAD] Upload concluído! URL:', blob.url)

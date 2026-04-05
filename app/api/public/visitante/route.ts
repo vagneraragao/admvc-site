@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { enviarEmailNotificacaoEquipa } from '@/lib/mail'
 import { sendPushToDepartamento } from '@/lib/web-push'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
     try {
+        const ip = request.headers.get('x-forwarded-for') || 'unknown'
+        const { success } = rateLimit(`visitante:${ip}`, 5, 60000) // 5 requests per minute
+        if (!success) {
+            return NextResponse.json({ error: 'Demasiados pedidos. Tente novamente mais tarde.' }, { status: 429 })
+        }
+
         const body = await request.json()
         const { nome, telefone, pedido_oracao } = body
 

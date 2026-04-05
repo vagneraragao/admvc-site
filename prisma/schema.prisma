@@ -1211,6 +1211,7 @@ model BoleiaReserva {
   oferta_id       Int
   passageiro_id   Int
   status          String         @default("CONFIRMADA") // CONFIRMADA, CANCELADA
+  agradecimento   Boolean        @default(false) // Passageiro agradeceu ao motorista
   criado_em       DateTime       @default(now())
 
   tenant          Tenant         @relation(fields: [tenant_id], references: [id])

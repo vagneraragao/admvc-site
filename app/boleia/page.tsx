@@ -4,9 +4,12 @@ import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Car, MapPin, Clock, Users, Plus, ChevronRight, Calendar } from 'lucide-react'
+import { Car, MapPin, Clock, Users, Plus, ChevronRight, Calendar, Map } from 'lucide-react'
 import BotaoReservar from '@/components/boleia/BotaoReservar'
 import BotaoCancelarReserva from '@/components/boleia/BotaoCancelarReserva'
+import BotaoAgradecer from '@/components/boleia/BotaoAgradecer'
+import MapaBoleiasWrapper from '@/components/boleia/MapaBoleiasWrapper'
+import type { OfertaMapa } from '@/components/boleia/MapaBoleias'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +24,10 @@ export default async function BoleiaPage() {
     const agora = new Date()
     const emSeteDias = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-    const [ofertas, proximosEventos] = await Promise.all([
+    // Ultimas 48h para mostrar boleias passadas com botao de agradecer
+    const ha48h = new Date(agora.getTime() - 48 * 60 * 60 * 1000)
+
+    const [ofertas, proximosEventos, minhasReservasPassadas] = await Promise.all([
         db.boleiaOferta.findMany({
             where: {
                 status: 'ATIVA',
@@ -41,6 +47,22 @@ export default async function BoleiaPage() {
             where: { data: { gte: agora, lte: emSeteDias } },
             orderBy: { data: 'asc' },
             take: 10,
+        }),
+        // Boleias passadas (ultimas 48h) onde o membro tem reserva, para mostrar botao de agradecer
+        db.boleiaOferta.findMany({
+            where: {
+                data_hora_saida: { gte: ha48h, lt: agora },
+                reservas: { some: { passageiro_id: membroId, status: 'CONFIRMADA' } },
+            },
+            include: {
+                motorista: { select: { id: true, first_name: true, last_name: true } },
+                evento: { select: { id: true, nome: true, data: true } },
+                reservas: {
+                    where: { status: 'CONFIRMADA' },
+                    include: { passageiro: { select: { id: true, first_name: true, last_name: true } } },
+                },
+            },
+            orderBy: { data_hora_saida: 'desc' },
         }),
     ])
 
@@ -96,6 +118,32 @@ export default async function BoleiaPage() {
                     <p className="text-[9px] font-black uppercase tracking-widest text-muted">Eventos Proximos</p>
                 </div>
             </div>
+
+            {/* MAPA DE BOLEIAS */}
+            {(() => {
+                const ofertasComCoordenadas: OfertaMapa[] = ofertas
+                    .filter((o) => o.latitude && o.longitude)
+                    .map((o) => ({
+                        id: o.id,
+                        latitude: o.latitude!,
+                        longitude: o.longitude!,
+                        motorista_nome: `${o.motorista.first_name} ${o.motorista.last_name}`,
+                        hora: new Date(o.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                        vagas_livres: o.vagas_total - o.reservas.length,
+                        vagas_total: o.vagas_total,
+                        zona: o.zona_partida || o.endereco_partida,
+                        evento_nome: o.evento?.nome,
+                    }))
+                if (ofertasComCoordenadas.length === 0) return null
+                return (
+                    <section className="space-y-3">
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted flex items-center gap-2">
+                            <Map size={14} /> Mapa de Boleias
+                        </h2>
+                        <MapaBoleiasWrapper ofertas={ofertasComCoordenadas} />
+                    </section>
+                )
+            })()}
 
             {/* LISTA DE OFERTAS */}
             {ofertas.length > 0 ? (
@@ -173,13 +221,18 @@ export default async function BoleiaPage() {
                                     )}
 
                                     {/* Acao */}
-                                    <div className="pt-2">
+                                    <div className="pt-2 flex items-center gap-3">
                                         {souMotorista ? (
                                             <Link href="/boleia/minhas" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
                                                 Gerir <ChevronRight size={12} />
                                             </Link>
                                         ) : minhaReserva ? (
-                                            <BotaoCancelarReserva reservaId={minhaReserva.id} />
+                                            <>
+                                                <BotaoCancelarReserva reservaId={minhaReserva.id} />
+                                                {new Date(oferta.data_hora_saida) < agora && (
+                                                    <BotaoAgradecer reservaId={minhaReserva.id} jaAgradeceu={minhaReserva.agradecimento ?? false} />
+                                                )}
+                                            </>
                                         ) : vagasLivres > 0 ? (
                                             <BotaoReservar ofertaId={oferta.id} />
                                         ) : (
@@ -201,6 +254,46 @@ export default async function BoleiaPage() {
                         <Plus size={12} /> Seja o primeiro a oferecer
                     </Link>
                 </div>
+            )}
+            {/* BOLEIAS PASSADAS — AGRADECER */}
+            {minhasReservasPassadas.length > 0 && (
+                <section className="space-y-4">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">
+                        Boleias Recentes — Agradecer
+                    </h2>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {minhasReservasPassadas.map((oferta) => {
+                            const minhaReserva = oferta.reservas.find(r => r.passageiro.id === membroId)
+                            if (!minhaReserva) return null
+                            const dataFormatada = new Date(oferta.data_hora_saida).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
+                            const horaFormatada = new Date(oferta.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+
+                            return (
+                                <div key={oferta.id} className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden opacity-75">
+                                    <div className="h-1.5 bg-soft" />
+                                    <div className="p-6 space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-soft flex items-center justify-center shrink-0">
+                                                <span className="text-[10px] font-black text-muted">
+                                                    {oferta.motorista.first_name[0]}{oferta.motorista.last_name[0]}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black uppercase text-fg leading-none">
+                                                    {oferta.motorista.first_name} {oferta.motorista.last_name}
+                                                </p>
+                                                <p className="text-[10px] text-muted">{dataFormatada} as {horaFormatada}</p>
+                                            </div>
+                                        </div>
+                                        <div className="pt-1">
+                                            <BotaoAgradecer reservaId={minhaReserva.id} jaAgradeceu={minhaReserva.agradecimento ?? false} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </section>
             )}
         </main>
     )

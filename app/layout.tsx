@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { SITE_NAME } from "@/lib/constants";
 import BrandingProvider from "@/components/ui/BrandingProvider";
+import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} Cloud`,
@@ -41,11 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <BrandingProvider>
           {children}
         </BrandingProvider>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,
-          }}
-        />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
