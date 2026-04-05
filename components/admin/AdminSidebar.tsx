@@ -4,16 +4,18 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-    LayoutDashboard, Users, Home, Calendar, HeartHandshake,
-    BarChart3, Settings, Shield, LogOut, Package,
+    LayoutDashboard, Users, Home, Calendar, CalendarDays, HeartHandshake,
+    BarChart3, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
-    Menu, X, MonitorPlay, BookOpen, GraduationCap, Car,
+    Menu, X, MonitorPlay, BookOpen, GraduationCap,
     Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store, Banknote,
     FileText, PieChart, Heart, CheckSquare, Download
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
-const NAV_PRINCIPAL = [
+// ── ESTRUTURA DO MENU ────────────────────────────────────────────────────────
+
+const NAV_IGREJA = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Membros', href: '/admin/membros', icon: Users },
     { label: 'Familias', href: '/admin/familias', icon: Home },
@@ -21,109 +23,138 @@ const NAV_PRINCIPAL = [
     { label: 'Estrutura', href: '/admin/configuracoes', icon: HeartHandshake },
 ]
 
-const NAV_MODULOS = [
-    { label: 'Escalas', href: '/admin/escalas', icon: Calendar, adminOnly: false },
-    { label: 'Inventario', href: '/admin/inventario', icon: Package, adminOnly: false },
-    { label: 'Relatorios', href: '/admin/relatorios', icon: BarChart3, adminOnly: false },
-    { label: 'Rel. Escalas', href: '/admin/relatorios/escalas', icon: Calendar, adminOnly: false },
-    { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
-    { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen, adminOnly: false },
-    { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap, adminOnly: false },
-    { label: 'Assistencia', href: '/assistencia', icon: HeartHandshake, adminOnly: false },
-    { label: 'Fundos', href: '/financeiro/fundos', icon: Wallet2, adminOnly: true },
-    { label: 'Despesas', href: '/financeiro/despesas', icon: Banknote, adminOnly: false },
-    { label: 'Orcamento', href: '/financeiro/orcamento', icon: BarChart3, adminOnly: true },
-    { label: 'Recibos', href: '/financeiro/recibos', icon: FileText, adminOnly: true },
-    { label: 'Rel. Financeiro', href: '/financeiro/relatorios', icon: PieChart, adminOnly: true },
-    { label: 'Donativos', href: '/financeiro/donativos', icon: Heart, adminOnly: true },
-    { label: 'Pledges', href: '/financeiro/pledges', icon: HeartHandshake, adminOnly: true },
-    { label: 'Reconciliacao', href: '/financeiro/reconciliacao', icon: CheckSquare, adminOnly: true },
-    { label: 'Exportacao', href: '/financeiro/exportar', icon: Download, adminOnly: true },
+const NAV_AGENDA = [
+    { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
+    { label: 'Escalas', href: '/admin/escalas', icon: Calendar },
+    { label: 'Inventario', href: '/admin/inventario', icon: Package },
+]
+
+const NAV_FORMACAO = [
+    { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen },
+    { label: 'Cursos / EBD', href: '/admin/formacao/ebd', icon: GraduationCap },
 ]
 
 const NAV_CANTINA = [
+    { label: 'Painel', href: '/cantina', icon: Store },
     { label: 'Produtos', href: '/cantina/produtos', icon: Package },
     { label: 'POS', href: '/cantina/pos', icon: CreditCard },
     { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3 },
     { label: 'Turnos', href: '/cantina/turnos', icon: Clock },
-    { label: 'Fiados', href: '/cantina/fiados', icon: CreditCard, adminOnly: true },
-    { label: 'Recargas', href: '/cantina/recargas', icon: Wallet2, adminOnly: true },
     { label: 'Cardapio', href: '/cantina/cardapio', icon: Coffee },
     { label: 'Encomendas', href: '/cantina/encomendas', icon: ShoppingCart },
+    { label: 'Fiados', href: '/cantina/fiados', icon: CreditCard, adminOnly: true },
+    { label: 'Recargas', href: '/cantina/recargas', icon: Wallet2, adminOnly: true },
+]
+
+const NAV_FINANCEIRO = [
+    { label: 'Fundos', href: '/financeiro/fundos', icon: Wallet2 },
+    { label: 'Despesas', href: '/financeiro/despesas', icon: Banknote },
+    { label: 'Orcamento', href: '/financeiro/orcamento', icon: BarChart3 },
+    { label: 'Recibos IRS', href: '/financeiro/recibos', icon: FileText },
+    { label: 'Relatorio', href: '/financeiro/relatorios', icon: PieChart },
+    { label: 'Donativos', href: '/financeiro/donativos', icon: Heart },
+    { label: 'Pledges', href: '/financeiro/pledges', icon: HeartHandshake },
+    { label: 'Reconciliacao', href: '/financeiro/reconciliacao', icon: CheckSquare },
+    { label: 'Exportacao', href: '/financeiro/exportar', icon: Download },
+]
+
+const NAV_RELATORIOS = [
+    { label: 'Geral', href: '/admin/relatorios', icon: BarChart3 },
+    { label: 'Escalas', href: '/admin/relatorios/escalas', icon: Calendar },
+    { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
+]
+
+const NAV_SOCIAL = [
+    { label: 'Assistencia Social', href: '/assistencia', icon: HeartHandshake },
 ]
 
 const NAV_SISTEMA = [
     { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
     { label: 'Midia', href: '/admin/midia', icon: MonitorPlay, adminOnly: true },
-    { label: 'Auditoria', href: '/admin/auditoria', icon: Shield, adminOnly: false },
+    { label: 'Auditoria', href: '/admin/auditoria', icon: Shield },
 ]
 
-function NavSection({ titulo, items, collapsed, pathname, isFullAdmin = true, onNavigate }: {
-    titulo: string
+// ── COMPONENTES ──────────────────────────────────────────────────────────────
+
+function NavItems({ items, collapsed, pathname, isFullAdmin, onNavigate }: {
     items: { label: string; href: string; icon: any; adminOnly?: boolean }[]
-    collapsed: boolean
-    pathname: string
-    isFullAdmin?: boolean
-    onNavigate?: () => void
+    collapsed: boolean; pathname: string; isFullAdmin: boolean; onNavigate?: () => void
 }) {
-    const filteredItems = items.filter(item => !item.adminOnly || isFullAdmin)
     return (
-        <div className="space-y-1">
-            {!collapsed && (
-                <p className="px-3 text-[8px] font-black uppercase tracking-[0.2em] text-muted mb-2">{titulo}</p>
-            )}
-            {collapsed && <div className="border-t border-soft my-2" />}
-            {filteredItems.map(item => {
+        <>
+            {items.filter(item => !item.adminOnly || isFullAdmin).map(item => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        title={collapsed ? item.label : undefined}
-                        onClick={onNavigate}
-                        className={`flex items-center rounded-xl transition-all ${
-                            collapsed
-                                ? 'justify-center p-2.5'
-                                : 'gap-3 px-3 py-2.5'
-                        } ${
-                            isActive
-                                ? 'bg-figueira/10 text-figueira'
-                                : 'text-muted hover:bg-soft/30 hover:text-fg'
-                        } text-[10px] font-bold uppercase tracking-widest`}
-                    >
-                        <Icon size={16} className="shrink-0" />
+                    <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} onClick={onNavigate}
+                        className={`flex items-center rounded-xl transition-all ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'} ${isActive ? 'bg-figueira/10 text-figueira' : 'text-muted hover:bg-soft/30 hover:text-fg'} text-[10px] font-bold uppercase tracking-widest`}>
+                        <Icon size={15} className="shrink-0" />
                         {!collapsed && <span>{item.label}</span>}
                     </Link>
                 )
             })}
+        </>
+    )
+}
+
+function CollapsibleGroup({ titulo, icon: Icon, items, collapsed, pathname, isFullAdmin, onNavigate, defaultOpen = false }: {
+    titulo: string; icon: any
+    items: { label: string; href: string; icon: any; adminOnly?: boolean }[]
+    collapsed: boolean; pathname: string; isFullAdmin: boolean; onNavigate?: () => void; defaultOpen?: boolean
+}) {
+    const hasActive = items.some(i => pathname === i.href || pathname.startsWith(i.href + '/'))
+    const [open, setOpen] = useState(defaultOpen || hasActive)
+
+    // Auto-open when a child route is active
+    useEffect(() => { if (hasActive) setOpen(true) }, [hasActive])
+
+    const filteredItems = items.filter(item => !item.adminOnly || isFullAdmin)
+    if (filteredItems.length === 0) return null
+
+    if (collapsed) {
+        return (
+            <>
+                <div className="border-t border-soft my-1" />
+                <NavItems items={items} collapsed={collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={onNavigate} />
+            </>
+        )
+    }
+
+    return (
+        <div className="space-y-0.5">
+            <button onClick={() => setOpen(!open)}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-muted hover:text-fg transition-all rounded-lg">
+                <span className="flex items-center gap-1.5">
+                    <Icon size={11} /> {titulo}
+                </span>
+                {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+            </button>
+            {open && (
+                <div className="animate-in fade-in duration-150">
+                    <NavItems items={items} collapsed={false} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={onNavigate} />
+                </div>
+            )}
         </div>
     )
 }
 
+// ── SIDEBAR PRINCIPAL ────────────────────────────────────────────────────────
+
 export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregacaoNome, role = 'ADMIN', congregacaoFilter }: {
-    adminNome?: string
-    igrejaName?: string
-    logoUrl?: string | null
-    congregacaoNome?: string | null
-    role?: string
-    congregacaoFilter?: React.ReactNode
+    adminNome?: string; igrejaName?: string; logoUrl?: string | null
+    congregacaoNome?: string | null; role?: string; congregacaoFilter?: React.ReactNode
 }) {
     const isFullAdmin = role === 'ADMIN'
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
-    const [cantinaAberto, setCantinaAberto] = useState(false)
 
     useEffect(() => {
         const saved = localStorage.getItem('admin_sidebar_collapsed')
         if (saved === 'true') setCollapsed(true)
     }, [])
 
-    // Fechar mobile menu ao navegar
-    useEffect(() => {
-        setMobileOpen(false)
-    }, [pathname])
+    useEffect(() => { setMobileOpen(false) }, [pathname])
 
     function toggle() {
         const next = !collapsed
@@ -131,159 +162,116 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
         localStorage.setItem('admin_sidebar_collapsed', String(next))
     }
 
-    const sidebarContent = (isMobile: boolean) => (
-        <>
-            {/* HEADER */}
-            <div className={`border-b border-soft ${isMobile || !collapsed ? 'px-3 py-3' : 'px-1.5 py-3'}`}>
-                <div className={`flex items-center ${!isMobile && collapsed ? 'justify-center' : 'justify-between'}`}>
-                    {(isMobile || !collapsed) && (
-                        <Link href="/admin/dashboard" className="flex items-center gap-2 px-1 min-w-0" onClick={() => isMobile && setMobileOpen(false)}>
-                            {logoUrl ? (
-                                <img src={logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
-                            ) : (
-                                <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
-                                    <Shield size={14} className="text-white" />
-                                </div>
-                            )}
-                            <div className="min-w-0">
-                                <span className="font-black italic uppercase tracking-tighter text-fg text-sm truncate block">
-                                    {adminNome || 'Admin'}
-                                </span>
-                            </div>
-                        </Link>
-                    )}
-                    {isMobile ? (
-                        <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all">
-                            <X size={20} />
-                        </button>
-                    ) : (
-                        <button onClick={toggle} className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all shrink-0"
-                            title={collapsed ? 'Expandir menu' : 'Recolher menu'}>
-                            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-                        </button>
-                    )}
-                </div>
-                {(isMobile || !collapsed) && igrejaName && (
-                    <div className="mt-2 px-1 space-y-0.5">
-                        <p className="text-[8px] font-black uppercase tracking-[0.15em] text-figueira truncate">{igrejaName}</p>
-                        {congregacaoNome && <p className="text-[8px] font-bold text-muted truncate">{congregacaoNome}</p>}
+    const sidebarContent = (isMobile: boolean) => {
+        const c = !isMobile && collapsed
+        const nav = isMobile ? () => setMobileOpen(false) : undefined
+
+        return (
+            <>
+                {/* HEADER */}
+                <div className={`border-b border-soft ${isMobile || !c ? 'px-3 py-3' : 'px-1.5 py-3'}`}>
+                    <div className={`flex items-center ${c ? 'justify-center' : 'justify-between'}`}>
+                        {(isMobile || !c) && (
+                            <Link href="/admin/dashboard" className="flex items-center gap-2 px-1 min-w-0" onClick={nav}>
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                                ) : (
+                                    <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center shrink-0">
+                                        <Shield size={14} className="text-white" />
+                                    </div>
+                                )}
+                                <span className="font-black italic uppercase tracking-tighter text-fg text-sm truncate">{adminNome || 'Admin'}</span>
+                            </Link>
+                        )}
+                        {isMobile ? (
+                            <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all"><X size={20} /></button>
+                        ) : (
+                            <button onClick={toggle} className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-soft/30 transition-all shrink-0" title={c ? 'Expandir' : 'Recolher'}>
+                                {c ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+                            </button>
+                        )}
                     </div>
-                )}
-                {(isMobile || !collapsed) && congregacaoFilter && (
-                    <div className="mt-2 px-1">{congregacaoFilter}</div>
-                )}
-            </div>
-
-            {/* NAV */}
-            <nav className={`flex-1 overflow-y-auto space-y-4 ${!isMobile && collapsed ? 'p-1.5' : 'p-3'}`}>
-                <NavSection titulo="Igreja" items={NAV_PRINCIPAL} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
-                <NavSection titulo="Modulos" items={NAV_MODULOS} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
-
-                {/* Cantina collapsible group */}
-                <div className="space-y-1">
-                    {(!isMobile && collapsed) ? (
-                        <div className="border-t border-soft my-2" />
-                    ) : (
-                        <button
-                            onClick={() => setCantinaAberto(!cantinaAberto)}
-                            className="w-full flex items-center justify-between px-3 text-[8px] font-black uppercase tracking-[0.2em] text-muted mb-2 hover:text-fg transition-all"
-                        >
-                            <span className="flex items-center gap-1.5">
-                                <Store size={12} /> Cantina
-                            </span>
-                            {cantinaAberto ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        </button>
+                    {(isMobile || !c) && igrejaName && (
+                        <div className="mt-2 px-1 space-y-0.5">
+                            <p className="text-[8px] font-black uppercase tracking-[0.15em] text-figueira truncate">{igrejaName}</p>
+                            {congregacaoNome && <p className="text-[8px] font-bold text-muted truncate">{congregacaoNome}</p>}
+                        </div>
                     )}
-                    {((!isMobile && collapsed) || cantinaAberto) && (
-                        NAV_CANTINA.filter(item => !item.adminOnly || isFullAdmin).map(item => {
-                            const Icon = item.icon
-                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    title={(!isMobile && collapsed) ? item.label : undefined}
-                                    onClick={isMobile ? () => setMobileOpen(false) : undefined}
-                                    className={`flex items-center rounded-xl transition-all ${
-                                        (!isMobile && collapsed)
-                                            ? 'justify-center p-2.5'
-                                            : 'gap-3 px-3 py-2.5'
-                                    } ${
-                                        isActive
-                                            ? 'bg-figueira/10 text-figueira'
-                                            : 'text-muted hover:bg-soft/30 hover:text-fg'
-                                    } text-[10px] font-bold uppercase tracking-widest`}
-                                >
-                                    <Icon size={16} className="shrink-0" />
-                                    {(isMobile || !collapsed) && <span>{item.label}</span>}
-                                </Link>
-                            )
-                        })
-                    )}
+                    {(isMobile || !c) && congregacaoFilter && <div className="mt-2 px-1">{congregacaoFilter}</div>}
                 </div>
 
-                <NavSection titulo="Sistema" items={NAV_SISTEMA} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
-            </nav>
+                {/* NAV */}
+                <nav className={`flex-1 overflow-y-auto space-y-2 ${c ? 'p-1.5' : 'p-3'}`}>
+                    {/* Igreja */}
+                    <div className="space-y-0.5">
+                        {!c && <p className="px-3 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-muted">Igreja</p>}
+                        {c && <div className="border-t border-soft my-1" />}
+                        <NavItems items={NAV_IGREJA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                    </div>
 
-            {/* FOOTER */}
-            <div className={`border-t border-soft space-y-1 ${!isMobile && collapsed ? 'p-1.5' : 'p-3'}`}>
-                <Link href="/membros/dashboard" onClick={() => isMobile && setMobileOpen(false)}
-                    title={!isMobile && collapsed ? 'Painel do Membro' : undefined}
-                    className={`flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-muted hover:bg-soft/30 hover:text-fg transition-all ${
-                        !isMobile && collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
-                    }`}>
-                    <LayoutDashboard size={16} className="shrink-0" />
-                    {(isMobile || !collapsed) && <span>Painel do Membro</span>}
-                </Link>
-                <form action={logoutAdmin}>
-                    <button type="submit"
-                        title={!isMobile && collapsed ? 'Terminar Sessao' : undefined}
-                        className={`w-full flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all ${
-                            !isMobile && collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'
-                        }`}>
-                        <LogOut size={16} className="shrink-0" />
-                        {(isMobile || !collapsed) && <span>Terminar Sessao</span>}
-                    </button>
-                </form>
-            </div>
-        </>
-    )
+                    {/* Agenda & Escalas */}
+                    <CollapsibleGroup titulo="Agenda & Escalas" icon={CalendarDays} items={NAV_AGENDA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} defaultOpen />
+
+                    {/* Formacao */}
+                    <CollapsibleGroup titulo="Formacao" icon={BookOpen} items={NAV_FORMACAO} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+
+                    {/* Cantina */}
+                    <CollapsibleGroup titulo="Cantina" icon={Store} items={NAV_CANTINA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+
+                    {/* Financeiro */}
+                    {isFullAdmin && (
+                        <CollapsibleGroup titulo="Financeiro" icon={Wallet2} items={NAV_FINANCEIRO} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                    )}
+
+                    {/* Relatorios */}
+                    <CollapsibleGroup titulo="Relatorios" icon={BarChart3} items={NAV_RELATORIOS} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+
+                    {/* Social */}
+                    <CollapsibleGroup titulo="Social" icon={HeartHandshake} items={NAV_SOCIAL} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+
+                    {/* Sistema */}
+                    <CollapsibleGroup titulo="Sistema" icon={Shield} items={NAV_SISTEMA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                </nav>
+
+                {/* FOOTER */}
+                <div className={`border-t border-soft space-y-1 ${c ? 'p-1.5' : 'p-3'}`}>
+                    <Link href="/membros/dashboard" onClick={nav} title={c ? 'Painel do Membro' : undefined}
+                        className={`flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-muted hover:bg-soft/30 hover:text-fg transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
+                        <Home size={16} className="shrink-0" />
+                        {!c && <span>Painel do Membro</span>}
+                    </Link>
+                    <form action={logoutAdmin}>
+                        <button type="submit" title={c ? 'Sair' : undefined}
+                            className={`w-full flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
+                            <LogOut size={16} className="shrink-0" />
+                            {!c && <span>Sair</span>}
+                        </button>
+                    </form>
+                </div>
+            </>
+        )
+    }
 
     return (
         <>
-            {/* MOBILE: Top bar com hamburger */}
-            <div className="md:hidden flex items-center justify-between bg-bg2 border-b border-soft px-4 py-3 sticky top-0 z-40">
-                <Link href="/admin/dashboard" className="flex items-center gap-2">
-                    {logoUrl ? (
-                        <img src={logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />
-                    ) : (
-                        <div className="w-7 h-7 bg-figueira rounded-lg flex items-center justify-center">
-                            <Shield size={14} className="text-white" />
-                        </div>
-                    )}
-                    <span className="font-black italic uppercase tracking-tighter text-fg text-sm">
-                        {adminNome || 'Admin'}
-                    </span>
-                </Link>
-                <button onClick={() => setMobileOpen(true)} className="p-2 rounded-xl text-muted hover:text-fg hover:bg-soft/30 transition-all">
-                    <Menu size={20} />
-                </button>
-            </div>
+            {/* Mobile trigger */}
+            <button onClick={() => setMobileOpen(true)}
+                className="md:hidden fixed bottom-4 left-4 z-50 w-12 h-12 bg-figueira text-white rounded-2xl shadow-xl flex items-center justify-center active:scale-90 transition-all">
+                <Menu size={20} />
+            </button>
 
-            {/* MOBILE: Drawer overlay */}
+            {/* Mobile overlay */}
             {mobileOpen && (
-                <div className="md:hidden fixed inset-0 z-50">
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-                    <aside className="absolute left-0 top-0 bottom-0 w-72 bg-bg2 flex flex-col animate-in slide-in-from-left duration-200 shadow-2xl">
+                <div className="fixed inset-0 z-[9999] md:hidden">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+                    <div className="absolute left-0 top-0 bottom-0 w-72 bg-bg border-r border-soft flex flex-col animate-in slide-in-from-left duration-200">
                         {sidebarContent(true)}
-                    </aside>
+                    </div>
                 </div>
             )}
 
-            {/* DESKTOP: Sidebar normal */}
-            <aside className={`hidden md:flex bg-bg2 border-r border-soft flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${
-                collapsed ? 'w-16' : 'w-60'
-            }`}>
+            {/* Desktop sidebar */}
+            <aside className={`hidden md:flex flex-col sticky top-0 h-dvh bg-bg2 border-r border-soft shrink-0 transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}>
                 {sidebarContent(false)}
             </aside>
         </>

@@ -1,13 +1,13 @@
 // app/admin/escalas/page.tsx
 import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
-import { CalendarDays, Settings2, Users } from 'lucide-react'
+import { Settings2, Users, ArrowRight } from 'lucide-react'
 import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
-import CalendarioAgenda from '@/components/escalas/CalendarioAgenda'
-import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
+import { getTipoEvento } from '@/lib/evento-tipos'
+import Link from 'next/link'
 
-export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
+export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string; evento?: string }> }) {
     const db = await getDb()
     const params = await searchParams
     const session = await getSessionData()
@@ -85,7 +85,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
     const hoje = new Date(new Date().setHours(0, 0, 0, 0))
     const eventosFuturos = eventos.filter(e => new Date(e.data) >= hoje)
 
-    // KPIs rápidos
+    // KPIs rapidos
     const totalVoluntarios = eventosFuturos.reduce((sum, ev) => sum + ev.escalas.length, 0)
     const totalEventos = eventosFuturos.length
     const pendentesConfirmacao = eventosFuturos.reduce(
@@ -95,12 +95,17 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
     return (
         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
-            <header className="flex items-center justify-between">
+            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Escalas & Eventos</h1>
-                    <p className="text-xs text-muted">Gestao de voluntarios e agenda de servico.</p>
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Gestao de Escalas</h1>
+                    <p className="text-xs text-muted">Atribuir voluntarios aos eventos agendados.</p>
                 </div>
-                <ModalNovoEvento congregacoes={congregacoes} />
+                <Link
+                    href="/admin/eventos"
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-figueira hover:text-figueira/70 transition-all"
+                >
+                    Gerir eventos <ArrowRight size={14} />
+                </Link>
             </header>
 
             {/* KPIs */}
@@ -117,14 +122,39 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
                 ))}
             </div>
 
-            {/* CALENDÁRIO */}
-            <section className="bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm">
-                <div className="flex items-center gap-3 px-6 py-5 border-b border-soft">
-                    <CalendarDays size={16} className="text-figueira" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Visao Calendario</h2>
+            {/* EVENT SELECTOR - Upcoming events with tipo badge */}
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 px-6 py-4 border-b border-soft">
+                    <Settings2 size={14} className="text-figueira" />
+                    <h2 className="text-[10px] font-black uppercase tracking-widest text-fg">Eventos Proximos</h2>
                 </div>
-                <div className="p-6">
-                    <CalendarioAgenda eventos={eventos} congregacoes={congregacoes} />
+                <div className="p-4 flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    {eventosFuturos.length === 0 && (
+                        <p className="text-xs text-muted font-bold px-2">Nenhum evento agendado. <Link href="/admin/eventos" className="text-figueira underline">Criar evento</Link></p>
+                    )}
+                    {eventosFuturos.slice(0, 20).map((ev: any) => {
+                        const tipoInfo = getTipoEvento(ev.tipo || 'CULTO_REGULAR')
+                        const d = new Date(ev.data)
+                        const isSelected = params.evento === String(ev.id)
+                        return (
+                            <Link
+                                key={ev.id}
+                                href={`/admin/escalas?evento=${ev.id}`}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-bold transition-all ${
+                                    isSelected
+                                        ? 'bg-figueira/10 border-figueira text-figueira'
+                                        : 'bg-bg border-soft text-muted hover:border-fg/30'
+                                }`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full ${tipoInfo.cor}`} />
+                                <span className="font-black">{d.getDate()}/{d.getMonth() + 1}</span>
+                                <span className="truncate max-w-[120px]">{ev.nome}</span>
+                                <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${tipoInfo.corFundo} ${tipoInfo.corTexto} ${tipoInfo.corBorda}`}>
+                                    {tipoInfo.label}
+                                </span>
+                            </Link>
+                        )
+                    })}
                 </div>
             </section>
 

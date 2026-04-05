@@ -127,6 +127,27 @@ export default function ModalNovoEvento({ congregacoes = [] }: { congregacoes?: 
                                     />
                                 </div>
 
+                                {/* TIPO DE EVENTO */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2 flex items-center gap-2">
+                                        <Filter size={12} className="text-figueira" /> Tipo de Evento
+                                    </label>
+                                    <select
+                                        name="tipo_evento"
+                                        defaultValue="CULTO_REGULAR"
+                                        className="w-full bg-bg border border-soft rounded-2xl px-5 py-4 text-sm font-bold text-fg focus:border-figueira outline-none shadow-sm transition-all"
+                                    >
+                                        <option value="CULTO_REGULAR">Culto Regular</option>
+                                        <option value="CULTO_ESPECIAL">Culto Especial</option>
+                                        <option value="CULTO_RUA">Culto de Rua</option>
+                                        <option value="CONVIVIO">Convivio</option>
+                                        <option value="REUNIAO">Reuniao</option>
+                                        <option value="FORMACAO">Formacao</option>
+                                        <option value="MISSAO">Missao</option>
+                                        <option value="OUTRO">Outro</option>
+                                    </select>
+                                </div>
+
                                 {/* CONGREGAÇÃO */}
                                 {congregacoes.length > 0 && (
                                     <div className="space-y-2">

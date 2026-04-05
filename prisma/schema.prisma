@@ -388,6 +388,7 @@ model Evento {
   nome           String
   data           DateTime
   descricao      String?
+  tipo           String             @default("CULTO_REGULAR") // CULTO_REGULAR, CULTO_ESPECIAL, CULTO_RUA, CONVIVIO, REUNIAO, FORMACAO, MISSAO, OUTRO
   criado_em      DateTime           @default(now())
   atualizado_em  DateTime           @updatedAt
   tenant_id      Int

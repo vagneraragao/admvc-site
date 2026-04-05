@@ -499,6 +499,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
         const tipo = formData.get('tipo') as string;
         const nome = formData.get('nome') as string;
         const horario = formData.get('horario') as string;
+        const tipo_evento = (formData.get('tipo_evento') as string) || 'CULTO_REGULAR'
         const congIdStr = formData.get('congregacao_id') as string;
         const congregacao_id = congIdStr ? Number(congIdStr) : null;
         const [horas, minutos] = horario.split(':');
@@ -508,7 +509,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
             const dataEvento = new Date(dataString);
             dataEvento.setHours(Number(horas), Number(minutos), 0, 0);
 
-            await db.evento.create({ data: { nome, data: dataEvento, tenant_id: tenantId, congregacao_id } });
+            await db.evento.create({ data: { nome, data: dataEvento, tipo: tipo_evento, tenant_id: tenantId, congregacao_id } });
             revalidatePath('/escalas/admin');
             return { ok: true, totalCriado: 1 };
         }
@@ -539,7 +540,7 @@ export async function criarEventoUnificadoAction(formData: FormData) {
                         if (proximaSemana.getMonth() !== dataAtual.getMonth()) isMatch = true;
                     } else if (frequencia === semanaDoMes.toString()) isMatch = true;
 
-                    if (isMatch) eventosParaCriar.push({ nome, data: new Date(dataAtual), congregacao_id });
+                    if (isMatch) eventosParaCriar.push({ nome, data: new Date(dataAtual), tipo: tipo_evento, congregacao_id });
                 }
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }

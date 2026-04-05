@@ -3,7 +3,7 @@
 import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { Coffee, Package, ShoppingCart } from 'lucide-react'
+import { Coffee, Package, ShoppingCart, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -58,34 +58,42 @@ export default async function MenuLocalPage() {
                 </h1>
             </header>
 
-            {/* PRE-ENCOMENDAS */}
+            {/* PRE-ENCOMENDAS — colapsado por defeito */}
             {proximosEventos.length > 0 && (
-                <section className="space-y-3">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-figueira flex items-center gap-2">
-                        <ShoppingCart size={14} /> Encomendar para o Proximo Evento
-                    </h2>
-                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {proximosEventos.map(ev => {
-                            const data = new Date(ev.data)
-                            const dia = data.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
-                            const hora = data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
-                            const temCardapio = ev.cardapio !== null
-                            return (
-                                <Link key={ev.id} href={`/cantina/encomendar/${ev.id}`}
-                                    className="shrink-0 w-48 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all space-y-2">
-                                    <p className="text-xs font-black uppercase text-fg truncate">{ev.nome}</p>
-                                    <p className="text-[10px] text-muted">{dia} · {hora}</p>
-                                    {temCardapio && (
-                                        <span className="inline-block text-[8px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 px-2 py-0.5 rounded-lg">
-                                            Cardapio disponivel
-                                        </span>
-                                    )}
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-figueira">Encomendar →</p>
-                                </Link>
-                            )
-                        })}
+                <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                    <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-5 flex items-center justify-between hover:bg-soft/20 transition-all">
+                        <span className="text-sm font-black uppercase tracking-widest text-figueira flex items-center gap-2">
+                            <ShoppingCart size={14} /> Encomendar para o Proximo Evento
+                        </span>
+                        <span className="text-[9px] font-black text-muted bg-soft px-2 py-0.5 rounded-lg flex items-center gap-1">
+                            {proximosEventos.length} evento{proximosEventos.length !== 1 ? 's' : ''}
+                            <ChevronDown size={10} className="group-open:rotate-180 transition-transform" />
+                        </span>
+                    </summary>
+                    <div className="px-5 pb-5">
+                        <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                            {proximosEventos.map(ev => {
+                                const data = new Date(ev.data)
+                                const dia = data.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
+                                const hora = data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                                const temCardapio = ev.cardapio !== null
+                                return (
+                                    <Link key={ev.id} href={`/cantina/encomendar/${ev.id}`}
+                                        className="shrink-0 w-48 bg-bg border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all space-y-2">
+                                        <p className="text-xs font-black uppercase text-fg truncate">{ev.nome}</p>
+                                        <p className="text-[10px] text-muted">{dia} · {hora}</p>
+                                        {temCardapio && (
+                                            <span className="inline-block text-[8px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 px-2 py-0.5 rounded-lg">
+                                                Cardapio disponivel
+                                            </span>
+                                        )}
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-figueira">Encomendar →</p>
+                                    </Link>
+                                )
+                            })}
+                        </div>
                     </div>
-                </section>
+                </details>
             )}
 
             {porCategoria.filter(c => c.produtos.length > 0).map(cat => (

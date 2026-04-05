@@ -69,33 +69,32 @@ export default async function BoleiaPage() {
     return (
         <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 space-y-10 pb-24 animate-in fade-in duration-700">
 
-            {/* HEADER */}
-            <header className="flex flex-col md:flex-row justify-between md:items-end gap-6 pb-6 border-b border-soft">
-                <div>
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 mb-2">
-                        <Car size={14} /> Boleia Solidaria
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Boleias <span className="text-muted/20">Disponiveis.</span>
-                    </h1>
-                    <p className="text-sm text-muted font-medium max-w-lg mt-3 leading-relaxed">
-                        Encontre uma boleia para o proximo culto ou ofereca lugar no seu carro.
-                    </p>
-                </div>
+            {/* HEADER — sticky abaixo do header do membro */}
+            <header className="sticky top-[88px] z-30 bg-bg -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 border-b border-soft">
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 max-w-6xl mx-auto">
+                    <div>
+                        <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 mb-1">
+                            <Car size={14} /> Boleia Solidaria
+                        </span>
+                        <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                            Boleias <span className="text-muted/20">Disponiveis.</span>
+                        </h1>
+                    </div>
 
-                <div className="flex gap-3">
-                    <Link
-                        href="/boleia/oferecer"
-                        className="inline-flex items-center gap-2 bg-figueira text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all shadow-lg shadow-figueira/20 active:scale-95"
-                    >
-                        <Plus size={14} /> Oferecer Boleia
-                    </Link>
-                    <Link
-                        href="/boleia/minhas"
-                        className="inline-flex items-center gap-2 bg-bg2 border border-soft text-fg px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-soft transition-all active:scale-95"
-                    >
-                        As Minhas
-                    </Link>
+                    <div className="flex gap-3">
+                        <Link
+                            href="/boleia/oferecer"
+                            className="inline-flex items-center gap-2 bg-figueira text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all shadow-lg shadow-figueira/20 active:scale-95"
+                        >
+                            <Plus size={14} /> Oferecer
+                        </Link>
+                        <Link
+                            href="/boleia/minhas"
+                            className="inline-flex items-center gap-2 bg-bg2 border border-soft text-fg px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-soft transition-all active:scale-95"
+                        >
+                            As Minhas
+                        </Link>
+                    </div>
                 </div>
             </header>
 
