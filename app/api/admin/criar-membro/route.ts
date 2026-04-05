@@ -75,9 +75,13 @@ export async function POST(request: NextRequest) {
 
         if (avatarFile && avatarFile.size > 0) {
             try {
-                const nomeSeguro = 'avatares/' + Date.now() + '-' + avatarFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-                console.log('[API CRIAR MEMBRO] A fazer upload: ' + nomeSeguro)
-                const blob = await put(nomeSeguro, avatarFile, { access: 'public' })
+                const { comprimirImagemParaAvatar } = await import('@/lib/image-utils')
+                const buffer = Buffer.from(await avatarFile.arrayBuffer())
+                const compressed = await comprimirImagemParaAvatar(buffer)
+
+                const nomeSeguro = 'avatares/' + Date.now() + '.webp'
+                console.log(`[API CRIAR MEMBRO] A comprimir e fazer upload: ${(avatarFile.size / 1024).toFixed(0)}KB → ${(compressed.length / 1024).toFixed(0)}KB`)
+                const blob = await put(nomeSeguro, compressed, { access: 'public', contentType: 'image/webp' })
                 avatarUrl = blob.url
                 console.log('[API CRIAR MEMBRO] Upload OK: ' + avatarUrl)
             } catch (err: any) {

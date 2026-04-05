@@ -11,6 +11,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             onBeforeGenerateToken: async (pathname, clientPayload) => {
                 return {
                     allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                    maximumSizeInBytes: 10 * 1024 * 1024, // 10MB (sera comprimido no client)
                     addRandomSuffix: true,
                     tokenPayload: JSON.stringify({}),
                 };
