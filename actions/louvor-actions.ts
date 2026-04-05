@@ -12,6 +12,31 @@ async function getDb() {
     return getTenantClient(tenantId)
 }
 
+/** Verifica se o utilizador e admin, lider do Louvor ou delegado com pode_gerir_escalas no Louvor */
+async function requireLouvorPermission() {
+    const session = await requireAuth()
+    const isAdmin = session.role === 'ADMIN' || session.role === 'CONGREGATION_ADMIN'
+
+    if (!isAdmin) {
+        const db = await getDb()
+        const lideraLouvor = await db.departamento.findFirst({
+            where: { lider_id: session.membroId, nome: { contains: 'Louvor', mode: 'insensitive' } },
+        })
+        const delegadoLouvor = await db.integranteDepartamento.findFirst({
+            where: {
+                membro_id: session.membroId,
+                pode_gerir_escalas: true,
+                departamento: { nome: { contains: 'Louvor', mode: 'insensitive' } },
+            },
+        })
+        if (!lideraLouvor && !delegadoLouvor) {
+            throw new Error('Apenas lideres ou delegados do Louvor podem gerir o repertorio.')
+        }
+    }
+
+    return session
+}
+
 // 1. BUSCAR O REPERTÓRIO DE UM EVENTO ESPECÍFICO
 export async function getRepertorioByEvento(eventoId: number) {
     try {
@@ -55,7 +80,7 @@ export async function buscarMusicasCatalogo(busca: string = '') {
 // 3. ADICIONAR MÚSICA AO EVENTO (Cria a ligação e define a ordem)
 export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: string, tomTocado: string) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         // 1. Descobrir o tenant_id do evento para manter a integridade multitenant
         const evento = await db.evento.findUnique({
@@ -100,7 +125,7 @@ export async function adicionarMusicaAoRepertorio(eventoId: number, musicaId: st
 // 4. REMOVER MÚSICA DO REPERTÓRIO
 export async function removerMusicaDoRepertorio(repertorioId: string) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         await db.repertorioEvento.delete({
             where: { id: repertorioId }
@@ -116,7 +141,7 @@ export async function removerMusicaDoRepertorio(repertorioId: string) {
 // Adicione esta função no seu actions/louvor-actions.ts
 export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: string, tom: string, link: string) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         // 1. Procura se a música já existe ou cria uma nova na hora
         let musica = await prisma.musica.findFirst({
@@ -174,7 +199,7 @@ export async function adicionarMusicaRapidaAoEvento(eventoId: number, titulo: st
 // Adicione no final do arquivo actions/louvor-actions.ts
 export async function atualizarOrdemRepertorio(itens: { id: string, ordem: number }[]) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         // Usa uma transação para atualizar todas as ordens de uma vez com segurança
         await db.$transaction(
@@ -216,7 +241,7 @@ export async function buscarMusicasLocalmente(busca: string) {
 // 3. Adiciona a música na escala usando o ID do nosso banco
 export async function adicionarMusicaLocalAoEvento(eventoId: number, musicaId: string, tom: string) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
@@ -311,7 +336,7 @@ export async function criarNovaMusica(
     link_audio?: string,
 ) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const novaMusica = await prisma.musica.create({
             data: {
                 titulo,
@@ -344,7 +369,7 @@ export async function adicionarMusicaManualAoEvento(
     bpm?: number,
 ) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const db = await getDb()
         const eventoReq = await db.evento.findUnique({
             where: { id: eventoId },
@@ -401,7 +426,7 @@ export async function atualizarLinksMusica(musicaId: string, dados: {
     }
 ) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER'])
+        await requireLouvorPermission()
         const atualizada = await prisma.musica.update({
             where: { id: musicaId },
             data: {

@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
 import { audit } from '@/lib/audit'
+import { recarregarSaldo } from '@/actions/cantina-local-actions'
 
 async function getDb() {
     const headersList = await headers()
@@ -236,123 +237,33 @@ export async function solicitarSaldoCantinaAction(formData: FormData) {
     }
 }
 
-export async function aprovarSaldoCantinaAction(pedidoId: number, loyverseId: string | null, valor: number) {
-    console.log(`\n======================================================`);
-    console.log(`[FINANCEIRO] INICIANDO APROVAÇÃO DE SALDO`);
-    console.log(`-> Pedido ID: ${pedidoId}`);
-    console.log(`-> Valor a carregar: €${valor}`);
-
+export async function aprovarSaldoCantinaAction(pedidoId: number, _loyverseId: string | null, valor: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
-        if (!loyverseId || loyverseId.trim() === '' || loyverseId === 'null') {
-            console.error(`[ERRO CRÍTICO] O loyverseId está vazio ou nulo!`);
-            throw new Error("O membro não tem um ID do Loyverse associado.");
-        }
 
-        const tenantId = await getTenantId();
-        const loyverseToken = await getLoyverseTokenForTenant(tenantId);
-        if (!loyverseToken) throw new Error("Loyverse nao configurado para este tenant.");
+        // Buscar pedido para obter membro_id e forma_pagamento
+        const pedido = await prisma.pedidoSaldoCantina.findUnique({ where: { id: pedidoId } })
+        if (!pedido) return { ok: false, error: 'Pedido nao encontrado.' }
+        if (pedido.status === 'APROVADO') return { ok: false, error: 'Este pedido ja foi aprovado.' }
 
-        // ====================================================================
-        // 1. OBTER STORE, PAYMENT E ITEM (Para gerar o recibo)
-        // ====================================================================
-        console.log(`[LOYVERSE] A obter IDs do sistema...`);
-        const [storesRes, paymentRes, itemsRes] = await Promise.all([
-            fetch('https://api.loyverse.com/v1.0/stores', { headers: { 'Authorization': `Bearer ${loyverseToken}` } }),
-            fetch('https://api.loyverse.com/v1.0/payment_types', { headers: { 'Authorization': `Bearer ${loyverseToken}` } }),
-            fetch('https://api.loyverse.com/v1.0/items', { headers: { 'Authorization': `Bearer ${loyverseToken}` } })
-        ]);
+        // Recarregar saldo usando o sistema local (sem Loyverse)
+        const result = await recarregarSaldo(pedido.membro_id, pedido.valor, `Recarga aprovada via tesouraria (${pedido.forma_pagamento})`)
+        if (result.error) return { ok: false, error: result.error }
 
-        const storeId = (await storesRes.json()).stores[0]?.id;
-        const paymentTypeId = (await paymentRes.json()).payment_types[0]?.id;
-        const itemsData = await itemsRes.json();
-
-        if (!storeId || !paymentTypeId) {
-            throw new Error("Erro de configuração de loja no Loyverse.");
-        }
-
-        let recargaVariantId = null;
-        let recargaItemId = null;
-
-        if (itemsData.items) {
-            const itemExistente = itemsData.items.find((i: any) =>
-                i.item_name === 'Recarga Cantina' || i.item_name === 'Recarga de Saldo'
-            );
-            if (itemExistente && itemExistente.variants?.length > 0) {
-                recargaItemId = itemExistente.id;
-                recargaVariantId = itemExistente.variants[0].variant_id;
-            }
-        }
-
-        if (!recargaVariantId) {
-            console.log(`[LOYVERSE] A criar item "Recarga Cantina"...`);
-            const novoItemRes = await fetch('https://api.loyverse.com/v1.0/items', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${loyverseToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ item_name: "Recarga Cantina", variants: [{ pricing_type: "VARIABLE" }] })
-            });
-            const novoItemData = await novoItemRes.json();
-            recargaItemId = novoItemData.id;
-            recargaVariantId = novoItemData.variants[0]?.variant_id;
-        }
-
-        // ====================================================================
-        // 2. GERAR RECIBO E DEIXAR O LOYVERSE DAR OS PONTOS AUTOMATICAMENTE
-        // ====================================================================
-        console.log(`[LOYVERSE] A gerar recibo oficial. O Loyverse vai calcular os pontos sozinho...`);
-
-        const receipt = {
-            store_id: storeId,
-            customer_id: loyverseId, // MANTEMOS O NOME DO MEMBRO PARA ELE RECEBER OS PONTOS
-            order_type: 'SALES',
-            source: 'API',
-            receipt_type: 'SALE',
-            total_money: valor,
-            total_tax: 0,
-            payments: [{ payment_type_id: paymentTypeId, money_amount: valor }],
-            line_items: [{
-                item_id: recargaItemId,
-                variant_id: recargaVariantId,
-                quantity: 1,
-                price: valor,
-                gross_total_money: valor,
-                total_money: valor
-            }]
-        };
-
-        const loyverseReceiptRes = await fetch(`https://api.loyverse.com/v1.0/receipts`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${loyverseToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(receipt)
-        });
-
-        if (!loyverseReceiptRes.ok) {
-            const recErr = await loyverseReceiptRes.text();
-            console.error(`[LOYVERSE ERRO] Falha ao gerar recibo:`, recErr);
-            throw new Error("O Loyverse rejeitou o recibo.");
-        }
-
-        console.log(`✅ [LOYVERSE] Recibo aceite! Pontos atribuídos pelo Loyverse.`);
-
-        // ====================================================================
-        // 3. ATUALIZAR STATUS NO PRISMA
-        // ====================================================================
-        console.log(`[PRISMA] Pedido #${pedidoId} aprovado com sucesso!`);
+        // Atualizar status do pedido
         await prisma.pedidoSaldoCantina.update({
             where: { id: pedidoId },
             data: { status: 'APROVADO' }
-        });
+        })
 
-        console.log(`======================================================\n`);
+        revalidatePath('/departamentos/financeiro/dashboard')
+        revalidatePath('/membros/dashboard')
 
-        revalidatePath('/departamentos/financeiro/dashboard');
-        revalidatePath('/membros/dashboard');
-
-        return { ok: true };
+        return { ok: true }
 
     } catch (error: any) {
-        console.error(`[ERRO FINAL]`, error);
-        return { ok: false, error: error.message };
+        console.error(`[ERRO] Aprovacao de saldo falhou:`, error)
+        return { ok: false, error: error.message }
     }
 }
 

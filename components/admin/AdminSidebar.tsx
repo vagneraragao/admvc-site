@@ -7,7 +7,8 @@ import {
     LayoutDashboard, Users, Home, Calendar, HeartHandshake,
     BarChart3, Settings, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
-    Menu, X, MonitorPlay, BookOpen, GraduationCap, Car
+    Menu, X, MonitorPlay, BookOpen, GraduationCap, Car,
+    Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
@@ -27,11 +28,18 @@ const NAV_MODULOS = [
     { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
     { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen, adminOnly: false },
     { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap, adminOnly: false },
-    { label: 'Produtos', href: '/cantina/produtos', icon: Package, adminOnly: false },
-    { label: 'POS', href: '/cantina/pos', icon: CreditCard, adminOnly: false },
-    { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3, adminOnly: false },
-    { label: 'Turnos', href: '/cantina/turnos', icon: Calendar, adminOnly: false },
+    { label: 'Assistencia', href: '/assistencia', icon: HeartHandshake, adminOnly: false },
+]
+
+const NAV_CANTINA = [
+    { label: 'Produtos', href: '/cantina/produtos', icon: Package },
+    { label: 'POS', href: '/cantina/pos', icon: CreditCard },
+    { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3 },
+    { label: 'Turnos', href: '/cantina/turnos', icon: Clock },
     { label: 'Fiados', href: '/cantina/fiados', icon: CreditCard, adminOnly: true },
+    { label: 'Recargas', href: '/cantina/recargas', icon: Wallet2, adminOnly: true },
+    { label: 'Cardapio', href: '/cantina/cardapio', icon: Coffee },
+    { label: 'Encomendas', href: '/cantina/encomendas', icon: ShoppingCart },
 ]
 
 const NAV_SISTEMA = [
@@ -95,6 +103,7 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
     const pathname = usePathname()
     const [collapsed, setCollapsed] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [cantinaAberto, setCantinaAberto] = useState(false)
 
     useEffect(() => {
         const saved = localStorage.getItem('admin_sidebar_collapsed')
@@ -159,6 +168,50 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
             <nav className={`flex-1 overflow-y-auto space-y-4 ${!isMobile && collapsed ? 'p-1.5' : 'p-3'}`}>
                 <NavSection titulo="Igreja" items={NAV_PRINCIPAL} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
                 <NavSection titulo="Modulos" items={NAV_MODULOS} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
+
+                {/* Cantina collapsible group */}
+                <div className="space-y-1">
+                    {(!isMobile && collapsed) ? (
+                        <div className="border-t border-soft my-2" />
+                    ) : (
+                        <button
+                            onClick={() => setCantinaAberto(!cantinaAberto)}
+                            className="w-full flex items-center justify-between px-3 text-[8px] font-black uppercase tracking-[0.2em] text-muted mb-2 hover:text-fg transition-all"
+                        >
+                            <span className="flex items-center gap-1.5">
+                                <Store size={12} /> Cantina
+                            </span>
+                            {cantinaAberto ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </button>
+                    )}
+                    {((!isMobile && collapsed) || cantinaAberto) && (
+                        NAV_CANTINA.filter(item => !item.adminOnly || isFullAdmin).map(item => {
+                            const Icon = item.icon
+                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    title={(!isMobile && collapsed) ? item.label : undefined}
+                                    onClick={isMobile ? () => setMobileOpen(false) : undefined}
+                                    className={`flex items-center rounded-xl transition-all ${
+                                        (!isMobile && collapsed)
+                                            ? 'justify-center p-2.5'
+                                            : 'gap-3 px-3 py-2.5'
+                                    } ${
+                                        isActive
+                                            ? 'bg-figueira/10 text-figueira'
+                                            : 'text-muted hover:bg-soft/30 hover:text-fg'
+                                    } text-[10px] font-bold uppercase tracking-widest`}
+                                >
+                                    <Icon size={16} className="shrink-0" />
+                                    {(isMobile || !collapsed) && <span>{item.label}</span>}
+                                </Link>
+                            )
+                        })
+                    )}
+                </div>
+
                 <NavSection titulo="Sistema" items={NAV_SISTEMA} collapsed={!isMobile && collapsed} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={isMobile ? () => setMobileOpen(false) : undefined} />
             </nav>
 

@@ -106,6 +106,8 @@ model Tenant {
   turnosCantina            TurnoCantina[]
   preEncomendas            PreEncomendaCantina[]
   cardapios                CardapioCantina[]
+  itensAssistencia         ItemAssistenciaSocial[]
+  movimentosAssistencia    MovimentoAssistencia[]
 }
 
 model Congregacao {
@@ -295,13 +297,14 @@ model IntegranteDepartamento {
   departamento_id    Int
   data_entrada       DateTime            @default(now())
   pode_gerir_escalas Boolean             @default(false)
+  turno              String?             // MANHA, TARDE, NOITE — permite mesmo membro em 2 departamentos com horarios diferentes
   tenant_id          Int
   funcoes            FuncaoSelecionada[]
   departamento       Departamento        @relation(fields: [departamento_id], references: [id], onDelete: Cascade)
   membro             Membro              @relation(fields: [membro_id], references: [id], onDelete: Cascade)
   tenant             Tenant              @relation(fields: [tenant_id], references: [id])
 
-  @@unique([membro_id, departamento_id])
+  @@unique([membro_id, departamento_id, turno])
   @@index([tenant_id])
 }
 
@@ -1399,10 +1402,11 @@ model CardapioCantina {
 }
 
 model CardapioItem {
-  id              Int              @id @default(autoincrement())
-  cardapio_id     Int
-  produto_id      Int
-  preco_especial  Float?           // Preco diferente para este evento (null = preco normal)
+  id                    Int              @id @default(autoincrement())
+  cardapio_id           Int
+  produto_id            Int
+  preco_especial        Float?           // Preco diferente para este evento (null = preco normal)
+  quantidade_disponivel Int?             // Limite de encomendas (null = sem limite)
 
   cardapio        CardapioCantina  @relation(fields: [cardapio_id], references: [id], onDelete: Cascade)
   produto         ProdutoCantina   @relation(fields: [produto_id], references: [id])
@@ -1410,4 +1414,42 @@ model CardapioItem {
   @@unique([cardapio_id, produto_id])
   @@index([cardapio_id])
   @@map("cantina_cardapio_itens")
+}
+
+// ── ASSISTENCIA SOCIAL ───────────────────────────────────────────────────────
+
+model ItemAssistenciaSocial {
+  id          Int                      @id @default(autoincrement())
+  tenant_id   Int
+  nome        String
+  categoria   String                   // ALIMENTO, HIGIENE, VESTUARIO, OUTRO
+  unidade     String                   @default("unidade") // unidade, kg, litro, peca
+  stock       Int                      @default(0)
+  stock_minimo Int                     @default(0)
+  criado_em   DateTime                 @default(now())
+
+  tenant      Tenant                   @relation(fields: [tenant_id], references: [id])
+  movimentos  MovimentoAssistencia[]
+
+  @@index([tenant_id])
+  @@map("assistencia_itens")
+}
+
+model MovimentoAssistencia {
+  id              Int                    @id @default(autoincrement())
+  tenant_id       Int
+  item_id         Int
+  tipo            String                 // DOACAO_RECEBIDA, ENTREGA_FAMILIA, ENTREGA_ENTIDADE, REPASSE_CANTINA
+  quantidade      Int
+  destinatario    String?                // Nome da familia/entidade que recebeu
+  observacao      String?
+  registrado_por  Int?                   // Membro que registou
+  criado_em       DateTime               @default(now())
+
+  tenant          Tenant                 @relation(fields: [tenant_id], references: [id])
+  item            ItemAssistenciaSocial  @relation(fields: [item_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([item_id])
+  @@map("assistencia_movimentos")
 }

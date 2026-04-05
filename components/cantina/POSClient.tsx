@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
     ShoppingCart, Plus, Minus, Trash2, Search, User, CreditCard,
     Loader2, CheckCircle, XCircle, Maximize2, Minimize2,
-    Wallet2, Banknote, Smartphone, X, RefreshCw, QrCode, HandCoins
+    Wallet2, Banknote, Smartphone, X, RefreshCw, QrCode, HandCoins, Clock
 } from 'lucide-react'
 import { registarVenda, obterSaldoMembro, buscarMembroPorQr } from '@/actions/cantina-local-actions'
 import { criarFiado } from '@/actions/fiado-actions'
@@ -82,9 +82,8 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
     const [cart, setCart] = useState<CartItem[]>([])
     const [receipt, setReceipt] = useState<{itens: CartItem[], total: number, formaPagamento: string, membro: string | null, saldoRestante: number | null} | null>(null)
-    const [qrInput, setQrInput] = useState('')
     const [qrOpen, setQrOpen] = useState(false)
-    const [qrLoading, setQrLoading] = useState(false)
+    const scannerRef = useRef<any>(null)
     const [selectedMembro, setSelectedMembro] = useState<Membro | null>(null)
     const [membroBusca, setMembroBusca] = useState('')
     const [membroDropdownOpen, setMembroDropdownOpen] = useState(false)
@@ -137,20 +136,31 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
         try { setSaldo(await obterSaldoMembro(membro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
     }
 
-    async function buscarPorQr() {
-        if (!qrInput.trim()) return
-        setQrLoading(true)
-        try {
-            const membro = await buscarMembroPorQr(qrInput.trim())
-            if (membro) {
-                await selecionarMembro(membro)
-                setQrOpen(false); setQrInput('')
-            } else {
-                setFeedback({ type: 'error', msg: 'Membro nao encontrado com este QR.' })
-            }
-        } catch {
-            setFeedback({ type: 'error', msg: 'Erro ao buscar membro por QR.' })
-        } finally { setQrLoading(false) }
+    const startScanner = async () => {
+        const { Html5Qrcode } = await import('html5-qrcode')
+        const scanner = new Html5Qrcode("qr-reader")
+        scannerRef.current = scanner
+        await scanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            async (decodedText) => {
+                await scanner.stop()
+                scannerRef.current = null
+                setQrOpen(false)
+                const membro = await buscarMembroPorQr(decodedText)
+                if (membro) await selecionarMembro(membro)
+                else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
+            },
+            () => {}
+        )
+    }
+
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try { await scannerRef.current.stop() } catch {}
+            scannerRef.current = null
+        }
+        setQrOpen(false)
     }
 
     function addToCart(produto: Produto) {
@@ -231,7 +241,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                         className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
                     />
                 </div>
-                <button onClick={() => setQrOpen(!qrOpen)} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
+                <button onClick={() => { if (qrOpen) { stopScanner() } else { setQrOpen(true); setTimeout(() => startScanner(), 100) } }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
                     <QrCode size={16} />
                 </button>
                 {membroDropdownOpen && membrosFiltrados.length > 0 && (
@@ -246,18 +256,11 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                 )}
             </div>
             {qrOpen && (
-                <div className="flex gap-1.5">
-                    <input
-                        type="text"
-                        placeholder="Cole ou digite o codigo QR..."
-                        value={qrInput}
-                        onChange={e => setQrInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && buscarPorQr()}
-                        className="flex-1 bg-bg border border-soft rounded-xl px-3 py-2 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
-                    />
-                    <button onClick={buscarPorQr} disabled={qrLoading || !qrInput.trim()}
-                        className="px-3 py-2 bg-figueira text-bg rounded-xl text-[9px] font-black uppercase tracking-widest disabled:opacity-40">
-                        {qrLoading ? <Loader2 size={12} className="animate-spin" /> : 'Buscar'}
+                <div className="space-y-2">
+                    <div id="qr-reader" className="rounded-xl overflow-hidden" />
+                    <button onClick={stopScanner}
+                        className="w-full px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest">
+                        Fechar Camera
                     </button>
                 </div>
             )}
@@ -360,6 +363,17 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     )
 
     // ── Render ──────────────────────────────────────────────────────────────
+    if (!turnoId) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center space-y-4 p-6">
+                <Clock size={32} className="text-muted/30" />
+                <h2 className="text-lg font-black uppercase tracking-tighter text-fg">Turno nao aberto</h2>
+                <p className="text-xs text-muted max-w-sm">Abra um turno antes de iniciar as vendas para que todas as transacoes sejam registadas correctamente.</p>
+                <a href="/cantina/turnos" className="bg-figueira text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Abrir Turno</a>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-bg p-3 lg:p-6">
             {/* Feedback toast */}
@@ -395,7 +409,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                             {receipt.membro && <p>Cliente: {receipt.membro}</p>}
                             {receipt.saldoRestante !== null && <p>Saldo restante: {receipt.saldoRestante.toFixed(2)}&euro;</p>}
                         </div>
-                        <button onClick={() => setReceipt(null)} className="w-full bg-figueira text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                        <button onClick={() => { setReceipt(null); setSheetOpen(false) }} className="w-full bg-figueira text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
                             Nova Venda
                         </button>
                     </div>

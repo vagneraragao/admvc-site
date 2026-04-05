@@ -6,12 +6,12 @@ import { revalidatePath } from 'next/cache'
 
 // ── CRIAR/ATUALIZAR CARDAPIO PARA UM EVENTO ──────────────────────────────────
 
-export async function salvarCardapio(eventoId: number, produtoIds: number[]) {
+export async function salvarCardapio(eventoId: number, itens: { produtoId: number; quantidade?: number }[]) {
     await requireAuth()
     const db = await getDb()
     const tenantId = await getTenantIdFromHeaders()
 
-    if (!produtoIds.length) return { error: 'Selecione pelo menos um produto.' }
+    if (!itens.length) return { error: 'Selecione pelo menos um produto.' }
 
     try {
         // Verificar se ja existe cardapio para este evento
@@ -21,7 +21,11 @@ export async function salvarCardapio(eventoId: number, produtoIds: number[]) {
             // Apagar itens antigos e recriar
             await db.cardapioItem.deleteMany({ where: { cardapio_id: existente.id } })
             await db.cardapioItem.createMany({
-                data: produtoIds.map(pid => ({ cardapio_id: existente.id, produto_id: pid })),
+                data: itens.map(item => ({
+                    cardapio_id: existente.id,
+                    produto_id: item.produtoId,
+                    quantidade_disponivel: item.quantidade ?? null,
+                })),
             })
         } else {
             await (db as any).cardapioCantina.create({
@@ -29,7 +33,10 @@ export async function salvarCardapio(eventoId: number, produtoIds: number[]) {
                     tenant_id: tenantId,
                     evento_id: eventoId,
                     itens: {
-                        create: produtoIds.map(pid => ({ produto_id: pid })),
+                        create: itens.map(item => ({
+                            produto_id: item.produtoId,
+                            quantidade_disponivel: item.quantidade ?? null,
+                        })),
                     },
                 },
             })

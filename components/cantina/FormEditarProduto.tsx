@@ -108,7 +108,7 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                 </div>
 
                 <form action={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Nome */}
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black uppercase tracking-widest text-muted">
@@ -284,8 +284,8 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                         )}
 
                         {/* Add promotion */}
-                        <div className="flex items-end gap-2">
-                            <div className="space-y-1">
+                        <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+                            <div className="space-y-1 flex-1">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-muted">
                                     Quantidade
                                 </label>
@@ -296,10 +296,10 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                                     value={novaQtd}
                                     onChange={(e) => setNovaQtd(e.target.value)}
                                     placeholder="2"
-                                    className="w-24 bg-bg border border-soft rounded-2xl p-3 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
+                                    className="w-full sm:w-24 bg-bg border border-soft rounded-2xl p-3 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
                                 />
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 flex-1">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-muted">
                                     Preco Total (EUR)
                                 </label>
@@ -310,13 +310,13 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                                     value={novoPreco}
                                     onChange={(e) => setNovoPreco(e.target.value)}
                                     placeholder="5.00"
-                                    className="w-32 bg-bg border border-soft rounded-2xl p-3 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
+                                    className="w-full sm:w-32 bg-bg border border-soft rounded-2xl p-3 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
                                 />
                             </div>
                             <button
                                 type="button"
                                 onClick={adicionarPromocao}
-                                className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-figueira/10 text-figueira border border-figueira/20 text-[9px] font-black uppercase tracking-widest hover:bg-figueira/20 transition-all active:scale-95"
+                                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-figueira/10 text-figueira border border-figueira/20 text-[9px] font-black uppercase tracking-widest hover:bg-figueira/20 transition-all active:scale-95"
                             >
                                 <Plus size={12} />
                                 Adicionar
@@ -330,11 +330,11 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                         </p>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center gap-2 bg-figueira text-bg px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 disabled:opacity-50"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-figueira text-bg px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {loading ? (
                                 <Loader2 size={14} className="animate-spin" />
@@ -346,7 +346,7 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
                         <button
                             type="button"
                             onClick={() => setOpen(false)}
-                            className="px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest text-muted bg-bg border border-soft hover:border-figueira/50 transition-all active:scale-95"
+                            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest text-muted bg-bg border border-soft hover:border-figueira/50 transition-all active:scale-95"
                         >
                             Cancelar
                         </button>

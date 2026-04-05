@@ -675,9 +675,10 @@ export async function vincularMembroDepartamento(formData: FormData) {
         // O upsert é perfeito: Se já existir, não faz nada (update: {}). Se não existir, cria.
         const integrante = await db.integranteDepartamento.upsert({
             where: {
-                membro_id_departamento_id: {
+                membro_id_departamento_id_turno: {
                     membro_id: membroId,
-                    departamento_id: deptoId
+                    departamento_id: deptoId,
+                    turno: null
                 }
             },
             update: {}, // Não muda nada se ele já for deste departamento
@@ -1194,9 +1195,10 @@ export async function removerMembroTotal(membroId: number, departamentoId: numbe
 
         await db.integranteDepartamento.delete({
             where: {
-                membro_id_departamento_id: {
+                membro_id_departamento_id_turno: {
                     membro_id: membroId,
-                    departamento_id: departamentoId
+                    departamento_id: departamentoId,
+                    turno: null
                 }
             }
         });

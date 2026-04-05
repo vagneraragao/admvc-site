@@ -22,6 +22,7 @@ export const MODULOS = {
     PREGACAO: 'pregacao',
     EBD: 'ebd',
     BOLEIA: 'boleia',
+    ASSISTENCIA: 'assistencia',
 } as const
 
 export type Modulo = typeof MODULOS[keyof typeof MODULOS]
@@ -94,6 +95,7 @@ export const PLANOS: Record<PlanoId, PlanoConfig> = {
             MODULOS.PREGACAO,
             MODULOS.EBD,
             MODULOS.BOLEIA,
+            MODULOS.ASSISTENCIA,
         ],
         limites: {
             max_membros: 0, // ilimitado
@@ -134,6 +136,7 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/pregacao': MODULOS.PREGACAO,
     '/ensino': MODULOS.EBD,
     '/boleia': MODULOS.BOLEIA,
+    '/assistencia': MODULOS.ASSISTENCIA,
 }
 
 /**

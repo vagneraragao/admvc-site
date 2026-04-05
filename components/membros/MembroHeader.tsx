@@ -8,7 +8,7 @@ import {
     ShieldCheck, PieChart, UserCircle, LogOut, Users,
     LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
     Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare,
-    BookOpen, GraduationCap, ChevronDown, ChevronUp, Car, Coffee
+    BookOpen, GraduationCap, ChevronDown, ChevronUp, Car, Coffee, HelpCircle, Info
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -16,6 +16,8 @@ import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import ModalRelatorioEscalas from '@/components/membros/ModalRelatorioEscalas'
 import ModalRelatorioLouvor from '@/components/louvor/ModalRelatorioLouvor'
 import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
+import ModalAjuda from '@/components/membros/ModalAjuda'
+import { APP_VERSION } from '@/lib/constants'
 
 interface Props {
     membro: any
@@ -172,6 +174,15 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                     <Link href="/cantina/menu-local" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
                                         <Coffee size={12} className="text-orange-500" /> Menu Cantina
                                     </Link>
+
+                                    <div className="border-t border-soft my-0.5" />
+                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Ajuda</p>
+                                    <ModalAjuda isMenuItem />
+                                    <div className="flex items-center justify-between px-2.5 py-2">
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2">
+                                            <Info size={12} className="text-muted2" /> v{APP_VERSION}
+                                        </span>
+                                    </div>
 
                                     {mostraServico && <div className="border-t border-soft my-0.5" />}
 

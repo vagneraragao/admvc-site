@@ -30,6 +30,7 @@ interface Props {
 export default function FormCardapio({ eventos, produtos }: Props) {
     const [eventoSelecionado, setEventoSelecionado] = useState<number | null>(null)
     const [produtosSelecionados, setProdutosSelecionados] = useState<number[]>([])
+    const [quantidades, setQuantidades] = useState<Record<number, number | undefined>>({})
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ success?: boolean; error?: string } | null>(null)
 
@@ -41,8 +42,11 @@ export default function FormCardapio({ eventos, produtos }: Props) {
         const ev = eventos.find(e => e.id === eventoId)
         if (ev?.cardapio) {
             setProdutosSelecionados(ev.cardapio.produtoIds)
+            // Restaurar quantidades se existirem
+            setQuantidades({})
         } else {
             setProdutosSelecionados([])
+            setQuantidades({})
         }
     }
 
@@ -52,6 +56,18 @@ export default function FormCardapio({ eventos, produtos }: Props) {
                 ? prev.filter(id => id !== produtoId)
                 : [...prev, produtoId]
         )
+        if (produtosSelecionados.includes(produtoId)) {
+            setQuantidades(prev => {
+                const next = { ...prev }
+                delete next[produtoId]
+                return next
+            })
+        }
+    }
+
+    function setQuantidade(produtoId: number, valor: string) {
+        const num = valor === '' ? undefined : parseInt(valor, 10)
+        setQuantidades(prev => ({ ...prev, [produtoId]: num }))
     }
 
     async function handleSalvar() {
@@ -61,7 +77,11 @@ export default function FormCardapio({ eventos, produtos }: Props) {
         setResultado(null)
 
         try {
-            const res = await salvarCardapio(eventoSelecionado, produtosSelecionados)
+            const itens = produtosSelecionados.map(pid => ({
+                produtoId: pid,
+                quantidade: quantidades[pid],
+            }))
+            const res = await salvarCardapio(eventoSelecionado, itens)
             if (res.error) {
                 setResultado({ error: res.error })
             } else {
@@ -181,18 +201,30 @@ export default function FormCardapio({ eventos, produtos }: Props) {
                                 {prods.map(p => {
                                     const selecionado = produtosSelecionados.includes(p.id)
                                     return (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => toggleProduto(p.id)}
-                                            className={`bg-bg2 border rounded-xl p-3 text-left transition-all ${
-                                                selecionado
-                                                    ? 'border-figueira/40 ring-1 ring-figueira/20'
-                                                    : 'border-soft hover:border-figueira/20'
-                                            }`}
-                                        >
-                                            <p className="text-xs font-bold text-fg truncate">{p.nome}</p>
-                                            <p className="text-sm font-black italic text-figueira">{p.preco.toFixed(2)}€</p>
-                                        </button>
+                                        <div key={p.id} className="space-y-1">
+                                            <button
+                                                onClick={() => toggleProduto(p.id)}
+                                                className={`w-full bg-bg2 border rounded-xl p-3 text-left transition-all ${
+                                                    selecionado
+                                                        ? 'border-figueira/40 ring-1 ring-figueira/20'
+                                                        : 'border-soft hover:border-figueira/20'
+                                                }`}
+                                            >
+                                                <p className="text-xs font-bold text-fg truncate">{p.nome}</p>
+                                                <p className="text-sm font-black italic text-figueira">{p.preco.toFixed(2)}&euro;</p>
+                                            </button>
+                                            {selecionado && (
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="Qtd. disponivel (sem limite)"
+                                                    value={quantidades[p.id] ?? ''}
+                                                    onChange={(e) => setQuantidade(p.id, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-full bg-bg border border-soft rounded-lg px-2 py-1.5 text-[10px] font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
+                                                />
+                                            )}
+                                        </div>
                                     )
                                 })}
                             </div>

@@ -42,6 +42,7 @@ const PROTECTED_MODELS = [
     'TurnoCantina', 'FiadoCantina',
     'PreEncomendaCantina',
     'CardapioCantina',
+    'ItemAssistenciaSocial', 'MovimentoAssistencia',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)
