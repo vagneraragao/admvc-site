@@ -72,7 +72,7 @@ export const getTenantClient = (tenantId: number) => {
                     const anyArgs = args as any
 
                     // 1. Buscas e contagens — apenas tenant_id
-                    if (['findMany', 'findFirst', 'count', 'aggregate', 'updateMany', 'deleteMany'].includes(operation)) {
+                    if (['findMany', 'findFirst', 'findUnique', 'findUniqueOrThrow', 'count', 'aggregate', 'groupBy', 'updateMany', 'deleteMany'].includes(operation)) {
                         anyArgs.where = { ...anyArgs.where, tenant_id: tenantId }
                     }
 
