@@ -114,6 +114,8 @@ model Tenant {
   orcamentos               Orcamento[]
   transferencias           TransferenciaFundo[]
   recibosFiscais           ReciboFiscal[]
+  donativosOnline          DonativoOnline[]
+  pledges                  Pledge[]
 }
 
 model Congregacao {
@@ -256,6 +258,7 @@ model Membro {
   turnosCantina              TurnoCantina[]             @relation("OperadorTurno")
   preEncomendas              PreEncomendaCantina[]
   recibosFiscais             ReciboFiscal[]
+  pledges                    Pledge[]
   qr_code                    String?                    @unique  // Codigo QR unico para identificacao rapida
 
   @@index([tenant_id])
@@ -1488,6 +1491,8 @@ model FundoFinanceiro {
   categoriasOrcamento CategoriaOrcamento[]
   transferenciasOrigem  TransferenciaFundo[] @relation("FundoOrigem")
   transferenciasDestino TransferenciaFundo[] @relation("FundoDestino")
+  donativosOnline       DonativoOnline[]
+  pledges               Pledge[]
 
   @@unique([tenant_id, nome])
   @@index([tenant_id])
@@ -1595,4 +1600,57 @@ model ReciboFiscal {
   @@unique([tenant_id, membro_id, ano])
   @@index([tenant_id])
   @@map("financeiro_recibos")
+}
+
+// ── DONATIVOS ONLINE ─────────────────────────────────────────────────────────
+
+model DonativoOnline {
+  id              Int              @id @default(autoincrement())
+  tenant_id       Int
+  fundo_id        Int?
+  nome_doador     String           // Nome do doador (pode nao ser membro)
+  email_doador    String?
+  nif_doador      String?
+  valor           Float
+  forma_pagamento String           // MBWAY, TRANSFERENCIA, MULTIBANCO
+  referencia      String?          // Referencia unica de pagamento
+  recorrente      Boolean          @default(false) // true = donativo mensal
+  anonimo         Boolean          @default(false)
+  mensagem        String?
+  status          String           @default("PENDENTE") // PENDENTE, CONFIRMADO, CANCELADO
+  confirmado_em   DateTime?
+  criado_em       DateTime         @default(now())
+
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+  fundo           FundoFinanceiro? @relation(fields: [fundo_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([status])
+  @@map("financeiro_donativos_online")
+}
+
+// ── PLEDGES (PROMESSAS DE CONTRIBUICAO) ──────────────────────────────────────
+
+model Pledge {
+  id              Int              @id @default(autoincrement())
+  tenant_id       Int
+  membro_id       Int
+  fundo_id        Int?
+  valor_mensal    Float
+  duracao_meses   Int              // Quantos meses se compromete
+  data_inicio     DateTime
+  meses_cumpridos Int              @default(0)
+  valor_cumprido  Float            @default(0)
+  status          String           @default("ATIVO") // ATIVO, CUMPRIDO, ATRASADO, CANCELADO
+  observacao      String?
+  criado_em       DateTime         @default(now())
+
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+  membro          Membro           @relation(fields: [membro_id], references: [id])
+  fundo           FundoFinanceiro? @relation(fields: [fundo_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([membro_id])
+  @@index([status])
+  @@map("financeiro_pledges")
 }

@@ -45,6 +45,7 @@ const PROTECTED_MODELS = [
     'ItemAssistenciaSocial', 'MovimentoAssistencia',
     'FundoFinanceiro', 'CategoriaOrcamento', 'DespesaFinanceira', 'Orcamento', 'TransferenciaFundo',
     'ReciboFiscal',
+    'DonativoOnline', 'Pledge',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)
