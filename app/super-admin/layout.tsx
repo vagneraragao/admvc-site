@@ -1,8 +1,9 @@
 // app/super-admin/layout.tsx
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { Server, Building, CreditCard, Settings, LogOut, ShieldAlert } from 'lucide-react'
+import { Server, Building, CreditCard, Settings, LogOut, ShieldAlert, ShieldCheck, UserCog, Megaphone, Rocket } from 'lucide-react'
 import { logoutSuperAdmin } from '@/actions/sa-auth-actions'
+import prismaGlobal from '@/lib/prisma'
 
 export default async function SuperAdminLayout({
     children,
@@ -16,6 +17,11 @@ export default async function SuperAdminLayout({
     if (!saSession) {
         return <>{children}</>
     }
+
+    // Count churches pending onboarding
+    const onboardingPendente = await prismaGlobal.tenant.count({
+        where: { onboarding_completo: false },
+    })
 
     // Com sessão SA → layout completo com sidebar
     return (
@@ -46,13 +52,39 @@ export default async function SuperAdminLayout({
                             <Building size={16} /> Tenants (Igrejas)
                         </Link>
 
-                        <Link href="/super-admin/igrejas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <CreditCard size={16} /> Planos & Modulos
+                        <Link href="/super-admin/billing" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
+                            <CreditCard size={16} /> Facturacao
                         </Link>
 
                         <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-600 cursor-not-allowed">
                             <Settings size={16} /> Configuracoes
                         </Link>
+
+                        <p className="px-4 pt-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4">Gestao</p>
+
+                        <Link href="/super-admin/admins" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
+                            <ShieldCheck size={16} /> Admins
+                        </Link>
+
+                        <Link href="/super-admin/impersonar" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
+                            <UserCog size={16} /> Impersonar
+                        </Link>
+
+                        <Link href="/super-admin/comunicacao" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
+                            <Megaphone size={16} /> Comunicacao
+                        </Link>
+
+                        {onboardingPendente > 0 && (
+                            <p className="px-4 pt-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4">Setup</p>
+                        )}
+
+                        {onboardingPendente > 0 && (
+                            <Link href="/super-admin/igrejas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-all">
+                                <Rocket size={16} />
+                                <span className="flex-1">Onboarding</span>
+                                <span className="bg-amber-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center">{onboardingPendente}</span>
+                            </Link>
+                        )}
                     </nav>
                 </div>
 

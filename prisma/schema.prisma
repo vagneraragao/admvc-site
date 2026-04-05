@@ -43,6 +43,13 @@ model Tenant {
   nome                     String
   plano                    String                    @default("FREE")
   modulos_custom           Json?                     // Override de módulos activos (array de strings). Se null, usa os do plano.
+  status                   String                    @default("ATIVO") // ATIVO, INATIVO, SUSPENSO, TRIAL
+  ultimo_acesso            DateTime?                 // Data do ultimo login de qualquer membro
+  plano_inicio             DateTime?                 // Inicio do plano actual
+  plano_fim                DateTime?                 // Fim do plano (null = sem expiracao)
+  valor_mensal             Float?                    // Valor do plano em EUR
+  onboarding_completo      Boolean                   @default(false)
+  onboarding_checklist     Json?                     // { membros: false, departamentos: false, escalas: false }
   cor_primaria             String                    @default("#3F6B4F")
   cor_secundaria           String                    @default("#7FAE93")
   cor_fundo                String                    @default("#0b0d0c")
@@ -959,14 +966,56 @@ enum Role {
 
 // ── SUPER ADMIN (Plataforma SaaS — independente dos tenants) ────────────────
 model SuperAdmin {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int              @id @default(autoincrement())
+  email     String           @unique
   password  String
   nome      String
-  is_active Boolean  @default(true)
-  criado_em DateTime @default(now())
+  role      String           @default("ADMIN") // ADMIN, VIEWER, SUPPORT
+  is_active Boolean          @default(true)
+  criado_em DateTime         @default(now())
+  logs      SuperAdminLog[]
 
   @@map("super_admins")
+}
+
+model SuperAdminLog {
+  id          Int        @id @default(autoincrement())
+  sa_id       Int
+  acao        String     // LOGIN, CRIAR_IGREJA, ALTERAR_PLANO, IMPERSONAR, etc.
+  detalhes    String?
+  ip          String?
+  criado_em   DateTime   @default(now())
+  sa          SuperAdmin @relation(fields: [sa_id], references: [id])
+
+  @@index([sa_id])
+  @@index([criado_em])
+  @@map("super_admin_logs")
+}
+
+model AvisoPlataforma {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  mensagem    String
+  tipo        String   @default("INFO") // INFO, ALERTA, MANUTENCAO, NOVIDADE
+  tenant_id   Int?     // null = todas as igrejas
+  lido        Boolean  @default(false)
+  criado_em   DateTime @default(now())
+
+  @@index([tenant_id])
+  @@map("avisos_plataforma")
+}
+
+model PlanoHistorico {
+  id            Int      @id @default(autoincrement())
+  tenant_id     Int
+  plano_anterior String
+  plano_novo    String
+  motivo        String?
+  alterado_por  String?  // email do SA que alterou
+  criado_em     DateTime @default(now())
+
+  @@index([tenant_id])
+  @@map("plano_historico")
 }
 
 // NOVOS
