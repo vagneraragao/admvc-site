@@ -1302,6 +1302,7 @@ model TransacaoCantina {
   membro        Membro?                @relation(fields: [membro_id], references: [id])
   turno         TurnoCantina?          @relation(fields: [turno_id], references: [id])
   itens         ItemTransacaoCantina[]
+  pagamentos    PagamentoTransacao[]
 
   @@index([tenant_id])
   @@index([membro_id])
@@ -1322,6 +1323,18 @@ model ItemTransacaoCantina {
 
   @@index([transacao_id])
   @@map("cantina_itens_transacao")
+}
+
+model PagamentoTransacao {
+  id              Int              @id @default(autoincrement())
+  transacao_id    Int
+  forma_pagamento String           // CREDITOS, DINHEIRO, MBWAY, TRANSFERENCIA
+  valor           Float
+
+  transacao       TransacaoCantina @relation(fields: [transacao_id], references: [id], onDelete: Cascade)
+
+  @@index([transacao_id])
+  @@map("cantina_pagamentos")
 }
 
 model TurnoCantina {

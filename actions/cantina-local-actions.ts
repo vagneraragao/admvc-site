@@ -221,15 +221,30 @@ interface ItemVenda {
     quantidade: number
 }
 
-export async function registarVenda(membroId: number | null, itens: ItemVenda[], formaPagamento: string = 'CREDITOS', turnoId: number | null = null) {
+export async function registarVenda(
+    membroId: number | null,
+    itens: ItemVenda[],
+    formaPagamento: string | { forma: string; valor: number }[] = 'CREDITOS',
+    turnoId: number | null = null
+) {
     const session = await requireAuth()
     const db = await getDb()
     const tenantId = await getTenantIdFromHeaders()
 
     if (!itens.length) return { error: 'Adicione pelo menos um item.' }
 
+    // Normalizar pagamentos: string simples → array com um unico pagamento
+    const pagamentos: { forma: string; valor: number }[] = typeof formaPagamento === 'string'
+        ? [] // sera preenchido apos calcular o total
+        : formaPagamento
+    const formaPrincipal = typeof formaPagamento === 'string' ? formaPagamento : 'MISTO'
+    const isDividido = Array.isArray(formaPagamento) && typeof formaPagamento !== 'string'
+
     // Vendas por CREDITOS exigem membro
-    if (formaPagamento === 'CREDITOS' && !membroId) {
+    if (formaPrincipal === 'CREDITOS' && !membroId) {
+        return { error: 'Para pagamento com creditos, selecione um membro.' }
+    }
+    if (isDividido && pagamentos.some(p => p.forma === 'CREDITOS') && !membroId) {
         return { error: 'Para pagamento com creditos, selecione um membro.' }
     }
 
@@ -258,8 +273,21 @@ export async function registarVenda(membroId: number | null, itens: ItemVenda[],
             return { ...item, preco_unitario: produto.preco, nome: produto.nome, produto }
         })
 
+        // Se pagamento simples, preencher o array de pagamentos com o total
+        if (!isDividido) {
+            pagamentos.length = 0
+            pagamentos.push({ forma: formaPrincipal, valor: total })
+        }
+
+        // Validar que a soma dos pagamentos = total
+        const somaPagamentos = pagamentos.reduce((s, p) => s + p.valor, 0)
+        if (Math.abs(somaPagamentos - total) > 0.01) {
+            return { error: `Soma dos pagamentos (${somaPagamentos.toFixed(2)}€) nao corresponde ao total (${total.toFixed(2)}€).` }
+        }
+
         // 2. Buscar saldo do membro (se houver membro)
         let novoSaldo = 0
+        const valorCreditos = pagamentos.filter(p => p.forma === 'CREDITOS').reduce((s, p) => s + p.valor, 0)
 
         if (membroId) {
             const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
@@ -295,11 +323,11 @@ export async function registarVenda(membroId: number | null, itens: ItemVenda[],
                 }
             }
 
-            if (formaPagamento === 'CREDITOS') {
-                if (!saldo || saldo.saldo < total) {
-                    return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
+            if (valorCreditos > 0) {
+                if (!saldo || saldo.saldo < valorCreditos) {
+                    return { error: `Saldo insuficiente para a parte em creditos. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Creditos: ${valorCreditos.toFixed(2)}€` }
                 }
-                novoSaldo = saldo.saldo - total
+                novoSaldo = saldo.saldo - valorCreditos
                 await db.saldoCantina.update({
                     where: { membro_id: membroId },
                     data: { saldo: novoSaldo },
@@ -321,13 +349,19 @@ export async function registarVenda(membroId: number | null, itens: ItemVenda[],
                 saldo_apos: novoSaldo,
                 descricao: descricaoItens,
                 operador_id: session.membroId,
-                forma_pagamento: formaPagamento,
+                forma_pagamento: formaPrincipal,
                 turno_id: turnoId,
                 itens: {
                     create: itensValidados.map(i => ({
                         produto_id: i.produtoId,
                         quantidade: i.quantidade,
                         preco_unitario: i.preco_unitario,
+                    })),
+                },
+                pagamentos: {
+                    create: pagamentos.map(p => ({
+                        forma_pagamento: p.forma,
+                        valor: p.valor,
                     })),
                 },
             },

@@ -96,6 +96,10 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const [loadingSaldo, setLoadingSaldo] = useState(false)
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
     const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('CREDITOS')
+    const [dividido, setDividido] = useState(false)
+    const [pagamentosDivididos, setPagamentosDivididos] = useState<Record<FormaPagamento, number>>({
+        CREDITOS: 0, DINHEIRO: 0, MBWAY: 0, TRANSFERENCIA: 0, FIADO: 0
+    })
     const [fullscreen, setFullscreen] = useState(false)
     const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -108,12 +112,21 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             localStorage.setItem('pos_cart', JSON.stringify({ cart, total, membro: selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : null }))
         } catch {}
     }, [cart, total, selectedMembro])
-    const saldoRestante = saldo !== null ? saldo - total : null
-    const isCreditos = formaPagamento === 'CREDITOS'
-    const isFiado = formaPagamento === 'FIADO'
+
+    const somaDividido = Object.values(pagamentosDivididos).reduce((s, v) => s + v, 0)
+    const valorCreditos = dividido ? pagamentosDivididos.CREDITOS : (formaPagamento === 'CREDITOS' ? total : 0)
+    const saldoRestante = saldo !== null ? saldo - valorCreditos : null
+    const isCreditos = !dividido && formaPagamento === 'CREDITOS'
+    const isFiado = !dividido && formaPagamento === 'FIADO'
     const canConfirm = cart.length > 0 && !loading &&
-        (!isCreditos || !selectedMembro || saldoRestante === null || saldoRestante >= 0) &&
-        (!!selectedMembro || (!isCreditos && !isFiado))
+        (!dividido ? (
+            (!isCreditos || !selectedMembro || saldoRestante === null || saldoRestante >= 0) &&
+            (!!selectedMembro || (!isCreditos && !isFiado))
+        ) : (
+            Math.abs(somaDividido - total) < 0.01 &&
+            (pagamentosDivididos.CREDITOS === 0 || (!!selectedMembro && saldoRestante !== null && saldoRestante >= 0)) &&
+            (pagamentosDivididos.FIADO === 0 || !!selectedMembro)
+        ))
 
     const produtosFiltrados = categoriaAtiva
         ? produtos.filter(p => p.categoria?.id === categoriaAtiva) : produtos
@@ -199,20 +212,33 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
         try {
             const itens = cart.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade }))
             const membroId = selectedMembro?.id || null
-            const result = await registarVenda(membroId, itens, formaPagamento, turnoId)
+
+            // Preparar pagamentos
+            let pagamento: string | { forma: string; valor: number }[]
+            if (dividido) {
+                pagamento = Object.entries(pagamentosDivididos)
+                    .filter(([, v]) => v > 0)
+                    .map(([forma, valor]) => ({ forma, valor }))
+            } else {
+                pagamento = formaPagamento
+            }
+
+            const result = await registarVenda(membroId, itens, pagamento, turnoId)
             if (result?.error) { setFeedback({ type: 'error', msg: result.error }) }
             else {
                 // If FIADO, create fiado record
-                if (formaPagamento === 'FIADO' && membroId) {
+                const temFiado = dividido ? pagamentosDivididos.FIADO > 0 : formaPagamento === 'FIADO'
+                const valorFiado = dividido ? pagamentosDivididos.FIADO : total
+                if (temFiado && membroId) {
                     const descricaoItens = cart.map(i => `${i.quantidade}x ${i.nome}`).join(', ')
-                    await criarFiado(membroId, total, descricaoItens)
+                    await criarFiado(membroId, valorFiado, descricaoItens)
                 }
 
                 const saldoAtual = selectedMembro ? (await obterSaldoMembro(selectedMembro.id)) : null
                 setReceipt({
                     itens: [...cart],
                     total,
-                    formaPagamento,
+                    formaPagamento: dividido ? 'MISTO' : formaPagamento,
                     membro: selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : null,
                     saldoRestante: saldoAtual,
                 })
@@ -325,18 +351,61 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
     const PaymentSelector = (
         <div className="space-y-2">
-            <label className="text-[9px] font-black uppercase tracking-widest text-muted">Pagamento</label>
-            <div className="grid grid-cols-2 gap-1.5">
-                {PAYMENT_OPTIONS.map(opt => {
-                    const Icon = opt.icon
-                    return (
-                        <button key={opt.value} onClick={() => setFormaPagamento(opt.value)}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${formaPagamento === opt.value ? 'bg-figueira text-bg' : 'bg-bg border border-soft text-muted hover:border-figueira'}`}>
-                            <Icon size={12} /> {opt.label}
-                        </button>
-                    )
-                })}
+            <div className="flex items-center justify-between">
+                <label className="text-[9px] font-black uppercase tracking-widest text-muted">Pagamento</label>
+                <button
+                    onClick={() => {
+                        setDividido(!dividido)
+                        if (!dividido) {
+                            setPagamentosDivididos({ CREDITOS: 0, DINHEIRO: 0, MBWAY: 0, TRANSFERENCIA: 0, FIADO: 0 })
+                        }
+                    }}
+                    className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg transition-all ${dividido ? 'bg-figueira text-bg' : 'text-figueira hover:bg-figueira/10'}`}
+                >
+                    {dividido ? 'Pagamento Unico' : 'Dividir'}
+                </button>
             </div>
+
+            {!dividido ? (
+                <div className="grid grid-cols-2 gap-1.5">
+                    {PAYMENT_OPTIONS.map(opt => {
+                        const Icon = opt.icon
+                        return (
+                            <button key={opt.value} onClick={() => setFormaPagamento(opt.value)}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${formaPagamento === opt.value ? 'bg-figueira text-bg' : 'bg-bg border border-soft text-muted hover:border-figueira'}`}>
+                                <Icon size={12} /> {opt.label}
+                            </button>
+                        )
+                    })}
+                </div>
+            ) : (
+                <div className="space-y-1.5 bg-bg rounded-xl border border-soft p-3">
+                    {PAYMENT_OPTIONS.filter(o => o.value !== 'FIADO' || selectedMembro).map(opt => {
+                        const Icon = opt.icon
+                        const val = pagamentosDivididos[opt.value]
+                        return (
+                            <div key={opt.value} className="flex items-center gap-2">
+                                <Icon size={12} className="text-muted shrink-0" />
+                                <span className="text-[9px] font-bold text-muted w-20 truncate">{opt.label}</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={val || ''}
+                                    onChange={e => setPagamentosDivididos(prev => ({ ...prev, [opt.value]: Number(e.target.value) || 0 }))}
+                                    placeholder="0.00"
+                                    className="flex-1 bg-bg2 border border-soft rounded-lg px-2 py-1.5 text-xs font-bold text-fg focus:border-figueira outline-none text-right"
+                                />
+                                <span className="text-[10px] text-muted">€</span>
+                            </div>
+                        )
+                    })}
+                    <div className={`flex justify-between pt-2 border-t border-soft text-[10px] font-black ${Math.abs(somaDividido - total) < 0.01 ? 'text-emerald-500' : 'text-red-400'}`}>
+                        <span>Soma</span>
+                        <span>{somaDividido.toFixed(2)}€ / {total.toFixed(2)}€</span>
+                    </div>
+                </div>
+            )}
         </div>
     )
 
