@@ -113,6 +113,7 @@ model Tenant {
   despesasFinanceiras      DespesaFinanceira[]
   orcamentos               Orcamento[]
   transferencias           TransferenciaFundo[]
+  recibosFiscais           ReciboFiscal[]
 }
 
 model Congregacao {
@@ -254,6 +255,7 @@ model Membro {
   fiadosCantina              FiadoCantina[]
   turnosCantina              TurnoCantina[]             @relation("OperadorTurno")
   preEncomendas              PreEncomendaCantina[]
+  recibosFiscais             ReciboFiscal[]
   qr_code                    String?                    @unique  // Codigo QR unico para identificacao rapida
 
   @@index([tenant_id])
@@ -1572,4 +1574,25 @@ model TransferenciaFundo {
 
   @@index([tenant_id])
   @@map("financeiro_transferencias")
+}
+
+// ── RECIBOS FISCAIS (IRS) ────────────────────────────────────────────────────
+
+model ReciboFiscal {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  membro_id       Int
+  ano             Int
+  valor_total     Float    // Soma das contribuicoes dedutiveis no ano
+  numero_recibo   String?  // Numero sequencial do recibo
+  emitido_em      DateTime @default(now())
+  dados_igreja    Json?    // { nif, nome, morada } snapshot no momento da emissao
+  dados_membro    Json?    // { nif, nome, morada } snapshot no momento da emissao
+
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id])
+  membro          Membro   @relation(fields: [membro_id], references: [id])
+
+  @@unique([tenant_id, membro_id, ano])
+  @@index([tenant_id])
+  @@map("financeiro_recibos")
 }

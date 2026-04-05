@@ -8,7 +8,8 @@ import {
     BarChart3, Settings, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
     Menu, X, MonitorPlay, BookOpen, GraduationCap, Car,
-    Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store, Banknote
+    Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store, Banknote,
+    FileText, PieChart
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
@@ -32,6 +33,8 @@ const NAV_MODULOS = [
     { label: 'Fundos', href: '/financeiro/fundos', icon: Wallet2, adminOnly: true },
     { label: 'Despesas', href: '/financeiro/despesas', icon: Banknote, adminOnly: false },
     { label: 'Orcamento', href: '/financeiro/orcamento', icon: BarChart3, adminOnly: true },
+    { label: 'Recibos', href: '/financeiro/recibos', icon: FileText, adminOnly: true },
+    { label: 'Rel. Financeiro', href: '/financeiro/relatorios', icon: PieChart, adminOnly: true },
 ]
 
 const NAV_CANTINA = [

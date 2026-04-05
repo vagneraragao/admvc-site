@@ -44,6 +44,7 @@ const PROTECTED_MODELS = [
     'CardapioCantina',
     'ItemAssistenciaSocial', 'MovimentoAssistencia',
     'FundoFinanceiro', 'CategoriaOrcamento', 'DespesaFinanceira', 'Orcamento', 'TransferenciaFundo',
+    'ReciboFiscal',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)
