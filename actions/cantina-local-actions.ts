@@ -460,6 +460,38 @@ export async function gerarQrCodeMembro(membroId: number) {
     }
 }
 
+export async function gerarQrCodesTodosMembros() {
+    await requireRole(['ADMIN'])
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    try {
+        const semQr = await db.membro.findMany({
+            where: { qr_code: null, is_active: true },
+            select: { id: true },
+        })
+
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let count = 0
+
+        for (const m of semQr) {
+            let rnd = ''
+            for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length))
+            await db.membro.update({
+                where: { id: m.id },
+                data: { qr_code: `ADMVC-${tenantId}-${m.id}-${rnd}` },
+            })
+            count++
+        }
+
+        revalidatePath('/admin/membros')
+        return { success: true, count }
+    } catch (error) {
+        console.error('Erro ao gerar QR codes em lote:', error)
+        return { error: 'Erro ao gerar QR codes.' }
+    }
+}
+
 export async function buscarMembroPorQr(qrCode: string) {
     const db = await getDb()
 

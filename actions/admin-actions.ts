@@ -1373,7 +1373,16 @@ export async function criarNovoMembroAction(formData: FormData) {
 
                 escolaridade_id: escolaridadeId,
                 congregacao_id: congregacaoId,
+
             }
+        })
+
+        // Gerar QR Code unico com o ID do membro
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length))
+        await db.membro.update({
+            where: { id: novoMembro.id },
+            data: { qr_code: `ADMVC-${tenantId}-${novoMembro.id}-${rnd}` },
         })
 
         console.log(`[CRIAR MEMBRO] SUCESSO! Membro criado com id=${novoMembro.id}`)

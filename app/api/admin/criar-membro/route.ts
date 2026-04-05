@@ -139,6 +139,11 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        // Gerar QR Code unico
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length))
+        await db.membro.update({ where: { id: novoMembro.id }, data: { qr_code: `ADMVC-${tenantId}-${novoMembro.id}-${rnd}` } })
+
         console.log('[API CRIAR MEMBRO] SUCESSO id=' + novoMembro.id + ' avatar=' + (novoMembro.avatar_file ?? 'sem foto'))
         console.log('========================================\n')
         await audit({

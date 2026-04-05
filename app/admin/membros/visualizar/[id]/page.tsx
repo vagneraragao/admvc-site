@@ -1,8 +1,9 @@
 // app/admin/membros/visualizar/[id]/page.tsx (ou o caminho correto)
-import { getTenantClient } from "@/lib/prisma"; // 🔄 Importamos o multitenant
-import { headers } from "next/headers"; // 🔄 Importamos os headers
+import { getTenantClient } from "@/lib/prisma";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import VisualizarMembroClient from "@/components/membros/VisualizarMembroClient";
+import QrCodeMembro from "@/components/cantina/QrCodeMembro";
 
 export default async function VisualizarMembroPage({
     params
@@ -54,8 +55,12 @@ export default async function VisualizarMembroPage({
     }
 
     return (
-        <div className="bg-bg min-h-screen pb-20">
+        <div className="bg-bg min-h-screen pb-20 relative">
             <VisualizarMembroClient membro={membro} />
+            {/* QR Code no canto superior direito */}
+            <div className="absolute top-4 right-4 z-10">
+                <QrCodeMembro membroId={membro.id} qrCode={membro.qr_code || null} />
+            </div>
         </div>
     );
 }

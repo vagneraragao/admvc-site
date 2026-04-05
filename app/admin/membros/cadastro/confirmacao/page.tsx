@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import BotaoImprimir from "@/components/BotaoImprimir";
+import QrCodeMembro from "@/components/cantina/QrCodeMembro";
 
 interface ConfirmacaoPageProps {
     searchParams: { id?: string }
@@ -46,6 +47,13 @@ export default async function PaginaConfirmacao({ searchParams }: ConfirmacaoPag
                     </div>
                 </div>
             </header>
+
+            {/* QR CODE DO MEMBRO */}
+            <div className="flex justify-center">
+                <div className="w-64">
+                    <QrCodeMembro membroId={membro.id} qrCode={membro.qr_code || null} />
+                </div>
+            </div>
 
             {/* 2. RELATÓRIO TÉCNICO (GRID) */}
             <section className="space-y-6">
