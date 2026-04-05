@@ -1221,6 +1221,7 @@ model ProdutoCantina {
   stock_minimo    Int                @default(0)     // Alerta quando stock <= stock_minimo
   controla_stock  Boolean            @default(true)
   disponivel      Boolean            @default(true)  // Visivel no menu/POS
+  promocoes       Json?              // [{ quantidade: 2, preco_total: 5.00 }]
   criado_em       DateTime           @default(now())
   atualizado_em   DateTime           @updatedAt
 
@@ -1255,6 +1256,7 @@ model TransacaoCantina {
   valor         Float                  // Positivo para recarga, negativo para consumo
   saldo_apos    Float                  // Saldo apos esta transacao
   descricao     String?
+  forma_pagamento String              @default("CREDITOS") // CREDITOS, DINHEIRO, MBWAY, TRANSFERENCIA
   operador_id   Int?                   // Quem operou (admin/operador do POS)
   criado_em     DateTime               @default(now())
 

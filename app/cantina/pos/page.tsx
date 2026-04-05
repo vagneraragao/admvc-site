@@ -78,7 +78,13 @@ export default async function POSPage() {
 
     const [produtos, categorias, membros] = await Promise.all([
         db.produtoCantina.findMany({
-            where: { disponivel: true },
+            where: {
+                disponivel: true,
+                OR: [
+                    { controla_stock: false },
+                    { stock: { gt: 0 } },
+                ],
+            },
             include: { categoria: true },
             orderBy: [{ categoria: { ordem: 'asc' } }, { nome: 'asc' }],
         }),
@@ -95,6 +101,7 @@ export default async function POSPage() {
 
     const produtosData = produtos.map(p => ({
         ...p,
+        promocoes: (p.promocoes as Array<{quantidade: number, preco_total: number}> | null) ?? null,
         criado_em: p.criado_em.toISOString(),
         atualizado_em: p.atualizado_em.toISOString(),
         categoria: p.categoria ? { ...p.categoria, criado_em: p.categoria.criado_em.toISOString() } : null,

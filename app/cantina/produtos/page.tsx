@@ -1,12 +1,14 @@
 import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { Package, AlertTriangle } from 'lucide-react'
+import { Package, AlertTriangle, Tag } from 'lucide-react'
 import BotaoToggleProduto from '@/components/cantina/BotaoToggleProduto'
 import BotaoEliminarCategoria from '@/components/cantina/BotaoEliminarCategoria'
+import BotaoEliminarProduto from '@/components/cantina/BotaoEliminarProduto'
 import InputStock from '@/components/cantina/InputStock'
 import FormAdicionarCategoria from '@/components/cantina/FormAdicionarCategoria'
 import FormAdicionarProduto from '@/components/cantina/FormAdicionarProduto'
+import FormEditarProduto from '@/components/cantina/FormEditarProduto'
 import BotaoImportarLoyverse from '@/components/cantina/BotaoImportarLoyverse'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +41,19 @@ export default async function ProdutosPage() {
     const categoriasSimples = categorias.map((c) => ({
         id: c.id,
         nome: c.nome,
+    }))
+
+    const produtosSerializados = produtos.map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        preco: p.preco,
+        categoria_id: p.categoria_id,
+        stock: p.stock,
+        stock_minimo: p.stock_minimo,
+        controla_stock: p.controla_stock,
+        disponivel: p.disponivel,
+        imagem_url: p.imagem_url,
+        promocoes: (p.promocoes as { quantidade: number; preco_total: number }[] | null) ?? null,
     }))
 
     return (
@@ -149,7 +164,7 @@ export default async function ProdutosPage() {
                 ) : (
                     <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
                         {/* Desktop table header */}
-                        <div className="hidden md:grid grid-cols-[1fr_120px_80px_100px_120px_100px] gap-4 px-6 py-3 border-b border-soft">
+                        <div className="hidden md:grid grid-cols-[1fr_100px_70px_90px_90px_auto_auto_auto] gap-4 px-6 py-3 border-b border-soft">
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted">
                                 Produto
                             </p>
@@ -166,20 +181,26 @@ export default async function ProdutosPage() {
                                 Status
                             </p>
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
-                                Stock Ctrl
+                                Promos
                             </p>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
+                                Acoes
+                            </p>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted" />
                         </div>
 
                         {/* Product rows */}
-                        {produtos.map((produto) => {
+                        {produtos.map((produto, idx) => {
                             const lowStock =
                                 produto.controla_stock &&
                                 produto.stock <= produto.stock_minimo
+                            const promocoes = (produto.promocoes as { quantidade: number; preco_total: number }[] | null) ?? []
+                            const produtoSerial = produtosSerializados[idx]
 
                             return (
                                 <div
                                     key={produto.id}
-                                    className={`md:grid md:grid-cols-[1fr_120px_80px_100px_120px_100px] gap-4 px-6 py-4 border-b border-soft last:border-b-0 items-center ${
+                                    className={`md:grid md:grid-cols-[1fr_100px_70px_90px_90px_auto_auto_auto] gap-4 px-6 py-4 border-b border-soft last:border-b-0 items-center ${
                                         lowStock ? 'bg-orange-500/5' : ''
                                     }`}
                                 >
@@ -234,17 +255,30 @@ export default async function ProdutosPage() {
                                         />
                                     </div>
 
-                                    {/* Controla stock indicator */}
-                                    <div className="hidden md:flex justify-center">
-                                        <span
-                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${
-                                                produto.controla_stock
-                                                    ? 'text-figueira bg-figueira/10'
-                                                    : 'text-muted2 bg-soft/50'
-                                            }`}
-                                        >
-                                            {produto.controla_stock ? 'Sim' : 'Nao'}
-                                        </span>
+                                    {/* Promotions badges */}
+                                    <div className="flex flex-wrap gap-1 mt-2 md:mt-0 md:justify-center">
+                                        {promocoes.length > 0 ? (
+                                            promocoes.map((promo, i) => (
+                                                <span
+                                                    key={i}
+                                                    className="inline-flex items-center gap-0.5 bg-figueira/10 text-figueira border border-figueira/20 rounded-lg px-2 py-0.5 text-[10px] font-black"
+                                                >
+                                                    <Tag size={8} />
+                                                    {promo.quantidade}&rarr;{promo.preco_total.toFixed(0)}&euro;
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-[10px] text-muted2 font-bold">--</span>
+                                        )}
+                                    </div>
+
+                                    {/* Edit + Delete */}
+                                    <div className="flex items-center gap-2 mt-2 md:mt-0">
+                                        <FormEditarProduto
+                                            produto={produtoSerial}
+                                            categorias={categoriasSimples}
+                                        />
+                                        <BotaoEliminarProduto produtoId={produto.id} />
                                     </div>
                                 </div>
                             )

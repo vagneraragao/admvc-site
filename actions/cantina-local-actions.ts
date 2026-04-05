@@ -57,6 +57,8 @@ export async function criarProduto(formData: FormData) {
     const stock_minimo = Number(formData.get('stock_minimo') || 0)
     const controla_stock = formData.get('controla_stock') !== 'false'
     const imagem_url = (formData.get('imagem_url') as string)?.trim() || null
+    const promocoesRaw = formData.get('promocoes') as string | null
+    const promocoes = promocoesRaw ? JSON.parse(promocoesRaw) : null
 
     if (!nome) return { error: 'Nome do produto e obrigatorio.' }
     if (preco < 0) return { error: 'Preco nao pode ser negativo.' }
@@ -73,6 +75,7 @@ export async function criarProduto(formData: FormData) {
                 controla_stock,
                 imagem_url,
                 disponivel: true,
+                promocoes,
             },
         })
         revalidatePath('/cantina')
@@ -94,18 +97,32 @@ export async function atualizarProduto(produtoId: number, formData: FormData) {
     const controla_stock = formData.get('controla_stock') !== 'false'
     const disponivel = formData.get('disponivel') !== 'false'
     const imagem_url = (formData.get('imagem_url') as string)?.trim() || null
+    const promocoesRaw = formData.get('promocoes') as string | null
+    const promocoes = promocoesRaw ? JSON.parse(promocoesRaw) : null
 
     if (!nome) return { error: 'Nome do produto e obrigatorio.' }
 
     try {
         await db.produtoCantina.update({
             where: { id: produtoId },
-            data: { nome, preco, categoria_id, stock, stock_minimo, controla_stock, disponivel, imagem_url },
+            data: { nome, preco, categoria_id, stock, stock_minimo, controla_stock, disponivel, imagem_url, promocoes },
         })
         revalidatePath('/cantina')
         return { success: true }
     } catch {
         return { error: 'Erro ao atualizar produto.' }
+    }
+}
+
+export async function eliminarProduto(produtoId: number) {
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+    const db = await getDb()
+    try {
+        await db.produtoCantina.delete({ where: { id: produtoId } })
+        revalidatePath('/cantina')
+        return { success: true }
+    } catch {
+        return { error: 'Erro ao eliminar produto. Pode ter transacoes associadas.' }
     }
 }
 
@@ -204,7 +221,7 @@ interface ItemVenda {
     quantidade: number
 }
 
-export async function registarVenda(membroId: number, itens: ItemVenda[]) {
+export async function registarVenda(membroId: number, itens: ItemVenda[], formaPagamento: string = 'CREDITOS') {
     const session = await requireAuth()
     const db = await getDb()
     const tenantId = await getTenantIdFromHeaders()
@@ -236,19 +253,23 @@ export async function registarVenda(membroId: number, itens: ItemVenda[]) {
             return { ...item, preco_unitario: produto.preco, nome: produto.nome, produto }
         })
 
-        // 2. Verificar saldo do membro
+        // 2. Buscar saldo do membro
         let saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
+        let novoSaldo = saldo?.saldo || 0
 
-        if (!saldo || saldo.saldo < total) {
-            return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
+        if (formaPagamento === 'CREDITOS') {
+            // Verificar saldo do membro
+            if (!saldo || saldo.saldo < total) {
+                return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
+            }
+
+            // 3. Debitar saldo
+            novoSaldo = saldo.saldo - total
+            await db.saldoCantina.update({
+                where: { membro_id: membroId },
+                data: { saldo: novoSaldo },
+            })
         }
-
-        // 3. Debitar saldo
-        const novoSaldo = saldo.saldo - total
-        await db.saldoCantina.update({
-            where: { membro_id: membroId },
-            data: { saldo: novoSaldo },
-        })
 
         // 4. Registar transacao com itens
         const descricaoItens = itensValidados.map(i => `${i.quantidade}x ${i.nome}`).join(', ')
@@ -262,6 +283,7 @@ export async function registarVenda(membroId: number, itens: ItemVenda[]) {
                 saldo_apos: novoSaldo,
                 descricao: descricaoItens,
                 operador_id: session.membroId,
+                forma_pagamento: formaPagamento,
                 itens: {
                     create: itensValidados.map(i => ({
                         produto_id: i.produtoId,

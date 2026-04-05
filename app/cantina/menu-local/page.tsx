@@ -15,7 +15,13 @@ export default async function MenuLocalPage() {
 
     const [produtos, categorias] = await Promise.all([
         db.produtoCantina.findMany({
-            where: { disponivel: true },
+            where: {
+                disponivel: true,
+                OR: [
+                    { controla_stock: false },
+                    { stock: { gt: 0 } },
+                ],
+            },
             include: { categoria: true },
             orderBy: [{ categoria: { ordem: 'asc' } }, { nome: 'asc' }],
         }),

@@ -1,7 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { ShoppingCart, Plus, Minus, Trash2, Search, User, CreditCard, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import {
+    ShoppingCart, Plus, Minus, Trash2, Search, User, CreditCard,
+    Loader2, CheckCircle, XCircle, Maximize2, Minimize2,
+    Wallet2, Banknote, Smartphone, X, RefreshCw
+} from 'lucide-react'
 import { registarVenda, obterSaldoMembro } from '@/actions/cantina-local-actions'
 
 interface Produto {
@@ -10,34 +14,49 @@ interface Produto {
     preco: number
     stock: number
     controla_stock: boolean
+    promocoes: Array<{ quantidade: number; preco_total: number }> | null
     categoria: { id: number; nome: string } | null
 }
 
-interface Categoria {
-    id: number
-    nome: string
-}
-
-interface Membro {
-    id: number
-    first_name: string
-    last_name: string
-}
-
+interface Categoria { id: number; nome: string }
+interface Membro { id: number; first_name: string; last_name: string }
 interface CartItem {
-    produtoId: number
-    nome: string
-    preco: number
-    quantidade: number
-    stock: number
-    controla_stock: boolean
+    produtoId: number; nome: string; preco: number
+    quantidade: number; stock: number; controla_stock: boolean
+    promocoes: Array<{ quantidade: number; preco_total: number }> | null
 }
 
-interface Props {
-    produtos: Produto[]
-    categorias: Categoria[]
-    membros: Membro[]
+type FormaPagamento = 'CREDITOS' | 'DINHEIRO' | 'MBWAY' | 'TRANSFERENCIA'
+const PAYMENT_OPTIONS: { value: FormaPagamento; label: string; icon: typeof CreditCard }[] = [
+    { value: 'CREDITOS', label: 'Creditos Cantina', icon: Wallet2 },
+    { value: 'DINHEIRO', label: 'Dinheiro', icon: Banknote },
+    { value: 'MBWAY', label: 'MBWay', icon: Smartphone },
+    { value: 'TRANSFERENCIA', label: 'Transferencia', icon: CreditCard },
+]
+
+function calcItemTotal(item: CartItem): number {
+    const promos = item.promocoes
+    if (!promos || promos.length === 0) return item.preco * item.quantidade
+    const sorted = [...promos].sort((a, b) => b.quantidade - a.quantidade)
+    let remaining = item.quantidade
+    let total = 0
+    for (const p of sorted) {
+        if (p.quantidade <= 0) continue
+        const times = Math.floor(remaining / p.quantidade)
+        total += times * p.preco_total
+        remaining -= times * p.quantidade
+    }
+    total += remaining * item.preco
+    return total
 }
+
+function bestPromoLabel(promos: CartItem['promocoes']): string | null {
+    if (!promos || promos.length === 0) return null
+    const best = promos.reduce((a, b) => (a.quantidade < b.quantidade ? a : b))
+    return `${best.quantidade} por ${best.preco_total.toFixed(2)}\u20ac`
+}
+
+interface Props { produtos: Produto[]; categorias: Categoria[]; membros: Membro[] }
 
 export default function POSClient({ produtos, categorias, membros }: Props) {
     const [cart, setCart] = useState<CartItem[]>([])
@@ -49,37 +68,34 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
     const [loading, setLoading] = useState(false)
     const [loadingSaldo, setLoadingSaldo] = useState(false)
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+    const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('CREDITOS')
+    const [fullscreen, setFullscreen] = useState(false)
+    const [sheetOpen, setSheetOpen] = useState(false)
 
-    const total = cart.reduce((sum, item) => sum + item.preco * item.quantidade, 0)
+    const total = cart.reduce((sum, item) => sum + calcItemTotal(item), 0)
+    const cartCount = cart.reduce((sum, i) => sum + i.quantidade, 0)
     const saldoRestante = saldo !== null ? saldo - total : null
+    const isCreditos = formaPagamento === 'CREDITOS'
+    const canConfirm = selectedMembro && cart.length > 0 && !loading &&
+        (!isCreditos || saldoRestante === null || saldoRestante >= 0)
 
-    // Filter products by category
     const produtosFiltrados = categoriaAtiva
-        ? produtos.filter(p => p.categoria?.id === categoriaAtiva)
-        : produtos
+        ? produtos.filter(p => p.categoria?.id === categoriaAtiva) : produtos
 
-    // Filter members by search
     const membrosFiltrados = useMemo(() => {
         if (!membroBusca.trim()) return membros.slice(0, 8)
         const q = membroBusca.toLowerCase()
-        return membros.filter(m =>
-            `${m.first_name} ${m.last_name}`.toLowerCase().includes(q)
-        ).slice(0, 8)
+        return membros.filter(m => `${m.first_name} ${m.last_name}`.toLowerCase().includes(q)).slice(0, 8)
     }, [membroBusca, membros])
 
+    const toggleFullscreen = useCallback(() => {
+        document.body.classList.toggle('pos-fullscreen')
+        setFullscreen(f => !f)
+    }, [])
+
     async function selecionarMembro(membro: Membro) {
-        setSelectedMembro(membro)
-        setMembroBusca('')
-        setMembroDropdownOpen(false)
-        setLoadingSaldo(true)
-        try {
-            const s = await obterSaldoMembro(membro.id)
-            setSaldo(s)
-        } catch {
-            setSaldo(0)
-        } finally {
-            setLoadingSaldo(false)
-        }
+        setSelectedMembro(membro); setMembroBusca(''); setMembroDropdownOpen(false); setLoadingSaldo(true)
+        try { setSaldo(await obterSaldoMembro(membro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
     }
 
     function addToCart(produto: Produto) {
@@ -87,18 +103,13 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
             const existing = prev.find(i => i.produtoId === produto.id)
             if (existing) {
                 if (produto.controla_stock && existing.quantidade >= produto.stock) return prev
-                return prev.map(i =>
-                    i.produtoId === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i
-                )
+                return prev.map(i => i.produtoId === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i)
             }
             if (produto.controla_stock && produto.stock <= 0) return prev
             return [...prev, {
-                produtoId: produto.id,
-                nome: produto.nome,
-                preco: produto.preco,
-                quantidade: 1,
-                stock: produto.stock,
-                controla_stock: produto.controla_stock,
+                produtoId: produto.id, nome: produto.nome, preco: produto.preco,
+                quantidade: 1, stock: produto.stock, controla_stock: produto.controla_stock,
+                promocoes: produto.promocoes,
             }]
         })
     }
@@ -106,102 +117,219 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
     function updateQty(produtoId: number, delta: number) {
         setCart(prev => prev.map(item => {
             if (item.produtoId !== produtoId) return item
-            const newQty = item.quantidade + delta
-            if (newQty <= 0) return item
-            if (item.controla_stock && newQty > item.stock) return item
-            return { ...item, quantidade: newQty }
+            const nq = item.quantidade + delta
+            if (nq <= 0 || (item.controla_stock && nq > item.stock)) return item
+            return { ...item, quantidade: nq }
         }))
     }
 
-    function removeItem(produtoId: number) {
-        setCart(prev => prev.filter(i => i.produtoId !== produtoId))
-    }
+    function removeItem(id: number) { setCart(prev => prev.filter(i => i.produtoId !== id)) }
 
     async function confirmarVenda() {
-        if (!selectedMembro || cart.length === 0) return
-        setLoading(true)
-        setFeedback(null)
+        if (!canConfirm || !selectedMembro) return
+        setLoading(true); setFeedback(null)
         try {
             const itens = cart.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade }))
-            const result = await registarVenda(selectedMembro.id, itens)
-            if (result?.error) {
-                setFeedback({ type: 'error', msg: result.error })
-            } else {
+            const result = await registarVenda(selectedMembro.id, itens, formaPagamento)
+            if (result?.error) { setFeedback({ type: 'error', msg: result.error }) }
+            else {
                 setFeedback({ type: 'success', msg: 'Venda registada com sucesso!' })
-                setCart([])
-                // Refresh saldo
-                const s = await obterSaldoMembro(selectedMembro.id)
-                setSaldo(s)
+                setCart([]); setSheetOpen(false)
+                setSaldo(await obterSaldoMembro(selectedMembro.id))
             }
-        } catch {
-            setFeedback({ type: 'error', msg: 'Erro ao registar venda.' })
-        } finally {
-            setLoading(false)
-            setTimeout(() => setFeedback(null), 4000)
-        }
+        } catch { setFeedback({ type: 'error', msg: 'Erro ao registar venda.' }) }
+        finally { setLoading(false); setTimeout(() => setFeedback(null), 4000) }
     }
 
-    const cartCount = cart.reduce((sum, i) => sum + i.quantidade, 0)
+    // ── Shared sub-components ──────────────────────────────────────────────
+    const MemberSelector = (
+        <div className="space-y-2">
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+                <User size={12} /> Membro
+            </label>
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                <input
+                    type="text"
+                    placeholder={selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : 'Pesquisar membro...'}
+                    value={membroBusca}
+                    onChange={e => { setMembroBusca(e.target.value); setMembroDropdownOpen(true) }}
+                    onFocus={() => setMembroDropdownOpen(true)}
+                    className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
+                />
+                {membroDropdownOpen && membrosFiltrados.length > 0 && (
+                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg2 border border-soft rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                        {membrosFiltrados.map(m => (
+                            <button key={m.id} onClick={() => selecionarMembro(m)}
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-fg hover:bg-soft/30 transition-colors first:rounded-t-xl last:rounded-b-xl">
+                                {m.first_name} {m.last_name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {selectedMembro && (
+                <div className="flex items-center justify-between bg-bg rounded-xl px-3 py-2 border border-soft">
+                    <span className="text-[10px] font-bold text-fg">{selectedMembro.first_name} {selectedMembro.last_name}</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-figueira">
+                            {loadingSaldo ? <Loader2 size={12} className="animate-spin" /> : `${(saldo ?? 0).toFixed(2)}\u20ac`}
+                        </span>
+                        <button
+                            onClick={async () => {
+                                if (!selectedMembro) return
+                                setLoadingSaldo(true)
+                                try { setSaldo(await obterSaldoMembro(selectedMembro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
+                            }}
+                            disabled={loadingSaldo}
+                            className="text-muted hover:text-figueira transition-colors disabled:opacity-50"
+                            title="Consultar saldo"
+                        >
+                            <RefreshCw size={11} className={loadingSaldo ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
 
+    const CartItems = (
+        <div className="space-y-2 max-h-[35vh] overflow-y-auto">
+            {cart.length === 0 ? (
+                <p className="text-xs text-muted text-center py-6">Carrinho vazio</p>
+            ) : cart.map(item => (
+                <div key={item.produtoId} className="flex items-center gap-2 bg-bg rounded-xl px-3 py-2 border border-soft">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-fg truncate">{item.nome}</p>
+                        {item.promocoes && item.quantidade >= (item.promocoes[0]?.quantidade ?? Infinity) && (
+                            <p className="text-[9px] font-black text-emerald-400">Promo aplicada</p>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <button onClick={() => updateQty(item.produtoId, -1)} className="w-6 h-6 rounded-lg bg-soft/30 flex items-center justify-center text-muted hover:text-fg"><Minus size={12} /></button>
+                        <span className="text-[11px] font-black text-fg w-6 text-center">{item.quantidade}</span>
+                        <button onClick={() => updateQty(item.produtoId, 1)} className="w-6 h-6 rounded-lg bg-soft/30 flex items-center justify-center text-muted hover:text-fg"><Plus size={12} /></button>
+                    </div>
+                    <span className="text-[11px] font-black text-figueira w-14 text-right">{calcItemTotal(item).toFixed(2)}&euro;</span>
+                    <button onClick={() => removeItem(item.produtoId)} className="text-muted hover:text-red-400 ml-1"><Trash2 size={13} /></button>
+                </div>
+            ))}
+        </div>
+    )
+
+    const PaymentSelector = (
+        <div className="space-y-2">
+            <label className="text-[9px] font-black uppercase tracking-widest text-muted">Pagamento</label>
+            <div className="grid grid-cols-2 gap-1.5">
+                {PAYMENT_OPTIONS.map(opt => {
+                    const Icon = opt.icon
+                    return (
+                        <button key={opt.value} onClick={() => setFormaPagamento(opt.value)}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${formaPagamento === opt.value ? 'bg-figueira text-bg' : 'bg-bg border border-soft text-muted hover:border-figueira'}`}>
+                            <Icon size={12} /> {opt.label}
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    )
+
+    const TotalsAndConfirm = (
+        <>
+            {cart.length > 0 && (
+                <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                        <span className="text-muted font-bold">Total</span>
+                        <span className="font-black text-fg">{total.toFixed(2)}&euro;</span>
+                    </div>
+                    {isCreditos && selectedMembro && saldo !== null && (
+                        <div className="flex justify-between text-xs">
+                            <span className="text-muted font-bold">Saldo restante</span>
+                            <span className={`font-black ${saldoRestante !== null && saldoRestante < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                {saldoRestante !== null ? `${saldoRestante.toFixed(2)}\u20ac` : '\u2014'}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+            <button onClick={confirmarVenda} disabled={!canConfirm}
+                className="w-full bg-figueira text-bg font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {loading ? <><Loader2 size={14} className="animate-spin" /> A processar...</> : <><CreditCard size={14} /> Confirmar Venda</>}
+            </button>
+        </>
+    )
+
+    // ── Render ──────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-bg p-4 lg:p-6">
+        <div className="min-h-screen bg-bg p-3 lg:p-6">
             {/* Feedback toast */}
             {feedback && (
-                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all ${feedback.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'}`}>
+                <div className={`fixed top-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold shadow-lg ${feedback.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'}`}>
                     {feedback.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
                     {feedback.msg}
                 </div>
             )}
 
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 max-w-[1600px] mx-auto">
-                {/* LEFT SIDE - Products */}
-                <div className="flex-1 lg:w-2/3 space-y-4">
+                {/* ── Products ───────────────────────────────────────────── */}
+                <div className="flex-1 lg:w-2/3 space-y-3 lg:space-y-4">
                     {/* Header */}
-                    <div className="flex items-center gap-3">
-                        <CreditCard size={20} className="text-figueira" />
-                        <h1 className="text-lg font-black uppercase tracking-widest text-fg">Ponto de Venda</h1>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <CreditCard size={20} className="text-figueira" />
+                            <h1 className="text-base lg:text-lg font-black uppercase tracking-widest text-fg">Ponto de Venda</h1>
+                        </div>
+                        <button onClick={toggleFullscreen}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-bg2 border border-soft text-[9px] font-black uppercase tracking-widest text-muted hover:border-figueira hover:text-figueira transition-all">
+                            {fullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                            <span className="hidden sm:inline">Modo Caixa</span>
+                        </button>
                     </div>
 
+                    {fullscreen && (
+                        <div className="flex items-center gap-2 bg-figueira/10 border border-figueira/20 rounded-xl px-3 py-1.5">
+                            <Maximize2 size={11} className="text-figueira" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-figueira">Modo Caixa ativo</span>
+                        </div>
+                    )}
+
                     {/* Category tabs */}
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            onClick={() => setCategoriaAtiva(null)}
-                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!categoriaAtiva ? 'bg-fg text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-fg'}`}
-                        >
+                    <div className="flex flex-wrap gap-1.5 lg:gap-2">
+                        <button onClick={() => setCategoriaAtiva(null)}
+                            className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-widest transition-all ${!categoriaAtiva ? 'bg-fg text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-fg'}`}>
                             Todos
                         </button>
                         {categorias.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setCategoriaAtiva(cat.id)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${categoriaAtiva === cat.id ? 'bg-figueira text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-figueira'}`}
-                            >
+                            <button key={cat.id} onClick={() => setCategoriaAtiva(cat.id)}
+                                className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-widest transition-all ${categoriaAtiva === cat.id ? 'bg-figueira text-bg shadow-md' : 'bg-bg2 border border-soft text-muted hover:border-figueira'}`}>
                                 {cat.nome}
                             </button>
                         ))}
                     </div>
 
                     {/* Product grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 lg:gap-3 pb-24 lg:pb-0">
                         {produtosFiltrados.map(produto => {
                             const inCart = cart.find(i => i.produtoId === produto.id)
                             const esgotado = produto.controla_stock && produto.stock <= 0
+                            const promoLabel = bestPromoLabel(produto.promocoes)
                             return (
-                                <button
-                                    key={produto.id}
-                                    onClick={() => !esgotado && addToCart(produto)}
-                                    disabled={esgotado}
-                                    className={`relative bg-bg2 border rounded-2xl p-4 text-left transition-all ${esgotado ? 'border-soft opacity-40 cursor-not-allowed' : 'border-soft hover:border-figueira hover:shadow-lg cursor-pointer'} ${inCart ? 'border-figueira/50 ring-1 ring-figueira/20' : ''}`}
-                                >
+                                <button key={produto.id} onClick={() => !esgotado && addToCart(produto)} disabled={esgotado}
+                                    className={`relative bg-bg2 border rounded-2xl p-3 lg:p-4 text-left transition-all ${esgotado ? 'border-soft opacity-40 cursor-not-allowed' : 'border-soft hover:border-figueira hover:shadow-lg cursor-pointer active:scale-[0.97]'} ${inCart ? 'border-figueira/50 ring-1 ring-figueira/20' : ''}`}>
                                     {inCart && (
                                         <span className="absolute top-2 right-2 bg-figueira text-bg text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center">
                                             {inCart.quantidade}
                                         </span>
                                     )}
-                                    <p className="text-xs font-bold text-fg truncate">{produto.nome}</p>
-                                    <p className="text-sm font-black text-figueira mt-1">{produto.preco.toFixed(2)}€</p>
+                                    <p className="text-[11px] lg:text-xs font-bold text-fg truncate">{produto.nome}</p>
+                                    <p className="text-sm font-black text-figueira mt-0.5 lg:mt-1">{produto.preco.toFixed(2)}&euro;</p>
+                                    {promoLabel && (
+                                        <span className="inline-block mt-1 bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[8px] lg:text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-lg">
+                                            {promoLabel}
+                                        </span>
+                                    )}
                                     {produto.controla_stock && (
-                                        <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${produto.stock <= 3 ? 'text-red-400' : 'text-muted2'}`}>
+                                        <p className={`text-[8px] lg:text-[9px] font-bold uppercase tracking-widest mt-1 ${produto.stock <= 3 ? 'text-red-400' : 'text-muted'}`}>
                                             Stock: {produto.stock}
                                         </p>
                                     )}
@@ -209,136 +337,64 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
                             )
                         })}
                         {produtosFiltrados.length === 0 && (
-                            <div className="col-span-full py-12 text-center text-muted text-xs">
-                                Nenhum produto disponivel nesta categoria.
-                            </div>
+                            <div className="col-span-full py-12 text-center text-muted text-xs">Nenhum produto disponivel nesta categoria.</div>
                         )}
                     </div>
                 </div>
 
-                {/* RIGHT SIDE - Cart */}
-                <div className="lg:w-1/3 lg:max-w-[400px]">
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-4 lg:sticky lg:top-6">
-                        {/* Member selector */}
-                        <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                                <User size={12} /> Membro
-                            </label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
-                                <input
-                                    type="text"
-                                    placeholder={selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : 'Pesquisar membro...'}
-                                    value={membroBusca}
-                                    onChange={e => { setMembroBusca(e.target.value); setMembroDropdownOpen(true) }}
-                                    onFocus={() => setMembroDropdownOpen(true)}
-                                    className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
-                                />
-                                {membroDropdownOpen && membrosFiltrados.length > 0 && (
-                                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg2 border border-soft rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                        {membrosFiltrados.map(m => (
-                                            <button
-                                                key={m.id}
-                                                onClick={() => selecionarMembro(m)}
-                                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-fg hover:bg-soft/30 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                                            >
-                                                {m.first_name} {m.last_name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {selectedMembro && (
-                                <div className="flex items-center justify-between bg-bg rounded-xl px-3 py-2 border border-soft">
-                                    <span className="text-[10px] font-bold text-fg">{selectedMembro.first_name} {selectedMembro.last_name}</span>
-                                    <span className="text-[10px] font-black text-figueira">
-                                        {loadingSaldo ? <Loader2 size={12} className="animate-spin" /> : `${(saldo ?? 0).toFixed(2)}€`}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Divider */}
+                {/* ── Desktop Cart (hidden on mobile) ────────────────────── */}
+                <div className="hidden lg:block lg:w-1/3 lg:max-w-[400px]">
+                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-4 sticky top-6">
+                        {MemberSelector}
                         <div className="border-t border-soft" />
-
-                        {/* Cart header */}
                         <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                                <ShoppingCart size={12} /> Carrinho
-                            </span>
-                            {cartCount > 0 && (
-                                <span className="text-[9px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-full">
-                                    {cartCount} {cartCount === 1 ? 'item' : 'itens'}
-                                </span>
-                            )}
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5"><ShoppingCart size={12} /> Carrinho</span>
+                            {cartCount > 0 && <span className="text-[9px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-full">{cartCount} {cartCount === 1 ? 'item' : 'itens'}</span>}
                         </div>
-
-                        {/* Cart items */}
-                        <div className="space-y-2 max-h-[40vh] overflow-y-auto">
-                            {cart.length === 0 ? (
-                                <p className="text-xs text-muted2 text-center py-6">Carrinho vazio</p>
-                            ) : (
-                                cart.map(item => (
-                                    <div key={item.produtoId} className="flex items-center gap-2 bg-bg rounded-xl px-3 py-2 border border-soft">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-bold text-fg truncate">{item.nome}</p>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <button onClick={() => updateQty(item.produtoId, -1)} className="w-6 h-6 rounded-lg bg-soft/30 flex items-center justify-center text-muted hover:text-fg transition-colors">
-                                                <Minus size={12} />
-                                            </button>
-                                            <span className="text-[11px] font-black text-fg w-6 text-center">{item.quantidade}</span>
-                                            <button onClick={() => updateQty(item.produtoId, 1)} className="w-6 h-6 rounded-lg bg-soft/30 flex items-center justify-center text-muted hover:text-fg transition-colors">
-                                                <Plus size={12} />
-                                            </button>
-                                        </div>
-                                        <span className="text-[11px] font-black text-figueira w-14 text-right">
-                                            {(item.preco * item.quantidade).toFixed(2)}€
-                                        </span>
-                                        <button onClick={() => removeItem(item.produtoId)} className="text-muted2 hover:text-red-400 transition-colors ml-1">
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-
-                        {/* Totals */}
-                        {cart.length > 0 && (
-                            <>
-                                <div className="border-t border-soft" />
-                                <div className="space-y-1.5">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-muted font-bold">Total</span>
-                                        <span className="font-black text-fg">{total.toFixed(2)}€</span>
-                                    </div>
-                                    {selectedMembro && saldo !== null && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-muted font-bold">Saldo restante</span>
-                                            <span className={`font-black ${saldoRestante !== null && saldoRestante < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                {saldoRestante !== null ? `${saldoRestante.toFixed(2)}€` : '—'}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-
-                        {/* Confirm button */}
-                        <button
-                            onClick={confirmarVenda}
-                            disabled={loading || cart.length === 0 || !selectedMembro || (saldoRestante !== null && saldoRestante < 0)}
-                            className="w-full bg-figueira text-bg font-black text-xs uppercase tracking-widest py-3.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <><Loader2 size={14} className="animate-spin" /> A processar...</>
-                            ) : (
-                                <><CreditCard size={14} /> Confirmar Venda</>
-                            )}
-                        </button>
+                        {CartItems}
+                        <div className="border-t border-soft" />
+                        {PaymentSelector}
+                        <div className="border-t border-soft" />
+                        {TotalsAndConfirm}
                     </div>
                 </div>
             </div>
+
+            {/* ── Mobile FAB (visible on mobile only) ────────────────────── */}
+            <button onClick={() => setSheetOpen(true)}
+                className="lg:hidden fixed bottom-5 right-5 z-40 bg-figueira text-bg rounded-2xl px-5 py-3.5 flex items-center gap-2 shadow-xl shadow-figueira/20 active:scale-95 transition-transform">
+                <ShoppingCart size={18} />
+                {cartCount > 0 && (
+                    <span className="bg-bg text-figueira text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>
+                )}
+                <span className="text-xs font-black">{total.toFixed(2)}&euro;</span>
+            </button>
+
+            {/* ── Mobile Bottom Sheet ────────────────────────────────────── */}
+            {sheetOpen && (
+                <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSheetOpen(false)} />
+                    <div className="relative bg-bg2 rounded-t-[2rem] border-t border-soft max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                            <span className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                                <ShoppingCart size={14} className="text-figueira" /> Carrinho
+                            </span>
+                            <button onClick={() => setSheetOpen(false)} className="w-8 h-8 rounded-xl bg-soft/30 flex items-center justify-center text-muted hover:text-fg">
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
+                            {MemberSelector}
+                            <div className="border-t border-soft" />
+                            {CartItems}
+                            <div className="border-t border-soft" />
+                            {PaymentSelector}
+                            <div className="border-t border-soft" />
+                            {TotalsAndConfirm}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
