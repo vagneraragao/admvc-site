@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Smartphone, Download, QrCode, ShoppingCart, Wallet2, HelpCircle, X } from 'lucide-react'
+import { Smartphone, Download, QrCode, ShoppingCart, Wallet2, HelpCircle, X, Shield, HeartHandshake } from 'lucide-react'
 
 const SECOES = [
     {
@@ -87,6 +87,28 @@ export default function ModalAjuda({ isMenuItem = false }: { isMenuItem?: boolea
                                     </details>
                                 )
                             })}
+
+                            <details className="group rounded-xl border border-soft overflow-hidden">
+                                <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-soft/20 transition-all">
+                                    <Shield size={14} className="text-figueira shrink-0" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-fg">O que e o GDPR?</span>
+                                </summary>
+                                <div className="px-4 pb-3 pt-0">
+                                    <p className="text-xs text-muted leading-relaxed pl-[26px]">O GDPR (Regulamento Geral de Protecao de Dados) e a lei europeia que protege os seus dados pessoais. Ao aceitar o GDPR na nossa plataforma, voce autoriza a igreja a guardar os seus dados (nome, contacto, etc.) de forma segura e apenas para fins de gestao eclesiastica.</p>
+                                    <p className="text-xs text-muted leading-relaxed pl-[26px] mt-2">Pode solicitar a remocao dos seus dados a qualquer momento contactando a lideranca da igreja.</p>
+                                </div>
+                            </details>
+
+                            <details className="group rounded-xl border border-soft overflow-hidden">
+                                <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-soft/20 transition-all">
+                                    <HeartHandshake size={14} className="text-figueira shrink-0" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-fg">O que e o Permanecer?</span>
+                                </summary>
+                                <div className="px-4 pb-3 pt-0">
+                                    <p className="text-xs text-muted leading-relaxed pl-[26px]">O Permanecer e o processo de integracao a membresia da igreja. Ao aceitar o Permanecer, voce declara o seu compromisso de caminhar em comunhao, participar na vida da igreja e crescer espiritualmente.</p>
+                                    <p className="text-xs text-muted leading-relaxed pl-[26px] mt-2">E um passo voluntario que demonstra a sua decisao de fazer parte da familia da igreja de forma activa e comprometida.</p>
+                                </div>
+                            </details>
                         </div>
                     </div>
                 </div>

@@ -70,7 +70,7 @@ export default async function BoleiaPage() {
         <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 space-y-10 pb-24 animate-in fade-in duration-700">
 
             {/* HEADER — sticky abaixo do header do membro */}
-            <header className="sticky top-[88px] z-30 bg-bg -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 border-b border-soft">
+            <header className="sticky top-[100px] z-30 bg-bg/95 backdrop-blur-sm -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 border-b border-soft">
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 max-w-6xl mx-auto">
                     <div>
                         <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 mb-1">

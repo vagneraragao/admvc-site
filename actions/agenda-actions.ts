@@ -329,6 +329,27 @@ export async function editarCompromissoAction(formData: FormData) {
         return { ok: false, error: "Erro ao editar compromisso." };
     }
 }
+// ── TOGGLE VISIBILIDADE DA AGENDA ────────────────────────────────────────────
+export async function toggleVisibilidadeAgenda(agendaId: number) {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+
+        const agenda = await prisma.agenda.findUnique({ where: { id: agendaId } })
+        if (!agenda) return { ok: false, error: 'Agenda nao encontrada.' }
+
+        await prisma.agenda.update({
+            where: { id: agendaId },
+            data: { is_publica: !agenda.is_publica },
+        })
+
+        revalidatePath('/gabinete')
+        return { ok: true, is_publica: !agenda.is_publica }
+    } catch (error) {
+        console.error('Erro ao alternar visibilidade da agenda:', error)
+        return { ok: false, error: 'Erro ao alternar visibilidade.' }
+    }
+}
+
 // ── PEDIR AGENDAMENTO (MEMBRO) ──────────────────────────────────────────────
 export async function pedirAgendamentoAction(dados: {
     agenda_id: number

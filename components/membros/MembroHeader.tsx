@@ -168,7 +168,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                 <Link href="/membros/agendar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                     <Calendar size={12} className="text-figueira" /> Agendar Reuniao
                                 </Link>
-                                {(permissoes.isLouvor || permissoes.isMidia) && <ModalRelatorioLouvor />}
+                                {permissoes.isLouvor && <ModalRelatorioLouvor />}
                                 <Link href="/boleia" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                     <Car size={12} className="text-figueira" /> Boleia Solidaria
                                 </Link>

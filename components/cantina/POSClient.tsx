@@ -1,5 +1,8 @@
 'use client'
 
+// TODO: Implementar pagamento dividido (parte creditos + parte dinheiro)
+// Requer: modelo PagamentoTransacao, UI multi-payment
+
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
     ShoppingCart, Plus, Minus, Trash2, Search, User, CreditCard,
