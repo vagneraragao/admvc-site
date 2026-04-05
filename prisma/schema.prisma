@@ -116,6 +116,8 @@ model Tenant {
   recibosFiscais           ReciboFiscal[]
   donativosOnline          DonativoOnline[]
   pledges                  Pledge[]
+  contasBancarias          ContaBancaria[]
+  movimentosBancarios      MovimentoBancario[]
 }
 
 model Congregacao {
@@ -1653,4 +1655,45 @@ model Pledge {
   @@index([membro_id])
   @@index([status])
   @@map("financeiro_pledges")
+}
+
+// ── RECONCILIACAO BANCARIA ───────────────────────────────────────────────────
+
+model ContaBancaria {
+  id          Int                 @id @default(autoincrement())
+  tenant_id   Int
+  nome        String              // Ex: "CGD Conta Principal", "Millennium BCP"
+  iban        String?
+  banco       String?
+  ativa       Boolean             @default(true)
+  criado_em   DateTime            @default(now())
+
+  tenant      Tenant              @relation(fields: [tenant_id], references: [id])
+  movimentos  MovimentoBancario[]
+
+  @@unique([tenant_id, nome])
+  @@index([tenant_id])
+  @@map("financeiro_contas_bancarias")
+}
+
+model MovimentoBancario {
+  id              Int            @id @default(autoincrement())
+  tenant_id       Int
+  conta_id        Int
+  data            DateTime
+  descricao       String
+  valor           Float          // Positivo = credito, Negativo = debito
+  saldo_apos      Float?
+  referencia      String?        // Referencia do movimento bancario
+  reconciliado    Boolean        @default(false)
+  reconciliado_com String?       // "contribuicao:123" ou "despesa:456" — referencia ao lancamento
+  importado_em    DateTime       @default(now())
+
+  tenant          Tenant         @relation(fields: [tenant_id], references: [id])
+  conta           ContaBancaria  @relation(fields: [conta_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([conta_id])
+  @@index([reconciliado])
+  @@map("financeiro_movimentos_bancarios")
 }
