@@ -29,6 +29,9 @@ const NAV_MODULOS = [
     { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap, adminOnly: false },
     { label: 'Produtos', href: '/cantina/produtos', icon: Package, adminOnly: false },
     { label: 'POS', href: '/cantina/pos', icon: CreditCard, adminOnly: false },
+    { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3, adminOnly: false },
+    { label: 'Turnos', href: '/cantina/turnos', icon: Calendar, adminOnly: false },
+    { label: 'Fiados', href: '/cantina/fiados', icon: CreditCard, adminOnly: true },
 ]
 
 const NAV_SISTEMA = [

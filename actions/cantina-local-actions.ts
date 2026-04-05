@@ -221,12 +221,17 @@ interface ItemVenda {
     quantidade: number
 }
 
-export async function registarVenda(membroId: number, itens: ItemVenda[], formaPagamento: string = 'CREDITOS') {
+export async function registarVenda(membroId: number | null, itens: ItemVenda[], formaPagamento: string = 'CREDITOS', turnoId: number | null = null) {
     const session = await requireAuth()
     const db = await getDb()
     const tenantId = await getTenantIdFromHeaders()
 
     if (!itens.length) return { error: 'Adicione pelo menos um item.' }
+
+    // Vendas por CREDITOS exigem membro
+    if (formaPagamento === 'CREDITOS' && !membroId) {
+        return { error: 'Para pagamento com creditos, selecione um membro.' }
+    }
 
     try {
         // 1. Buscar produtos e calcular total
@@ -253,22 +258,22 @@ export async function registarVenda(membroId: number, itens: ItemVenda[], formaP
             return { ...item, preco_unitario: produto.preco, nome: produto.nome, produto }
         })
 
-        // 2. Buscar saldo do membro
-        let saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
-        let novoSaldo = saldo?.saldo || 0
+        // 2. Buscar saldo do membro (se houver membro)
+        let novoSaldo = 0
 
-        if (formaPagamento === 'CREDITOS') {
-            // Verificar saldo do membro
+        if (membroId && formaPagamento === 'CREDITOS') {
+            const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
             if (!saldo || saldo.saldo < total) {
                 return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
             }
-
-            // 3. Debitar saldo
             novoSaldo = saldo.saldo - total
             await db.saldoCantina.update({
                 where: { membro_id: membroId },
                 data: { saldo: novoSaldo },
             })
+        } else if (membroId) {
+            const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
+            novoSaldo = saldo?.saldo || 0
         }
 
         // 4. Registar transacao com itens
@@ -277,13 +282,14 @@ export async function registarVenda(membroId: number, itens: ItemVenda[], formaP
         await (db as any).transacaoCantina.create({
             data: {
                 tenant_id: tenantId,
-                membro_id: membroId,
+                membro_id: membroId || null,
                 tipo: 'CONSUMO',
                 valor: -total,
                 saldo_apos: novoSaldo,
                 descricao: descricaoItens,
                 operador_id: session.membroId,
                 forma_pagamento: formaPagamento,
+                turno_id: turnoId,
                 itens: {
                     create: itensValidados.map(i => ({
                         produto_id: i.produtoId,
@@ -388,4 +394,51 @@ export async function obterExtratoMembro(membroId: number, limite = 50) {
         orderBy: { criado_em: 'desc' },
         take: limite,
     })
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// QR CODE
+// ══════════════════════════════════════════════════════════════════════════════
+
+export async function gerarQrCodeMembro(membroId: number) {
+    await requireAuth()
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    try {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let random6 = ''
+        for (let i = 0; i < 6; i++) {
+            random6 += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+
+        const qrCode = `ADMVC-${tenantId}-${membroId}-${random6}`
+
+        await db.membro.update({
+            where: { id: membroId },
+            data: { qr_code: qrCode },
+        })
+
+        revalidatePath('/cantina')
+        return { success: true, qrCode }
+    } catch (error) {
+        console.error('Erro ao gerar QR code:', error)
+        return { error: 'Erro ao gerar QR code.' }
+    }
+}
+
+export async function buscarMembroPorQr(qrCode: string) {
+    const db = await getDb()
+
+    try {
+        const membro = await db.membro.findFirst({
+            where: { qr_code: qrCode },
+            select: { id: true, first_name: true, last_name: true },
+        })
+
+        return membro || null
+    } catch (error) {
+        console.error('Erro ao buscar membro por QR:', error)
+        return null
+    }
 }

@@ -102,6 +102,8 @@ model Tenant {
   categoriasCantina        CategoriaCantina[]
   saldosCantina            SaldoCantina[]
   transacoesCantina        TransacaoCantina[]
+  fiadosCantina            FiadoCantina[]
+  turnosCantina            TurnoCantina[]
 }
 
 model Congregacao {
@@ -240,6 +242,9 @@ model Membro {
   boleiasReservadas          BoleiaReserva[]             @relation("PassageiroReserva")
   saldoCantina               SaldoCantina?
   transacoesCantina          TransacaoCantina[]
+  fiadosCantina              FiadoCantina[]
+  turnosCantina              TurnoCantina[]             @relation("OperadorTurno")
+  qr_code                    String?                    @unique  // Codigo QR unico para identificacao rapida
 
   @@index([tenant_id])
   @@map("membros")
@@ -1251,21 +1256,24 @@ model SaldoCantina {
 model TransacaoCantina {
   id            Int                    @id @default(autoincrement())
   tenant_id     Int
-  membro_id     Int
+  membro_id     Int?                   // Null = venda avulsa (nao-membro)
   tipo          String                 // RECARGA, CONSUMO, ESTORNO
   valor         Float                  // Positivo para recarga, negativo para consumo
   saldo_apos    Float                  // Saldo apos esta transacao
   descricao     String?
   forma_pagamento String              @default("CREDITOS") // CREDITOS, DINHEIRO, MBWAY, TRANSFERENCIA
   operador_id   Int?                   // Quem operou (admin/operador do POS)
+  turno_id      Int?                   // Turno em que a venda foi feita
   criado_em     DateTime               @default(now())
 
   tenant        Tenant                 @relation(fields: [tenant_id], references: [id])
-  membro        Membro                 @relation(fields: [membro_id], references: [id])
+  membro        Membro?                @relation(fields: [membro_id], references: [id])
+  turno         TurnoCantina?          @relation(fields: [turno_id], references: [id])
   itens         ItemTransacaoCantina[]
 
   @@index([tenant_id])
   @@index([membro_id])
+  @@index([turno_id])
   @@index([criado_em])
   @@map("cantina_transacoes")
 }
@@ -1282,4 +1290,45 @@ model ItemTransacaoCantina {
 
   @@index([transacao_id])
   @@map("cantina_itens_transacao")
+}
+
+model TurnoCantina {
+  id                    Int                  @id @default(autoincrement())
+  tenant_id             Int
+  operador_id           Int
+  abertura_em           DateTime             @default(now())
+  fecho_em              DateTime?
+  valor_inicial         Float                @default(0)   // Dinheiro no caixa ao abrir
+  valor_final_esperado  Float?                              // Calculado pelo sistema ao fechar
+  valor_final_real      Float?                              // Declarado pelo operador
+  diferenca             Float?                              // Real - Esperado
+  observacao            String?
+  status                String               @default("ABERTO") // ABERTO, FECHADO
+
+  tenant                Tenant               @relation(fields: [tenant_id], references: [id])
+  operador              Membro               @relation("OperadorTurno", fields: [operador_id], references: [id])
+  transacoes            TransacaoCantina[]
+
+  @@index([tenant_id])
+  @@index([operador_id])
+  @@map("cantina_turnos")
+}
+
+model FiadoCantina {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  membro_id       Int
+  valor_devido    Float
+  transacao_id    Int?     // Referencia a transacao que gerou a divida
+  descricao       String?
+  status          String   @default("PENDENTE") // PENDENTE, LIQUIDADO
+  criado_em       DateTime @default(now())
+  liquidado_em    DateTime?
+
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id])
+  membro          Membro   @relation(fields: [membro_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([membro_id])
+  @@map("cantina_fiados")
 }

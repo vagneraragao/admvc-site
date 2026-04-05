@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
     ShoppingCart, Plus, Minus, Trash2, Search, User, CreditCard,
     Loader2, CheckCircle, XCircle, Maximize2, Minimize2,
-    Wallet2, Banknote, Smartphone, X, RefreshCw
+    Wallet2, Banknote, Smartphone, X, RefreshCw, QrCode, HandCoins
 } from 'lucide-react'
-import { registarVenda, obterSaldoMembro } from '@/actions/cantina-local-actions'
+import { registarVenda, obterSaldoMembro, buscarMembroPorQr } from '@/actions/cantina-local-actions'
+import { criarFiado } from '@/actions/fiado-actions'
 
 interface Produto {
     id: number
@@ -26,12 +27,13 @@ interface CartItem {
     promocoes: Array<{ quantidade: number; preco_total: number }> | null
 }
 
-type FormaPagamento = 'CREDITOS' | 'DINHEIRO' | 'MBWAY' | 'TRANSFERENCIA'
+type FormaPagamento = 'CREDITOS' | 'DINHEIRO' | 'MBWAY' | 'TRANSFERENCIA' | 'FIADO'
 const PAYMENT_OPTIONS: { value: FormaPagamento; label: string; icon: typeof CreditCard }[] = [
     { value: 'CREDITOS', label: 'Creditos Cantina', icon: Wallet2 },
     { value: 'DINHEIRO', label: 'Dinheiro', icon: Banknote },
     { value: 'MBWAY', label: 'MBWay', icon: Smartphone },
     { value: 'TRANSFERENCIA', label: 'Transferencia', icon: CreditCard },
+    { value: 'FIADO', label: 'Fiado', icon: HandCoins },
 ]
 
 function calcItemTotal(item: CartItem): number {
@@ -56,10 +58,33 @@ function bestPromoLabel(promos: CartItem['promocoes']): string | null {
     return `${best.quantidade} por ${best.preco_total.toFixed(2)}\u20ac`
 }
 
-interface Props { produtos: Produto[]; categorias: Categoria[]; membros: Membro[] }
+interface Props { produtos: Produto[]; categorias: Categoria[]; membros: Membro[]; turnoId?: number | null }
 
-export default function POSClient({ produtos, categorias, membros }: Props) {
+export default function POSClient({ produtos, categorias, membros, turnoId = null }: Props) {
+    // Wake Lock — manter ecra ligado enquanto o POS esta aberto
+    const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+    useEffect(() => {
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLockRef.current = await navigator.wakeLock.request('screen')
+                }
+            } catch { /* browser may deny */ }
+        }
+        requestWakeLock()
+        const handleVisibility = () => { if (document.visibilityState === 'visible') requestWakeLock() }
+        document.addEventListener('visibilitychange', handleVisibility)
+        return () => {
+            wakeLockRef.current?.release()
+            document.removeEventListener('visibilitychange', handleVisibility)
+        }
+    }, [])
+
     const [cart, setCart] = useState<CartItem[]>([])
+    const [receipt, setReceipt] = useState<{itens: CartItem[], total: number, formaPagamento: string, membro: string | null, saldoRestante: number | null} | null>(null)
+    const [qrInput, setQrInput] = useState('')
+    const [qrOpen, setQrOpen] = useState(false)
+    const [qrLoading, setQrLoading] = useState(false)
     const [selectedMembro, setSelectedMembro] = useState<Membro | null>(null)
     const [membroBusca, setMembroBusca] = useState('')
     const [membroDropdownOpen, setMembroDropdownOpen] = useState(false)
@@ -76,8 +101,10 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
     const cartCount = cart.reduce((sum, i) => sum + i.quantidade, 0)
     const saldoRestante = saldo !== null ? saldo - total : null
     const isCreditos = formaPagamento === 'CREDITOS'
-    const canConfirm = selectedMembro && cart.length > 0 && !loading &&
-        (!isCreditos || saldoRestante === null || saldoRestante >= 0)
+    const isFiado = formaPagamento === 'FIADO'
+    const canConfirm = cart.length > 0 && !loading &&
+        (!isCreditos || !selectedMembro || saldoRestante === null || saldoRestante >= 0) &&
+        (!!selectedMembro || (!isCreditos && !isFiado))
 
     const produtosFiltrados = categoriaAtiva
         ? produtos.filter(p => p.categoria?.id === categoriaAtiva) : produtos
@@ -96,6 +123,22 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
     async function selecionarMembro(membro: Membro) {
         setSelectedMembro(membro); setMembroBusca(''); setMembroDropdownOpen(false); setLoadingSaldo(true)
         try { setSaldo(await obterSaldoMembro(membro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
+    }
+
+    async function buscarPorQr() {
+        if (!qrInput.trim()) return
+        setQrLoading(true)
+        try {
+            const membro = await buscarMembroPorQr(qrInput.trim())
+            if (membro) {
+                await selecionarMembro(membro)
+                setQrOpen(false); setQrInput('')
+            } else {
+                setFeedback({ type: 'error', msg: 'Membro nao encontrado com este QR.' })
+            }
+        } catch {
+            setFeedback({ type: 'error', msg: 'Erro ao buscar membro por QR.' })
+        } finally { setQrLoading(false) }
     }
 
     function addToCart(produto: Produto) {
@@ -126,16 +169,33 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
     function removeItem(id: number) { setCart(prev => prev.filter(i => i.produtoId !== id)) }
 
     async function confirmarVenda() {
-        if (!canConfirm || !selectedMembro) return
+        if (!canConfirm) return
         setLoading(true); setFeedback(null)
         try {
             const itens = cart.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade }))
-            const result = await registarVenda(selectedMembro.id, itens, formaPagamento)
+            const membroId = selectedMembro?.id || null
+            const result = await registarVenda(membroId, itens, formaPagamento, turnoId)
             if (result?.error) { setFeedback({ type: 'error', msg: result.error }) }
             else {
+                // If FIADO, create fiado record
+                if (formaPagamento === 'FIADO' && membroId) {
+                    const descricaoItens = cart.map(i => `${i.quantidade}x ${i.nome}`).join(', ')
+                    await criarFiado(membroId, total, descricaoItens)
+                }
+
+                const saldoAtual = selectedMembro ? (await obterSaldoMembro(selectedMembro.id)) : null
+                setReceipt({
+                    itens: [...cart],
+                    total,
+                    formaPagamento,
+                    membro: selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : null,
+                    saldoRestante: saldoAtual,
+                })
                 setFeedback({ type: 'success', msg: 'Venda registada com sucesso!' })
-                setCart([]); setSheetOpen(false)
-                setSaldo(await obterSaldoMembro(selectedMembro.id))
+                setCart([])
+                if (selectedMembro && saldoAtual !== null) {
+                    setSaldo(saldoAtual)
+                }
             }
         } catch { setFeedback({ type: 'error', msg: 'Erro ao registar venda.' }) }
         finally { setLoading(false); setTimeout(() => setFeedback(null), 4000) }
@@ -147,16 +207,21 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
             <label className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                 <User size={12} /> Membro
             </label>
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
-                <input
-                    type="text"
-                    placeholder={selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : 'Pesquisar membro...'}
-                    value={membroBusca}
-                    onChange={e => { setMembroBusca(e.target.value); setMembroDropdownOpen(true) }}
-                    onFocus={() => setMembroDropdownOpen(true)}
-                    className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
-                />
+            <div className="relative flex gap-1.5">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                    <input
+                        type="text"
+                        placeholder={selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : 'Pesquisar membro...'}
+                        value={membroBusca}
+                        onChange={e => { setMembroBusca(e.target.value); setMembroDropdownOpen(true) }}
+                        onFocus={() => setMembroDropdownOpen(true)}
+                        className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
+                    />
+                </div>
+                <button onClick={() => setQrOpen(!qrOpen)} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
+                    <QrCode size={16} />
+                </button>
                 {membroDropdownOpen && membrosFiltrados.length > 0 && (
                     <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg2 border border-soft rounded-xl shadow-xl max-h-48 overflow-y-auto">
                         {membrosFiltrados.map(m => (
@@ -168,6 +233,22 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
                     </div>
                 )}
             </div>
+            {qrOpen && (
+                <div className="flex gap-1.5">
+                    <input
+                        type="text"
+                        placeholder="Cole ou digite o codigo QR..."
+                        value={qrInput}
+                        onChange={e => setQrInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && buscarPorQr()}
+                        className="flex-1 bg-bg border border-soft rounded-xl px-3 py-2 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
+                    />
+                    <button onClick={buscarPorQr} disabled={qrLoading || !qrInput.trim()}
+                        className="px-3 py-2 bg-figueira text-bg rounded-xl text-[9px] font-black uppercase tracking-widest disabled:opacity-40">
+                        {qrLoading ? <Loader2 size={12} className="animate-spin" /> : 'Buscar'}
+                    </button>
+                </div>
+            )}
             {selectedMembro && (
                 <div className="flex items-center justify-between bg-bg rounded-xl px-3 py-2 border border-soft">
                     <span className="text-[10px] font-bold text-fg">{selectedMembro.first_name} {selectedMembro.last_name}</span>
@@ -267,6 +348,38 @@ export default function POSClient({ produtos, categorias, membros }: Props) {
                 <div className={`fixed top-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold shadow-lg ${feedback.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'}`}>
                     {feedback.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
                     {feedback.msg}
+                </div>
+            )}
+
+            {/* Receipt overlay */}
+            {receipt && (
+                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                    <div className="bg-bg2 border border-soft rounded-[2rem] p-8 max-w-sm w-full space-y-4 animate-in zoom-in duration-300">
+                        <div className="text-center space-y-2">
+                            <CheckCircle size={32} className="text-emerald-500 mx-auto" />
+                            <h2 className="text-lg font-black uppercase tracking-tighter text-fg">Venda Confirmada</h2>
+                        </div>
+                        <div className="border-t border-b border-soft py-3 space-y-1">
+                            {receipt.itens.map((item, i) => (
+                                <div key={i} className="flex justify-between text-[11px]">
+                                    <span className="text-fg">{item.quantidade}x {item.nome}</span>
+                                    <span className="text-muted font-bold">{(item.preco * item.quantidade).toFixed(2)}&euro;</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex justify-between text-sm font-black">
+                            <span className="text-fg">Total</span>
+                            <span className="text-figueira">{receipt.total.toFixed(2)}&euro;</span>
+                        </div>
+                        <div className="text-[10px] text-muted space-y-1">
+                            <p>Pagamento: {receipt.formaPagamento}</p>
+                            {receipt.membro && <p>Cliente: {receipt.membro}</p>}
+                            {receipt.saldoRestante !== null && <p>Saldo restante: {receipt.saldoRestante.toFixed(2)}&euro;</p>}
+                        </div>
+                        <button onClick={() => setReceipt(null)} className="w-full bg-figueira text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                            Nova Venda
+                        </button>
+                    </div>
                 </div>
             )}
 

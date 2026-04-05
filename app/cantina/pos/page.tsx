@@ -76,6 +76,12 @@ export default async function POSPage() {
         )
     }
 
+    // Buscar turno aberto do operador
+    const turnoAberto = await db.turnoCantina.findFirst({
+        where: { operador_id: membroId, status: 'ABERTO' },
+        select: { id: true },
+    })
+
     const [produtos, categorias, membros] = await Promise.all([
         db.produtoCantina.findMany({
             where: {
@@ -107,5 +113,5 @@ export default async function POSPage() {
         categoria: p.categoria ? { ...p.categoria, criado_em: p.categoria.criado_em.toISOString() } : null,
     }))
 
-    return <POSClient produtos={produtosData} categorias={categorias.map(c => ({ ...c, criado_em: c.criado_em.toISOString() }))} membros={membros} />
+    return <POSClient produtos={produtosData} categorias={categorias.map(c => ({ ...c, criado_em: c.criado_em.toISOString() }))} membros={membros} turnoId={turnoAberto?.id ?? null} />
 }

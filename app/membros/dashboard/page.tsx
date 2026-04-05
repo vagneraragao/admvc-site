@@ -2,6 +2,7 @@
 import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
 import CardSaldoLocal from '@/components/cantina/CardSaldoLocal'
+import QrCodeMembro from '@/components/cantina/QrCodeMembro'
 import { headers } from 'next/headers'
 import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Link from 'next/link'
@@ -754,6 +755,7 @@ export default async function DashboardMembro({
                             <div className="grid lg:grid-cols-12 gap-8 items-start">
                                 <div className="lg:col-span-4 flex flex-col gap-6">
                                     <CardSaldoLocal membroId={membro.id} />
+                                    <QrCodeMembro membroId={membro.id} qrCode={membro.qr_code || null} />
                                 </div>
                                 <div className="lg:col-span-8 bg-bg border border-soft rounded-[2rem] p-6 shadow-inner relative overflow-hidden">
                                     <h3 className="text-sm font-black uppercase italic text-fg mb-4 flex items-center gap-2">
