@@ -32,6 +32,10 @@ import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
 import CardAniversariantesMes from '@/components/membros/CardAniversariantesMes'
 import ModalDetalhesEscala from '@/components/membros/ModalDetalhesEscalas'
 import BotaoSetlistPalco from '@/components/louvor/BotaoSetlistPalco'
+import SaudacaoDia from '@/components/membros/SaudacaoDia'
+import PendentesAtencao from '@/components/membros/PendentesAtencao'
+import AcoesRapidas from '@/components/membros/AcoesRapidas'
+import EstatisticasPessoais from '@/components/membros/EstatisticasPessoais'
 
 export default async function DashboardMembro({
     searchParams
@@ -405,6 +409,34 @@ export default async function DashboardMembro({
         }
     });
 
+    // Saudacao data
+    const hojeInicio = new Date()
+    hojeInicio.setHours(0, 0, 0, 0)
+    const amanha = new Date(hojeInicio.getTime() + 24 * 60 * 60 * 1000)
+
+    const escalaHoje = listaEscalas.find((e: any) => {
+        const dataEvento = new Date(e.evento.data)
+        return dataEvento >= hojeInicio && dataEvento < amanha
+    })
+
+    const proximoEvento = proximosEventos[0] || null
+
+    // Pendentes
+    const pendentes: any[] = []
+    const escalasPendentes = listaEscalas.filter((e: any) => !e.confirmado && !e.motivo_recusa)
+    if (escalasPendentes.length > 0) {
+        pendentes.push({ tipo: 'escala', titulo: `${escalasPendentes.length} escala(s) pendente(s)`, descricao: 'Confirma ou recusa a tua participacao', cor: 'text-orange-500' })
+    }
+    if (!membro.gdpr_aceite) {
+        pendentes.push({ tipo: 'gdpr', titulo: 'GDPR por aceitar', descricao: 'Aceita os termos de protecao de dados', link: '/membros/termos', cor: 'text-red-400' })
+    }
+
+    // Estatisticas
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    const inicioAno = new Date(hoje.getFullYear(), 0, 1)
+    const escalasEsteMes = listaEscalas.filter((e: any) => new Date(e.evento.data) >= inicioMes).length
+    const contribuicaoAno = (minhasContribuicoes || []).filter((c: any) => new Date(c.data) >= inicioAno).reduce((s: number, c: any) => s + c.valor, 0)
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6 pb-20 animate-in fade-in duration-700">
 
@@ -435,6 +467,19 @@ export default async function DashboardMembro({
                 {/* ── ABA: GERAL ───────────────────────────────────────────── */}
                 {currentTab === 'geral' && (
                     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+
+                        {/* SAUDACAO + RESUMO */}
+                        <SaudacaoDia
+                            nome={membro.first_name}
+                            proximoEvento={proximoEvento ? { nome: proximoEvento.nome, data: proximoEvento.data } : null}
+                            escalaHoje={escalaHoje ? { departamento: escalaHoje.departamento.nome, funcao: '', hora_chegada: escalaHoje.hora_chegada } : null}
+                        />
+
+                        {/* ACOES RAPIDAS */}
+                        <AcoesRapidas />
+
+                        {/* PENDENTES */}
+                        <PendentesAtencao pendentes={pendentes} />
 
                         {/* GRID: Escalas + Agenda + Aniversarios lado a lado */}
                         <div className="grid lg:grid-cols-3 gap-6">
@@ -561,6 +606,13 @@ export default async function DashboardMembro({
                                     )}
                                 </div>
                             </details>
+
+                            <EstatisticasPessoais
+                                escalasEsteMes={escalasEsteMes}
+                                contribuicaoAno={contribuicaoAno}
+                                membroDesde={membro.data_admissao || membro.created_at}
+                                presencaGrupos={null}
+                            />
                         </aside>
 
                         </div>{/* fecha grid 3 colunas */}

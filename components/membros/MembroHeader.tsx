@@ -8,7 +8,7 @@ import {
     ShieldCheck, PieChart, LogOut, Users,
     Store, MonitorPlay,
     Home, Music2, Lightbulb, Calendar, MessageSquare,
-    BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info
+    BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info, Wallet2
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -79,7 +79,6 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const podePregacao = permissoes.isAdmin || permissoes.isDiaconia
     const numDeptos = membro.ministerios?.length || 0
     const numGrupos = (membro.grupos?.length || 0) + (membro.lider_de_grupo?.length || 0)
-    const temDepto = permissoes.isAdmin || permissoes.isFinance || permissoes.isCantina || podePregacao || permissoes.isMidia || permissoes.isLouvor || permissoes.isAcolhimento
     const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'CONGREGATION_ADMIN' ? 'Admin Congregacao' : role === 'LEADER' ? 'Lider' : role === 'FINANCE' ? 'Tesouraria' : role === 'MANAGER' ? 'Gestor' : 'Membro'
 
     const menuItemClass = "text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-2.5"
@@ -144,8 +143,9 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                 <div className="border-t border-soft/60 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-1 py-2">
                         <NavTab label="Home" href="/membros/dashboard" active={isHome} />
-                        <NavDropdownBtn label="Igreja" active={menuAberto === 'igreja'} onClick={() => toggleMenu('igreja')} />
-                        {temDepto && <NavDropdownBtn label="Departamento" active={menuAberto === 'depto'} onClick={() => toggleMenu('depto')} />}
+                        <NavDropdownBtn label="Meu Perfil" active={menuAberto === 'perfil'} onClick={() => toggleMenu('perfil')} />
+                        <NavDropdownBtn label="Servir" active={menuAberto === 'servir'} onClick={() => toggleMenu('servir')} />
+                        <NavDropdownBtn label="Comunidade" active={menuAberto === 'comunidade'} onClick={() => toggleMenu('comunidade')} />
                         <NavDropdownBtn label="Ajuda" active={menuAberto === 'ajuda'} onClick={() => toggleMenu('ajuda')} />
                     </div>
                 </div>
@@ -156,31 +156,25 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                 <div className="bg-bg border-t border-soft shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
-                        {/* IGREJA */}
-                        {menuAberto === 'igreja' && (
+                        {/* MEU PERFIL */}
+                        {menuAberto === 'perfil' && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
                                 <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
-                                <Link href="/membros/dashboard?tab=departamentos" onClick={() => setMenuAberto(null)} className={menuItemClass}>
-                                    <Users size={12} className="text-figueira" /> Onde Eu Sirvo
-                                </Link>
-                                <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
                                 <ModalIndisponibilidade isMenuItem />
-                                <Link href="/membros/agendar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
-                                    <Calendar size={12} className="text-figueira" /> Agendar Reuniao
-                                </Link>
+                                <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
                                 {permissoes.isLouvor && <ModalRelatorioLouvor />}
-                                <Link href="/boleia" onClick={() => setMenuAberto(null)} className={menuItemClass}>
-                                    <Car size={12} className="text-figueira" /> Boleia Solidaria
-                                </Link>
-                                <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)} className={menuItemClass}>
-                                    <Coffee size={12} className="text-orange-500" /> Menu Cantina
-                                </Link>
                             </div>
                         )}
 
-                        {/* DEPARTAMENTO */}
-                        {menuAberto === 'depto' && (
+                        {/* SERVIR */}
+                        {menuAberto === 'servir' && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                                <Link href="/membros/dashboard?tab=departamentos" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Users size={12} className="text-figueira" /> Onde Eu Sirvo
+                                </Link>
+                                <Link href="/membros/agendar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                </Link>
                                 {permissoes.isAdmin && (
                                     <Link href="/admin/dashboard" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                         <ShieldCheck size={12} className="text-figueira" /> Painel Admin
@@ -216,6 +210,24 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                         <Lightbulb size={12} className="text-amber-500" /> Iluminacao
                                     </Link>
                                 )}
+                            </div>
+                        )}
+
+                        {/* COMUNIDADE */}
+                        {menuAberto === 'comunidade' && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                                <Link href="/boleia" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Car size={12} className="text-figueira" /> Boleia Solidaria
+                                </Link>
+                                <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Coffee size={12} className="text-orange-500" /> Menu Cantina
+                                </Link>
+                                <Link href="/cantina/carregar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Wallet2 size={12} className="text-emerald-500" /> Carregar Saldo
+                                </Link>
+                                <Link href="/membros/mural" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <MessageSquare size={12} className="text-blue-500" /> Mural
+                                </Link>
                             </div>
                         )}
 
