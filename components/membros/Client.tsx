@@ -194,7 +194,7 @@ export default function EditarMembroClient({
                             className="w-full md:w-auto flex items-center justify-center gap-3 bg-fg text-bg px-8 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-figueira transition-all shadow-xl active:scale-95 disabled:opacity-50"
                         >
                             {isPending ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                            {isPending ? "A GUARDAR..." : "CONFIRMAREDICAO"}
+                            {isPending ? "A GUARDAR..." : "SALVAR"}
                         </button>
                     </div>
                 </header>

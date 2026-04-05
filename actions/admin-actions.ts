@@ -673,23 +673,20 @@ export async function vincularMembroDepartamento(formData: FormData) {
         }
 
         // 2. GARANTIR QUE O MEMBRO ESTÁ NO DEPARTAMENTO
-        // O upsert é perfeito: Se já existir, não faz nada (update: {}). Se não existir, cria.
-        const integrante = await db.integranteDepartamento.upsert({
-            where: {
-                membro_id_departamento_id_turno: {
+        let integrante = await db.integranteDepartamento.findFirst({
+            where: { membro_id: membroId, departamento_id: deptoId },
+        })
+
+        if (!integrante) {
+            integrante = await (db as any).integranteDepartamento.create({
+                data: {
                     membro_id: membroId,
                     departamento_id: deptoId,
-                    turno: null
-                }
-            },
-            update: {}, // Não muda nada se ele já for deste departamento
-            create: {
-                membro_id: membroId,
-                departamento_id: deptoId,
-                pode_gerir_escalas: false,
-                tenant_id: departamentoInfo.tenant_id // 👈 CORREÇÃO: Usa o tenant real e válido do departamento!
-            }
-        });
+                    pode_gerir_escalas: false,
+                    tenant_id: departamentoInfo.tenant_id,
+                },
+            })
+        }
 
         // 3. ADICIONAR OS MÚLTIPLOS CARGOS (Na tabela FuncaoSelecionada)
         let inseridos = 0;
@@ -1192,17 +1189,16 @@ export async function removerFuncaoDoMembro(funcaoSelecionadaId: number) {
 export async function removerMembroTotal(membroId: number, departamentoId: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
-        const { db, tenantId } = await getDb();
+        const { db } = await getDb();
 
-        await db.integranteDepartamento.delete({
-            where: {
-                membro_id_departamento_id_turno: {
-                    membro_id: membroId,
-                    departamento_id: departamentoId,
-                    turno: null
-                }
-            }
-        });
+        // Encontrar o integrante (pode ter turno null ou definido)
+        const integrante = await db.integranteDepartamento.findFirst({
+            where: { membro_id: membroId, departamento_id: departamentoId },
+        })
+
+        if (integrante) {
+            await db.integranteDepartamento.delete({ where: { id: integrante.id } })
+        }
 
         revalidatePath('/admin/departamentos');
         return { ok: true };
