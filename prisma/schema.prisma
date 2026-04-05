@@ -108,6 +108,11 @@ model Tenant {
   cardapios                CardapioCantina[]
   itensAssistencia         ItemAssistenciaSocial[]
   movimentosAssistencia    MovimentoAssistencia[]
+  fundosFinanceiros        FundoFinanceiro[]
+  categoriasOrcamento      CategoriaOrcamento[]
+  despesasFinanceiras      DespesaFinanceira[]
+  orcamentos               Orcamento[]
+  transferencias           TransferenciaFundo[]
 }
 
 model Congregacao {
@@ -458,12 +463,15 @@ model LancamentoFinanceiro {
   comprovante_url   String?
   registrado_por_id Int
   congregacaoId     Int?
+  fundo_id          Int?
   tenant_id         Int
   congregacao       Congregacao?       @relation(fields: [congregacaoId], references: [id])
   objetivo          ObjetivoFinanceiro @relation(fields: [objetivo_id], references: [id])
+  fundo             FundoFinanceiro?   @relation(fields: [fundo_id], references: [id])
   tenant            Tenant             @relation(fields: [tenant_id], references: [id])
 
   @@index([tenant_id])
+  @@index([fundo_id])
 }
 
 model Rifa {
@@ -517,20 +525,23 @@ model PedidoSaldoCantina {
 }
 
 model Contribuicao {
-  id         Int      @id @default(autoincrement())
+  id         Int              @id @default(autoincrement())
   membro_id  Int
   tipo       String
   valor      Float
-  data       DateTime @default(now())
+  data       DateTime         @default(now())
   metodo     String?
   observacao String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  fundo_id   Int?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   tenant_id  Int
-  membro     Membro   @relation(fields: [membro_id], references: [id], onDelete: Cascade)
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  membro     Membro           @relation(fields: [membro_id], references: [id], onDelete: Cascade)
+  fundo      FundoFinanceiro? @relation(fields: [fundo_id], references: [id])
+  tenant     Tenant           @relation(fields: [tenant_id], references: [id])
 
   @@index([tenant_id])
+  @@index([fundo_id])
 }
 
 model Visitante {
@@ -1452,4 +1463,113 @@ model MovimentoAssistencia {
   @@index([tenant_id])
   @@index([item_id])
   @@map("assistencia_movimentos")
+}
+
+// ── GESTAO FINANCEIRA — FUNDOS, DESPESAS, ORCAMENTO ──────────────────────────
+
+model FundoFinanceiro {
+  id              Int                    @id @default(autoincrement())
+  tenant_id       Int
+  nome            String                 // Ex: "Fundo Geral", "Construcao", "Missoes"
+  descricao       String?
+  tipo            String                 @default("CUSTOM") // GERAL, CONSTRUCAO, MISSOES, SOCIAL, CANTINA, CUSTOM
+  restrito        Boolean                @default(false) // true = dinheiro so pode ser usado para este fim
+  saldo_atual     Float                  @default(0)
+  ativo           Boolean                @default(true)
+  criado_em       DateTime               @default(now())
+
+  tenant          Tenant                 @relation(fields: [tenant_id], references: [id])
+  contribuicoes   Contribuicao[]
+  lancamentos     LancamentoFinanceiro[]
+  despesas        DespesaFinanceira[]
+  orcamentos      Orcamento[]
+  categoriasOrcamento CategoriaOrcamento[]
+  transferenciasOrigem  TransferenciaFundo[] @relation("FundoOrigem")
+  transferenciasDestino TransferenciaFundo[] @relation("FundoDestino")
+
+  @@unique([tenant_id, nome])
+  @@index([tenant_id])
+  @@map("financeiro_fundos")
+}
+
+model CategoriaOrcamento {
+  id          Int               @id @default(autoincrement())
+  tenant_id   Int
+  fundo_id    Int
+  nome        String            // Ex: "Aluguer", "Eletricidade", "Material"
+  criado_em   DateTime          @default(now())
+
+  tenant      Tenant            @relation(fields: [tenant_id], references: [id])
+  fundo       FundoFinanceiro   @relation(fields: [fundo_id], references: [id])
+  despesas    DespesaFinanceira[]
+  orcamentos  Orcamento[]
+
+  @@unique([fundo_id, nome])
+  @@index([tenant_id])
+  @@map("financeiro_categorias_orcamento")
+}
+
+model DespesaFinanceira {
+  id              Int                @id @default(autoincrement())
+  tenant_id       Int
+  fundo_id        Int
+  categoria_id    Int?
+  descricao       String
+  valor           Float
+  data            DateTime           @default(now())
+  forma_pagamento String?
+  fornecedor      String?
+  comprovante_url String?
+  submetido_por   Int                // Membro que submeteu
+  aprovado_por    Int?               // Membro que aprovou
+  status          String             @default("PENDENTE") // PENDENTE, APROVADA, REJEITADA, PAGA
+  observacao      String?
+  criado_em       DateTime           @default(now())
+
+  tenant          Tenant             @relation(fields: [tenant_id], references: [id])
+  fundo           FundoFinanceiro    @relation(fields: [fundo_id], references: [id])
+  categoria       CategoriaOrcamento? @relation(fields: [categoria_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([fundo_id])
+  @@index([status])
+  @@map("financeiro_despesas")
+}
+
+model Orcamento {
+  id              Int                @id @default(autoincrement())
+  tenant_id       Int
+  fundo_id        Int
+  categoria_id    Int
+  ano             Int
+  mes             Int?               // null = orcamento anual
+  valor_previsto  Float
+  criado_em       DateTime           @default(now())
+
+  tenant          Tenant             @relation(fields: [tenant_id], references: [id])
+  fundo           FundoFinanceiro    @relation(fields: [fundo_id], references: [id])
+  categoria       CategoriaOrcamento @relation(fields: [categoria_id], references: [id])
+
+  @@unique([fundo_id, categoria_id, ano, mes])
+  @@index([tenant_id])
+  @@map("financeiro_orcamentos")
+}
+
+model TransferenciaFundo {
+  id              Int              @id @default(autoincrement())
+  tenant_id       Int
+  fundo_origem_id Int
+  fundo_destino_id Int
+  valor           Float
+  motivo          String
+  aprovado_por    Int?
+  status          String           @default("PENDENTE") // PENDENTE, APROVADA, REJEITADA
+  criado_em       DateTime         @default(now())
+
+  tenant          Tenant           @relation(fields: [tenant_id], references: [id])
+  fundoOrigem     FundoFinanceiro  @relation("FundoOrigem", fields: [fundo_origem_id], references: [id])
+  fundoDestino    FundoFinanceiro  @relation("FundoDestino", fields: [fundo_destino_id], references: [id])
+
+  @@index([tenant_id])
+  @@map("financeiro_transferencias")
 }

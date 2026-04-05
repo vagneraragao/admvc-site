@@ -8,7 +8,7 @@ import {
     BarChart3, Settings, Shield, LogOut, Package,
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
     Menu, X, MonitorPlay, BookOpen, GraduationCap, Car,
-    Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store
+    Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store, Banknote
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
@@ -29,6 +29,9 @@ const NAV_MODULOS = [
     { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen, adminOnly: false },
     { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap, adminOnly: false },
     { label: 'Assistencia', href: '/assistencia', icon: HeartHandshake, adminOnly: false },
+    { label: 'Fundos', href: '/financeiro/fundos', icon: Wallet2, adminOnly: true },
+    { label: 'Despesas', href: '/financeiro/despesas', icon: Banknote, adminOnly: false },
+    { label: 'Orcamento', href: '/financeiro/orcamento', icon: BarChart3, adminOnly: true },
 ]
 
 const NAV_CANTINA = [

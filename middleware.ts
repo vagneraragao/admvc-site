@@ -52,6 +52,7 @@ export function middleware(request: NextRequest) {
         || pathname.startsWith('/ensino')
         || pathname.startsWith('/boleia')
         || pathname.startsWith('/assistencia')
+        || pathname.startsWith('/financeiro')
 
     // 2. Sem sessão em rota protegida → login
     if ((isMembrosProtected || isAdminProtected || isModuleProtected) && !session) {
@@ -126,5 +127,6 @@ export const config = {
         '/ensino/:path*',
         '/boleia/:path*',
         '/assistencia/:path*',
+        '/financeiro/:path*',
     ],
 }

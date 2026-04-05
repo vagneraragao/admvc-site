@@ -137,6 +137,7 @@ export const ROTA_MODULO: Record<string, Modulo> = {
     '/ensino': MODULOS.EBD,
     '/boleia': MODULOS.BOLEIA,
     '/assistencia': MODULOS.ASSISTENCIA,
+    '/financeiro': MODULOS.FINANCEIRO,
 }
 
 /**
