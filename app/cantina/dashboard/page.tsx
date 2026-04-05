@@ -53,12 +53,10 @@ export default async function DashboardCantinaPage() {
         db.transacaoCantina.findMany({
             where: { criado_em: { gte: monthStart }, tipo: 'CONSUMO' },
         }),
-        // Top 5 products (last 30 days)
-        db.itemTransacaoCantina.findMany({
-            where: {
-                transacao: { criado_em: { gte: thirtyDaysAgo }, tipo: 'CONSUMO' },
-            },
-            include: { produto: { select: { nome: true } } },
+        // Top 5 products (last 30 days) — filtrar via transacao (que tem tenant_id)
+        db.transacaoCantina.findMany({
+            where: { criado_em: { gte: thirtyDaysAgo }, tipo: 'CONSUMO' },
+            select: { itens: { include: { produto: { select: { nome: true } } } } },
         }),
         // Last 20 transactions
         db.transacaoCantina.findMany({
@@ -107,13 +105,15 @@ export default async function DashboardCantinaPage() {
 
     // ── Top 5 products ───────────────────────────────────────────────
     const productAgg: Record<number, { nome: string; qty: number; revenue: number }> = {}
-    for (const item of topProducts) {
-        const pid = item.produto_id
-        if (!productAgg[pid]) {
-            productAgg[pid] = { nome: item.produto?.nome || 'Desconhecido', qty: 0, revenue: 0 }
+    for (const tx of topProducts) {
+        for (const item of (tx as any).itens || []) {
+            const pid = item.produto_id
+            if (!productAgg[pid]) {
+                productAgg[pid] = { nome: item.produto?.nome || 'Desconhecido', qty: 0, revenue: 0 }
+            }
+            productAgg[pid].qty += item.quantidade
+            productAgg[pid].revenue += item.quantidade * item.preco_unitario
         }
-        productAgg[pid].qty += item.quantidade
-        productAgg[pid].revenue += item.quantidade * item.preco_unitario
     }
     const top5 = Object.values(productAgg)
         .sort((a, b) => b.qty - a.qty)
