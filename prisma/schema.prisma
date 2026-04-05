@@ -105,6 +105,7 @@ model Tenant {
   fiadosCantina            FiadoCantina[]
   turnosCantina            TurnoCantina[]
   preEncomendas            PreEncomendaCantina[]
+  cardapios                CardapioCantina[]
 }
 
 model Congregacao {
@@ -384,6 +385,7 @@ model Evento {
   sermoes        Sermao[]
   boleias        BoleiaOferta[]
   preEncomendas  PreEncomendaCantina[]
+  cardapio       CardapioCantina?
 
   @@index([tenant_id])
 }
@@ -1237,6 +1239,7 @@ model ProdutoCantina {
   categoria       CategoriaCantina?  @relation(fields: [categoria_id], references: [id])
   itensTransacao  ItemTransacaoCantina[]
   itensEncomenda  ItemPreEncomenda[]
+  itensCardapio   CardapioItem[]
 
   @@index([tenant_id])
   @@index([categoria_id])
@@ -1376,4 +1379,35 @@ model ItemPreEncomenda {
 
   @@index([encomenda_id])
   @@map("cantina_itens_pre_encomenda")
+}
+
+// ── CARDAPIO DO DIA (Cantina) ────────────────────────────────────────────────
+
+model CardapioCantina {
+  id          Int            @id @default(autoincrement())
+  tenant_id   Int
+  evento_id   Int            @unique  // 1 cardapio por evento
+  nome        String?                 // Ex: "Menu Domingo Especial"
+  criado_em   DateTime       @default(now())
+
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id])
+  evento      Evento         @relation(fields: [evento_id], references: [id])
+  itens       CardapioItem[]
+
+  @@index([tenant_id])
+  @@map("cantina_cardapios")
+}
+
+model CardapioItem {
+  id              Int              @id @default(autoincrement())
+  cardapio_id     Int
+  produto_id      Int
+  preco_especial  Float?           // Preco diferente para este evento (null = preco normal)
+
+  cardapio        CardapioCantina  @relation(fields: [cardapio_id], references: [id], onDelete: Cascade)
+  produto         ProdutoCantina   @relation(fields: [produto_id], references: [id])
+
+  @@unique([cardapio_id, produto_id])
+  @@index([cardapio_id])
+  @@map("cantina_cardapio_itens")
 }

@@ -569,3 +569,54 @@ export async function obterLimitesFilhos() {
         }
     })
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PEDIDOS DE RECARGA (SELF-SERVICE)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export async function solicitarRecarga(valor: number, formaPagamento: string) {
+    const session = await requireAuth()
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    if (valor <= 0) return { error: 'O valor deve ser positivo.' }
+
+    try {
+        await (db as any).pedidoSaldoCantina.create({
+            data: {
+                tenant_id: tenantId,
+                membro_id: session.membroId,
+                valor,
+                forma_pagamento: formaPagamento,
+                status: 'PENDENTE',
+            },
+        })
+
+        revalidatePath('/cantina/carregar')
+        return { success: true }
+    } catch (error) {
+        console.error('Erro ao solicitar recarga:', error)
+        return { error: 'Erro ao solicitar recarga.' }
+    }
+}
+
+export async function aprovarRecarga(pedidoId: number) {
+    await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
+    const db = await getDb()
+
+    const pedido = await db.pedidoSaldoCantina.findUnique({ where: { id: pedidoId } })
+    if (!pedido || pedido.status !== 'PENDENTE') return { error: 'Pedido nao encontrado ou ja processado.' }
+
+    // Credit saldo
+    const result = await recarregarSaldo(pedido.membro_id, pedido.valor, `Recarga aprovada (${pedido.forma_pagamento})`)
+    if (result.error) return result
+
+    // Update pedido status
+    await db.pedidoSaldoCantina.update({
+        where: { id: pedidoId },
+        data: { status: 'APROVADO' },
+    })
+
+    revalidatePath('/cantina/recargas')
+    return { success: true }
+}

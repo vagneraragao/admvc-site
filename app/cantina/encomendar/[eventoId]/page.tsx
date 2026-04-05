@@ -23,18 +23,30 @@ export default async function EncomendarPage({ params }: { params: Promise<{ eve
         redirect('/cantina/menu-local')
     }
 
-    // Buscar produtos disponiveis
-    const produtos = await db.produtoCantina.findMany({
-        where: {
-            disponivel: true,
-            OR: [
-                { controla_stock: false },
-                { stock: { gt: 0 } },
-            ],
+    // Check for cardapio
+    const cardapio = await db.cardapioCantina.findUnique({
+        where: { evento_id: Number(eventoId) },
+        include: {
+            itens: {
+                include: { produto: { include: { categoria: true } } },
+            },
         },
-        include: { categoria: { select: { nome: true } } },
-        orderBy: [{ categoria: { ordem: 'asc' } }, { nome: 'asc' }],
     })
+
+    let produtos
+    if (cardapio) {
+        // Use cardapio products only
+        produtos = cardapio.itens
+            .map(i => i.produto)
+            .filter(p => p.disponivel && (!p.controla_stock || p.stock > 0))
+    } else {
+        // All available products
+        produtos = await db.produtoCantina.findMany({
+            where: { disponivel: true, OR: [{ controla_stock: false }, { stock: { gt: 0 } }] },
+            include: { categoria: true },
+            orderBy: [{ categoria: { ordem: 'asc' } }, { nome: 'asc' }],
+        })
+    }
 
     // Buscar saldo do membro
     const saldoRecord = await db.saldoCantina.findUnique({
@@ -69,6 +81,24 @@ export default async function EncomendarPage({ params }: { params: Promise<{ eve
                     <p className="text-xs text-muted capitalize">{eventoData}</p>
                 </div>
             </header>
+
+            {cardapio && (
+                <div className="bg-figueira/5 border border-figueira/20 rounded-2xl p-4 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-figueira">
+                        Cardapio do Dia — Menu especial preparado para este evento
+                    </p>
+                </div>
+            )}
+
+            {saldo <= 0 && (
+                <Link href="/cantina/carregar" className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-black uppercase text-orange-600">Saldo insuficiente</p>
+                        <p className="text-[10px] text-muted">Carregue o seu saldo para poder encomendar.</p>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">Carregar →</span>
+                </Link>
+            )}
 
             <FormEncomendar
                 eventoId={evento.id}

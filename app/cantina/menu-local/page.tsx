@@ -14,8 +14,7 @@ export default async function MenuLocalPage() {
 
     const db = await getDb()
 
-    const seteDiasDepois = new Date()
-    seteDiasDepois.setDate(seteDiasDepois.getDate() + 7)
+    const sevenDaysFromNow = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)
 
     const [produtos, categorias, proximosEventos] = await Promise.all([
         db.produtoCantina.findMany({
@@ -34,10 +33,10 @@ export default async function MenuLocalPage() {
             orderBy: { ordem: 'asc' },
         }),
         db.evento.findMany({
-            where: { data: { gte: new Date(), lte: seteDiasDepois } },
+            where: { data: { gte: new Date(), lte: sevenDaysFromNow } },
             orderBy: { data: 'asc' },
-            take: 5,
-            select: { id: true, nome: true, data: true },
+            take: 10,
+            select: { id: true, nome: true, data: true, cardapio: { select: { id: true } } },
         }),
     ])
 
@@ -61,23 +60,30 @@ export default async function MenuLocalPage() {
 
             {/* PRE-ENCOMENDAS */}
             {proximosEventos.length > 0 && (
-                <section className="bg-figueira/5 border border-figueira/20 rounded-[2rem] p-6 space-y-3">
+                <section className="space-y-3">
                     <h2 className="text-sm font-black uppercase tracking-widest text-figueira flex items-center gap-2">
                         <ShoppingCart size={14} /> Encomendar para o Proximo Evento
                     </h2>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                        {proximosEventos.map(ev => (
-                            <Link key={ev.id} href={`/cantina/encomendar/${ev.id}`}
-                                className="bg-bg border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-black uppercase text-fg">{ev.nome}</p>
-                                    <p className="text-[10px] text-muted capitalize">
-                                        {ev.data.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                    </p>
-                                </div>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-figueira">Encomendar →</span>
-                            </Link>
-                        ))}
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                        {proximosEventos.map(ev => {
+                            const data = new Date(ev.data)
+                            const dia = data.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' })
+                            const hora = data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                            const temCardapio = ev.cardapio !== null
+                            return (
+                                <Link key={ev.id} href={`/cantina/encomendar/${ev.id}`}
+                                    className="shrink-0 w-48 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all space-y-2">
+                                    <p className="text-xs font-black uppercase text-fg truncate">{ev.nome}</p>
+                                    <p className="text-[10px] text-muted">{dia} · {hora}</p>
+                                    {temCardapio && (
+                                        <span className="inline-block text-[8px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 px-2 py-0.5 rounded-lg">
+                                            Cardapio disponivel
+                                        </span>
+                                    )}
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-figueira">Encomendar →</p>
+                                </Link>
+                            )
+                        })}
                     </div>
                 </section>
             )}
