@@ -8,8 +8,7 @@ import {
     ShieldCheck, PieChart, LogOut, Users,
     Store, MonitorPlay,
     Home, Music2, Lightbulb, Calendar, MessageSquare,
-    BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info,
-    UserCircle, ClipboardList, CalendarOff, BarChart3
+    BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -42,25 +41,21 @@ interface Props {
 
 export default function MembroHeader({ membro, igrejaName, role, permissoes, mostraServico, escolaridades, avisos = [], alertasAcolhimento = [] }: Props) {
     const pathname = usePathname()
-    const [mounted, setMounted] = useState(false)
     const [expandido, setExpandido] = useState(false)
-    const [menuAberto, setMenuAberto] = useState<string | null>(null) // 'igreja' | 'depto' | 'ajuda' | null
-    const navRef = useRef<HTMLDivElement>(null)
+    const [menuAberto, setMenuAberto] = useState<string | null>(null)
+    const headerRef = useRef<HTMLDivElement>(null)
 
-    useEffect(() => setMounted(true), [])
     useEffect(() => { setMenuAberto(null) }, [pathname])
 
-    // Fechar dropdown ao clicar fora
     useEffect(() => {
         if (!menuAberto) return
         const handler = (e: MouseEvent) => {
-            if (navRef.current && !navRef.current.contains(e.target as Node)) setMenuAberto(null)
+            if (headerRef.current && !headerRef.current.contains(e.target as Node)) setMenuAberto(null)
         }
         document.addEventListener('click', handler)
         return () => document.removeEventListener('click', handler)
     }, [menuAberto])
 
-    // Persistir expandido
     useEffect(() => {
         const saved = localStorage.getItem('membro_header_expanded')
         if (saved === 'true') setExpandido(true)
@@ -82,21 +77,17 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const iniciais = `${membro.first_name?.[0] || ''}${membro.last_name?.[0] || ''}`
     const isHome = pathname === '/membros/dashboard'
     const podePregacao = permissoes.isAdmin || permissoes.isDiaconia
-
-    // Contar departamentos do membro
     const numDeptos = membro.ministerios?.length || 0
     const numGrupos = (membro.grupos?.length || 0) + (membro.lider_de_grupo?.length || 0)
-
-    // Tem algo no menu departamento?
     const temDepto = permissoes.isAdmin || permissoes.isFinance || permissoes.isCantina || podePregacao || permissoes.isMidia || permissoes.isLouvor || permissoes.isAcolhimento
-
-    // Role label
     const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'CONGREGATION_ADMIN' ? 'Admin Congregacao' : role === 'LEADER' ? 'Lider' : role === 'FINANCE' ? 'Tesouraria' : role === 'MANAGER' ? 'Gestor' : 'Membro'
 
+    const menuItemClass = "text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-2.5"
+
     return (
-        <header className="bg-bg2 border-b border-soft sticky top-0 z-40">
+        <header ref={headerRef} className="bg-bg2 border-b border-soft sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* LINHA PRINCIPAL — Avatar + Nome + Acoes */}
+                {/* LINHA PRINCIPAL */}
                 <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${expandido ? 'py-4' : 'py-3'}`}>
                     <Link href="/membros/dashboard" className="flex items-center gap-3 min-w-0">
                         <div className={`relative shrink-0 transition-all duration-300 ${expandido ? 'w-16 h-16' : 'w-9 h-9'}`}>
@@ -137,15 +128,10 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                             title={expandido ? 'Recolher' : 'Expandir'}>
                             {expandido ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
-
-                        <Link href="/membros/mural"
-                            className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all"
-                            title="Mural">
+                        <Link href="/membros/mural" className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all" title="Mural">
                             <MessageSquare size={14} />
                         </Link>
-
                         <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
-
                         <form action={logoutMembro}>
                             <button type="submit" className="h-9 w-9 flex items-center justify-center bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
                                 <LogOut size={14} strokeWidth={3} />
@@ -154,138 +140,117 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                     </div>
                 </div>
 
-                {/* BARRA DE NAVEGACAO */}
-                <div ref={navRef} className="border-t border-soft/60 bg-bg/50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-1 py-2 overflow-x-auto custom-scrollbar">
+                {/* BARRA DE NAVEGACAO — tabs */}
+                <div className="border-t border-soft/60 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-1 py-2">
+                        <NavTab label="Home" href="/membros/dashboard" active={isHome} />
+                        <NavDropdownBtn label="Igreja" active={menuAberto === 'igreja'} onClick={() => toggleMenu('igreja')} />
+                        {temDepto && <NavDropdownBtn label="Departamento" active={menuAberto === 'depto'} onClick={() => toggleMenu('depto')} />}
+                        <NavDropdownBtn label="Ajuda" active={menuAberto === 'ajuda'} onClick={() => toggleMenu('ajuda')} />
+                    </div>
+                </div>
+            </div>
 
-                        {/* HOME */}
-                        <Link href="/membros/dashboard"
-                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${
-                                isHome ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                            }`}>
-                            Home
-                        </Link>
+            {/* DROPDOWNS — renderizados FORA do container com overflow, como paineis fullwidth */}
+            {menuAberto && (
+                <div className="bg-bg border-t border-soft shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
-                        {/* IGREJA (dropdown) */}
-                        <div className="relative shrink-0">
-                            <button onClick={() => toggleMenu('igreja')}
-                                className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
-                                    menuAberto === 'igreja' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                                }`}>
-                                Igreja <ChevronDown size={10} className={`transition-transform ${menuAberto === 'igreja' ? 'rotate-180' : ''}`} />
-                            </button>
+                        {/* IGREJA */}
+                        {menuAberto === 'igreja' && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                                <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
+                                <Link href="/membros/dashboard?tab=departamentos" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Users size={12} className="text-figueira" /> Onde Eu Sirvo
+                                </Link>
+                                <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
+                                <ModalIndisponibilidade isMenuItem />
+                                <Link href="/membros/agendar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                </Link>
+                                {(permissoes.isLouvor || permissoes.isMidia) && <ModalRelatorioLouvor />}
+                                <Link href="/boleia" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Car size={12} className="text-figueira" /> Boleia Solidaria
+                                </Link>
+                                <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                    <Coffee size={12} className="text-orange-500" /> Menu Cantina
+                                </Link>
+                            </div>
+                        )}
 
-                            {menuAberto === 'igreja' && (
-                                <div className="absolute left-0 top-full mt-1 w-56 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
-                                    <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
-                                    <Link href="/membros/dashboard?tab=departamentos" onClick={() => setMenuAberto(null)}
-                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Users size={12} className="text-figueira" /> Onde Eu Sirvo
+                        {/* DEPARTAMENTO */}
+                        {menuAberto === 'depto' && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                                {permissoes.isAdmin && (
+                                    <Link href="/admin/dashboard" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <ShieldCheck size={12} className="text-figueira" /> Painel Admin
                                     </Link>
-                                    <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
-                                    <ModalIndisponibilidade isMenuItem />
-                                    <Link href="/membros/agendar" onClick={() => setMenuAberto(null)}
-                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                )}
+                                {(permissoes.isFinance || permissoes.isAdmin) && (
+                                    <Link href="/tesouraria" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <PieChart size={12} className="text-emerald-500" /> Tesouraria
                                     </Link>
-                                    {(permissoes.isLouvor || permissoes.isMidia) && (
-                                        <ModalRelatorioLouvor />
-                                    )}
-                                    <div className="border-t border-soft my-0.5" />
-                                    <Link href="/boleia" onClick={() => setMenuAberto(null)}
-                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Car size={12} className="text-figueira" /> Boleia Solidaria
+                                )}
+                                {(permissoes.isCantina || permissoes.isAdmin) && (
+                                    <Link href="/cantina" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <Store size={12} className="text-orange-500" /> Cantina
                                     </Link>
-                                    <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)}
-                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Coffee size={12} className="text-orange-500" /> Menu Cantina
+                                )}
+                                {podePregacao && (
+                                    <Link href="/pregacao" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <BookOpen size={12} className="text-indigo-400" /> Pregacao
                                     </Link>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* DEPARTAMENTO (dropdown, so se tem permissoes) */}
-                        {temDepto && (
-                            <div className="relative shrink-0">
-                                <button onClick={() => toggleMenu('depto')}
-                                    className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
-                                        menuAberto === 'depto' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                                    }`}>
-                                    Departamento <ChevronDown size={10} className={`transition-transform ${menuAberto === 'depto' ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {menuAberto === 'depto' && (
-                                    <div className="absolute left-0 top-full mt-1 w-52 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
-                                        {permissoes.isAdmin && (
-                                            <Link href="/admin/dashboard" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <ShieldCheck size={12} className="text-figueira" /> Painel Admin
-                                            </Link>
-                                        )}
-                                        {(permissoes.isFinance || permissoes.isAdmin) && (
-                                            <Link href="/tesouraria" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <PieChart size={12} className="text-emerald-500" /> Tesouraria
-                                            </Link>
-                                        )}
-                                        {(permissoes.isCantina || permissoes.isAdmin) && (
-                                            <Link href="/cantina" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <Store size={12} className="text-orange-500" /> Cantina
-                                            </Link>
-                                        )}
-                                        {podePregacao && (
-                                            <Link href="/pregacao" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <BookOpen size={12} className="text-indigo-400" /> Pregacao
-                                            </Link>
-                                        )}
-                                        {permissoes.isMidia && (
-                                            <Link href="/midia/holyrics" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <MonitorPlay size={12} className="text-purple-500" /> Holyrics
-                                            </Link>
-                                        )}
-                                        {(permissoes.isMidia || permissoes.isLouvor) && (
-                                            <Link href="/midia/mesax32" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <Music2 size={12} className="text-blue-500" /> Mesa de Som
-                                            </Link>
-                                        )}
-                                        {permissoes.isMidia && (
-                                            <Link href="/midia/lumikit" onClick={() => setMenuAberto(null)}
-                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                <Lightbulb size={12} className="text-amber-500" /> Iluminacao
-                                            </Link>
-                                        )}
-                                    </div>
+                                )}
+                                {permissoes.isMidia && (
+                                    <Link href="/midia/holyrics" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <MonitorPlay size={12} className="text-purple-500" /> Holyrics
+                                    </Link>
+                                )}
+                                {(permissoes.isMidia || permissoes.isLouvor) && (
+                                    <Link href="/midia/mesax32" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <Music2 size={12} className="text-blue-500" /> Mesa de Som
+                                    </Link>
+                                )}
+                                {permissoes.isMidia && (
+                                    <Link href="/midia/lumikit" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <Lightbulb size={12} className="text-amber-500" /> Iluminacao
+                                    </Link>
                                 )}
                             </div>
                         )}
 
-                        {/* AJUDA (dropdown) */}
-                        <div className="relative shrink-0">
-                            <button onClick={() => toggleMenu('ajuda')}
-                                className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
-                                    menuAberto === 'ajuda' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                                }`}>
-                                Ajuda <ChevronDown size={10} className={`transition-transform ${menuAberto === 'ajuda' ? 'rotate-180' : ''}`} />
-                            </button>
-
-                            {menuAberto === 'ajuda' && (
-                                <div className="absolute right-0 top-full mt-1 w-48 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
-                                    <ModalAjuda isMenuItem />
-                                    <div className="flex items-center justify-between px-2.5 py-2">
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2">
-                                            <Info size={12} className="text-muted2" /> v{APP_VERSION}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        {/* AJUDA */}
+                        {menuAberto === 'ajuda' && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <ModalAjuda isMenuItem />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2 px-3 py-2">
+                                    <Info size={12} className="text-muted2" /> v{APP_VERSION}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
         </header>
+    )
+}
+
+function NavTab({ label, href, active }: { label: string; href: string; active: boolean }) {
+    return (
+        <Link href={href} className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${
+            active ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+        }`}>
+            {label}
+        </Link>
+    )
+}
+
+function NavDropdownBtn({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+    return (
+        <button onClick={onClick} className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+            active ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+        }`}>
+            {label} <ChevronDown size={10} className={`transition-transform ${active ? 'rotate-180' : ''}`} />
+        </button>
     )
 }
