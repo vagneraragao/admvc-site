@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-    ShieldCheck, PieChart, UserCircle, LogOut, Users,
-    LayoutDashboard, HeartHandshake, Store, Menu, MonitorPlay,
-    Wallet2, Home, Church, Music2, Lightbulb, BarChart3, Calendar, MessageSquare,
-    BookOpen, GraduationCap, ChevronDown, ChevronUp, Car, Coffee, HelpCircle, Info
+    ShieldCheck, PieChart, LogOut, Users,
+    Store, MonitorPlay,
+    Home, Music2, Lightbulb, Calendar, MessageSquare,
+    BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info,
+    UserCircle, ClipboardList, CalendarOff, BarChart3
 } from 'lucide-react'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
@@ -42,26 +43,24 @@ interface Props {
 export default function MembroHeader({ membro, igrejaName, role, permissoes, mostraServico, escolaridades, avisos = [], alertasAcolhimento = [] }: Props) {
     const pathname = usePathname()
     const [mounted, setMounted] = useState(false)
-    const [menuAberto, setMenuAberto] = useState(false)
     const [expandido, setExpandido] = useState(false)
-    const menuRef = useRef<HTMLDivElement>(null)
+    const [menuAberto, setMenuAberto] = useState<string | null>(null) // 'igreja' | 'depto' | 'ajuda' | null
+    const navRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => setMounted(true), [])
+    useEffect(() => { setMenuAberto(null) }, [pathname])
 
-    // Fechar menu ao navegar
-    useEffect(() => { setMenuAberto(false) }, [pathname])
-
-    // Fechar menu ao clicar fora
+    // Fechar dropdown ao clicar fora
     useEffect(() => {
         if (!menuAberto) return
         const handler = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuAberto(false)
+            if (navRef.current && !navRef.current.contains(e.target as Node)) setMenuAberto(null)
         }
         document.addEventListener('click', handler)
         return () => document.removeEventListener('click', handler)
     }, [menuAberto])
 
-    // Persistir estado expandido
+    // Persistir expandido
     useEffect(() => {
         const saved = localStorage.getItem('membro_header_expanded')
         if (saved === 'true') setExpandido(true)
@@ -73,173 +72,78 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
         localStorage.setItem('membro_header_expanded', String(next))
     }
 
+    function toggleMenu(menu: string) {
+        setMenuAberto(prev => prev === menu ? null : menu)
+    }
+
     const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
     if (hideHeader) return null
 
     const iniciais = `${membro.first_name?.[0] || ''}${membro.last_name?.[0] || ''}`
-
-    // Detectar rota activa
     const isHome = pathname === '/membros/dashboard'
-    const isTesouraria = pathname.startsWith('/tesouraria') || pathname.startsWith('/departamentos/financeiro')
-    const isAcolhimento = pathname.startsWith('/departamentos/acolhimento')
-    const isCantina = pathname.startsWith('/cantina') || pathname.startsWith('/departamentos/cantina')
-    const isAcaoSocial = pathname.startsWith('/acaosocial')
-    const isMidiaRoute = pathname.startsWith('/midia')
-    const isHolyrics = pathname.startsWith('/midia/holyrics')
-    const isMesaSom = pathname.startsWith('/midia/mesax32')
-    const isLumikit = pathname.startsWith('/midia/lumikit')
-    const isPregacao = pathname.startsWith('/pregacao')
-    const isEBD = pathname.startsWith('/ensino')
-    const isBoleia = pathname.startsWith('/boleia')
-
-    // Breadcrumb do modulo activo
-    const moduloPath = isTesouraria ? 'Tesouraria'
-        : isAcolhimento ? 'Acolhimento'
-        : isCantina ? 'Cantina'
-        : isAcaoSocial ? 'Acao Social'
-        : isHolyrics ? 'Midia / Holyrics'
-        : isMesaSom ? 'Midia / Mesa de Som'
-        : isLumikit ? 'Midia / Iluminacao'
-        : isMidiaRoute ? 'Midia'
-        : isPregacao ? 'Pregacao'
-        : isBoleia ? 'Boleia Solidaria'
-        : null
-
     const podePregacao = permissoes.isAdmin || permissoes.isDiaconia
+
+    // Contar departamentos do membro
+    const numDeptos = membro.ministerios?.length || 0
+    const numGrupos = (membro.grupos?.length || 0) + (membro.lider_de_grupo?.length || 0)
+
+    // Tem algo no menu departamento?
+    const temDepto = permissoes.isAdmin || permissoes.isFinance || permissoes.isCantina || podePregacao || permissoes.isMidia || permissoes.isLouvor || permissoes.isAcolhimento
+
+    // Role label
+    const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'CONGREGATION_ADMIN' ? 'Admin Congregacao' : role === 'LEADER' ? 'Lider' : role === 'FINANCE' ? 'Tesouraria' : role === 'MANAGER' ? 'Gestor' : 'Membro'
 
     return (
         <header className="bg-bg2 border-b border-soft sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* LINHA PRINCIPAL */}
+                {/* LINHA PRINCIPAL — Avatar + Nome + Acoes */}
                 <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${expandido ? 'py-4' : 'py-3'}`}>
                     <Link href="/membros/dashboard" className="flex items-center gap-3 min-w-0">
-                        <div className={`relative shrink-0 transition-all duration-300 ${expandido ? 'w-14 h-14' : 'w-9 h-9'}`}>
+                        <div className={`relative shrink-0 transition-all duration-300 ${expandido ? 'w-16 h-16' : 'w-9 h-9'}`}>
                             {membro.avatar_file ? (
-                                <Image src={membro.avatar_file} alt="" fill sizes="56px" className="rounded-lg object-cover border border-soft" />
+                                <Image src={membro.avatar_file} alt="" fill sizes="64px" className="rounded-xl object-cover border border-soft" />
                             ) : (
-                                <div className={`w-full h-full rounded-lg bg-fg text-bg flex items-center justify-center font-black border border-soft transition-all duration-300 ${expandido ? 'text-base rounded-xl' : 'text-[10px]'}`}>
+                                <div className={`w-full h-full rounded-xl bg-fg text-bg flex items-center justify-center font-black border border-soft transition-all duration-300 ${expandido ? 'text-lg' : 'text-[10px]'}`}>
                                     {iniciais}
                                 </div>
                             )}
                         </div>
                         <div className="min-w-0">
-                            <p className={`font-black uppercase tracking-widest text-figueira truncate transition-all duration-300 ${expandido ? 'text-[8px]' : 'text-[7px]'}`}>
+                            <p className={`font-black uppercase tracking-widest text-figueira truncate transition-all duration-300 ${expandido ? 'text-[9px]' : 'text-[7px]'}`}>
                                 {igrejaName}{membro.congregacao ? ` · ${membro.congregacao.nome}` : ''}
                             </p>
-                            <h1 className={`font-black text-fg italic tracking-tighter uppercase leading-none truncate transition-all duration-300 ${expandido ? 'text-lg' : 'text-sm'}`}>
+                            <h1 className={`font-black text-fg italic tracking-tighter uppercase leading-none truncate transition-all duration-300 ${expandido ? 'text-xl' : 'text-sm'}`}>
                                 {membro.first_name} <span className={`text-muted/40 ${expandido ? 'inline' : 'hidden sm:inline'}`}>{membro.last_name}</span>
                             </h1>
                             {expandido && (
-                                <p className="text-[8px] font-bold text-muted mt-0.5 animate-in fade-in duration-200">
-                                    {role === 'ADMIN' ? 'Administrador' : role === 'LEADER' ? 'Lider' : role === 'FINANCE' ? 'Tesouraria' : 'Membro'}
-                                    {membro.email && <span className="ml-2 text-muted/50">{membro.email}</span>}
-                                </p>
+                                <div className="animate-in fade-in duration-200 mt-1 space-y-0.5">
+                                    <p className="text-[9px] font-bold text-muted">
+                                        <span className="bg-figueira/10 text-figueira border border-figueira/20 px-2 py-0.5 rounded-md mr-2">{roleLabel}</span>
+                                        {membro.email && <span className="text-muted/50">{membro.email}</span>}
+                                    </p>
+                                    <div className="flex items-center gap-3 text-[8px] font-bold text-muted/60">
+                                        {numDeptos > 0 && <span>{numDeptos} departamento{numDeptos !== 1 ? 's' : ''}</span>}
+                                        {numGrupos > 0 && <span>{numGrupos} grupo{numGrupos !== 1 ? 's' : ''}</span>}
+                                        {membro.phone_1 && <span>{membro.phone_1}</span>}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </Link>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Botão expandir/recolher */}
                         <button onClick={toggleExpandido}
                             className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all"
                             title={expandido ? 'Recolher' : 'Expandir'}>
                             {expandido ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
 
-                        {/* MENU SERVIÇO */}
-                        <div ref={menuRef} className="relative z-50">
-                            <button onClick={() => setMenuAberto(!menuAberto)}
-                                className={`h-9 px-3 rounded-lg flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 ${menuAberto ? 'bg-fg text-bg' : 'bg-figueira text-white hover:bg-figueira/90'}`}>
-                                <Menu size={14} /> Servico
-                            </button>
-
-                            {menuAberto && (
-                                <div className="absolute right-0 top-full mt-1.5 w-56 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5">
-                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Minha Conta</p>
-                                    <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
-                                    <ModalIndisponibilidade isMenuItem />
-                                    <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
-                                    {(permissoes.isLouvor || permissoes.isMidia) && (
-                                        <ModalRelatorioLouvor />
-                                    )}
-                                    <Link href="/membros/agendar" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Calendar size={12} className="text-figueira" /> Agendar Reuniao
-                                    </Link>
-
-                                    <div className="border-t border-soft my-0.5" />
-                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Comunidade</p>
-                                    <Link href="/boleia" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Car size={12} className="text-figueira" /> Boleia Solidaria
-                                    </Link>
-                                    <Link href="/cantina/menu-local" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                        <Coffee size={12} className="text-orange-500" /> Menu Cantina
-                                    </Link>
-
-                                    <div className="border-t border-soft my-0.5" />
-                                    <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Ajuda</p>
-                                    <ModalAjuda isMenuItem />
-                                    <div className="flex items-center justify-between px-2.5 py-2">
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2">
-                                            <Info size={12} className="text-muted2" /> v{APP_VERSION}
-                                        </span>
-                                    </div>
-
-                                    {mostraServico && <div className="border-t border-soft my-0.5" />}
-
-                                    {mostraServico && (
-                                        <>
-                                            <p className="text-[7px] font-black uppercase text-muted tracking-widest px-2.5 pt-1 pb-0.5">Departamentos</p>
-                                            {permissoes.isAdmin && (
-                                                <Link href="/admin/dashboard" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <ShieldCheck size={12} className="text-figueira" /> Painel Admin
-                                                </Link>
-                                            )}
-                                            {permissoes.isFinance && (
-                                                <Link href="/tesouraria" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <PieChart size={12} className="text-emerald-500" /> Tesouraria
-                                                </Link>
-                                            )}
-                                            {permissoes.isAcolhimento && (
-                                                <Link href="/departamentos/acolhimento/dashboard" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <HeartHandshake size={12} className="text-blue-500" /> Acolhimento
-                                                </Link>
-                                            )}
-                                            {permissoes.isCantina && (
-                                                <Link href="/cantina" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <Store size={12} className="text-orange-500" /> Cantina
-                                                </Link>
-                                            )}
-                                            {podePregacao && (
-                                                <Link href="/pregacao" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <BookOpen size={12} className="text-indigo-400" /> Pregacao
-                                                </Link>
-                                            )}
-                                            {permissoes.isMidia && (
-                                                <Link href="/midia/holyrics" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <MonitorPlay size={12} className="text-purple-500" /> Holyrics
-                                                </Link>
-                                            )}
-                                            {(permissoes.isMidia || permissoes.isLouvor) && (
-                                                <Link href="/midia/mesax32" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <Music2 size={12} className="text-blue-500" /> Mesa de Som
-                                                </Link>
-                                            )}
-                                            {permissoes.isMidia && (
-                                                <Link href="/midia/lumikit" onClick={() => setMenuAberto(false)} className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
-                                                    <Lightbulb size={12} className="text-amber-500" /> Iluminacao
-                                                </Link>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
                         <Link href="/membros/mural"
                             className="h-9 w-9 flex items-center justify-center bg-bg2 border border-soft text-muted rounded-lg hover:text-figueira hover:border-figueira/30 transition-all"
                             title="Mural">
                             <MessageSquare size={14} />
                         </Link>
+
                         <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
 
                         <form action={logoutMembro}>
@@ -250,35 +154,135 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                     </div>
                 </div>
 
-                {/* NAV BAR */}
-                <div className="border-t border-soft/60 bg-bg/50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto custom-scrollbar">
+                {/* BARRA DE NAVEGACAO */}
+                <div ref={navRef} className="border-t border-soft/60 bg-bg/50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-1 py-2 overflow-x-auto custom-scrollbar">
+
+                        {/* HOME */}
                         <Link href="/membros/dashboard"
-                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                isHome && !moduloPath ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 ${
+                                isHome ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
                             }`}>
                             Home
                         </Link>
-                        <Link href="/membros/dashboard?tab=departamentos"
-                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                mounted && globalThis?.location?.search?.includes('tab=departamentos') ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                            }`}>
-                            Igreja
-                        </Link>
-                        <Link href="/ensino"
-                            className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                isEBD ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
-                            }`}>
-                            Educação
-                        </Link>
-                        {moduloPath && !isEBD && (
-                            <>
-                                <span className="text-muted/30 text-[10px]">/</span>
-                                <span className="px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 whitespace-nowrap">
-                                    {moduloPath}
-                                </span>
-                            </>
+
+                        {/* IGREJA (dropdown) */}
+                        <div className="relative shrink-0">
+                            <button onClick={() => toggleMenu('igreja')}
+                                className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
+                                    menuAberto === 'igreja' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                                }`}>
+                                Igreja <ChevronDown size={10} className={`transition-transform ${menuAberto === 'igreja' ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {menuAberto === 'igreja' && (
+                                <div className="absolute left-0 top-full mt-1 w-56 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
+                                    <DrawerEditarPerfil membro={membro} escolaridades={escolaridades} isMenuItem />
+                                    <Link href="/membros/dashboard?tab=departamentos" onClick={() => setMenuAberto(null)}
+                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Users size={12} className="text-figueira" /> Onde Eu Sirvo
+                                    </Link>
+                                    <ModalRelatorioEscalas membroId={membro.id} isMenuItem />
+                                    <ModalIndisponibilidade isMenuItem />
+                                    <Link href="/membros/agendar" onClick={() => setMenuAberto(null)}
+                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Calendar size={12} className="text-figueira" /> Agendar Reuniao
+                                    </Link>
+                                    {(permissoes.isLouvor || permissoes.isMidia) && (
+                                        <ModalRelatorioLouvor />
+                                    )}
+                                    <div className="border-t border-soft my-0.5" />
+                                    <Link href="/boleia" onClick={() => setMenuAberto(null)}
+                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Car size={12} className="text-figueira" /> Boleia Solidaria
+                                    </Link>
+                                    <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)}
+                                        className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                        <Coffee size={12} className="text-orange-500" /> Menu Cantina
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* DEPARTAMENTO (dropdown, so se tem permissoes) */}
+                        {temDepto && (
+                            <div className="relative shrink-0">
+                                <button onClick={() => toggleMenu('depto')}
+                                    className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
+                                        menuAberto === 'depto' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                                    }`}>
+                                    Departamento <ChevronDown size={10} className={`transition-transform ${menuAberto === 'depto' ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {menuAberto === 'depto' && (
+                                    <div className="absolute left-0 top-full mt-1 w-52 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
+                                        {permissoes.isAdmin && (
+                                            <Link href="/admin/dashboard" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <ShieldCheck size={12} className="text-figueira" /> Painel Admin
+                                            </Link>
+                                        )}
+                                        {(permissoes.isFinance || permissoes.isAdmin) && (
+                                            <Link href="/tesouraria" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <PieChart size={12} className="text-emerald-500" /> Tesouraria
+                                            </Link>
+                                        )}
+                                        {(permissoes.isCantina || permissoes.isAdmin) && (
+                                            <Link href="/cantina" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Store size={12} className="text-orange-500" /> Cantina
+                                            </Link>
+                                        )}
+                                        {podePregacao && (
+                                            <Link href="/pregacao" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <BookOpen size={12} className="text-indigo-400" /> Pregacao
+                                            </Link>
+                                        )}
+                                        {permissoes.isMidia && (
+                                            <Link href="/midia/holyrics" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <MonitorPlay size={12} className="text-purple-500" /> Holyrics
+                                            </Link>
+                                        )}
+                                        {(permissoes.isMidia || permissoes.isLouvor) && (
+                                            <Link href="/midia/mesax32" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Music2 size={12} className="text-blue-500" /> Mesa de Som
+                                            </Link>
+                                        )}
+                                        {permissoes.isMidia && (
+                                            <Link href="/midia/lumikit" onClick={() => setMenuAberto(null)}
+                                                className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5">
+                                                <Lightbulb size={12} className="text-amber-500" /> Iluminacao
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         )}
+
+                        {/* AJUDA (dropdown) */}
+                        <div className="relative shrink-0">
+                            <button onClick={() => toggleMenu('ajuda')}
+                                className={`px-3.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1 ${
+                                    menuAberto === 'ajuda' ? 'bg-fg text-bg' : 'text-muted hover:bg-soft/30 hover:text-fg'
+                                }`}>
+                                Ajuda <ChevronDown size={10} className={`transition-transform ${menuAberto === 'ajuda' ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {menuAberto === 'ajuda' && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-bg border border-soft p-1.5 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-0.5 z-50">
+                                    <ModalAjuda isMenuItem />
+                                    <div className="flex items-center justify-between px-2.5 py-2">
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2">
+                                            <Info size={12} className="text-muted2" /> v{APP_VERSION}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
