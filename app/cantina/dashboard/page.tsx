@@ -9,9 +9,21 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardCantinaPage() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login?error=Sessao expirada')
-    if (!isAdminCheck(session.role)) redirect('/membros/dashboard?error=Acesso restrito')
 
     const db = await getDb()
+
+    // Verificar permissao: admin ou lider da cantina
+    const admin = isAdminCheck(session.role)
+    let temPermissao = admin
+
+    if (!temPermissao) {
+        const lideraCantina = await db.departamento.findFirst({
+            where: { lider_id: session.membroId, nome: { contains: 'Cantina', mode: 'insensitive' } },
+        })
+        if (lideraCantina) temPermissao = true
+    }
+
+    if (!temPermissao) redirect('/membros/dashboard?error=Acesso restrito')
 
     // ── Date boundaries ──────────────────────────────────────────────
     const now = new Date()

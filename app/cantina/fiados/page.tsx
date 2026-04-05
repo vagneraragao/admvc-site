@@ -1,3 +1,4 @@
+import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import { obterTodosFiadosPendentes } from '@/actions/fiado-actions'
@@ -11,10 +12,21 @@ export default async function FiadosPage() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login?error=Sessao expirada')
 
+    const db = await getDb()
+
+    // Verificar permissao: admin, finance ou lider da cantina
     const isAdmin = isAdminCheck(session.role)
     const isFinance = session.role === 'FINANCE'
+    let temPermissao = isAdmin || isFinance
 
-    if (!isAdmin && !isFinance) {
+    if (!temPermissao) {
+        const lideraCantina = await db.departamento.findFirst({
+            where: { lider_id: session.membroId, nome: { contains: 'Cantina', mode: 'insensitive' } },
+        })
+        if (lideraCantina) temPermissao = true
+    }
+
+    if (!temPermissao) {
         redirect('/membros/dashboard?error=Acesso restrito.')
     }
 

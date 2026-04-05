@@ -3,7 +3,8 @@
 import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
-import { Coffee, Package } from 'lucide-react'
+import { Coffee, Package, ShoppingCart } from 'lucide-react'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,10 @@ export default async function MenuLocalPage() {
 
     const db = await getDb()
 
-    const [produtos, categorias] = await Promise.all([
+    const seteDiasDepois = new Date()
+    seteDiasDepois.setDate(seteDiasDepois.getDate() + 7)
+
+    const [produtos, categorias, proximosEventos] = await Promise.all([
         db.produtoCantina.findMany({
             where: {
                 disponivel: true,
@@ -28,6 +32,12 @@ export default async function MenuLocalPage() {
         db.categoriaCantina.findMany({
             where: { ativa: true },
             orderBy: { ordem: 'asc' },
+        }),
+        db.evento.findMany({
+            where: { data: { gte: new Date(), lte: seteDiasDepois } },
+            orderBy: { data: 'asc' },
+            take: 5,
+            select: { id: true, nome: true, data: true },
         }),
     ])
 
@@ -48,6 +58,29 @@ export default async function MenuLocalPage() {
                     O que temos <span className="text-muted/20">hoje.</span>
                 </h1>
             </header>
+
+            {/* PRE-ENCOMENDAS */}
+            {proximosEventos.length > 0 && (
+                <section className="bg-figueira/5 border border-figueira/20 rounded-[2rem] p-6 space-y-3">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-figueira flex items-center gap-2">
+                        <ShoppingCart size={14} /> Encomendar para o Proximo Evento
+                    </h2>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                        {proximosEventos.map(ev => (
+                            <Link key={ev.id} href={`/cantina/encomendar/${ev.id}`}
+                                className="bg-bg border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-black uppercase text-fg">{ev.nome}</p>
+                                    <p className="text-[10px] text-muted capitalize">
+                                        {ev.data.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                    </p>
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-figueira">Encomendar →</span>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {porCategoria.filter(c => c.produtos.length > 0).map(cat => (
                 <section key={cat.id} className="space-y-4">

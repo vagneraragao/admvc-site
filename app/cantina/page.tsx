@@ -1,148 +1,133 @@
-//app/cantina/dashboard/page.tsx
+// app/cantina/page.tsx
+// Pagina principal da cantina — redireciona para o sistema interno
 
-import { getDb, getTenantIdFromHeaders } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Store, Settings, ExternalLink, MonitorPlay, Smartphone, Coffee, AlertTriangle } from 'lucide-react'
-import { getLoyverseItems, getLoyverseInventory, getLoyverseCategories, getLoyverseTokenForTenant } from '@/lib/loyverse-api'
-import CantinaManager from '@/components/cantina/CantinaManager'
-import Breadcrumb from '@/components/ui/Breadcrumb'
+import { Store, ShoppingCart, Package, BarChart3, Clock, CreditCard, HandCoins, Coffee, AlertTriangle, Users } from 'lucide-react'
+
 export const dynamic = 'force-dynamic'
 
 export default async function GestaoCantinaPage() {
     const db = await getDb()
-    const session = await getSessionData();
-    if (!session) redirect('/membros/login?error=Sessão expirada');
+    const session = await getSessionData()
+    if (!session) redirect('/membros/login?error=Sessao expirada')
 
     const membroLogado = await db.membro.findUnique({
         where: { id: session.membroId },
         include: { ministerios: { include: { departamento: true } } }
-    });
+    })
 
-    if (!membroLogado) redirect('/membros/login');
+    if (!membroLogado) redirect('/membros/login')
 
-    const isAdmin = isAdminCheck(session.role);
-    const isFinance = session.role === 'FINANCE';
-
+    const isAdmin = isAdminCheck(session.role)
     const isEquipaCantina = membroLogado.ministerios.some(vinculo => {
-        const nomeDepto = vinculo.departamento?.nome.toLowerCase() || '';
-        return nomeDepto.includes('cantina');
-    });
+        const nomeDepto = vinculo.departamento?.nome.toLowerCase() || ''
+        return nomeDepto.includes('cantina')
+    })
 
-    // Se não tiver permissão, volta para a dashboard
-    if (!isAdmin && !isFinance && !isEquipaCantina) {
-        redirect('/membros/dashboard?error=Acesso restrito à equipa da Cantina.');
+    if (!isAdmin && !isEquipaCantina) {
+        redirect('/membros/dashboard?error=Acesso restrito a equipa da Cantina.')
     }
 
-    const tenantId = await getTenantIdFromHeaders();
-    const token = await getLoyverseTokenForTenant(tenantId);
+    // Stats rapidos
+    const [totalProdutos, totalCategorias, encomendaHoje] = await Promise.all([
+        db.produtoCantina.count({ where: { disponivel: true } }),
+        db.categoriaCantina.count({ where: { ativa: true } }),
+        db.preEncomendaCantina.count({
+            where: { status: 'CONFIRMADA', evento: { data: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }
+        }),
+    ])
 
-    if (!token) {
-        return (
-            <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
-                <div className="bg-orange-50 border border-orange-200 p-8 rounded-3xl text-center space-y-2">
-                    <AlertTriangle className="mx-auto text-orange-500" size={32} />
-                    <h2 className="text-lg font-black uppercase text-orange-700">Loyverse nao configurado</h2>
-                    <p className="text-sm text-orange-600">Configure o token Loyverse nas definicoes do tenant para utilizar esta funcionalidade.</p>
-                </div>
-            </main>
-        );
-    }
+    // Nota: Loyverse e opcional — link no painel admin
 
-    const [items, inventory, categories] = await Promise.all([
-        getLoyverseItems(token),
-        getLoyverseInventory(token),
-        getLoyverseCategories(token)
-    ]);
-
-    const produtosProcessados = items.map((item: any) => {
-        const variantePrincipal = item.variants?.[0] || {};
-        const stockInfo = inventory.find((inv: any) => inv.variant_id === variantePrincipal?.variant_id);
-        const stock = stockInfo?.in_stock || 0;
-
-        let nomeOriginal = item.item_name.trim();
-        let isDestaque = nomeOriginal.startsWith('-');
-        let nomeLimpo = isDestaque ? nomeOriginal.replace(/^-+/, '').trim() : nomeOriginal;
-
-        const categoriaObj = categories.find((c: any) => c.id === item.category_id);
-        const categoriaNome = categoriaObj?.name || 'Outra';
-
-        const precoReal = variantePrincipal?.default_price ?? variantePrincipal?.stores?.[0]?.price ?? 0;
-        const isAvailable = variantePrincipal?.stores?.[0]?.available_for_sale ?? true;
-
-        return {
-            id: item.id,
-            nome: nomeLimpo,
-            nomeOriginal: nomeOriginal,
-            isDestaque: isDestaque,
-            categoria: categoriaNome,
-            preco: precoReal,
-            categoriaId: item.category_id,
-            imagem: item.image_url || null,
-            cor: item.color || '#4b5563',
-            stock: stock,
-            varianteId: variantePrincipal?.variant_id,
-            isHidden: item.is_hidden || false,
-            trackStock: item.track_stock || false,
-            isAvailable: isAvailable
-        };
-    });
+    const links = [
+        { href: '/cantina/pos', label: 'Ponto de Venda', desc: 'Abrir caixa registadora', icon: CreditCard, cor: 'text-figueira' },
+        { href: '/cantina/produtos', label: 'Produtos', desc: `${totalProdutos} produtos activos`, icon: Package, cor: 'text-orange-500' },
+        { href: '/cantina/dashboard', label: 'Vendas', desc: 'Relatorios e estatisticas', icon: BarChart3, cor: 'text-blue-500' },
+        { href: '/cantina/turnos', label: 'Turnos', desc: 'Abrir e fechar caixa', icon: Clock, cor: 'text-purple-500' },
+        { href: '/cantina/encomendas', label: 'Encomendas', desc: `${encomendaHoje} para hoje`, icon: ShoppingCart, cor: 'text-emerald-500' },
+        { href: '/cantina/fiados', label: 'Fiados', desc: 'Dividas pendentes', icon: HandCoins, cor: 'text-red-400' },
+        { href: '/cantina/menu-local', label: 'Menu Publico', desc: 'Ver como o membro ve', icon: Coffee, cor: 'text-amber-500' },
+    ]
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
 
-            {/* Banner Sistema Interno */}
-            <div className="bg-figueira/5 border border-figueira/20 rounded-[2rem] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-figueira">Sistema Interno Ativo</h3>
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest mt-1">
-                        Gestao de produtos e ponto de venda agora disponiveis sem Loyverse.
-                    </p>
+            {/* HEADER */}
+            <header className="space-y-4">
+                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <Store size={14} /> Gestao Cantina
+                </span>
+                <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                    Cantina <span className="text-muted/20">ADMVC.</span>
+                </h1>
+                <p className="text-sm text-muted font-medium max-w-lg">
+                    Sistema interno de vendas, produtos, turnos e encomendas.
+                </p>
+            </header>
+
+            {/* STATS */}
+            <div className="grid grid-cols-3 gap-3">
+                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                    <p className="text-2xl font-black italic text-fg">{totalProdutos}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Produtos</p>
                 </div>
-                <div className="flex gap-3">
-                    <Link href="/cantina/produtos" className="px-4 py-2.5 bg-figueira text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-figueira/90 transition-all">Produtos</Link>
-                    <Link href="/cantina/pos" className="px-4 py-2.5 bg-bg2 border border-soft text-fg rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/50 transition-all">Abrir POS</Link>
+                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                    <p className="text-2xl font-black italic text-fg">{totalCategorias}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Categorias</p>
+                </div>
+                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                    <p className="text-2xl font-black italic text-fg">{encomendaHoje}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Encomendas Hoje</p>
                 </div>
             </div>
 
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Cantina</h1>
-                    <p className="text-xs text-muted">Gestao de produtos e stock.</p>
-                </div>
+            {/* LINKS */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {links.map(link => (
+                    <Link key={link.href} href={link.href}
+                        className="bg-bg2 border border-soft rounded-[2rem] p-6 hover:border-figueira/30 transition-all group">
+                        <div className="flex items-center gap-3 mb-2">
+                            <link.icon size={18} className={link.cor} />
+                            <h3 className="text-sm font-black uppercase tracking-widest text-fg group-hover:text-figueira transition-colors">
+                                {link.label}
+                            </h3>
+                        </div>
+                        <p className="text-[10px] text-muted font-bold">{link.desc}</p>
+                    </Link>
+                ))}
+            </div>
 
-                {/* Badge de Status do Loyverse */}
-                <div className="flex items-center gap-2 bg-green-500/10 text-green-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-green-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    Loyverse Sincronizado
-                </div>
-            </header>
-
-            {/* --- ACESSOS RÁPIDOS (compactos) --- */}
-            <section className="flex flex-wrap gap-2">
-                <Link href="/departamentos/cantina/menu" target="_blank" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
-                    <Smartphone size={14} className="text-figueira" /> Menu Digital
-                </Link>
-                <Link href="/departamentos/cantina/tv" target="_blank" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-blue-500/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
-                    <MonitorPlay size={14} className="text-blue-500" /> Ecra TV
-                </Link>
-                <a href="https://r.loyverse.com/dashboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-emerald-500/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg">
-                    <Settings size={14} className="text-emerald-500" /> Loyverse <ExternalLink size={10} className="text-muted" />
-                </a>
-            </section>
-
-            {/* --- GESTOR DE PRODUTOS --- */}
-            <section className="space-y-6 pt-6 border-t border-soft">
-                <div className="flex items-center gap-4">
-                    <Coffee size={20} className="text-figueira" />
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-fg">Stock e Produtos</h2>
-                    <div className="h-[1px] flex-1 bg-soft"></div>
-                </div>
-
-                <CantinaManager produtos={produtosProcessados} categorias={categories} />
-            </section>
-
+            {/* LOYVERSE OPCIONAL */}
+            {isAdmin && (
+                <section className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                        <Settings size={12} /> Integracao Loyverse (Opcional)
+                    </h3>
+                    <p className="text-[10px] text-muted">
+                        A integracao com o Loyverse e opcional. Use apenas se quiser sincronizar produtos de uma conta Loyverse existente.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                        <Link href="/admin/relatorios/loyverse" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
+                            Diagnostico Loyverse
+                        </Link>
+                        <Link href="/cantina/produtos" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
+                            Importar Produtos
+                        </Link>
+                    </div>
+                </section>
+            )}
         </main>
+    )
+}
+
+function Settings(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}>
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
     )
 }

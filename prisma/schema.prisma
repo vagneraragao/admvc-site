@@ -104,6 +104,7 @@ model Tenant {
   transacoesCantina        TransacaoCantina[]
   fiadosCantina            FiadoCantina[]
   turnosCantina            TurnoCantina[]
+  preEncomendas            PreEncomendaCantina[]
 }
 
 model Congregacao {
@@ -244,6 +245,7 @@ model Membro {
   transacoesCantina          TransacaoCantina[]
   fiadosCantina              FiadoCantina[]
   turnosCantina              TurnoCantina[]             @relation("OperadorTurno")
+  preEncomendas              PreEncomendaCantina[]
   qr_code                    String?                    @unique  // Codigo QR unico para identificacao rapida
 
   @@index([tenant_id])
@@ -381,6 +383,7 @@ model Evento {
   mensagemEvento MensagemEvento?
   sermoes        Sermao[]
   boleias        BoleiaOferta[]
+  preEncomendas  PreEncomendaCantina[]
 
   @@index([tenant_id])
 }
@@ -1233,6 +1236,7 @@ model ProdutoCantina {
   tenant          Tenant             @relation(fields: [tenant_id], references: [id])
   categoria       CategoriaCantina?  @relation(fields: [categoria_id], references: [id])
   itensTransacao  ItemTransacaoCantina[]
+  itensEncomenda  ItemPreEncomenda[]
 
   @@index([tenant_id])
   @@index([categoria_id])
@@ -1240,11 +1244,13 @@ model ProdutoCantina {
 }
 
 model SaldoCantina {
-  id          Int      @id @default(autoincrement())
-  tenant_id   Int
-  membro_id   Int      @unique   // 1 saldo por membro
-  saldo       Float    @default(0)
-  atualizado  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  membro_id       Int      @unique   // 1 saldo por membro
+  saldo           Float    @default(0)
+  limite_diario   Float?             // null = sem limite
+  limite_semanal  Float?             // null = sem limite
+  atualizado      DateTime @updatedAt
 
   tenant      Tenant   @relation(fields: [tenant_id], references: [id])
   membro      Membro   @relation(fields: [membro_id], references: [id])
@@ -1331,4 +1337,43 @@ model FiadoCantina {
   @@index([tenant_id])
   @@index([membro_id])
   @@map("cantina_fiados")
+}
+
+// ── PRE-ENCOMENDAS (Cantina) ─────────────────────────────────────────────────
+
+model PreEncomendaCantina {
+  id            Int                      @id @default(autoincrement())
+  tenant_id     Int
+  membro_id     Int
+  evento_id     Int
+  total         Float
+  pago          Boolean                  @default(false)  // true se saldo ja foi debitado
+  status        String                   @default("PENDENTE") // PENDENTE, CONFIRMADA, ENTREGUE, CANCELADA
+  criado_em     DateTime                 @default(now())
+  entregue_em   DateTime?
+  cancelado_em  DateTime?
+
+  tenant        Tenant                   @relation(fields: [tenant_id], references: [id])
+  membro        Membro                   @relation(fields: [membro_id], references: [id])
+  evento        Evento                   @relation(fields: [evento_id], references: [id])
+  itens         ItemPreEncomenda[]
+
+  @@index([tenant_id])
+  @@index([membro_id])
+  @@index([evento_id])
+  @@map("cantina_pre_encomendas")
+}
+
+model ItemPreEncomenda {
+  id              Int                  @id @default(autoincrement())
+  encomenda_id    Int
+  produto_id      Int
+  quantidade      Int
+  preco_unitario  Float
+
+  encomenda       PreEncomendaCantina  @relation(fields: [encomenda_id], references: [id], onDelete: Cascade)
+  produto         ProdutoCantina       @relation(fields: [produto_id], references: [id])
+
+  @@index([encomenda_id])
+  @@map("cantina_itens_pre_encomenda")
 }

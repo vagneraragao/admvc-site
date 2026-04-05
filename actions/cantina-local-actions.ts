@@ -261,19 +261,52 @@ export async function registarVenda(membroId: number | null, itens: ItemVenda[],
         // 2. Buscar saldo do membro (se houver membro)
         let novoSaldo = 0
 
-        if (membroId && formaPagamento === 'CREDITOS') {
+        if (membroId) {
             const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
-            if (!saldo || saldo.saldo < total) {
-                return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
+
+            // Verificar limites de consumo (diario/semanal)
+            if (saldo && (saldo.limite_diario || saldo.limite_semanal)) {
+                const agora = new Date()
+                const inicioDia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate())
+                const diaSemana = agora.getDay()
+                const inicioSemana = new Date(inicioDia)
+                inicioSemana.setDate(inicioSemana.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1))
+
+                if (saldo.limite_diario) {
+                    const consumoHoje = await db.transacaoCantina.aggregate({
+                        where: { membro_id: membroId, tipo: 'CONSUMO', criado_em: { gte: inicioDia } },
+                        _sum: { valor: true },
+                    })
+                    const gastoHoje = Math.abs(consumoHoje._sum.valor || 0)
+                    if (gastoHoje + total > saldo.limite_diario) {
+                        return { error: `Limite diario atingido. Limite: ${saldo.limite_diario.toFixed(2)}€. Ja gasto hoje: ${gastoHoje.toFixed(2)}€.` }
+                    }
+                }
+
+                if (saldo.limite_semanal) {
+                    const consumoSemana = await db.transacaoCantina.aggregate({
+                        where: { membro_id: membroId, tipo: 'CONSUMO', criado_em: { gte: inicioSemana } },
+                        _sum: { valor: true },
+                    })
+                    const gastoSemana = Math.abs(consumoSemana._sum.valor || 0)
+                    if (gastoSemana + total > saldo.limite_semanal) {
+                        return { error: `Limite semanal atingido. Limite: ${saldo.limite_semanal.toFixed(2)}€. Ja gasto esta semana: ${gastoSemana.toFixed(2)}€.` }
+                    }
+                }
             }
-            novoSaldo = saldo.saldo - total
-            await db.saldoCantina.update({
-                where: { membro_id: membroId },
-                data: { saldo: novoSaldo },
-            })
-        } else if (membroId) {
-            const saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
-            novoSaldo = saldo?.saldo || 0
+
+            if (formaPagamento === 'CREDITOS') {
+                if (!saldo || saldo.saldo < total) {
+                    return { error: `Saldo insuficiente. Disponivel: ${(saldo?.saldo || 0).toFixed(2)}€. Total: ${total.toFixed(2)}€` }
+                }
+                novoSaldo = saldo.saldo - total
+                await db.saldoCantina.update({
+                    where: { membro_id: membroId },
+                    data: { saldo: novoSaldo },
+                })
+            } else {
+                novoSaldo = saldo?.saldo || 0
+            }
         }
 
         // 4. Registar transacao com itens
@@ -441,4 +474,98 @@ export async function buscarMembroPorQr(qrCode: string) {
         console.error('Erro ao buscar membro por QR:', error)
         return null
     }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LIMITES DE CONSUMO (CONTROLO PARENTAL)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export async function definirLimiteCantina(
+    membroId: number,
+    limiteDiario: number | null,
+    limiteSemanal: number | null
+) {
+    await requireAuth()
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    // Verificar que o membro pertence a mesma familia do utilizador autenticado (ou e admin)
+    const session = await requireAuth()
+    const isAdmin = session.role === 'ADMIN' || session.role === 'CONGREGATION_ADMIN'
+
+    if (!isAdmin) {
+        // Verificar vinculo familiar
+        const membroLogado = await db.membro.findUnique({
+            where: { id: session.membroId },
+            select: { familia_id: true },
+        })
+        const membroAlvo = await db.membro.findUnique({
+            where: { id: membroId },
+            select: { familia_id: true },
+        })
+
+        if (!membroLogado?.familia_id || membroLogado.familia_id !== membroAlvo?.familia_id) {
+            return { error: 'So pode definir limites para membros da sua familia.' }
+        }
+    }
+
+    try {
+        // Buscar ou criar saldo
+        let saldo = await db.saldoCantina.findUnique({ where: { membro_id: membroId } })
+
+        if (!saldo) {
+            await (db as any).saldoCantina.create({
+                data: { tenant_id: tenantId, membro_id: membroId, saldo: 0, limite_diario: limiteDiario, limite_semanal: limiteSemanal },
+            })
+        } else {
+            await db.saldoCantina.update({
+                where: { membro_id: membroId },
+                data: { limite_diario: limiteDiario, limite_semanal: limiteSemanal },
+            })
+        }
+
+        revalidatePath('/membros/dashboard')
+        return { success: true }
+    } catch (error) {
+        console.error('Erro ao definir limite:', error)
+        return { error: 'Erro ao definir limite.' }
+    }
+}
+
+export async function obterLimitesFilhos() {
+    const session = await requireAuth()
+    const db = await getDb()
+
+    const membro = await db.membro.findUnique({
+        where: { id: session.membroId },
+        select: { familia_id: true },
+    })
+
+    if (!membro?.familia_id) return []
+
+    // Buscar todos os membros da mesma familia (exceto o proprio)
+    const familiares = await db.membro.findMany({
+        where: {
+            familia_id: membro.familia_id,
+            id: { not: session.membroId },
+            is_active: true,
+        },
+        select: { id: true, first_name: true, last_name: true },
+        orderBy: { first_name: 'asc' },
+    })
+
+    // Buscar saldos com limites
+    const saldos = await db.saldoCantina.findMany({
+        where: { membro_id: { in: familiares.map(f => f.id) } },
+        select: { membro_id: true, limite_diario: true, limite_semanal: true },
+    })
+
+    return familiares.map(f => {
+        const saldo = saldos.find(s => s.membro_id === f.id)
+        return {
+            ...f,
+            limite_diario: saldo?.limite_diario ?? null,
+            limite_semanal: saldo?.limite_semanal ?? null,
+        }
+    })
 }

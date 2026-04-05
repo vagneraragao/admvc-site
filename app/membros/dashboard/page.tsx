@@ -3,6 +3,9 @@ import { Suspense } from 'react'
 import { getTenantClient } from '@/lib/prisma'
 import CardSaldoLocal from '@/components/cantina/CardSaldoLocal'
 import QrCodeMembro from '@/components/cantina/QrCodeMembro'
+import CardLimiteFilhos from '@/components/cantina/CardLimiteFilhos'
+import ExtratoCantinaLocal from '@/components/cantina/ExtratoCantinaLocal'
+import ConsumoFilhos from '@/components/cantina/ConsumoFilhos'
 import { headers } from 'next/headers'
 import ModuloBloqueado from '@/components/ui/ModuloBloqueado'
 import Link from 'next/link'
@@ -756,17 +759,11 @@ export default async function DashboardMembro({
                                 <div className="lg:col-span-4 flex flex-col gap-6">
                                     <CardSaldoLocal membroId={membro.id} />
                                     <QrCodeMembro membroId={membro.id} qrCode={membro.qr_code || null} />
+                                    <CardLimiteFilhos />
                                 </div>
-                                <div className="lg:col-span-8 bg-bg border border-soft rounded-[2rem] p-6 shadow-inner relative overflow-hidden">
-                                    <h3 className="text-sm font-black uppercase italic text-fg mb-4 flex items-center gap-2">
-                                        <Receipt size={16} /> Últimos Movimentos
-                                    </h3>
-                                    <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                        <SessaoExtratoCantina
-                                            carregamentos={carregamentosHistorico}
-                                            objetivos={membro?.objetivos_financeiros || []}
-                                        />
-                                    </div>
+                                <div className="lg:col-span-8 bg-bg border border-soft rounded-[2rem] p-6 shadow-inner relative overflow-hidden space-y-4">
+                                    <ExtratoCantinaLocal membroId={membro.id} />
+                                    <ConsumoFilhos />
                                 </div>
                             </div>
                         </section>

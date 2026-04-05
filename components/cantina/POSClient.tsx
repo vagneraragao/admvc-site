@@ -99,6 +99,13 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
     const total = cart.reduce((sum, item) => sum + calcItemTotal(item), 0)
     const cartCount = cart.reduce((sum, i) => sum + i.quantidade, 0)
+
+    // Sincronizar carrinho com localStorage para o visor do cliente
+    useEffect(() => {
+        try {
+            localStorage.setItem('pos_cart', JSON.stringify({ cart, total, membro: selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : null }))
+        } catch {}
+    }, [cart, total, selectedMembro])
     const saldoRestante = saldo !== null ? saldo - total : null
     const isCreditos = formaPagamento === 'CREDITOS'
     const isFiado = formaPagamento === 'FIADO'
@@ -118,6 +125,11 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const toggleFullscreen = useCallback(() => {
         document.body.classList.toggle('pos-fullscreen')
         setFullscreen(f => !f)
+    }, [])
+
+    // Cleanup: remover pos-fullscreen ao sair da pagina
+    useEffect(() => {
+        return () => { document.body.classList.remove('pos-fullscreen') }
     }, [])
 
     async function selecionarMembro(membro: Membro) {
@@ -267,6 +279,13 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                             title="Consultar saldo"
                         >
                             <RefreshCw size={11} className={loadingSaldo ? 'animate-spin' : ''} />
+                        </button>
+                        <button
+                            onClick={() => { setSelectedMembro(null); setSaldo(null) }}
+                            className="text-muted hover:text-red-400 transition-colors"
+                            title="Limpar membro"
+                        >
+                            <X size={11} />
                         </button>
                     </div>
                 </div>

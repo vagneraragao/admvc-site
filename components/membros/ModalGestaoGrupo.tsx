@@ -47,13 +47,13 @@ interface Props {
     isLider: boolean
 }
 
-type Aba = 'encontros' | 'novo' | 'horario'
+type Aba = 'sobre' | 'encontros' | 'novo' | 'horario'
 
 export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [aberto, setAberto] = useState(false)
-    const [aba, setAba] = useState<Aba>('encontros')
+    const [aba, setAba] = useState<Aba>('sobre')
 
     const [salvando, setSalvando] = useState(false)
     const [sucesso, setSucesso] = useState(false)
@@ -228,6 +228,7 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
 
                         {/* TABS */}
                         <div className="flex gap-1 p-3 border-b border-soft shrink-0 bg-bg2 overflow-x-auto">
+                            <TabBtn label="Sobre" icon={<Users size={12} />} ativo={aba === 'sobre'} onClick={() => setAba('sobre')} />
                             <TabBtn label="Histórico" icon={<BookOpen size={12} />} ativo={aba === 'encontros'} onClick={() => setAba('encontros')} />
                             {isLider && <>
                                 <TabBtn label="Novo Encontro" icon={<Plus size={12} />} ativo={aba === 'novo'} onClick={() => setAba('novo')} destaque />
@@ -237,6 +238,45 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
 
                         {/* CONTEÚDO */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
+
+                            {/* SOBRE */}
+                            {aba === 'sobre' && (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    {grupo.descricao && (
+                                        <div className="bg-bg2 border border-soft rounded-2xl p-5">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted mb-2">Descricao</p>
+                                            <p className="text-sm text-fg leading-relaxed">{grupo.descricao}</p>
+                                        </div>
+                                    )}
+                                    {grupo.categoria && (
+                                        <div className="bg-bg2 border border-soft rounded-2xl p-4 flex items-center justify-between">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-muted">Categoria</span>
+                                            <span className="text-xs font-black text-fg uppercase">{grupo.categoria}</span>
+                                        </div>
+                                    )}
+                                    <div className="bg-bg2 border border-soft rounded-2xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted mb-3">Lideres</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {grupo.lideres.map(l => (
+                                                <span key={l.id} className="text-[10px] font-black uppercase bg-figueira/10 text-figueira border border-figueira/20 px-3 py-1.5 rounded-lg">
+                                                    {l.first_name} {l.last_name}
+                                                </span>
+                                            ))}
+                                            {grupo.lideres.length === 0 && <span className="text-[10px] text-muted italic">Sem lideres definidos</span>}
+                                        </div>
+                                    </div>
+                                    <div className="bg-bg2 border border-soft rounded-2xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted mb-3">Membros ({grupo.membros.length})</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {grupo.membros.map(m => (
+                                                <span key={m.id} className="text-[9px] font-bold bg-bg border border-soft px-2.5 py-1 rounded-lg text-fg">
+                                                    {m.first_name} {m.last_name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* HISTÓRICO */}
                             {aba === 'encontros' && (
