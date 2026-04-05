@@ -68,6 +68,9 @@ export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
                                     >
                                         <option value="EM_CONTACTO">Em Acompanhamento</option>
                                         <option value="CONSOLIDADO">Consolidado (Novo Membro)</option>
+                                        <option value="NAO_RETORNOU">Nao Retornou</option>
+                                        <option value="OUTRA_IGREJA">Foi para Outra Igreja</option>
+                                        <option value="DESISTIU">Desistiu</option>
                                     </select>
                                 </div>
                                 {/* NOVO CAMPO: Quantidade de Visitas */}
