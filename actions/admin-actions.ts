@@ -900,13 +900,34 @@ export async function editarEventoAction(formData: FormData) {
 export async function apagarEventoAction(id: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
-        const { db, tenantId } = await getDb();
-        await db.evento.delete({ where: { id } });
+        const { db } = await getDb();
 
-        revalidatePath('/escalas/admin');
+        // Apagar dependencias antes do evento
+        await db.escala.deleteMany({ where: { evento_id: id } })
+        await db.repertorioEvento.deleteMany({ where: { evento_id: id } })
+        await db.mensagemEvento.deleteMany({ where: { evento_id: id } })
+        await db.boleiaOferta.deleteMany({ where: { evento_id: id } })
+        await db.preEncomendaCantina.deleteMany({ where: { evento_id: id } })
+
+        // Apagar cardapio (itens + cardapio)
+        const cardapio = await db.cardapioCantina.findUnique({ where: { evento_id: id } })
+        if (cardapio) {
+            await db.cardapioItem.deleteMany({ where: { cardapio_id: cardapio.id } })
+            await db.cardapioCantina.delete({ where: { id: cardapio.id } })
+        }
+
+        // Apagar sermoes associados
+        await db.sermao.deleteMany({ where: { evento_id: id } })
+
+        // Finalmente apagar o evento
+        await db.evento.delete({ where: { id } })
+
+        revalidatePath('/admin/eventos')
+        revalidatePath('/admin/escalas')
         return { ok: true };
-    } catch (error) {
-        return { ok: false, error: "Erro ao remover o evento. Verifica se existem escalas dependentes." };
+    } catch (error: any) {
+        console.error('Erro ao apagar evento:', error?.message || error)
+        return { ok: false, error: "Erro ao remover o evento." };
     }
 }
 
