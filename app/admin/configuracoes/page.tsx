@@ -41,6 +41,10 @@ export default async function EstruturaPage() {
                             funcoes: { include: { funcao: true } }
                         }
                     },
+                    interesses: {
+                        include: { membro: { select: { id: true, first_name: true, last_name: true } } },
+                        orderBy: { criado_em: 'desc' }
+                    },
                     _count: { select: { integrantes: true } }
                 },
                 orderBy: { nome: 'asc' }

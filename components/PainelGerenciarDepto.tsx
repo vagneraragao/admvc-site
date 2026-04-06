@@ -6,15 +6,18 @@ import {
     removerFuncaoDoDepto,
     vincularMembroDepartamento,
     uploadFotoDepartamento,
+    aprovarInteresseDepartamento,
+    rejeitarInteresseDepartamento,
 } from '@/actions/admin-actions'
 import {
     Users, Settings, X, Search, Plus, Trash2, UserMinus, CalendarDays,
-    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft, CheckCircle2, Church, ImagePlus
+    Check, ShieldCheck, UserPlus, Briefcase, Loader2, AlignLeft, CheckCircle2, Church, ImagePlus,
+    HeartHandshake, XCircle
 } from 'lucide-react'
 import { alternarPermissaoEscala, removerFuncaoDoMembro, removerMembroTotal } from '@/actions/admin-actions'
 
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congregacoes = [], onClose }: any) {
-    const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes'>('equipe')
+    const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes' | 'interessados'>('equipe')
     const [loading, setLoading] = useState(false)
     const [fotoPreview, setFotoPreview] = useState<string | null>(depto.foto_url || null)
     const [uploadingFoto, setUploadingFoto] = useState(false)
@@ -68,6 +71,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
     const abas = [
         { id: 'equipe' as const, label: 'Equipa', icon: Users },
         { id: 'funcoes' as const, label: 'Cargos', icon: ShieldCheck },
+        { id: 'interessados' as const, label: 'Interessados', icon: HeartHandshake },
         { id: 'dados' as const, label: 'Definicoes', icon: Settings },
     ]
 
@@ -256,6 +260,11 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                         </div>
                     )}
 
+                    {/* ABA INTERESSADOS */}
+                    {aba === 'interessados' && (
+                        <InteressadosTab deptoId={depto.id} interesses={depto.interesses || []} />
+                    )}
+
                     {/* ABA DEFINIÇÕES */}
                     {aba === 'dados' && (
                         <form action={async (formData) => { setLoading(true); const res = await atualizarDepartamento(formData); setLoading(false); if (res?.ok) alert("Atualizado!") }}
@@ -371,6 +380,96 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                     )}
                 </div>
             </div>
+        </div>
+    )
+}
+
+function InteressadosTab({ deptoId, interesses }: { deptoId: number; interesses: any[] }) {
+    const [loading, setLoading] = useState<number | null>(null)
+
+    const pendentes = interesses.filter((i: any) => i.status === 'PENDENTE')
+    const processados = interesses.filter((i: any) => i.status !== 'PENDENTE')
+
+    const handleAprovar = async (id: number) => {
+        setLoading(id)
+        await aprovarInteresseDepartamento(id)
+        setLoading(null)
+    }
+
+    const handleRejeitar = async (id: number) => {
+        if (!confirm('Rejeitar este interesse?')) return
+        setLoading(id)
+        await rejeitarInteresseDepartamento(id)
+        setLoading(null)
+    }
+
+    return (
+        <div className="space-y-4 animate-in fade-in">
+            {pendentes.length === 0 && processados.length === 0 ? (
+                <div className="py-10 text-center border-2 border-dashed border-soft rounded-2xl">
+                    <HeartHandshake size={24} className="mx-auto text-muted/20 mb-2" />
+                    <p className="text-[10px] font-black text-muted uppercase tracking-widest">Nenhum interesse registado.</p>
+                </div>
+            ) : (
+                <>
+                    {pendentes.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-orange-600">Pendentes ({pendentes.length})</p>
+                            {pendentes.map((i: any) => (
+                                <div key={i.id} className="flex items-center justify-between gap-3 bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3">
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-black uppercase text-fg truncate">
+                                            {i.membro?.first_name} {i.membro?.last_name}
+                                        </p>
+                                        {i.mensagem && (
+                                            <p className="text-[9px] text-muted truncate mt-0.5">"{i.mensagem}"</p>
+                                        )}
+                                        <p className="text-[8px] text-muted mt-0.5">
+                                            {new Date(i.criado_em).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-1.5 shrink-0">
+                                        <button
+                                            onClick={() => handleAprovar(i.id)}
+                                            disabled={loading === i.id}
+                                            className="w-8 h-8 bg-emerald-500/10 text-emerald-600 rounded-lg flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all disabled:opacity-50"
+                                            title="Aprovar"
+                                        >
+                                            {loading === i.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejeitar(i.id)}
+                                            disabled={loading === i.id}
+                                            className="w-8 h-8 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                                            title="Rejeitar"
+                                        >
+                                            <XCircle size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {processados.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted">Historico</p>
+                            {processados.map((i: any) => (
+                                <div key={i.id} className="flex items-center justify-between gap-3 bg-bg border border-soft rounded-xl px-4 py-2.5 opacity-60">
+                                    <p className="text-[10px] font-bold text-fg truncate">
+                                        {i.membro?.first_name} {i.membro?.last_name}
+                                    </p>
+                                    <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
+                                        i.status === 'APROVADO' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-400'
+                                    }`}>
+                                        {i.status}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     )
 }

@@ -195,6 +195,17 @@ export async function registarAcompanhamento(formData: FormData) {
                         alvo_tipo: 'MEMBRO',
                         descricao: `Membro criado automaticamente a partir do visitante "${visitanteAtualizado.nome}" (consolidacao). Senha temporaria: ${senhaTemp}`,
                     }).catch(() => {})
+
+                    revalidatePath('/departamentos/acolhimento/dashboard');
+                    revalidatePath('/admin/membros');
+                    return {
+                        ok: true,
+                        novoStatus,
+                        credenciais: {
+                            email: novoMembro.email,
+                            senha: senhaTemp,
+                        }
+                    };
                 }
             } catch (errConversao: any) {
                 console.error('[CONSOLIDACAO] Erro ao converter visitante em membro:', errConversao.message)

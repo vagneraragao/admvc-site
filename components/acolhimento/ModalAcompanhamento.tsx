@@ -8,6 +8,8 @@ export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    const [credenciais, setCredenciais] = useState<{ email: string; senha: string } | null>(null)
+
     async function handleAction(formData: FormData) {
         setLoading(true);
         const res = await registarAcompanhamento(formData);
@@ -15,6 +17,8 @@ export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
 
         if (res.error) {
             alert(res.error);
+        } else if (res.credenciais) {
+            setCredenciais(res.credenciais);
         } else {
             setIsOpen(false);
         }
@@ -97,10 +101,25 @@ export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
                                 <textarea name="observacoes" rows={4} required placeholder="Como correu? O que ele achou da igreja?" className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm font-medium text-fg outline-none focus:border-figueira resize-none"></textarea>
                             </div>
 
-                            <button disabled={loading} className="w-full flex items-center justify-center gap-2 bg-figueira text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-lg shadow-figueira/20 disabled:opacity-50 mt-2">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                {loading ? 'A Guardar...' : 'Salvar Histórico'}
-                            </button>
+                            {credenciais && (
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Membro Criado!</p>
+                                    <p className="text-xs text-fg font-bold">Email: <span className="font-mono bg-bg px-2 py-1 rounded">{credenciais.email}</span></p>
+                                    <p className="text-xs text-fg font-bold">Senha: <span className="font-mono bg-bg px-2 py-1 rounded">{credenciais.senha}</span></p>
+                                    <p className="text-[8px] text-muted">Comunique estas credenciais ao novo membro para aceder a app.</p>
+                                    <button type="button" onClick={() => { setCredenciais(null); setIsOpen(false) }}
+                                        className="w-full mt-2 bg-fg text-bg py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all">
+                                        Fechar
+                                    </button>
+                                </div>
+                            )}
+
+                            {!credenciais && (
+                                <button disabled={loading} className="w-full flex items-center justify-center gap-2 bg-figueira text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-lg shadow-figueira/20 disabled:opacity-50 mt-2">
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                    {loading ? 'A Guardar...' : 'Salvar Histórico'}
+                                </button>
+                            )}
                         </form>
                     </div>
                 </div>

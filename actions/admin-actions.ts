@@ -1876,3 +1876,100 @@ export async function buscarRegioesAction() {
         return { ok: true, data: ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online'] }
     }
 }
+
+// ============================================================================
+// INTERESSE EM SERVIR — APROVAR / REJEITAR
+// ============================================================================
+
+export async function aprovarInteresseDepartamento(interesseId: number) {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const { db, tenantId } = await getDb()
+
+        const interesse = await db.interesseDepartamento.findUnique({
+            where: { id: interesseId },
+            include: { membro: { select: { id: true, first_name: true, last_name: true } }, departamento: { select: { id: true, nome: true } } }
+        })
+        if (!interesse) return { ok: false, error: 'Interesse nao encontrado.' }
+
+        // Aprovar o interesse
+        await db.interesseDepartamento.update({
+            where: { id: interesseId },
+            data: { status: 'APROVADO' }
+        })
+
+        // Vincular membro ao departamento (se ainda nao estiver)
+        const jaVinculado = await db.integranteDepartamento.findFirst({
+            where: { membro_id: interesse.membro_id, departamento_id: interesse.departamento_id }
+        })
+        if (!jaVinculado) {
+            await db.integranteDepartamento.create({
+                data: {
+                    membro_id: interesse.membro_id,
+                    departamento_id: interesse.departamento_id,
+                    tenant_id: tenantId,
+                }
+            })
+        }
+
+        // Push notification ao membro
+        try {
+            const { sendPushToMembro } = await import('@/lib/web-push')
+            await sendPushToMembro(interesse.membro_id, {
+                title: 'Interesse Aprovado!',
+                body: `Foste aceite no departamento ${interesse.departamento.nome}. Bem-vindo!`,
+                url: '/membros/dashboard?tab=departamentos'
+            })
+        } catch { /* push opcional */ }
+
+        audit({
+            tenant_id: tenantId,
+            categoria: 'DEPARTAMENTOS',
+            acao: 'APROVAR',
+            alvo_id: interesse.membro_id,
+            alvo_nome: `${interesse.membro.first_name} ${interesse.membro.last_name}`,
+            alvo_tipo: 'MEMBRO',
+            descricao: `Interesse aprovado para departamento "${interesse.departamento.nome}"`,
+        }).catch(() => {})
+
+        revalidatePath('/admin/configuracoes')
+        return { ok: true }
+    } catch (err: any) {
+        console.error('[APROVAR INTERESSE] Erro:', err.message)
+        return { ok: false, error: 'Erro ao aprovar interesse.' }
+    }
+}
+
+export async function rejeitarInteresseDepartamento(interesseId: number) {
+    try {
+        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const { db, tenantId } = await getDb()
+
+        const interesse = await db.interesseDepartamento.findUnique({
+            where: { id: interesseId },
+            include: { membro: { select: { first_name: true, last_name: true } }, departamento: { select: { nome: true } } }
+        })
+        if (!interesse) return { ok: false, error: 'Interesse nao encontrado.' }
+
+        await db.interesseDepartamento.update({
+            where: { id: interesseId },
+            data: { status: 'REJEITADO' }
+        })
+
+        audit({
+            tenant_id: tenantId,
+            categoria: 'DEPARTAMENTOS',
+            acao: 'REJEITAR',
+            alvo_id: interesse.membro_id,
+            alvo_nome: `${interesse.membro.first_name} ${interesse.membro.last_name}`,
+            alvo_tipo: 'MEMBRO',
+            descricao: `Interesse rejeitado para departamento "${interesse.departamento.nome}"`,
+        }).catch(() => {})
+
+        revalidatePath('/admin/configuracoes')
+        return { ok: true }
+    } catch (err: any) {
+        console.error('[REJEITAR INTERESSE] Erro:', err.message)
+        return { ok: false, error: 'Erro ao rejeitar interesse.' }
+    }
+}
