@@ -95,10 +95,10 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
 }
 
 // ── EMAIL DE BOAS-VINDAS (primeiro login) ────────────────────────────────────
-export async function enviarEmailBoasVindas(nome: string, email: string) {
+export async function enviarEmailBoasVindas(nome: string, email: string, senha?: string) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const linkDashboard = 'https://igrejaadmvc.org/membros/dashboard';
+  const linkDashboard = 'https://app.igrejaadmvc.org/membros/login';
 
   try {
     const { data, error } = await resend.emails.send({
@@ -122,9 +122,18 @@ export async function enviarEmailBoasVindas(nome: string, email: string) {
               Ola <strong>${nome}</strong>,
             </p>
             <p style="font-size: 16px; line-height: 1.8;">
-              O seu primeiro acesso ao sistema da igreja foi registado com sucesso.
+              O seu acesso ao sistema da igreja foi criado com sucesso.
               A partir de agora pode acompanhar escalas, eventos, grupos e muito mais pela sua area de membro.
             </p>
+
+            ${senha ? `
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 20px; margin: 20px 0;">
+              <p style="font-size: 10px; font-weight: 800; color: #3F6B4F; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">As suas credenciais</p>
+              <p style="font-size: 14px; margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="font-size: 14px; margin: 5px 0;"><strong>Senha:</strong> ${senha}</p>
+              <p style="font-size: 11px; color: #64748b; margin: 10px 0 0 0;">Recomendamos que altere a senha apos o primeiro acesso.</p>
+            </div>
+            ` : ''}
 
             <div style="text-align: center; margin: 30px 0;">
               <a href="${linkDashboard}" target="_blank" style="display: inline-block; background-color: #3F6B4F; color: #ffffff; padding: 15px 40px; border-radius: 12px; text-decoration: none; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">

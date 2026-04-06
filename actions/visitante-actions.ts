@@ -196,6 +196,36 @@ export async function registarAcompanhamento(formData: FormData) {
                         descricao: `Membro criado automaticamente a partir do visitante "${visitanteAtualizado.nome}" (consolidacao). Senha temporaria: ${senhaTemp}`,
                     }).catch(() => {})
 
+                    // Auto-matricular no curso Permanecer (se existir)
+                    try {
+                        const tenant = await prisma.tenant.findUnique({
+                            where: { id: membro.tenant_id },
+                            select: { curso_permanecer_id: true }
+                        })
+                        if (tenant?.curso_permanecer_id) {
+                            const turma = await prisma.turmaEBD.findFirst({
+                                where: { curso_id: tenant.curso_permanecer_id }
+                            })
+                            if (turma) {
+                                await prisma.matriculaEBD.create({
+                                    data: {
+                                        turma_id: turma.id,
+                                        aluno_id: novoMembro.id,
+                                        tenant_id: membro.tenant_id,
+                                    }
+                                }).catch(() => {}) // ignora se ja matriculado
+                            }
+                        }
+                    } catch { /* matricula opcional */ }
+
+                    // Enviar email de boas-vindas com credenciais
+                    try {
+                        const { enviarEmailBoasVindas } = await import('@/lib/mail')
+                        if (novoMembro.email && !novoMembro.email.includes('@temp.admvc.org')) {
+                            await enviarEmailBoasVindas(firstName, novoMembro.email, senhaTemp)
+                        }
+                    } catch { /* email opcional */ }
+
                     revalidatePath('/departamentos/acolhimento/dashboard');
                     revalidatePath('/admin/membros');
                     return {

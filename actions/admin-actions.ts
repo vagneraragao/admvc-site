@@ -1940,6 +1940,159 @@ export async function aprovarInteresseDepartamento(interesseId: number) {
     }
 }
 
+export async function criarCursoPermanecer() {
+    try {
+        await requireRole(['ADMIN'])
+        const { db, tenantId } = await getDb()
+
+        // Verificar se já existe
+        const existente = await db.cursoEBD.findFirst({
+            where: { categoria: 'DISCIPULADO', titulo: { contains: 'Permanecer' } }
+        })
+        if (existente) return { ok: false, error: 'Curso Permanecer ja existe.', cursoId: existente.id }
+
+        const agora = new Date()
+        const fimAno = new Date(agora.getFullYear(), 11, 31)
+
+        // 1. Criar curso
+        const curso = await db.cursoEBD.create({
+            data: {
+                titulo: 'Permanecer — Integracao a Membresia',
+                descricao: 'Processo essencial para integrar novos membros, promovendo compreensao e alinhamento com a visao, missao e valores da igreja.',
+                categoria: 'DISCIPULADO',
+                ano: agora.getFullYear(),
+                data_inicio: agora,
+                data_fim: fimAno,
+                nota_minima: 7.0,
+                presenca_minima: 0,
+                status: 'EM_CURSO',
+                tipo_inscricao: 'LIVRE',
+                tenant_id: tenantId,
+                criado_por_id: (await getSessionData())?.membroId || null,
+            }
+        })
+
+        // 2. Criar turma
+        const turma = await db.turmaEBD.create({
+            data: {
+                nome: 'Permanecer',
+                curso_id: curso.id,
+                tenant_id: tenantId,
+            }
+        })
+
+        // 3. Criar questionario com perguntas baseadas no Permanecer.pdf
+        await db.atividadeEBD.create({
+            data: {
+                titulo: 'Questionario Permanecer',
+                tipo: 'PROVA',
+                descricao: 'Questionario sobre a visao, missao, valores e regra de fe da igreja. Nota minima: 7.0',
+                nota_maxima: 10,
+                peso: 1.0,
+                turma_id: turma.id,
+                tenant_id: tenantId,
+                perguntas: [
+                    {
+                        id: 1,
+                        texto: 'Qual e o versiculo base do processo Permanecer?',
+                        tipo: 'MULTIPLA',
+                        opcoes: ['Mateus 28:19-20', 'Joao 17:21', 'Salmo 2:8', 'Efesios 4:3-6'],
+                        correta: 'Joao 17:21'
+                    },
+                    {
+                        id: 2,
+                        texto: 'Em que ano foi fundada a Igreja ADMVC?',
+                        tipo: 'MULTIPLA',
+                        opcoes: ['2005', '2008', '2010', '2012'],
+                        correta: '2008'
+                    },
+                    {
+                        id: 3,
+                        texto: 'Qual e a missao principal da igreja?',
+                        tipo: 'MULTIPLA',
+                        opcoes: [
+                            'Construir templos em todo o pais',
+                            'Proclamar o Evangelho, discipular os crentes e servir a comunidade',
+                            'Organizar eventos sociais e culturais',
+                            'Gerir um sistema financeiro para os membros'
+                        ],
+                        correta: 'Proclamar o Evangelho, discipular os crentes e servir a comunidade'
+                    },
+                    {
+                        id: 4,
+                        texto: 'O batismo nas aguas e realizado por qual metodo na ADMVC?',
+                        tipo: 'MULTIPLA',
+                        opcoes: ['Aspersao', 'Efusao', 'Imersao', 'Qualquer metodo'],
+                        correta: 'Imersao'
+                    },
+                    {
+                        id: 5,
+                        texto: 'Quais sao os valores da igreja?',
+                        tipo: 'MULTIPLA',
+                        opcoes: [
+                            'Amor, Fe, Servico, Unidade e Santidade',
+                            'Riqueza, Poder, Influencia e Territorio',
+                            'Educacao, Saude e Lazer',
+                            'Tradicao, Hierarquia e Disciplina'
+                        ],
+                        correta: 'Amor, Fe, Servico, Unidade e Santidade'
+                    },
+                    {
+                        id: 6,
+                        texto: 'A salvacao e conquistada por obras ou meritos humanos.',
+                        tipo: 'VERDADEIRO_FALSO',
+                        correta: 'Falso'
+                    },
+                    {
+                        id: 7,
+                        texto: 'O batismo no Espirito Santo e a mesma experiencia que o batismo nas aguas.',
+                        tipo: 'VERDADEIRO_FALSO',
+                        correta: 'Falso'
+                    },
+                    {
+                        id: 8,
+                        texto: 'Somente os batizados e em plena comunhao com Cristo e a Igreja podem participar da Ceia do Senhor.',
+                        tipo: 'VERDADEIRO_FALSO',
+                        correta: 'Verdadeiro'
+                    },
+                    {
+                        id: 9,
+                        texto: 'A sede actual da igreja esta localizada em que cidade?',
+                        tipo: 'MULTIPLA',
+                        opcoes: ['Leiria', 'Figueira da Foz', 'Coimbra', 'Lisboa'],
+                        correta: 'Figueira da Foz'
+                    },
+                    {
+                        id: 10,
+                        texto: 'O que significa o Permanecer para a igreja?',
+                        tipo: 'ESCRITA',
+                    }
+                ]
+            }
+        })
+
+        // 4. Guardar referencia no tenant
+        await prismaGlobal.tenant.update({
+            where: { id: tenantId },
+            data: { curso_permanecer_id: curso.id } as any
+        })
+
+        audit({
+            tenant_id: tenantId,
+            categoria: 'CONFIGURACAO',
+            acao: 'CRIAR',
+            alvo_tipo: 'CONFIG',
+            descricao: `Curso Permanecer criado (ID: ${curso.id})`,
+        }).catch(() => {})
+
+        revalidatePath('/admin/formacao/ebd')
+        return { ok: true, cursoId: curso.id }
+    } catch (err: any) {
+        console.error('[CRIAR CURSO PERMANECER] Erro:', err.message)
+        return { ok: false, error: `Erro ao criar curso: ${err.message}` }
+    }
+}
+
 export async function rejeitarInteresseDepartamento(interesseId: number) {
     try {
         await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])

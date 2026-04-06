@@ -66,6 +66,8 @@ model Tenant {
   // Redes Sociais
   youtube_channel_id       String?                   // ID do canal YouTube (ex: UCxxxxx)
   instagram_handle         String?                   // Handle Instagram sem @ (ex: igrejaxyz)
+  // Integracao Permanecer
+  curso_permanecer_id      String?                   // ID do curso EBD usado como Permanecer
   // Configuracoes Loyverse (cantina)
   loyverse_token           String?                   // Access Token Loyverse — exclusivo por igreja
   createdAt                DateTime                  @default(now())
