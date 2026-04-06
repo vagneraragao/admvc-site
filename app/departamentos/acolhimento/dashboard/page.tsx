@@ -36,10 +36,14 @@ export default async function AcolhimentoDashboard() {
         redirect('/membros/dashboard?error=Acesso restrito.')
     }
 
-    const [novos, emContactoRaw, consolidados] = await Promise.all([
+    const [novos, emContactoRaw, reuniaoPastorRaw, consolidados] = await Promise.all([
         db.visitante.findMany({ where: { status: 'NOVO' }, orderBy: { data_primeira_visita: 'desc' } }),
         db.visitante.findMany({
             where: { status: 'EM_CONTACTO' },
+            include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } }
+        }),
+        db.visitante.findMany({
+            where: { status: 'REUNIAO_PASTOR' },
             include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } }
         }),
         db.visitante.findMany({
@@ -86,10 +90,12 @@ export default async function AcolhimentoDashboard() {
             </header>
 
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                 <Kpi label="Novos" value={novos.length} icon={<UserPlus size={13} />}
                     cor={novos.length > 0 ? 'orange' : undefined} />
                 <Kpi label="Em Contacto" value={emContacto.length} icon={<Clock size={13} />} />
+                <Kpi label="Reuniao Pastor" value={reuniaoPastorRaw.length} icon={<Users size={13} />}
+                    cor={reuniaoPastorRaw.length > 0 ? 'blue' : undefined} />
                 <Kpi label="Atrasados (+24h)" value={atrasados} icon={<AlertCircle size={13} />}
                     cor={atrasados > 0 ? 'red' : 'emerald'} />
                 <Kpi label="Consolidados" value={consolidados.length} icon={<CheckCircle2 size={13} />} cor="emerald" />
@@ -200,6 +206,42 @@ export default async function AcolhimentoDashboard() {
                 )}
             </section>
 
+            {/* REUNIAO COM PASTOR */}
+            {reuniaoPastorRaw.length > 0 && (
+                <section className="bg-blue-500/5 border border-blue-500/20 rounded-2xl overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-blue-500/10">
+                        <Users size={14} className="text-blue-500" />
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Reuniao com Pastor</h2>
+                        <span className="text-[8px] font-black bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded">{reuniaoPastorRaw.length}</span>
+                    </div>
+                    <div className="divide-y divide-blue-500/10">
+                        {reuniaoPastorRaw.map(v => (
+                            <div key={v.id} className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-blue-500/5 transition-colors">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                                        <span className="text-[9px] font-black text-blue-600">{v.nome[0]}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-black uppercase text-fg truncate">{v.nome}</p>
+                                        <p className="text-[8px] font-bold text-muted flex items-center gap-1.5">
+                                            <Phone size={8} /> {v.telefone} · {v.quantidade_visitas} visita{v.quantidade_visitas !== 1 ? 's' : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <ModalHistorico visitante={v} />
+                                    <a href={`https://wa.me/${v.telefone?.replace(/\D/g, '')}`} target="_blank"
+                                        className="w-8 h-8 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-500 hover:text-white transition-all">
+                                        <MessageCircle size={14} />
+                                    </a>
+                                    <ModalAcompanhamento visitante={v} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* CONSOLIDADOS */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
@@ -244,6 +286,7 @@ function Kpi({ label, value, icon, cor }: { label: string; value: any; icon: Rea
         emerald: 'text-emerald-600 bg-emerald-500/8 border-emerald-500/15',
         orange: 'text-orange-600 bg-orange-500/8 border-orange-500/15',
         red: 'text-red-500 bg-red-500/8 border-red-500/15',
+        blue: 'text-blue-600 bg-blue-500/8 border-blue-500/15',
     }
     return (
         <div className={`p-4 rounded-2xl border flex flex-col gap-2 ${cor ? cores[cor] : 'bg-bg2 border-soft text-fg'}`}>

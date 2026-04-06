@@ -715,3 +715,60 @@ export async function confirmarImportacao(membrosValidos: any[]) {
         return { ok: false, error: 'Erro ao gravar membros. Verifique se os dados estao correctos.' }
     }
 }
+
+// ============================================================================
+// INTERESSE EM SERVIR — DEPARTAMENTOS
+// ============================================================================
+
+export async function submeterInteresseDepartamento(membroId: number, departamentoIds: number[], mensagem?: string) {
+    try {
+        const session = await getSessionData()
+        if (!session) return { ok: false, error: 'Sessao expirada.' }
+
+        // Segurança: só o próprio membro
+        if (session.membroId !== membroId) return { ok: false, error: 'Sem permissao.' }
+
+        const hdr = await headers()
+        const tenantId = Number(hdr.get('x-tenant-id') || 0)
+        if (!tenantId) return { ok: false, error: 'Tenant nao identificado.' }
+
+        const db = getTenantClient(tenantId)
+
+        // Criar interesses (ignorar duplicados)
+        for (const deptoId of departamentoIds) {
+            await db.interesseDepartamento.upsert({
+                where: { membro_id_departamento_id: { membro_id: membroId, departamento_id: deptoId } },
+                create: {
+                    membro_id: membroId,
+                    departamento_id: deptoId,
+                    mensagem: mensagem || null,
+                    status: 'PENDENTE',
+                    tenant_id: tenantId,
+                },
+                update: {
+                    mensagem: mensagem || null,
+                    status: 'PENDENTE',
+                    criado_em: new Date(),
+                },
+            })
+        }
+
+        const membro = await db.membro.findUnique({ where: { id: membroId }, select: { first_name: true, last_name: true } })
+        audit({
+            tenant_id: tenantId,
+            categoria: 'MEMBROS',
+            acao: 'EDITAR',
+            actor_id: membroId,
+            alvo_id: membroId,
+            alvo_nome: membro ? `${membro.first_name} ${membro.last_name}` : '',
+            alvo_tipo: 'MEMBRO',
+            descricao: `Interesse em servir submetido para ${departamentoIds.length} departamento(s)`,
+        }).catch(() => {})
+
+        revalidatePath(`/membros/perfil/editar/${membroId}`)
+        return { ok: true }
+    } catch (err: any) {
+        console.error('[INTERESSE DEPTO] Erro:', err.message)
+        return { ok: false, error: 'Erro ao submeter interesse.' }
+    }
+}

@@ -106,6 +106,7 @@ model Tenant {
   atividadesEBD            AtividadeEBD[]
   notasEBD                 NotaEBD[]
   interessesCurso          InteresseCurso[]
+  interessesDepartamento   InteresseDepartamento[]
   boleiasOfertas           BoleiaOferta[]
   boleiasReservas          BoleiaReserva[]
   produtosCantina          ProdutoCantina[]
@@ -272,6 +273,8 @@ model Membro {
   recibosFiscais             ReciboFiscal[]
   pledges                    Pledge[]
   qr_code                    String?                    @unique  // Codigo QR unico para identificacao rapida
+  visitante_id               Int?                       // Referencia ao visitante original (conversao automatica)
+  interessesDepartamento     InteresseDepartamento[]    @relation("MembroInteresse")
 
   @@index([tenant_id])
   @@map("membros")
@@ -308,6 +311,7 @@ model Departamento {
   integrantes      IntegranteDepartamento[]
   compromissos     Compromisso[]            @relation("CompromissoDepartamentos")
   itens_inventario ItemInventario[]
+  interesses       InteresseDepartamento[] @relation("InteresseDepartamento")
 
   @@unique([nome, tenant_id, congregacaoId])
   @@index([tenant_id])
@@ -327,6 +331,22 @@ model IntegranteDepartamento {
   tenant             Tenant              @relation(fields: [tenant_id], references: [id])
 
   @@unique([membro_id, departamento_id, turno])
+  @@index([tenant_id])
+}
+
+model InteresseDepartamento {
+  id              Int          @id @default(autoincrement())
+  membro_id       Int
+  departamento_id Int
+  mensagem        String?
+  status          String       @default("PENDENTE") // PENDENTE | APROVADO | REJEITADO
+  criado_em       DateTime     @default(now())
+  tenant_id       Int
+  membro          Membro       @relation("MembroInteresse", fields: [membro_id], references: [id], onDelete: Cascade)
+  departamento    Departamento @relation("InteresseDepartamento", fields: [departamento_id], references: [id], onDelete: Cascade)
+  tenant          Tenant       @relation(fields: [tenant_id], references: [id])
+
+  @@unique([membro_id, departamento_id])
   @@index([tenant_id])
 }
 

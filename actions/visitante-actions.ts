@@ -134,7 +134,7 @@ export async function registarAcompanhamento(formData: FormData) {
         });
 
         // 2. Atualiza o visitante
-        await prisma.visitante.update({
+        const visitanteAtualizado = await prisma.visitante.update({
             where: { id: visitanteId },
             data: {
                 status: novoStatus,
@@ -143,8 +143,79 @@ export async function registarAcompanhamento(formData: FormData) {
             }
         });
 
+        // 3. Se CONSOLIDADO → criar membro automaticamente
+        if (novoStatus === 'CONSOLIDADO') {
+            try {
+                const bcrypt = await import('bcryptjs')
+                const nomeParts = visitanteAtualizado.nome.trim().split(' ')
+                const firstName = nomeParts[0] || 'Membro'
+                const lastName = nomeParts.slice(1).join(' ') || ''
+
+                // Gerar senha temporária: primeiras 4 letras do nome + "2024!"
+                const senhaTemp = (firstName.slice(0, 4).toLowerCase() + '2024!').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                const hashedPassword = await bcrypt.hash(senhaTemp, 10)
+
+                // Verificar se ja existe membro com este visitante_id ou email
+                const jaExiste = visitanteAtualizado.email
+                    ? await prisma.membro.findFirst({ where: { email: visitanteAtualizado.email, tenant_id: membro.tenant_id } })
+                    : null
+
+                if (!jaExiste) {
+                    const novoMembro = await prisma.membro.create({
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: visitanteAtualizado.email || `visitante${visitanteId}@temp.admvc.org`,
+                            password: hashedPassword,
+                            phone_1: visitanteAtualizado.telefone,
+                            status: 'PENDENTE',
+                            church_role: 'Visitante',
+                            role: 'USER',
+                            tenant_id: membro.tenant_id,
+                            visitante_id: visitanteId,
+                            is_active: true,
+                        }
+                    })
+
+                    // Gerar QR Code
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+                    let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length))
+                    await prisma.membro.update({
+                        where: { id: novoMembro.id },
+                        data: { qr_code: `ADMVC-${membro.tenant_id}-${novoMembro.id}-${rnd}` }
+                    })
+
+                    audit({
+                        tenant_id: membro.tenant_id,
+                        categoria: 'MEMBROS',
+                        acao: 'CRIAR',
+                        actor_id: session.membroId,
+                        alvo_id: novoMembro.id,
+                        alvo_nome: `${firstName} ${lastName}`,
+                        alvo_tipo: 'MEMBRO',
+                        descricao: `Membro criado automaticamente a partir do visitante "${visitanteAtualizado.nome}" (consolidacao). Senha temporaria: ${senhaTemp}`,
+                    }).catch(() => {})
+                }
+            } catch (errConversao: any) {
+                console.error('[CONSOLIDACAO] Erro ao converter visitante em membro:', errConversao.message)
+                // Nao falha o acompanhamento — o visitante ja foi marcado como consolidado
+            }
+        }
+
+        audit({
+            tenant_id: membro.tenant_id,
+            categoria: 'VISITANTES',
+            acao: 'EDITAR',
+            actor_id: session.membroId,
+            alvo_id: visitanteId,
+            alvo_nome: visitanteAtualizado.nome,
+            alvo_tipo: 'VISITANTE',
+            descricao: `Status alterado para ${novoStatus}`,
+        }).catch(() => {})
+
         revalidatePath('/departamentos/acolhimento/dashboard');
-        return { ok: true };
+        revalidatePath('/admin/membros');
+        return { ok: true, novoStatus };
     } catch (error) {
         console.error("Erro ao registar acompanhamento:", error);
         return { error: "Falha ao gravar os dados." };

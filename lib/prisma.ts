@@ -47,6 +47,7 @@ const PROTECTED_MODELS = [
     'ReciboFiscal',
     'DonativoOnline', 'Pledge',
     'ContaBancaria', 'MovimentoBancario',
+    'InteresseDepartamento',
 ]
 
 // Modelos que suportam congregacao_id (para filtro explicito na UI)

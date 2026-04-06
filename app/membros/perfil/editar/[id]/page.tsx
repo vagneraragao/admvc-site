@@ -28,7 +28,7 @@ export default async function EditarMeuPerfilPage({
 
     const db = getTenantClient(Number(tenantIdStr))
 
-    const [membro, escolaridades] = await Promise.all([
+    const [membro, escolaridades, departamentos, interessesExistentes] = await Promise.all([
         db.membro.findUnique({
             where: { id: idParaEditar },
             include: {
@@ -39,6 +39,11 @@ export default async function EditarMeuPerfilPage({
             }
         }),
         db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
+        db.departamento.findMany({ select: { id: true, nome: true }, orderBy: { nome: 'asc' } }),
+        db.interesseDepartamento.findMany({
+            where: { membro_id: idParaEditar },
+            select: { departamento_id: true, status: true }
+        }),
     ])
 
     if (!membro) redirect('/membros/dashboard')
@@ -48,6 +53,8 @@ export default async function EditarMeuPerfilPage({
             <MeuPerfilClient
                 membro={membro}
                 escolaridades={escolaridades}
+                departamentos={departamentos}
+                interessesExistentes={interessesExistentes}
             />
         </div>
     )

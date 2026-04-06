@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { atualizarDadosMembro } from '@/actions/membro-actions'
+import { atualizarDadosMembro, submeterInteresseDepartamento } from '@/actions/membro-actions'
 import {
     User, MapPin, Users2, Save, Church, FileSignature, AlertCircle,
     Check, ChevronRight, ArrowLeft, Camera, Loader2, Lock, Home,
-    CheckCircle2, XCircle
+    CheckCircle2, XCircle, HeartHandshake, Send
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -13,6 +13,8 @@ import Image from 'next/image'
 interface Props {
     membro: any
     escolaridades?: any[]
+    departamentos?: { id: number; nome: string }[]
+    interessesExistentes?: { departamento_id: number; status: string }[]
     onSucesso?: () => void   // ✅ callback para o drawer refrescar a dashboard
     isDrawer?: boolean       // ✅ esconde o breadcrumb quando está em drawer
 }
@@ -20,6 +22,8 @@ interface Props {
 export default function MeuPerfilClient({
     membro,
     escolaridades = [],
+    departamentos = [],
+    interessesExistentes = [],
     onSucesso,
     isDrawer = false
 }: Props) {
@@ -211,6 +215,7 @@ export default function MeuPerfilClient({
                         { id: 'endereco', label: 'Morada', icon: <MapPin size={13} /> },
                         { id: 'familia', label: 'Relações', icon: <Users2 size={13} /> },
                         { id: 'eclesiastico', label: 'Eclesiástico', icon: <Church size={13} /> },
+                        { id: 'servir', label: 'Servir', icon: <HeartHandshake size={13} /> },
                         { id: 'administrativo', label: 'Admin', icon: <Lock size={13} /> },
                     ].map(tab => (
                         <button
@@ -361,6 +366,16 @@ export default function MeuPerfilClient({
                         </div>
                     </div>
 
+                    {/* ABA: QUERO SERVIR */}
+                    <div className={abaAtiva === 'servir' ? 'block animate-in fade-in slide-in-from-bottom-4' : 'hidden'}>
+                        <ServirSection
+                            membroId={membro.id}
+                            departamentos={departamentos}
+                            interessesExistentes={interessesExistentes}
+                            ministeriosAtuais={membro.ministerios?.map((m: any) => m.departamento?.id).filter(Boolean) || []}
+                        />
+                    </div>
+
                     {/* ABA: ADMINISTRATIVO */}
                     <div className={abaAtiva === 'administrativo' ? 'block animate-in fade-in slide-in-from-bottom-4' : 'hidden'}>
                         <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-5 mb-6 flex items-start gap-4">
@@ -394,6 +409,123 @@ function Input({ label, className, value, onChange, readOnly, title, ...props }:
             </label>
             <input value={value} onChange={onChange} readOnly={readOnly} {...props}
                 className={`w-full bg-bg border border-soft rounded-2xl p-4 text-[11px] font-bold text-fg focus:border-figueira outline-none transition-all shadow-sm ${readOnly ? 'focus:border-soft' : ''} ${className || ''}`} />
+        </div>
+    )
+}
+
+function ServirSection({ membroId, departamentos, interessesExistentes, ministeriosAtuais }: {
+    membroId: number
+    departamentos: { id: number; nome: string }[]
+    interessesExistentes: { departamento_id: number; status: string }[]
+    ministeriosAtuais: number[]
+}) {
+    const [selecionados, setSelecionados] = useState<number[]>([])
+    const [mensagem, setMensagem] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+    // Departamentos onde o membro JA serve ou JA indicou interesse
+    const interesseMap = new Map(interessesExistentes.map(i => [i.departamento_id, i.status]))
+    const disponíveis = departamentos.filter(d => !ministeriosAtuais.includes(d.id))
+
+    const toggle = (id: number) => {
+        setSelecionados(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    }
+
+    const handleSubmit = async () => {
+        if (selecionados.length === 0) return
+        setLoading(true)
+        setFeedback(null)
+        const res = await submeterInteresseDepartamento(membroId, selecionados, mensagem)
+        setLoading(false)
+        if (res.ok) {
+            setFeedback({ type: 'success', msg: 'Interesse enviado! A lideranca sera notificada.' })
+            setSelecionados([])
+            setMensagem('')
+        } else {
+            setFeedback({ type: 'error', msg: res.error || 'Erro ao enviar.' })
+        }
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-figueira/5 border border-figueira/20 rounded-2xl p-5 flex items-start gap-4">
+                <HeartHandshake size={18} className="text-figueira shrink-0 mt-0.5" />
+                <div>
+                    <h4 className="text-sm font-black uppercase italic tracking-tighter text-fg">Quero Servir</h4>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">
+                        Indica os departamentos onde gostarias de servir. A lideranca recebe o teu pedido.
+                    </p>
+                </div>
+            </div>
+
+            {feedback && (
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold ${feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    {feedback.type === 'success' ? <CheckCircle2 size={14} /> : <XCircle size={14} />} {feedback.msg}
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {disponíveis.map(d => {
+                    const interesse = interesseMap.get(d.id)
+                    const jaPediu = !!interesse
+                    const isSelected = selecionados.includes(d.id)
+
+                    return (
+                        <button
+                            key={d.id}
+                            type="button"
+                            disabled={jaPediu}
+                            onClick={() => toggle(d.id)}
+                            className={`p-3 rounded-xl border text-left transition-all text-[10px] font-black uppercase tracking-widest ${
+                                jaPediu
+                                    ? interesse === 'APROVADO'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 cursor-default'
+                                        : interesse === 'REJEITADO'
+                                        ? 'bg-red-500/10 border-red-500/20 text-red-400 cursor-default line-through'
+                                        : 'bg-orange-500/10 border-orange-500/20 text-orange-600 cursor-default'
+                                    : isSelected
+                                    ? 'bg-figueira/10 border-figueira text-figueira'
+                                    : 'bg-bg border-soft text-muted hover:border-figueira/30'
+                            }`}
+                        >
+                            {d.nome}
+                            {jaPediu && (
+                                <span className="block text-[7px] mt-0.5 normal-case tracking-normal font-bold">
+                                    {interesse === 'APROVADO' ? 'Aprovado' : interesse === 'REJEITADO' ? 'Rejeitado' : 'Pendente'}
+                                </span>
+                            )}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {ministeriosAtuais.length > 0 && (
+                <p className="text-[8px] text-muted font-bold uppercase tracking-widest">
+                    Ja serves em {ministeriosAtuais.length} departamento{ministeriosAtuais.length !== 1 ? 's' : ''} (nao listados acima).
+                </p>
+            )}
+
+            {selecionados.length > 0 && (
+                <div className="space-y-3">
+                    <textarea
+                        value={mensagem}
+                        onChange={e => setMensagem(e.target.value)}
+                        placeholder="Mensagem opcional (ex: tenho experiencia em som, gosto de cozinhar...)"
+                        rows={2}
+                        className="w-full bg-bg border border-soft rounded-2xl p-4 text-xs font-medium text-fg outline-none focus:border-figueira resize-none"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 bg-figueira text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-lg shadow-figueira/20 disabled:opacity-50"
+                    >
+                        {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        Enviar Interesse ({selecionados.length} departamento{selecionados.length !== 1 ? 's' : ''})
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

@@ -62,11 +62,16 @@ export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black uppercase text-muted tracking-widest ml-2">Novo Status</label>
                                     <select name="status" required
-                                        // 👇 Se for NOVO, sugere EM_CONTACTO. Se já for EM_CONTACTO, mantém esse valor.
-                                        defaultValue={visitante.status === 'NOVO' ? 'EM_CONTACTO' : visitante.status}
+                                        defaultValue={
+                                            visitante.status === 'NOVO' ? 'EM_CONTACTO'
+                                            : visitante.status === 'EM_CONTACTO' ? 'REUNIAO_PASTOR'
+                                            : visitante.status === 'REUNIAO_PASTOR' ? 'CONSOLIDADO'
+                                            : visitante.status
+                                        }
                                         className="w-full bg-bg border border-soft rounded-2xl p-4 text-xs font-bold text-fg outline-none focus:border-figueira"
                                     >
                                         <option value="EM_CONTACTO">Em Acompanhamento</option>
+                                        <option value="REUNIAO_PASTOR">Reuniao com Pastor</option>
                                         <option value="CONSOLIDADO">Consolidado (Novo Membro)</option>
                                         <option value="NAO_RETORNOU">Nao Retornou</option>
                                         <option value="OUTRA_IGREJA">Foi para Outra Igreja</option>
