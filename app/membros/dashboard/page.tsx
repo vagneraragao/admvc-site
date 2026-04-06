@@ -36,6 +36,9 @@ import SaudacaoDia from '@/components/membros/SaudacaoDia'
 import PendentesAtencao from '@/components/membros/PendentesAtencao'
 import AcoesRapidas from '@/components/membros/AcoesRapidas'
 import EstatisticasPessoais from '@/components/membros/EstatisticasPessoais'
+import WidgetYouTube from '@/components/membros/WidgetYouTube'
+import WidgetInstagram from '@/components/membros/WidgetInstagram'
+import { fetchLatestYouTubeVideo } from '@/lib/youtube-rss'
 
 export default async function DashboardMembro({
     searchParams
@@ -203,7 +206,7 @@ export default async function DashboardMembro({
         proximosEventos, visitantesPendentesCount, ultimosAvisos,
         minhasRifas, minhasContribuicoes, carregamentosHistorico,
         meusAcompanhamentos, saldoCantina, visitantesAtualizados,
-        escolaridades, aniversariantesMes
+        escolaridades, aniversariantesMes, tenantSocial
     ] = await Promise.all([
         safe('proximosEventos', () => db.evento.findMany({
             where: { data: { gte: new Date() } },
@@ -302,10 +305,21 @@ export default async function DashboardMembro({
                 avatar_file: true,
                 birthdate: true,
             }
-        }), [])
+        }), []),
+
+        // INDEX 11 - redes sociais do tenant
+        safe('tenantSocial', () => db.tenant.findUnique({
+            where: { id: Number(tenantIdStr) },
+            select: { youtube_channel_id: true, instagram_handle: true }
+        }), null)
     ]);
 
-    // 4b. AGRUPAR AVISOS POR CANAL (mostrar apenas a última mensagem de cada)
+    // 4b. YOUTUBE — buscar último vídeo (cache 1h)
+    const youtubeVideo = tenantSocial?.youtube_channel_id
+        ? await safe('youtubeRSS', () => fetchLatestYouTubeVideo(tenantSocial.youtube_channel_id!), null)
+        : null
+
+    // 4c. AGRUPAR AVISOS POR CANAL (mostrar apenas a última mensagem de cada)
     let muralPorCanal: { canal: string; totalMensagens: number; ultima: { id: string; texto: string; dataFormatada: string; autorNome: string | null } }[] = []
     try {
         const porCanal = new Map<string, { total: number; ultima: any }>()
@@ -707,6 +721,16 @@ export default async function DashboardMembro({
                                     ))}
                                 </div>
                             </section>
+                        )}
+
+                        {/* REDES SOCIAIS — YouTube + Instagram */}
+                        {(youtubeVideo || tenantSocial?.instagram_handle) && (
+                            <div className={`grid gap-4 ${youtubeVideo && tenantSocial?.instagram_handle ? 'sm:grid-cols-2' : ''}`}>
+                                {youtubeVideo && <WidgetYouTube {...youtubeVideo} />}
+                                {tenantSocial?.instagram_handle && (
+                                    <WidgetInstagram handle={tenantSocial.instagram_handle} />
+                                )}
+                            </div>
                         )}
                     </div>
                 )}

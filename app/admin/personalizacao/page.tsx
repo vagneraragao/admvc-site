@@ -16,6 +16,8 @@ export default async function PersonalizacaoPage() {
             cor_fundo: true,
             logo_url: true,
             nome: true,
+            youtube_channel_id: true,
+            instagram_handle: true,
         }
     })
 

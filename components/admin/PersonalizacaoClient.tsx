@@ -14,6 +14,8 @@ interface TenantData {
     cor_fundo: string
     logo_url: string | null
     nome: string
+    youtube_channel_id: string | null
+    instagram_handle: string | null
 }
 
 // Helpers para derivar cores (replicam lib/branding.ts no client)
@@ -36,6 +38,8 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
     const [corSecundaria, setCorSecundaria] = useState(tenant.cor_secundaria)
     const [corFundo, setCorFundo] = useState(tenant.cor_fundo)
     const [logoPreview, setLogoPreview] = useState<string | null>(tenant.logo_url)
+    const [youtubeId, setYoutubeId] = useState(tenant.youtube_channel_id || '')
+    const [instaHandle, setInstaHandle] = useState(tenant.instagram_handle || '')
     const [saving, setSaving] = useState(false)
     const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
     const fileRef = useRef<HTMLInputElement>(null)
@@ -71,6 +75,8 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
         formData.set('cor_primaria', corPrimaria)
         formData.set('cor_secundaria', corSecundaria)
         formData.set('cor_fundo', corFundo)
+        formData.set('youtube_channel_id', youtubeId.trim())
+        formData.set('instagram_handle', instaHandle.trim().replace(/^@/, ''))
         const res = await atualizarBranding(formData)
         if (res.ok) setStatus({ type: 'success', msg: 'Visual atualizado! Recarregue a pagina para ver.' })
         else setStatus({ type: 'error', msg: res.error || 'Erro ao guardar.' })
@@ -83,7 +89,7 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
         const res = await resetBranding()
         if (res.ok) {
             setCorPrimaria('#3F6B4F'); setCorSecundaria('#7FAE93'); setCorFundo('#0b0d0c')
-            setLogoPreview(null)
+            setLogoPreview(null); setYoutubeId(''); setInstaHandle('')
             setStatus({ type: 'success', msg: 'Visual restaurado para o padrao.' })
         }
         setSaving(false)
@@ -141,6 +147,31 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
                                     <Upload size={12} /> Escolher Imagem
                                 </button>
                                 <p className="text-[8px] text-muted/60">PNG, JPG ou WebP. Max 2MB.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* REDES SOCIAIS */}
+                    <section className="bg-bg2 border border-soft rounded-2xl p-5 space-y-4">
+                        <h2 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            Redes Sociais
+                        </h2>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-fg block mb-1">YouTube Channel ID</label>
+                                <input type="text" value={youtubeId} onChange={e => setYoutubeId(e.target.value)}
+                                    placeholder="UCxxxxx..."
+                                    className="w-full bg-bg border border-soft rounded-lg px-3 py-2 text-xs text-fg outline-none focus:border-figueira placeholder:text-muted/30" />
+                                <p className="text-[8px] text-muted/60 mt-1">Encontra o ID do canal nas definicoes do YouTube.</p>
+                            </div>
+                            <div>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-fg block mb-1">Instagram</label>
+                                <input type="text" value={instaHandle} onChange={e => setInstaHandle(e.target.value)}
+                                    placeholder="@igrejaxyz"
+                                    className="w-full bg-bg border border-soft rounded-lg px-3 py-2 text-xs text-fg outline-none focus:border-figueira placeholder:text-muted/30" />
+                                <p className="text-[8px] text-muted/60 mt-1">Nome de utilizador do Instagram (com ou sem @).</p>
                             </div>
                         </div>
                     </section>

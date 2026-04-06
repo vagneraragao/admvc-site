@@ -37,10 +37,15 @@ export async function atualizarBranding(formData: FormData) {
             return { ok: false, error: 'Cor de fundo invalida. Use formato #RRGGBB.' }
         }
 
+        const youtubeChannelId = (formData.get('youtube_channel_id') as string)?.trim() || null
+        const instagramHandle = (formData.get('instagram_handle') as string)?.trim().replace(/^@/, '') || null
+
         const data: any = {}
         if (corPrimaria) data.cor_primaria = corPrimaria
         if (corSecundaria) data.cor_secundaria = corSecundaria
         if (corFundo) data.cor_fundo = corFundo
+        data.youtube_channel_id = youtubeChannelId
+        data.instagram_handle = instagramHandle
 
         // Upload do logo se fornecido
         if (logoFile && logoFile.size > 0 && logoFile.name !== 'undefined') {
@@ -83,6 +88,8 @@ export async function resetBranding() {
                 cor_secundaria: '#7FAE93',
                 cor_fundo: '#0b0d0c',
                 logo_url: null,
+                youtube_channel_id: null,
+                instagram_handle: null,
             },
         })
 
