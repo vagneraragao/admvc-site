@@ -83,6 +83,12 @@ body {
   height: 100%;
 }
 
+/* iOS Safari: forçar video inline no scanner QR */
+#qr-reader video {
+  -webkit-playsinline: true;
+  object-fit: cover;
+}
+
 @layer utilities {
   .bg-bg {
     background-color: var(--bg);

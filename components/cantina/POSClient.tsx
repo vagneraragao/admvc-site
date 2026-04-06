@@ -153,22 +153,53 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     }
 
     const startScanner = async () => {
-        const { Html5Qrcode } = await import('html5-qrcode')
-        const scanner = new Html5Qrcode("qr-reader")
-        scannerRef.current = scanner
-        await scanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            async (decodedText) => {
-                await scanner.stop()
-                scannerRef.current = null
-                setQrOpen(false)
-                const membro = await buscarMembroPorQr(decodedText)
-                if (membro) await selecionarMembro(membro)
-                else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
-            },
-            () => {}
-        )
+        try {
+            const { Html5Qrcode } = await import('html5-qrcode')
+            const scanner = new Html5Qrcode("qr-reader")
+            scannerRef.current = scanner
+
+            // Forçar playsInline no video (obrigatório no iOS Safari)
+            setTimeout(() => {
+                const video = document.querySelector('#qr-reader video') as HTMLVideoElement
+                if (video) {
+                    video.setAttribute('playsinline', 'true')
+                    video.setAttribute('webkit-playsinline', 'true')
+                    video.playsInline = true
+                }
+            }, 200)
+
+            await scanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+                async (decodedText) => {
+                    await scanner.stop()
+                    scannerRef.current = null
+                    setQrOpen(false)
+                    const membro = await buscarMembroPorQr(decodedText)
+                    if (membro) await selecionarMembro(membro)
+                    else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
+                },
+                () => {}
+            )
+
+            // Reforçar playsInline após o scanner criar o video
+            const video = document.querySelector('#qr-reader video') as HTMLVideoElement
+            if (video) {
+                video.setAttribute('playsinline', 'true')
+                video.setAttribute('webkit-playsinline', 'true')
+                video.playsInline = true
+            }
+        } catch (err: any) {
+            console.error('[POS] Erro ao iniciar camera:', err)
+            setQrOpen(false)
+            if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission')) {
+                setFeedback({ type: 'error', msg: 'Permissao de camera negada. Verifique as definicoes do browser.' })
+            } else if (err?.name === 'NotFoundError') {
+                setFeedback({ type: 'error', msg: 'Nenhuma camera encontrada neste dispositivo.' })
+            } else {
+                setFeedback({ type: 'error', msg: `Erro ao abrir camera: ${err?.message || 'erro desconhecido'}` })
+            }
+        }
     }
 
     const stopScanner = async () => {
