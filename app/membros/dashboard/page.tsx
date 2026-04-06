@@ -186,7 +186,7 @@ export default async function DashboardMembro({
         } catch { return 0 }
     };
 
-    const safe = async <T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
+    const safe = async <T,>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
         try { return await fn() } catch (e) {
             console.error(`[DASHBOARD] Falha em "${label}":`, e)
             return fallback
