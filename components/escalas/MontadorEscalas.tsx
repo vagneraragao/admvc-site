@@ -168,7 +168,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 <option value="">Selecionar Culto/Evento...</option>
                                 {eventosFiltrados.map((ev: any) => (
                                     <option key={ev.id} value={ev.id}>
-                                        {format(new Date(ev.data), 'dd/MM (HH:mm)')} • {ev.nome}
+                                        {formatInTimeZone(new Date(ev.data), TIMEZONE, 'dd/MM (HH:mm)')} • {ev.nome}
                                     </option>
                                 ))}
                             </select>
