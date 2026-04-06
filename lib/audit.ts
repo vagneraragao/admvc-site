@@ -115,6 +115,17 @@ export async function audit(params: AuditParams): Promise<void> {
             }
         }
 
+        // Auto-preencher nome do actor se temos ID mas nao nome
+        if (actorId && !actorNome) {
+            try {
+                const actor = await prisma.membro.findUnique({
+                    where: { id: actorId },
+                    select: { first_name: true, last_name: true }
+                })
+                if (actor) actorNome = `${actor.first_name} ${actor.last_name}`
+            } catch { /* nao bloqueia o audit */ }
+        }
+
         const dadosAntes = params.dados_antes
             ? JSON.stringify(sanitizar(params.dados_antes))
             : null
