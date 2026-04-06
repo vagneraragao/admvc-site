@@ -2,6 +2,7 @@ import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import EBDDashboard from '@/components/pregacao/EBDDashboard'
+import BotaoCriarPermanecer from '@/components/admin/BotaoCriarPermanecer'
 import { getCachedMembrosAtivos, getCachedSermoes, getCachedDepartamentos, getCachedGrupos } from '@/lib/cache'
 
 export default async function AdminEBDPage({
@@ -80,6 +81,7 @@ export default async function AdminEBDPage({
     ])
 
     const meusCursoIds = new Set(minhasMatriculas.map(m => m.turma.curso_id))
+    const temPermanecer = cursos.some(c => c.categoria === 'DISCIPULADO' && c.titulo.includes('Permanecer'))
 
     const cursosSerializados = cursos.map(c => ({
         ...c,
@@ -105,6 +107,8 @@ export default async function AdminEBDPage({
     }))
 
     return (
+        <>
+        {!temPermanecer && <BotaoCriarPermanecer />}
         <EBDDashboard
             cursos={cursosSerializados}
             aulas={aulasSerializadas}
@@ -122,5 +126,6 @@ export default async function AdminEBDPage({
             membroGrupoIds={membroGrupoIds}
             basePath="/admin/formacao/ebd"
         />
+        </>
     )
 }
