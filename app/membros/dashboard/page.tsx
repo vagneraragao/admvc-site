@@ -15,7 +15,7 @@ import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import {
     Coffee, Receipt, FileSignature,
     HeartHandshake, Heart, CalendarDays, Wallet2, ChevronRight,
-    Users, Clock, MapPin, MessageSquare
+    Users, Clock, MapPin, MessageSquare, ChevronDown
 } from 'lucide-react'
 
 import BotoesEscala from '@/components/membros/BotoesEscala'
@@ -617,38 +617,44 @@ export default async function DashboardMembro({
 
                         </div>{/* fecha grid 3 colunas */}
 
-                        {/* MURAL — ultimos avisos dos departamentos/grupos */}
+                        {/* MURAL — colapsado por defeito */}
                         {ultimosAvisos.length > 0 && (
-                            <section className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                            <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-4 flex items-center justify-between hover:bg-soft/20 transition-all">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <MessageSquare size={12} className="text-figueira" /> Mural
-                                    </h2>
-                                    <Link href="/membros/mural" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
-                                        Ver Tudo <ChevronRight size={12} />
-                                    </Link>
-                                </div>
-                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {ultimosAvisos.map((aviso: any) => (
-                                        <div key={aviso.id} className="bg-bg2 border border-soft rounded-2xl p-4 space-y-2 shadow-sm">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-figueira">
-                                                    {aviso.departamento?.nome || aviso.grupo?.nome || 'Geral'}
-                                                </span>
-                                                <span className="text-[8px] text-muted">
-                                                    {new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
-                                                </span>
+                                        <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">{ultimosAvisos.length}</span>
+                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <Link href="/membros/mural" onClick={(e) => e.stopPropagation()} className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors">
+                                            Ver Tudo
+                                        </Link>
+                                        <ChevronDown size={12} className="text-muted group-open:rotate-180 transition-transform" />
+                                    </div>
+                                </summary>
+                                <div className="px-4 pb-4">
+                                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {ultimosAvisos.map((aviso: any) => (
+                                            <div key={aviso.id} className="bg-bg border border-soft rounded-2xl p-4 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-figueira">
+                                                        {aviso.departamento?.nome || aviso.grupo?.nome || 'Geral'}
+                                                    </span>
+                                                    <span className="text-[8px] text-muted">
+                                                        {new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.titulo || aviso.mensagem}</p>
+                                                {aviso.autor && (
+                                                    <p className="text-[9px] text-muted">
+                                                        — {aviso.autor.first_name} {aviso.autor.last_name}
+                                                    </p>
+                                                )}
                                             </div>
-                                            <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.titulo || aviso.mensagem}</p>
-                                            {aviso.autor && (
-                                                <p className="text-[9px] text-muted">
-                                                    — {aviso.autor.first_name} {aviso.autor.last_name}
-                                                </p>
-                                            )}
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </section>
+                            </details>
                         )}
                     </div>
                 )}

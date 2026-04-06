@@ -234,10 +234,10 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                         {/* AJUDA */}
                         {menuAberto === 'ajuda' && (
                             <div className="flex flex-wrap items-center gap-3">
-                                <ModalAjuda isMenuItem />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2 px-3 py-2 bg-bg border border-soft rounded-xl">
-                                    <Info size={12} className="text-muted2" /> Versao: {APP_VERSION}
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <ModalAjuda isMenuItem />
+                                    <span className="text-[9px] font-bold text-muted2">Versao: {APP_VERSION}</span>
+                                </div>
                             </div>
                         )}
                     </div>
