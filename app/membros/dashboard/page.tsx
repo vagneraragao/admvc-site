@@ -667,7 +667,7 @@ export default async function DashboardMembro({
                                         <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">{avisosDashboard.length}</span>
                                     </span>
                                     <div className="flex items-center gap-3">
-                                        <Link href="/membros/mural" onClick={(e) => e.stopPropagation()} className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors">
+                                        <Link href="/membros/mural" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors">
                                             Ver Tudo
                                         </Link>
                                         <ChevronDown size={12} className="text-muted group-open:rotate-180 transition-transform" />
