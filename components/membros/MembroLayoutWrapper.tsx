@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { getTenantClient } from '@/lib/prisma'
 import MembroHeader from '@/components/membros/MembroHeader'
+import PullToRefresh from '@/components/ui/PullToRefresh'
 
 export default async function MembroLayoutWrapper({ children }: { children: React.ReactNode }) {
     const session = await getSessionData()
@@ -110,7 +111,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
                 avisos={ultimosAvisos}
                 alertasAcolhimento={permissoes.isAcolhimento || permissoes.isAdmin ? visitantesAtualizados : []}
             />
-            {children}
+            <PullToRefresh>{children}</PullToRefresh>
         </>
     )
 }

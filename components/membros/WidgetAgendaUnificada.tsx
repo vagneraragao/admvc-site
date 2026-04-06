@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, Users, X, MapPin, Clock, Info, ChevronRight } from 'lucide-react'
+import { CalendarDays, Users, X, MapPin, Clock, Info, ChevronRight, Share2 } from 'lucide-react'
 
 export default function WidgetAgendaUnificada({
     eventosIgreja = [],
@@ -191,12 +191,29 @@ export default function WidgetAgendaUnificada({
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setEventoSelecionado(null)}
-                                className="w-full py-3.5 bg-fg text-bg rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95"
-                            >
-                                Fechar
-                            </button>
+                            <div className="flex gap-2">
+                                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                                    <button
+                                        onClick={() => {
+                                            const dataStr = eventoSelecionado.data.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long' })
+                                            const horaStr = eventoSelecionado.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                                            navigator.share({
+                                                title: eventoSelecionado.titulo,
+                                                text: `${eventoSelecionado.titulo}\n${dataStr} as ${horaStr}\n${eventoSelecionado.local}`,
+                                            }).catch(() => {})
+                                        }}
+                                        className="px-4 py-3.5 bg-bg border border-soft text-muted rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-figueira/30 hover:text-figueira transition-all active:scale-95 flex items-center gap-2"
+                                    >
+                                        <Share2 size={13} /> Partilhar
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setEventoSelecionado(null)}
+                                    className="flex-1 py-3.5 bg-fg text-bg rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

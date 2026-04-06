@@ -5,6 +5,7 @@ import "./globals.css";
 import { SITE_NAME } from "@/lib/constants";
 import BrandingProvider from "@/components/ui/BrandingProvider";
 import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
+import PWAInstallPrompt from "@/components/ui/PWAInstallPrompt";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} Cloud`,
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'ADMVC',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport = {
@@ -33,6 +37,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover' as const,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -43,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </BrandingProvider>
         <ServiceWorkerRegister />
+        <PWAInstallPrompt />
       </body>
     </html>
   );
