@@ -1968,7 +1968,7 @@ export async function criarCursoPermanecer() {
                 status: 'EM_CURSO',
                 tipo_inscricao: 'LIVRE',
                 tenant_id: tenantId,
-                criado_por_id: (await getSessionData())?.membroId || null,
+                criado_por_id: null,
             }
         })
 
