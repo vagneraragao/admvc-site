@@ -305,6 +305,25 @@ export default async function DashboardMembro({
         }), [])
     ]);
 
+    // 4b. SANITIZAR AVISOS DO MURAL (converter Prisma objects → plain objects)
+    let avisosDashboard: { id: string; texto: string; dataFormatada: string; canal: string; autorNome: string | null }[] = []
+    try {
+        avisosDashboard = (ultimosAvisos || []).map((aviso: any) => ({
+            id: String(aviso.id),
+            texto: String(aviso.texto || ''),
+            dataFormatada: aviso.createdAt
+                ? new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+                : '',
+            canal: aviso.departamento?.nome || aviso.grupo?.nome || 'Geral',
+            autorNome: aviso.autor
+                ? `${aviso.autor.first_name} ${aviso.autor.last_name}`
+                : null
+        }))
+    } catch (e) {
+        console.error('[DASHBOARD] Falha ao processar avisos do mural:', e)
+        avisosDashboard = []
+    }
+
     // 5. PROCESSAMENTO DE DADOS UI
     const hoje = new Date();
     const gdprPendente = !membro.gdpr_aceite || (membro.gdpr_validade && membro.gdpr_validade < hoje);
@@ -640,12 +659,12 @@ export default async function DashboardMembro({
                         </div>{/* fecha grid 3 colunas */}
 
                         {/* MURAL — colapsado por defeito */}
-                        {ultimosAvisos.length > 0 && (
+                        {avisosDashboard.length > 0 && (
                             <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
                                 <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-4 flex items-center justify-between hover:bg-soft/20 transition-all">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <MessageSquare size={12} className="text-figueira" /> Mural
-                                        <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">{ultimosAvisos.length}</span>
+                                        <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">{avisosDashboard.length}</span>
                                     </span>
                                     <div className="flex items-center gap-3">
                                         <Link href="/membros/mural" onClick={(e) => e.stopPropagation()} className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors">
@@ -656,20 +675,20 @@ export default async function DashboardMembro({
                                 </summary>
                                 <div className="px-4 pb-4">
                                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {ultimosAvisos.map((aviso: any) => (
+                                        {avisosDashboard.map((aviso) => (
                                             <div key={aviso.id} className="bg-bg border border-soft rounded-2xl p-4 space-y-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[8px] font-black uppercase tracking-widest text-figueira">
-                                                        {aviso.departamento?.nome || aviso.grupo?.nome || 'Geral'}
+                                                        {aviso.canal}
                                                     </span>
                                                     <span className="text-[8px] text-muted">
-                                                        {new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                        {aviso.dataFormatada}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.texto}</p>
-                                                {aviso.autor && (
+                                                {aviso.autorNome && (
                                                     <p className="text-[9px] text-muted">
-                                                        — {aviso.autor.first_name} {aviso.autor.last_name}
+                                                        — {aviso.autorNome}
                                                     </p>
                                                 )}
                                             </div>
