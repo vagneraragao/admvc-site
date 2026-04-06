@@ -7,7 +7,8 @@ import { format } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import {
     Calendar, Users, Home, AlertTriangle,
-    ArrowUpRight, BookOpen, Clock, CheckCircle2
+    ArrowUpRight, BookOpen, Clock, CheckCircle2,
+    HeartHandshake, UserPlus, ArrowRight, Briefcase
 } from 'lucide-react'
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
 import HolyricsLogPanel from '@/components/admin/HolyricsLogPanel'
@@ -37,6 +38,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         totalMembros, pendentesCount, batizados, totalFamilias,
         proximasEscalas, todosMembros, membrosPendentesDocs,
         escalasPendentesConfirmacao, tenantConfig,
+        visitantesNovos, visitantesEmContacto, visitantesReuniao, visitantesConsolidados,
+        interessesPendentes,
     ] = await Promise.all([
         db.membro.count({ where: { status: statusAtivo, ...congWhere } }),
         db.membro.count({ where: { status: statusPendente, ...congWhere } }),
@@ -81,6 +84,11 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             where: { id: tenantId },
             select: { holyrics_url: true, holyrics_token: true }
         }) : null,
+        db.visitante.count({ where: { status: 'NOVO' } }),
+        db.visitante.count({ where: { status: 'EM_CONTACTO' } }),
+        db.visitante.count({ where: { status: 'REUNIAO_PASTOR' } }),
+        db.visitante.count({ where: { status: 'CONSOLIDADO' } }),
+        db.interesseDepartamento.count({ where: { status: 'PENDENTE' } }),
     ])
 
     const mesAtual = new Date().getMonth() + 1
@@ -228,6 +236,56 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                     </div>
                 </section>
             </div>
+
+            {/* PIPELINE DE INTEGRACAO */}
+            {(visitantesNovos > 0 || visitantesEmContacto > 0 || visitantesReuniao > 0 || visitantesConsolidados > 0 || interessesPendentes > 0) && (
+                <section className="bg-bg2 border border-soft rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                            <HeartHandshake size={14} className="text-figueira" /> Pipeline de Integracao
+                        </h2>
+                        <Link href="/departamentos/acolhimento/dashboard" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
+                            Acolhimento <ArrowUpRight size={10} />
+                        </Link>
+                    </div>
+
+                    {/* PIPELINE VISUAL */}
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                        {[
+                            { label: 'Novos', value: visitantesNovos, cor: 'orange' },
+                            { label: 'Contacto', value: visitantesEmContacto, cor: 'blue' },
+                            { label: 'Reuniao', value: visitantesReuniao, cor: 'purple' },
+                            { label: 'Consolidados', value: visitantesConsolidados, cor: 'emerald' },
+                        ].map((step, i) => (
+                            <div key={step.label} className="flex items-center gap-1">
+                                {i > 0 && <ArrowRight size={10} className="text-muted/30 shrink-0" />}
+                                <div className={`shrink-0 px-3 py-2 rounded-xl border text-center min-w-[80px] ${
+                                    step.value > 0
+                                        ? step.cor === 'orange' ? 'bg-orange-500/10 border-orange-500/20 text-orange-600'
+                                        : step.cor === 'blue' ? 'bg-blue-500/10 border-blue-500/20 text-blue-600'
+                                        : step.cor === 'purple' ? 'bg-purple-500/10 border-purple-500/20 text-purple-600'
+                                        : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600'
+                                        : 'bg-bg border-soft text-muted'
+                                }`}>
+                                    <p className="text-lg font-black italic leading-none">{step.value}</p>
+                                    <p className="text-[7px] font-black uppercase tracking-widest mt-0.5">{step.label}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* INTERESSES PENDENTES */}
+                    {interessesPendentes > 0 && (
+                        <Link href="/admin/configuracoes" className="flex items-center gap-3 bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 hover:bg-orange-500/10 transition-all">
+                            <Briefcase size={14} className="text-orange-600 shrink-0" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 flex-1">
+                                {interessesPendentes} interesse{interessesPendentes !== 1 ? 's' : ''} em servir pendente{interessesPendentes !== 1 ? 's' : ''}
+                            </p>
+                            <ArrowRight size={12} className="text-orange-600" />
+                        </Link>
+                    )}
+                </section>
+            )}
 
             {/* HOLYRICS LOG */}
             <HolyricsLogPanel holyricsUrl={tenantConfig?.holyrics_url} holyricsToken={tenantConfig?.holyrics_token} />

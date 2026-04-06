@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { CalendarDays, Users, X, MapPin, Clock, Info, ChevronRight, Share2 } from 'lucide-react'
+import { formatInTimeZone } from 'date-fns-tz'
+
+const TZ = 'Europe/Lisbon'
 
 export default function WidgetAgendaUnificada({
     eventosIgreja = [],
@@ -45,7 +48,7 @@ export default function WidgetAgendaUnificada({
 
         if (mesmodia(data, hoje)) return 'Hoje'
         if (mesmodia(data, amanha)) return 'Amanhã'
-        return data.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+        return formatInTimeZone(data, TZ, 'dd MMM')
     }
 
     const diasRestantes = (data: Date) => {
@@ -80,10 +83,10 @@ export default function WidgetAgendaUnificada({
                                 {/* DATA PILL */}
                                 <div className={`shrink-0 w-11 text-center rounded-xl py-1.5 ${isHoje ? 'bg-figueira text-white' : 'bg-bg2 border border-soft text-fg'}`}>
                                     <span className="block text-[7px] font-black uppercase opacity-70 leading-none">
-                                        {item.data.toLocaleDateString('pt-PT', { month: 'short' })}
+                                        {formatInTimeZone(item.data, TZ, 'MMM')}
                                     </span>
                                     <span className="block text-sm font-black italic leading-tight">
-                                        {item.data.toLocaleDateString('pt-PT', { day: '2-digit' })}
+                                        {formatInTimeZone(item.data, TZ, 'dd')}
                                     </span>
                                 </div>
 
@@ -93,7 +96,7 @@ export default function WidgetAgendaUnificada({
                                         {item.titulo}
                                     </p>
                                     <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
-                                        {formatData(item.data)} · {item.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                        {formatData(item.data)} · {formatInTimeZone(item.data, TZ, 'HH:mm')}
                                     </p>
                                 </div>
 
@@ -168,9 +171,9 @@ export default function WidgetAgendaUnificada({
                                     <div>
                                         <p className="text-[9px] font-black uppercase tracking-widest text-muted">Data e Hora</p>
                                         <p className="text-sm font-bold text-fg mt-0.5">
-                                            {eventoSelecionado.data.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                                            {formatInTimeZone(eventoSelecionado.data, TZ, "EEEE, dd 'de' MMMM 'de' yyyy")}
                                             <span className="text-figueira block">
-                                                às {eventoSelecionado.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                                às {formatInTimeZone(eventoSelecionado.data, TZ, 'HH:mm')}
                                             </span>
                                         </p>
                                     </div>
@@ -195,8 +198,8 @@ export default function WidgetAgendaUnificada({
                                 {typeof navigator !== 'undefined' && 'share' in navigator && (
                                     <button
                                         onClick={() => {
-                                            const dataStr = eventoSelecionado.data.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long' })
-                                            const horaStr = eventoSelecionado.data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                                            const dataStr = formatInTimeZone(eventoSelecionado.data, TZ, "EEEE, dd 'de' MMMM")
+                                            const horaStr = formatInTimeZone(eventoSelecionado.data, TZ, 'HH:mm')
                                             navigator.share({
                                                 title: eventoSelecionado.titulo,
                                                 text: `${eventoSelecionado.titulo}\n${dataStr} as ${horaStr}\n${eventoSelecionado.local}`,

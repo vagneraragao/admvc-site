@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { salvarEvento } from "@/actions/admin-actions";
+import { formatInTimeZone } from 'date-fns-tz';
 
 export default function GerenciadorEventos({ eventos }: { eventos: any[] }) {
     const [modo, setModo] = useState<'lista' | 'form'>('lista');
@@ -47,7 +48,7 @@ export default function GerenciadorEventos({ eventos }: { eventos: any[] }) {
                                     {new Date(ev.data).toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long' })}
                                 </span>
                                 <h3 className="text-xl font-black uppercase italic text-fg leading-none mt-1">{ev.nome}</h3>
-                                <p className="text-[10px] text-muted font-bold uppercase mt-1">🕒 {new Date(ev.data).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p className="text-[10px] text-muted font-bold uppercase mt-1">🕒 {formatInTimeZone(new Date(ev.data), 'Europe/Lisbon', 'HH:mm')}</p>
                             </div>
                             <button
                                 onClick={() => { setEventoAtual(ev); setModo('form'); }}
