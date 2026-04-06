@@ -166,6 +166,10 @@ export async function POST(request: NextRequest) {
         if (error.code === 'P2002') {
             return NextResponse.json({ error: 'E-mail ou ID Loyverse ja existem.' }, { status: 409 })
         }
-        return NextResponse.json({ error: 'Erro ao criar membro.' }, { status: 500 })
+        if (error.code === 'P2011' || error.code === 'P2012') {
+            const campo = error.meta?.column || error.meta?.argument || 'desconhecido'
+            return NextResponse.json({ error: `Campo obrigatorio em falta: ${campo}` }, { status: 400 })
+        }
+        return NextResponse.json({ error: `Erro ao criar membro: ${error.message || 'erro desconhecido'}` }, { status: 500 })
     }
 }

@@ -178,7 +178,7 @@ model Membro {
   lang                       String?                   @default("Português")
   father_name                String?
   mother_name                String?
-  phone_1                    String
+  phone_1                    String?
   phone_2                    String?
   address_1                  String?
   address_2                  String?
