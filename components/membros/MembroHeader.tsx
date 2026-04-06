@@ -222,9 +222,6 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                 <Link href="/cantina/menu-local" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                     <Coffee size={12} className="text-orange-500" /> Menu Cantina
                                 </Link>
-                                <Link href="/cantina/carregar" onClick={() => setMenuAberto(null)} className={menuItemClass}>
-                                    <Wallet2 size={12} className="text-emerald-500" /> Carregar Saldo
-                                </Link>
                                 <Link href="/membros/mural" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                     <MessageSquare size={12} className="text-blue-500" /> Mural
                                 </Link>

@@ -1,12 +1,14 @@
+'use client'
+
 import Link from 'next/link'
-import { Car, Coffee, ShoppingCart, Wallet2 } from 'lucide-react'
+import { Car, Coffee, MessageSquare } from 'lucide-react'
+import ModalAjuda from '@/components/membros/ModalAjuda'
 
 export default function AcoesRapidas() {
     const acoes = [
         { label: 'Boleia', href: '/boleia', icon: Car, cor: 'text-figueira' },
         { label: 'Menu', href: '/cantina/menu-local', icon: Coffee, cor: 'text-orange-500' },
-        { label: 'Encomendar', href: '/cantina/menu-local', icon: ShoppingCart, cor: 'text-blue-500' },
-        { label: 'Saldo', href: '/cantina/carregar', icon: Wallet2, cor: 'text-emerald-500' },
+        { label: 'Mural', href: '/membros/mural', icon: MessageSquare, cor: 'text-blue-500' },
     ]
 
     return (
@@ -17,6 +19,7 @@ export default function AcoesRapidas() {
                     <a.icon size={12} className={a.cor} /> {a.label}
                 </Link>
             ))}
+            <ModalAjuda isMenuItem />
         </div>
     )
 }
