@@ -479,7 +479,7 @@ export default async function DashboardMembro({
                         <AcoesRapidas />
 
                         {/* PENDENTES */}
-                        <PendentesAtencao pendentes={pendentes} />
+                        {/* PendentesAtencao removido — info ja visivel no banner GDPR e nos cards de escala */}
 
                         {/* GRID: Escalas + Agenda + Aniversarios lado a lado */}
                         <div className="grid lg:grid-cols-3 gap-6">

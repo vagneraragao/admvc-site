@@ -145,8 +145,8 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                         <NavTab label="Home" href="/membros/dashboard" active={isHome} />
                         <NavDropdownBtn label="Meu Perfil" active={menuAberto === 'perfil'} onClick={() => toggleMenu('perfil')} />
                         <NavDropdownBtn label="Servir" active={menuAberto === 'servir'} onClick={() => toggleMenu('servir')} />
-                        <NavDropdownBtn label="Comunidade" active={menuAberto === 'comunidade'} onClick={() => toggleMenu('comunidade')} />
-                        <NavDropdownBtn label="Ajuda" active={menuAberto === 'ajuda'} onClick={() => toggleMenu('ajuda')} />
+                        <NavDropdownBtn label="Igreja" active={menuAberto === 'comunidade'} onClick={() => toggleMenu('comunidade')} />
+                        <NavDropdownBtn label="?" active={menuAberto === 'ajuda'} onClick={() => toggleMenu('ajuda')} />
                     </div>
                 </div>
             </div>
@@ -233,10 +233,10 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
 
                         {/* AJUDA */}
                         {menuAberto === 'ajuda' && (
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <ModalAjuda isMenuItem />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2 px-3 py-2">
-                                    <Info size={12} className="text-muted2" /> v{APP_VERSION}
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted flex items-center gap-2 px-3 py-2 bg-bg border border-soft rounded-xl">
+                                    <Info size={12} className="text-muted2" /> Versao: {APP_VERSION}
                                 </span>
                             </div>
                         )}
