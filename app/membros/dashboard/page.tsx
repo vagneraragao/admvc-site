@@ -130,7 +130,14 @@ export default async function DashboardMembro({
         }
     });
 
-    if (!membro) return redirect('/membros/login?error=Sessão expirada ou utilizador inexistente');
+    if (!membro) {
+        // Membro nao encontrado neste tenant — pode ser cookie de impersonacao
+        // Limpar cookie e forcar re-login
+        const { cookies } = await import('next/headers')
+        const cookieStore = await cookies()
+        cookieStore.delete('admvc_session')
+        return redirect('/membros/login?error=Sessao invalida. Faca login novamente.')
+    }
 
     // 3. LÓGICA DE PERMISSÕES
     const checkDepto = (termos: string[]) => {
