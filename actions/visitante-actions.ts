@@ -210,7 +210,7 @@ export async function registarAcompanhamento(formData: FormData) {
                                 await prisma.matriculaEBD.create({
                                     data: {
                                         turma_id: turma.id,
-                                        aluno_id: novoMembro.id,
+                                        membro_id: novoMembro.id,
                                         tenant_id: membro.tenant_id,
                                     }
                                 }).catch(() => {}) // ignora se ja matriculado
