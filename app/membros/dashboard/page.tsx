@@ -305,23 +305,39 @@ export default async function DashboardMembro({
         }), [])
     ]);
 
-    // 4b. SANITIZAR AVISOS DO MURAL (converter Prisma objects → plain objects)
-    let avisosDashboard: { id: string; texto: string; dataFormatada: string; canal: string; autorNome: string | null }[] = []
+    // 4b. AGRUPAR AVISOS POR CANAL (mostrar apenas a última mensagem de cada)
+    let muralPorCanal: { canal: string; totalMensagens: number; ultima: { id: string; texto: string; dataFormatada: string; autorNome: string | null } }[] = []
     try {
-        avisosDashboard = (ultimosAvisos || []).map((aviso: any) => ({
-            id: String(aviso.id),
-            texto: String(aviso.texto || ''),
-            dataFormatada: aviso.createdAt
-                ? new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
-                : '',
-            canal: aviso.departamento?.nome || aviso.grupo?.nome || 'Geral',
-            autorNome: aviso.autor
-                ? `${aviso.autor.first_name} ${aviso.autor.last_name}`
-                : null
+        const porCanal = new Map<string, { total: number; ultima: any }>()
+        for (const aviso of (ultimosAvisos || [])) {
+            const canal = aviso.departamento?.nome || aviso.grupo?.nome || 'Geral'
+            const existente = porCanal.get(canal)
+            if (!existente) {
+                porCanal.set(canal, {
+                    total: 1,
+                    ultima: aviso
+                })
+            } else {
+                existente.total++
+            }
+        }
+        muralPorCanal = Array.from(porCanal.entries()).map(([canal, { total, ultima }]) => ({
+            canal,
+            totalMensagens: total,
+            ultima: {
+                id: String(ultima.id),
+                texto: String(ultima.texto || ''),
+                dataFormatada: ultima.createdAt
+                    ? new Date(ultima.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+                    : '',
+                autorNome: ultima.autor
+                    ? `${ultima.autor.first_name} ${ultima.autor.last_name}`
+                    : null
+            }
         }))
     } catch (e) {
         console.error('[DASHBOARD] Falha ao processar avisos do mural:', e)
-        avisosDashboard = []
+        muralPorCanal = []
     }
 
     // 5. PROCESSAMENTO DE DADOS UI
@@ -658,44 +674,39 @@ export default async function DashboardMembro({
 
                         </div>{/* fecha grid 3 colunas */}
 
-                        {/* MURAL — colapsado por defeito */}
-                        {avisosDashboard.length > 0 && (
-                            <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
-                                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-4 flex items-center justify-between hover:bg-soft/20 transition-all">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                        {/* MURAL — agrupado por canal, última mensagem de cada */}
+                        {muralPorCanal.length > 0 && (
+                            <section className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                         <MessageSquare size={12} className="text-figueira" /> Mural
-                                        <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">{avisosDashboard.length}</span>
-                                    </span>
-                                    <div className="flex items-center gap-3">
-                                        <Link href="/membros/mural" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors">
-                                            Ver Tudo
-                                        </Link>
-                                        <ChevronDown size={12} className="text-muted group-open:rotate-180 transition-transform" />
-                                    </div>
-                                </summary>
-                                <div className="px-4 pb-4">
-                                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {avisosDashboard.map((aviso) => (
-                                            <div key={aviso.id} className="bg-bg border border-soft rounded-2xl p-4 space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-figueira">
-                                                        {aviso.canal}
-                                                    </span>
-                                                    <span className="text-[8px] text-muted">
-                                                        {aviso.dataFormatada}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.texto}</p>
-                                                {aviso.autorNome && (
-                                                    <p className="text-[9px] text-muted">
-                                                        — {aviso.autorNome}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
+                                    </h2>
+                                    <Link href="/membros/mural" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
+                                        Ver Tudo <ChevronRight size={10} />
+                                    </Link>
                                 </div>
-                            </details>
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {muralPorCanal.map((grupo) => (
+                                        <Link key={grupo.canal} href="/membros/mural" className="bg-bg2 border border-soft rounded-2xl p-4 space-y-2 hover:border-figueira/30 transition-all group/mural">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-figueira">
+                                                    {grupo.canal}
+                                                </span>
+                                                <span className="text-[8px] font-bold text-muted bg-soft px-2 py-0.5 rounded-lg">
+                                                    {grupo.totalMensagens}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-fg font-bold leading-snug line-clamp-2">{grupo.ultima.texto}</p>
+                                            <div className="flex items-center justify-between">
+                                                {grupo.ultima.autorNome && (
+                                                    <p className="text-[9px] text-muted">— {grupo.ultima.autorNome}</p>
+                                                )}
+                                                <span className="text-[8px] text-muted">{grupo.ultima.dataFormatada}</span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </section>
                         )}
                     </div>
                 )}
