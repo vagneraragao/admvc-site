@@ -4,7 +4,10 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFormStatus } from 'react-dom'
 import { criarEscalaAction } from '@/actions/escalas-actions'
 import { verificarIndisponibilidade } from '@/actions/escalas-actions'
-import { format, subMinutes } from 'date-fns'
+import { subMinutes } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
+
+const TIMEZONE = 'Europe/Lisbon'
 import {
     Clock, CalendarDays, User, ShieldCheck, CheckCircle2,
     ChevronDown, Loader2, Zap, AlertTriangle, X
@@ -31,7 +34,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
         setMembroId('')
         const eventoSelecionado = eventos.find((ev: any) => ev.id.toString() === idSelecionado)
         if (eventoSelecionado?.data) {
-            setHorarioEscala(format(subMinutes(new Date(eventoSelecionado.data), 30), 'HH:mm'))
+            setHorarioEscala(formatInTimeZone(subMinutes(new Date(eventoSelecionado.data), 30), TIMEZONE, 'HH:mm'))
         } else {
             setHorarioEscala('')
         }

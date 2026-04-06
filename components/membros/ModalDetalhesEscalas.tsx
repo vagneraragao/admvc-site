@@ -9,6 +9,10 @@ import {
     Bell, AlertCircle
 } from 'lucide-react'
 import { confirmarEscala, recusarEscala } from '@/actions/escalas-actions'
+import { formatInTimeZone } from 'date-fns-tz'
+import { pt } from 'date-fns/locale'
+
+const TIMEZONE = 'Europe/Lisbon'
 
 interface Props {
     escala: {
@@ -109,10 +113,10 @@ export default function ModalDetalhesEscala({ escala }: Props) {
                     <div className="flex items-center gap-4">
                         <div className={`rounded-2xl p-3 text-center shrink-0 min-w-[54px] ${isHoje ? 'bg-figueira text-white' : 'bg-fg text-bg'}`}>
                             <span className="block text-[7px] font-black uppercase opacity-70">
-                                {dataEvento.toLocaleDateString('pt-PT', { month: 'short' })}
+                                {formatInTimeZone(dataEvento, TIMEZONE, 'MMM', { locale: pt })}
                             </span>
                             <span className="block text-xl font-black italic leading-tight">
-                                {dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' })}
+                                {formatInTimeZone(dataEvento, TIMEZONE, 'dd')}
                             </span>
                         </div>
                         <div>
@@ -146,8 +150,8 @@ export default function ModalDetalhesEscala({ escala }: Props) {
                         <p className="text-[8px] font-black uppercase tracking-widest text-muted">Detalhes da Escala</p>
                         <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden divide-y divide-soft/60">
                             <DetalheRow icon={<Briefcase size={13} />} label="Função" value={escala.funcoes?.filter(Boolean).join(', ') || escala.funcao} />
-                            <DetalheRow icon={<Calendar size={13} />} label="Data do Evento" value={dataEvento.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long' })} />
-                            <DetalheRow icon={<Clock size={13} />} label="Horário do Culto" value={dataEvento.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })} />
+                            <DetalheRow icon={<Calendar size={13} />} label="Data do Evento" value={formatInTimeZone(dataEvento, TIMEZONE, "EEEE, dd 'de' MMMM", { locale: pt })} />
+                            <DetalheRow icon={<Clock size={13} />} label="Horário do Culto" value={formatInTimeZone(dataEvento, TIMEZONE, 'HH:mm')} />
                             {escala.horario && <DetalheRow icon={<Clock size={13} />} label="Chegar até às" value={escala.horario} destaque />}
                             <DetalheRow icon={<Users size={13} />} label="Departamento" value={escala.departamento.nome} />
                         </div>
