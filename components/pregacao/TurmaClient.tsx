@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import {
     matricularAlunos, removerMatricula,
-    criarAtividade, removerAtividade, salvarNotas,
+    criarAtividade, editarAtividade, removerAtividade, salvarNotas,
     criarEBD, registarPresencasEBD, removerEBD,
     calcularAprovacao, responderAtividade
 } from '@/actions/pregacao-actions'
@@ -115,6 +115,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     const [modalMatricula, setModalMatricula] = useState(false)
     const [modalAula, setModalAula] = useState(false)
     const [modalAtividade, setModalAtividade] = useState(false)
+    const [editandoAtividade, setEditandoAtividade] = useState<any | null>(null)
     const [modalNotas, setModalNotas] = useState<string | null>(null)
     const [presencaAulaId, setPresencaAulaId] = useState<string | null>(null)
     const [presentes, setPresentes] = useState<number[]>([])
@@ -182,6 +183,12 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         else alert(res.error)
     }
 
+    function abrirEdicaoAtividade(atv: any) {
+        setEditandoAtividade(atv)
+        setPerguntasEditor((atv.perguntas as any[]) || [])
+        setModalAtividade(true)
+    }
+
     async function handleCriarAtividade(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setLoading(true)
@@ -190,9 +197,16 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         if (perguntasEditor.length > 0) {
             form.set('perguntas', JSON.stringify(perguntasEditor))
         }
-        const res = await criarAtividade(form)
+
+        let res
+        if (editandoAtividade) {
+            form.set('atividade_id', editandoAtividade.id)
+            res = await editarAtividade(form)
+        } else {
+            res = await criarAtividade(form)
+        }
         setLoading(false)
-        if (res.ok) { setModalAtividade(false); setPerguntasEditor([]); router.refresh() }
+        if (res.ok) { setModalAtividade(false); setEditandoAtividade(null); setPerguntasEditor([]); router.refresh() }
         else alert(res.error)
     }
 
@@ -375,18 +389,18 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="relative w-full max-w-lg bg-bg2 border border-soft rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                 <div className="sticky top-0 z-10 bg-bg2 border-b border-soft px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Nova Atividade</h2>
-                    <button onClick={() => setModalAtividade(false)} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">{editandoAtividade ? 'Editar Atividade' : 'Nova Atividade'}</h2>
+                    <button onClick={() => { setModalAtividade(false); setEditandoAtividade(null); setPerguntasEditor([]) }} className="text-muted hover:text-fg transition-colors"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleCriarAtividade} className="p-6 space-y-4">
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Titulo *</label>
-                        <input name="titulo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Exercicio Licao 3" />
+                        <input name="titulo" required defaultValue={editandoAtividade?.titulo || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors" placeholder="Ex: Exercicio Licao 3" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Tipo *</label>
-                            <select name="tipo" required className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
+                            <select name="tipo" required defaultValue={editandoAtividade?.tipo || 'EXERCICIO'} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors">
                                 <option value="EXERCICIO">Exercicio</option>
                                 <option value="PROVA">Prova</option>
                                 <option value="TRABALHO">Trabalho</option>
@@ -395,22 +409,22 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                         </div>
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Data Entrega</label>
-                            <input name="data_entrega" type="date" className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
+                            <input name="data_entrega" type="date" defaultValue={editandoAtividade?.data_entrega?.slice(0, 10) || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Peso</label>
-                            <input name="peso" type="number" step="0.1" defaultValue={1} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
+                            <input name="peso" type="number" step="0.1" defaultValue={editandoAtividade?.peso ?? 1} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
                         </div>
                         <div>
                             <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Nota Maxima</label>
-                            <input name="nota_maxima" type="number" step="0.1" defaultValue={10} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
+                            <input name="nota_maxima" type="number" step="0.1" defaultValue={editandoAtividade?.nota_maxima ?? 10} className="w-full bg-bg border border-soft rounded-2xl px-4 py-2.5 text-xs text-fg focus:outline-none focus:border-figueira transition-colors" />
                         </div>
                     </div>
                     <div>
                         <label className="block text-[9px] font-black uppercase tracking-widest text-muted mb-1">Descricao</label>
-                        <textarea name="descricao" rows={2} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" />
+                        <textarea name="descricao" rows={2} defaultValue={editandoAtividade?.descricao || ''} className="w-full bg-bg border border-soft rounded-2xl px-4 py-3 text-xs text-fg placeholder:text-muted/50 focus:outline-none focus:border-figueira transition-colors resize-y" />
                     </div>
 
                     {/* EDITOR DE PERGUNTAS */}
@@ -470,7 +484,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
 
                     <button type="submit" disabled={loading} className="w-full py-3 bg-figueira text-white text-[10px] font-black uppercase tracking-widest rounded-[2.5rem] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
                         {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                        {loading ? 'A criar...' : 'Criar Atividade'}
+                        {loading ? 'A guardar...' : editandoAtividade ? 'Guardar Alteracoes' : 'Criar Atividade'}
                     </button>
                 </form>
             </div>
@@ -762,6 +776,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                                 <ClipboardList size={10} /> Responder
                                             </button>
                                         )}
+                                        {podeGerir && <button onClick={() => abrirEdicaoAtividade(atv)} className="text-[8px] font-black uppercase text-blue-400 hover:underline">Editar</button>}
                                         {podeGerir && <button onClick={() => abrirNotas(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline">Lancar Notas</button>}
                                         {podeGerir && <button onClick={async () => { if (confirm('Remover atividade?')) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
                                     </div>

@@ -811,6 +811,46 @@ export async function criarAtividade(formData: FormData) {
     }
 }
 
+export async function editarAtividade(formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        const atividadeId = formData.get('atividade_id') as string
+        const titulo = formData.get('titulo') as string
+        const tipo = formData.get('tipo') as string
+        const descricao = formData.get('descricao') as string | null
+        const perguntasRaw = formData.get('perguntas') as string | null
+        const data_entrega = formData.get('data_entrega') as string | null
+        const peso = Number(formData.get('peso') || 1)
+        const nota_maxima = Number(formData.get('nota_maxima') || 10)
+
+        if (!atividadeId || !titulo || !tipo) {
+            return { ok: false, error: 'Preencha todos os campos obrigatorios.' }
+        }
+
+        await db.atividadeEBD.update({
+            where: { id: atividadeId },
+            data: {
+                titulo,
+                tipo: tipo as any,
+                descricao: descricao || null,
+                perguntas: perguntasRaw ? JSON.parse(perguntasRaw) : undefined,
+                data_entrega: data_entrega ? new Date(data_entrega) : null,
+                peso,
+                nota_maxima,
+            },
+        })
+
+        revalidatePath('/ensino')
+        revalidatePath('/admin/formacao/ebd')
+        return { ok: true }
+    } catch (error: any) {
+        console.error('Erro ao editar atividade:', error)
+        return { ok: false, error: error.message || 'Erro ao editar atividade.' }
+    }
+}
+
 export async function removerAtividade(id: string) {
     try {
         await requireAuth()
