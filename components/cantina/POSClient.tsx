@@ -87,6 +87,8 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const [receipt, setReceipt] = useState<{itens: CartItem[], total: number, formaPagamento: string, membro: string | null, saldoRestante: number | null} | null>(null)
     const [qrOpen, setQrOpen] = useState(false)
     const scannerRef = useRef<any>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
     const [selectedMembro, setSelectedMembro] = useState<Membro | null>(null)
     const [membroBusca, setMembroBusca] = useState('')
     const [membroDropdownOpen, setMembroDropdownOpen] = useState(false)
@@ -152,25 +154,16 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
         try { setSaldo(await obterSaldoMembro(membro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
     }
 
+    // Scanner live (Android e desktop)
     const startScanner = async () => {
         try {
             const { Html5Qrcode } = await import('html5-qrcode')
             const scanner = new Html5Qrcode("qr-reader")
             scannerRef.current = scanner
 
-            // Forçar playsInline no video (obrigatório no iOS Safari)
-            setTimeout(() => {
-                const video = document.querySelector('#qr-reader video') as HTMLVideoElement
-                if (video) {
-                    video.setAttribute('playsinline', 'true')
-                    video.setAttribute('webkit-playsinline', 'true')
-                    video.playsInline = true
-                }
-            }, 200)
-
             await scanner.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
                 async (decodedText) => {
                     await scanner.stop()
                     scannerRef.current = null
@@ -181,20 +174,12 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                 },
                 () => {}
             )
-
-            // Reforçar playsInline após o scanner criar o video
-            const video = document.querySelector('#qr-reader video') as HTMLVideoElement
-            if (video) {
-                video.setAttribute('playsinline', 'true')
-                video.setAttribute('webkit-playsinline', 'true')
-                video.playsInline = true
-            }
         } catch (err: any) {
             console.error('[POS] Erro ao iniciar camera:', err)
             setQrOpen(false)
             if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission')) {
                 setFeedback({ type: 'error', msg: 'Permissao de camera negada. Verifique as definicoes do browser.' })
-            } else if (err?.name === 'NotFoundError') {
+            } else if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
                 setFeedback({ type: 'error', msg: 'Nenhuma camera encontrada neste dispositivo.' })
             } else {
                 setFeedback({ type: 'error', msg: `Erro ao abrir camera: ${err?.message || 'erro desconhecido'}` })
@@ -208,6 +193,24 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             scannerRef.current = null
         }
         setQrOpen(false)
+    }
+
+    // iOS fallback: tirar foto e descodificar QR da imagem
+    const handleQrPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        try {
+            const { Html5Qrcode } = await import('html5-qrcode')
+            const scanner = new Html5Qrcode("qr-reader-ios")
+            const decodedText = await scanner.scanFile(file, false)
+            const membro = await buscarMembroPorQr(decodedText)
+            if (membro) await selecionarMembro(membro)
+            else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
+        } catch {
+            setFeedback({ type: 'error', msg: 'QR Code nao reconhecido. Tente novamente com melhor iluminacao.' })
+        }
+        // Limpar input para permitir nova foto
+        if (fileInputRef.current) fileInputRef.current.value = ''
     }
 
     function addToCart(produto: Produto) {
@@ -301,9 +304,19 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                         className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
                     />
                 </div>
-                <button onClick={() => { if (qrOpen) { stopScanner() } else { setQrOpen(true); setTimeout(() => startScanner(), 100) } }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
-                    <QrCode size={16} />
-                </button>
+                {isIOS ? (
+                    <>
+                        <button onClick={() => fileInputRef.current?.click()} className="px-3 rounded-xl border transition-all bg-bg border-soft text-muted hover:border-figueira hover:text-figueira">
+                            <QrCode size={16} />
+                        </button>
+                        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleQrPhoto} className="hidden" />
+                        <div id="qr-reader-ios" className="hidden" />
+                    </>
+                ) : (
+                    <button onClick={() => { if (qrOpen) { stopScanner() } else { setQrOpen(true); setTimeout(() => startScanner(), 100) } }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
+                        <QrCode size={16} />
+                    </button>
+                )}
                 {membroDropdownOpen && membrosFiltrados.length > 0 && (
                     <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg2 border border-soft rounded-xl shadow-xl max-h-48 overflow-y-auto">
                         {membrosFiltrados.map(m => (
@@ -315,9 +328,9 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                     </div>
                 )}
             </div>
-            {qrOpen && (
+            {qrOpen && !isIOS && (
                 <div className="space-y-2">
-                    <div id="qr-reader" className="rounded-xl overflow-hidden" />
+                    <div id="qr-reader" className="rounded-xl overflow-hidden" style={{ minHeight: 300 }} />
                     <button onClick={stopScanner}
                         className="w-full px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest">
                         Fechar Camera

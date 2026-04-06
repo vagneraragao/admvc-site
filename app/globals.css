@@ -91,9 +91,8 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* iOS Safari: forçar video inline no scanner QR */
+/* QR Scanner */
 #qr-reader video {
-  -webkit-playsinline: true;
   object-fit: cover;
 }
 
