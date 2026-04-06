@@ -60,75 +60,81 @@ export default async function DashboardMembro({
     const db = getTenantClient(Number(tenantIdStr));
 
     // 2. BUSCA O MEMBRO — com grupos e encontros incluídos
-    const membro = await db.membro.findUnique({
-        where: { id: membroId },
-        include: {
-            // ✅ Grupos como MEMBRO — com membros, líderes e encontros
-            grupos: {
-                include: {
-                    membros: {
-                        select: { id: true, first_name: true, last_name: true, avatar_file: true }
-                    },
-                    lideres: {
-                        select: { id: true, first_name: true, last_name: true }
-                    },
-                    encontros: {
-                        include: {
-                            presentes: {
-                                select: { id: true, first_name: true, last_name: true }
-                            }
+    let membro: any;
+    try {
+        membro = await db.membro.findUnique({
+            where: { id: membroId },
+            include: {
+                // ✅ Grupos como MEMBRO — com membros, líderes e encontros
+                grupos: {
+                    include: {
+                        membros: {
+                            select: { id: true, first_name: true, last_name: true, avatar_file: true }
                         },
-                        orderBy: { data: 'desc' },
-                        take: 10
-                    }
-                }
-            },
-            // ✅ Grupos como LÍDER — mesma estrutura
-            lider_de_grupo: {
-                include: {
-                    membros: {
-                        select: { id: true, first_name: true, last_name: true, avatar_file: true }
-                    },
-                    lideres: {
-                        select: { id: true, first_name: true, last_name: true }
-                    },
-                    encontros: {
-                        include: {
-                            presentes: {
-                                select: { id: true, first_name: true, last_name: true }
-                            }
+                        lideres: {
+                            select: { id: true, first_name: true, last_name: true }
                         },
-                        orderBy: { data: 'desc' },
-                        take: 10
+                        encontros: {
+                            include: {
+                                presentes: {
+                                    select: { id: true, first_name: true, last_name: true }
+                                }
+                            },
+                            orderBy: { data: 'desc' },
+                            take: 10
+                        }
                     }
-                }
-            },
-            departamentos_liderados: true,
-            ministerios: {
-                include: { departamento: true, funcoes: { include: { funcao: true } } }
-            },
-            familia: true,
-            congregacao: { select: { nome: true, cidade: true } },
-            escalas: {
-                where: { evento: { data: { gte: new Date() } } },
-                orderBy: { evento: { data: 'asc' } },
-                include: {
-                    departamento: true,
-                    evento: {
-                        include: {
-                            repertorio: {
-                                include: { musica: true },
-                                orderBy: { ordem: 'asc' }
+                },
+                // ✅ Grupos como LÍDER — mesma estrutura
+                lider_de_grupo: {
+                    include: {
+                        membros: {
+                            select: { id: true, first_name: true, last_name: true, avatar_file: true }
+                        },
+                        lideres: {
+                            select: { id: true, first_name: true, last_name: true }
+                        },
+                        encontros: {
+                            include: {
+                                presentes: {
+                                    select: { id: true, first_name: true, last_name: true }
+                                }
+                            },
+                            orderBy: { data: 'desc' },
+                            take: 10
+                        }
+                    }
+                },
+                departamentos_liderados: true,
+                ministerios: {
+                    include: { departamento: true, funcoes: { include: { funcao: true } } }
+                },
+                familia: true,
+                congregacao: { select: { nome: true, cidade: true } },
+                escalas: {
+                    where: { evento: { data: { gte: new Date() } } },
+                    orderBy: { evento: { data: 'asc' } },
+                    include: {
+                        departamento: true,
+                        evento: {
+                            include: {
+                                repertorio: {
+                                    include: { musica: true },
+                                    orderBy: { ordem: 'asc' }
+                                }
                             }
                         }
                     }
+                },
+                objetivos_financeiros: {
+                    include: { lancamentos: { orderBy: { data_recebimento: 'desc' } } }
                 }
-            },
-            objetivos_financeiros: {
-                include: { lancamentos: { orderBy: { data_recebimento: 'desc' } } }
             }
-        }
-    });
+        });
+    } catch (e) {
+        console.error('[DASHBOARD] Falha na query do membro:', e)
+        return redirect('/membros/login?error=Erro ao carregar dados. Tente novamente.')
+    }
 
     if (!membro) {
         // Membro nao encontrado neste tenant — pode ser cookie de impersonacao
@@ -488,7 +494,7 @@ export default async function DashboardMembro({
                         <SaudacaoDia
                             nome={membro.first_name}
                             proximoEvento={proximoEvento ? { nome: proximoEvento.nome, data: proximoEvento.data } : null}
-                            escalaHoje={escalaHoje ? { departamento: escalaHoje.departamento.nome, funcao: '', hora_chegada: escalaHoje.hora_chegada } : null}
+                            escalaHoje={escalaHoje ? { departamento: escalaHoje.departamento.nome, funcao: '', hora_chegada: escalaHoje.horario } : null}
                         />
 
                         {/* ACOES RAPIDAS */}
