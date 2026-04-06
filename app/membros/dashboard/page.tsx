@@ -186,21 +186,30 @@ export default async function DashboardMembro({
         } catch { return 0 }
     };
 
+    const safe = async <T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
+        try { return await fn() } catch (e) {
+            console.error(`[DASHBOARD] Falha em "${label}":`, e)
+            return fallback
+        }
+    }
+
     const [
         proximosEventos, visitantesPendentesCount, ultimosAvisos,
         minhasRifas, minhasContribuicoes, carregamentosHistorico,
         meusAcompanhamentos, saldoCantina, visitantesAtualizados,
         escolaridades, aniversariantesMes
     ] = await Promise.all([
-        db.evento.findMany({
+        safe('proximosEventos', () => db.evento.findMany({
             where: { data: { gte: new Date() } },
             orderBy: { data: 'asc' },
             take: 10
-        }),
-        (isAdmin(role) || permissoes.isAcolhimento)
-            ? db.visitante.count({ where: { status: 'NOVO' } })
-            : Promise.resolve(0),
-        db.avisoMural.findMany({
+        }), []),
+        safe('visitantesPendentesCount', () =>
+            (isAdmin(role) || permissoes.isAcolhimento)
+                ? db.visitante.count({ where: { status: 'NOVO' } })
+                : Promise.resolve(0)
+        , 0),
+        safe('ultimosAvisos', () => db.avisoMural.findMany({
             where: {
                 OR: [
                     { departamento_id: { in: deptIds.length > 0 ? deptIds : [-1] } },
@@ -214,23 +223,23 @@ export default async function DashboardMembro({
             },
             orderBy: { createdAt: 'desc' },
             take: 5
-        }),
-        db.rifaNumero.findMany({
+        }), []),
+        safe('minhasRifas', () => db.rifaNumero.findMany({
             where: { membro_id: membroId },
             include: { rifa: true },
             orderBy: { createdAt: 'desc' }
-        }),
-        db.contribuicao.findMany({
+        }), []),
+        safe('minhasContribuicoes', () => db.contribuicao.findMany({
             where: { membro_id: membroId },
             orderBy: { data: 'desc' }
-        }),
-        db.pedidoSaldoCantina.findMany({
+        }), []),
+        safe('carregamentosHistorico', () => db.pedidoSaldoCantina.findMany({
             where: { membro_id: membroId },
             orderBy: { createdAt: 'desc' }
-        }),
+        }), []),
 
         // INDEX 6 - meusAcompanhamentos
-        permissoes.isAcolhimento ? db.visitante.findMany({
+        safe('meusAcompanhamentos', () => permissoes.isAcolhimento ? db.visitante.findMany({
             where: {
                 tenant_id: Number(tenantIdStr),
                 status: 'EM_CONTACTO',
@@ -253,13 +262,13 @@ export default async function DashboardMembro({
             },
             orderBy: { data_ultima_visita: 'desc' },
             take: 6
-        }) : Promise.resolve([]),
+        }) : Promise.resolve([]), []),
 
         // INDEX 7 - saldoCantina
         fetchSaldoLocal(),
 
         // INDEX 8 - visitantesAtualizados
-        permissoes.isAcolhimento ? db.visitante.findMany({
+        safe('visitantesAtualizados', () => permissoes.isAcolhimento ? db.visitante.findMany({
             where: { status: { in: ['NOVO', 'EM_CONTACTO'] } },
             select: {
                 id: true,
@@ -269,13 +278,13 @@ export default async function DashboardMembro({
             },
             orderBy: { data_ultima_visita: 'desc' },
             take: 5
-        }) : Promise.resolve([]),
+        }) : Promise.resolve([]), []),
 
         // INDEX 9 - escolaridades para o drawer de perfil
-        db.escolaridade.findMany({ orderBy: { id: 'asc' } }),
+        safe('escolaridades', () => db.escolaridade.findMany({ orderBy: { id: 'asc' } }), []),
 
         // INDEX 10 - aniversariantes do mês atual (filtrado por mês em JS)
-        db.membro.findMany({
+        safe('aniversariantesMes', () => db.membro.findMany({
             where: {
                 is_active: true,
                 birthdate: { not: null },
@@ -287,7 +296,7 @@ export default async function DashboardMembro({
                 avatar_file: true,
                 birthdate: true,
             }
-        })
+        }), [])
     ]);
 
     // 5. PROCESSAMENTO DE DADOS UI
