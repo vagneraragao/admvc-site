@@ -666,7 +666,7 @@ export default async function DashboardMembro({
                                                         {new Date(aviso.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.titulo || aviso.mensagem}</p>
+                                                <p className="text-xs text-fg font-bold leading-snug line-clamp-3">{aviso.texto}</p>
                                                 {aviso.autor && (
                                                     <p className="text-[9px] text-muted">
                                                         — {aviso.autor.first_name} {aviso.autor.last_name}
