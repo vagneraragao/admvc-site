@@ -373,12 +373,20 @@ export async function uploadFotoDepartamento(departamentoId: number, formData: F
             return { ok: false, error: 'Ficheiro demasiado grande (max 5MB).' }
         }
 
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const filename = `departamentos/depto_${departamentoId}_foto.${ext}`
+        // Comprimir e redimensionar antes do upload
+        const { comprimirImagem } = await import('@/lib/image-utils')
+        const arrayBuffer = await file.arrayBuffer()
+        const comprimido = await comprimirImagem(Buffer.from(arrayBuffer), {
+            maxWidth: 1200,
+            maxHeight: 800,
+            quality: 80,
+        })
 
-        const blob = await put(filename, file, {
+        const filename = `departamentos/depto_${departamentoId}_foto.webp`
+
+        const blob = await put(filename, comprimido, {
             access: 'public',
-            contentType: file.type,
+            contentType: 'image/webp',
         })
 
         await db.departamento.update({
@@ -388,8 +396,9 @@ export async function uploadFotoDepartamento(departamentoId: number, formData: F
 
         revalidatePath('/admin/configuracoes')
         return { ok: true, url: blob.url }
-    } catch (error) {
-        return { ok: false, error: 'Erro ao fazer upload.' }
+    } catch (error: any) {
+        console.error('[UPLOAD DEPTO] Erro:', error)
+        return { ok: false, error: `Erro ao fazer upload: ${error.message || 'erro desconhecido'}` }
     }
 }
 
