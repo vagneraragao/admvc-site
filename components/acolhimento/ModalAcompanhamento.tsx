@@ -4,7 +4,23 @@ import { useState } from 'react'
 import { ClipboardEdit, X, Loader2, Save } from 'lucide-react'
 import { registarAcompanhamento } from '@/actions/visitante-actions'
 
-export default function ModalAcompanhamento({ visitante }: { visitante: any }) {
+interface Visitante {
+    id: number
+    nome: string
+    telefone: string
+    status: string
+    quantidade_visitas: number
+    pedido_oracao?: string | null
+    acompanhamentos?: Array<{
+        id: number
+        tipo_contacto: string
+        observacoes: string
+        data_contacto: Date
+        membro?: { first_name: string; last_name: string } | null
+    }>
+}
+
+export default function ModalAcompanhamento({ visitante }: { visitante: Visitante }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 

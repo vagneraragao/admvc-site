@@ -22,6 +22,15 @@ export async function POST(request: Request) {
             )
         }
 
+        // Validar formato de telefone (aceita formatos PT, BR e internacionais)
+        const telefoneLimpo = telefone.replace(/[\s\-()\.+]/g, '')
+        if (!/^\d{9,15}$/.test(telefoneLimpo)) {
+            return NextResponse.json(
+                { error: 'Formato de telefone invalido.' },
+                { status: 400 }
+            )
+        }
+
         const tenant = await prisma.tenant.findFirst()
         if (!tenant) {
             return NextResponse.json(
@@ -39,8 +48,10 @@ export async function POST(request: Request) {
             }
         })
 
-        // Email para equipa
-        enviarEmailNotificacaoEquipa({ nome, telefone, pedido: pedido_oracao }).catch(() => {})
+        // Email para equipa (log em caso de falha)
+        enviarEmailNotificacaoEquipa({ nome, telefone, pedido: pedido_oracao }).catch((err) => {
+            console.error('[VISITANTE-API] Falha ao enviar email de notificação:', err)
+        })
 
         // Push notification para membros do acolhimento
         sendPushToDepartamento(
@@ -51,7 +62,9 @@ export async function POST(request: Request) {
                 url: '/departamentos/acolhimento/dashboard',
                 tag: 'visitante-novo',
             }
-        ).catch(() => {})
+        ).catch((err) => {
+            console.error('[VISITANTE-API] Falha ao enviar push notification:', err)
+        })
 
         return NextResponse.json({ ok: true, id: visitante.id })
     } catch (error: any) {

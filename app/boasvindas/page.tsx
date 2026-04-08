@@ -16,14 +16,19 @@ export default function BoasVindasPage() {
 
         setEnviando(true)
         try {
-            await fetch('/api/public/visitante', {
+            const res = await fetch('/api/public/visitante', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome: nome.trim(), telefone: telefone.trim(), pedido_oracao: pedido.trim() || null })
             })
-            setEnviado(true)
+            const data = await res.json()
+            if (!res.ok) {
+                alert(data.error || 'Erro ao enviar. Tente novamente.')
+            } else {
+                setEnviado(true)
+            }
         } catch {
-            alert('Erro ao enviar. Tente novamente.')
+            alert('Erro de ligacao. Verifique a internet e tente novamente.')
         }
         setEnviando(false)
     }

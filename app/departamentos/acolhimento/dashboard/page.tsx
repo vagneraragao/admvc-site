@@ -36,7 +36,7 @@ export default async function AcolhimentoDashboard() {
         redirect('/membros/dashboard?error=Acesso restrito.')
     }
 
-    const [novos, emContactoRaw, reuniaoPastorRaw, consolidados] = await Promise.all([
+    const [novos, emContactoRaw, reuniaoPastorRaw, consolidados, totalConsolidados] = await Promise.all([
         db.visitante.findMany({ where: { status: 'NOVO' }, orderBy: { data_primeira_visita: 'desc' } }),
         db.visitante.findMany({
             where: { status: 'EM_CONTACTO' },
@@ -48,8 +48,11 @@ export default async function AcolhimentoDashboard() {
         }),
         db.visitante.findMany({
             where: { status: 'CONSOLIDADO' },
-            include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } }
-        })
+            include: { acompanhamentos: { include: { membro: true }, orderBy: { data_contacto: 'desc' } } },
+            orderBy: { data_ultima_visita: 'desc' },
+            take: 100
+        }),
+        db.visitante.count({ where: { status: 'CONSOLIDADO' } })
     ])
 
     const limite24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -98,7 +101,7 @@ export default async function AcolhimentoDashboard() {
                     cor={reuniaoPastorRaw.length > 0 ? 'blue' : undefined} />
                 <Kpi label="Atrasados (+24h)" value={atrasados} icon={<AlertCircle size={13} />}
                     cor={atrasados > 0 ? 'red' : 'emerald'} />
-                <Kpi label="Consolidados" value={consolidados.length} icon={<CheckCircle2 size={13} />} cor="emerald" />
+                <Kpi label="Consolidados" value={totalConsolidados} icon={<CheckCircle2 size={13} />} cor="emerald" />
             </div>
 
             {/* NOVOS VISITANTES */}
@@ -248,7 +251,7 @@ export default async function AcolhimentoDashboard() {
                     <div className="flex items-center gap-2">
                         <CheckCircle2 size={14} className="text-emerald-500" />
                         <h2 className="text-sm font-black uppercase tracking-widest text-fg">Consolidados</h2>
-                        <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded">{consolidados.length}</span>
+                        <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded">{totalConsolidados}</span>
                     </div>
                     <ModalListaConsolidados consolidados={consolidados} />
                 </div>
@@ -268,7 +271,7 @@ export default async function AcolhimentoDashboard() {
                             )}
                         </div>
                         <p className="text-[8px] font-bold text-muted uppercase tracking-widest mt-2">
-                            {consolidados.length} pessoa{consolidados.length !== 1 ? 's' : ''} integrada{consolidados.length !== 1 ? 's' : ''} na igreja
+                            {totalConsolidados} pessoa{totalConsolidados !== 1 ? 's' : ''} integrada{totalConsolidados !== 1 ? 's' : ''} na igreja
                         </p>
                     </div>
                 ) : (

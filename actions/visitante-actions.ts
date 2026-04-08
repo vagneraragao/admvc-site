@@ -28,7 +28,7 @@ export async function registarVisitante(formData: FormData) {
             }
         });
 
-        audit({ tenant_id: tenant.id, categoria: 'VISITANTES', acao: 'CRIAR', alvo_nome: nome, alvo_tipo: 'VISITANTE', descricao: `Visitante "${nome}" registado` }).catch(() => {})
+        audit({ tenant_id: tenant.id, categoria: 'VISITANTES', acao: 'CRIAR', alvo_nome: nome, alvo_tipo: 'VISITANTE', descricao: `Visitante "${nome}" registado` }).catch((err) => console.error('[VISITANTE] Falha no audit:', err))
 
         // Agora a função será reconhecida
         await enviarEmailNotificacaoEquipa({
@@ -82,16 +82,29 @@ export async function salvarRelatoRapido(formData: FormData) {
         });
 
         // 4. Atualização do Status do Visitante
-        // Quando alguém faz um relato rápido, o status passa automaticamente para EM_CONTACTO
-        await prisma.visitante.update({
+        // Só avança para EM_CONTACTO se o visitante ainda estiver NOVO
+        const visitanteAtual = await prisma.visitante.findUnique({
             where: { id: visitante_id },
-            data: {
-                status: 'EM_CONTACTO',
-                data_ultima_visita: new Date()
-            }
+            select: { status: true }
         });
 
-        audit({ tenant_id: membro.tenant_id, categoria: 'VISITANTES', acao: 'EDITAR', alvo_id: visitante_id, alvo_tipo: 'VISITANTE', descricao: `Relato registado para visitante #${visitante_id}` }).catch(() => {})
+        if (visitanteAtual && visitanteAtual.status === 'NOVO') {
+            await prisma.visitante.update({
+                where: { id: visitante_id },
+                data: {
+                    status: 'EM_CONTACTO',
+                    data_ultima_visita: new Date()
+                }
+            });
+        } else {
+            // Apenas atualiza a data do último contacto sem alterar o status
+            await prisma.visitante.update({
+                where: { id: visitante_id },
+                data: { data_ultima_visita: new Date() }
+            });
+        }
+
+        audit({ tenant_id: membro.tenant_id, categoria: 'VISITANTES', acao: 'EDITAR', alvo_id: visitante_id, alvo_tipo: 'VISITANTE', descricao: `Relato registado para visitante #${visitante_id}` }).catch((err) => console.error('[VISITANTE] Falha no audit:', err))
 
         // 5. Revalidação das páginas para atualizar os dados no ecrã
         revalidatePath('/departamentos/acolhimento/dashboard');
@@ -121,6 +134,21 @@ export async function registarAcompanhamento(formData: FormData) {
         const observacoes = formData.get('observacoes') as string;
         const novoStatus = formData.get('status') as string;
         const quantidadeVisitas = Number(formData.get('quantidade_visitas')) || 1;
+
+        // Validar transição de status
+        const statusValidos = ['NOVO', 'EM_CONTACTO', 'REUNIAO_PASTOR', 'CONSOLIDADO', 'NAO_RETORNOU', 'OUTRA_IGREJA', 'DESISTIU'] as const;
+        if (!statusValidos.includes(novoStatus as any)) {
+            return { error: "Status inválido." };
+        }
+
+        const visitanteAtual = await prisma.visitante.findUnique({
+            where: { id: visitanteId },
+            select: { status: true }
+        });
+
+        if (visitanteAtual?.status === 'CONSOLIDADO' && novoStatus !== 'CONSOLIDADO') {
+            return { error: "Não é possível alterar o status de um visitante já consolidado." };
+        }
 
         // 1. Grava o histórico
         await prisma.acompanhamentoVisitante.create({
@@ -194,7 +222,7 @@ export async function registarAcompanhamento(formData: FormData) {
                         alvo_nome: `${firstName} ${lastName}`,
                         alvo_tipo: 'MEMBRO',
                         descricao: `Membro criado automaticamente a partir do visitante "${visitanteAtualizado.nome}" (consolidacao). Senha temporaria: ${senhaTemp}`,
-                    }).catch(() => {})
+                    }).catch((err) => console.error('[CONSOLIDACAO] Falha no audit:', err))
 
                     // Auto-matricular no curso Permanecer (se existir)
                     try {
@@ -216,7 +244,7 @@ export async function registarAcompanhamento(formData: FormData) {
                                 }).catch(() => {}) // ignora se ja matriculado
                             }
                         }
-                    } catch { /* matricula opcional */ }
+                    } catch (err) { console.error('[CONSOLIDACAO] Falha na auto-matricula Permanecer:', err) }
 
                     // Enviar email de boas-vindas com credenciais
                     try {
@@ -224,7 +252,7 @@ export async function registarAcompanhamento(formData: FormData) {
                         if (novoMembro.email && !novoMembro.email.includes('@temp.admvc.org')) {
                             await enviarEmailBoasVindas(firstName, novoMembro.email, senhaTemp)
                         }
-                    } catch { /* email opcional */ }
+                    } catch (err) { console.error('[CONSOLIDACAO] Falha ao enviar email boas-vindas:', err) }
 
                     revalidatePath('/departamentos/acolhimento/dashboard');
                     revalidatePath('/admin/membros');
@@ -252,7 +280,7 @@ export async function registarAcompanhamento(formData: FormData) {
             alvo_nome: visitanteAtualizado.nome,
             alvo_tipo: 'VISITANTE',
             descricao: `Status alterado para ${novoStatus}`,
-        }).catch(() => {})
+        }).catch((err) => console.error('[VISITANTE] Falha no audit:', err))
 
         revalidatePath('/departamentos/acolhimento/dashboard');
         revalidatePath('/admin/membros');

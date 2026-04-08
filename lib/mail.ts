@@ -5,7 +5,7 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   // 1. Lógica para identificar a origem e ajustar Subject e Cores
-  const isContactoSite = dados.pedido.includes('[CONTACTO SITE]');
+  const isContactoSite = dados.pedido?.includes('[CONTACTO SITE]') ?? false;
 
   const config = {
     subject: isContactoSite
@@ -24,10 +24,12 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
   const linkDashboard = `https://igrejaadmvc.org/departamentos/acolhimento`;
 
   try {
+    const destinatario = process.env.NOTIFICATION_EMAIL || 'admvcff@gmail.com';
+
     const { data, error } = await resend.emails.send({
       from: 'Sistema ADMVC <acolhimento@igrejaadmvc.org>',
-      to: 'admvcff@gmail.com',
-      subject: config.subject, // 👈 Subject Dinâmico
+      to: destinatario,
+      subject: config.subject,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background-color: #ffffff;">
           
@@ -60,7 +62,7 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
                   <td>
                     <span style="font-size: 10px; font-weight: 800; color: ${config.headerColor}; text-transform: uppercase; letter-spacing: 1px;">Mensagem / Pedido</span><br />
                     <p style="font-size: 14px; color: #4a5568; font-style: italic; margin-top: 5px; line-height: 1.5; white-space: pre-line;">
-                      "${dados.pedido}"
+                      "${dados.pedido || 'Sem pedido de oração'}"
                     </p>
                   </td>
                 </tr>
@@ -86,11 +88,16 @@ export async function enviarEmailNotificacaoEquipa(dados: { nome: string, telefo
       `
     });
 
-    console.log(`✅ Notificação [${config.title}] enviada!`);
+    if (error) {
+      console.error(`[MAIL] Erro Resend [${config.title}]:`, error);
+      return { ok: false, error: error.message };
+    }
+
+    console.log(`[MAIL] Notificação [${config.title}] enviada para ${destinatario}`);
     return { ok: true };
   } catch (err) {
-    console.error("💥 Erro no e-mail interno:", err);
-    return { ok: false };
+    console.error("[MAIL] Erro ao enviar notificação equipa:", err);
+    return { ok: false, error: String(err) };
   }
 }
 
