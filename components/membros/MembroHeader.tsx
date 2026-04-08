@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
     ShieldCheck, PieChart, LogOut, Users,
-    Store, MonitorPlay,
+    Store, MonitorPlay, HeartHandshake,
     Home, Music2, Lightbulb, Calendar, MessageSquare,
     BookOpen, ChevronDown, ChevronUp, Car, Coffee, Info, Wallet2
 } from 'lucide-react'
@@ -144,7 +144,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                     <div className="flex items-center gap-1 py-2">
                         <NavTab label="Home" href="/membros/dashboard" active={isHome} />
                         <NavDropdownBtn label="Meu Perfil" active={menuAberto === 'perfil'} onClick={() => toggleMenu('perfil')} />
-                        <NavDropdownBtn label="Servir" active={menuAberto === 'servir'} onClick={() => toggleMenu('servir')} />
+                        <NavDropdownBtn label="Ministério" active={menuAberto === 'servir'} onClick={() => toggleMenu('servir')} />
                         <NavDropdownBtn label="Igreja" active={menuAberto === 'comunidade'} onClick={() => toggleMenu('comunidade')} />
                         <NavDropdownBtn label="?" active={menuAberto === 'ajuda'} onClick={() => toggleMenu('ajuda')} />
                     </div>
@@ -188,6 +188,11 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
                                 {(permissoes.isCantina || permissoes.isAdmin) && (
                                     <Link href="/cantina" onClick={() => setMenuAberto(null)} className={menuItemClass}>
                                         <Store size={12} className="text-orange-500" /> Cantina
+                                    </Link>
+                                )}
+                                {(permissoes.isAcolhimento || permissoes.isAdmin) && (
+                                    <Link href="/departamentos/acolhimento/dashboard" onClick={() => setMenuAberto(null)} className={menuItemClass}>
+                                        <HeartHandshake size={12} className="text-rose-500" /> Acolhimento
                                     </Link>
                                 )}
                                 {podePregacao && (

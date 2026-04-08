@@ -15,8 +15,11 @@ export async function registarVisitante(formData: FormData) {
         const telefone = formData.get('telefone') as string;
         const pedido = formData.get('pedido_oracao') as string;
 
-        // Recupera o tenant padrão (já que é um formulário público)
-        const tenant = await prisma.tenant.findFirst();
+        // Recupera o tenant activo (formulário público, sem sessão)
+        const tenant = await prisma.tenant.findFirst({
+            where: { status: 'ATIVO' },
+            orderBy: { id: 'asc' },
+        }) ?? await prisma.tenant.findFirst({ orderBy: { id: 'asc' } });
         if (!tenant) throw new Error("Tenant não configurado.");
 
         const novoVisitante = await prisma.visitante.create({

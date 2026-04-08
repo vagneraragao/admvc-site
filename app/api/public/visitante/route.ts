@@ -31,13 +31,19 @@ export async function POST(request: Request) {
             )
         }
 
-        const tenant = await prisma.tenant.findFirst()
+        // Resolver tenant — prioridade para tenant activo
+        const tenant = await prisma.tenant.findFirst({
+            where: { status: 'ATIVO' },
+            orderBy: { id: 'asc' },
+        }) ?? await prisma.tenant.findFirst({ orderBy: { id: 'asc' } })
+
         if (!tenant) {
             return NextResponse.json(
                 { error: 'Configuracao nao encontrada.' },
                 { status: 500 }
             )
         }
+        console.log(`[VISITANTE-API] Tenant resolvido: id=${tenant.id}, nome=${tenant.nome}`)
 
         const visitante = await prisma.visitante.create({
             data: {
