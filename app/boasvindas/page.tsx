@@ -69,7 +69,7 @@ export default function BoasVindasPage() {
                     </div>
 
                     <div className="flex gap-3">
-                        <a href="https://admvc.pt" target="_blank" rel="noopener noreferrer"
+                        <a href="https://www.igrejaadmvc.org" target="_blank" rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:border-emerald-500/40 text-white py-3.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95">
                             <Globe size={16} className="text-emerald-400" />
                             Site Oficial
