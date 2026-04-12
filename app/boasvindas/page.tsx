@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, Send, Loader2, CheckCircle2, Church, Coffee } from 'lucide-react'
+import { Heart, Send, Loader2, CheckCircle2, Church, Coffee, Globe, Play } from 'lucide-react'
 
 export default function BoasVindasPage() {
     const [nome, setNome] = useState('')
@@ -66,6 +66,19 @@ export default function BoasVindasPage() {
                                 Passa pela cantina e diz que es visitante — temos um mimo preparado para ti!
                             </p>
                         </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <a href="https://admvc.pt" target="_blank" rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:border-emerald-500/40 text-white py-3.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95">
+                            <Globe size={16} className="text-emerald-400" />
+                            Site Oficial
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=rHNERaeiZPs&t=12s" target="_blank" rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:border-red-500/40 text-white py-3.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95">
+                            <Play size={16} className="text-red-400" />
+                            Conhece-nos
+                        </a>
                     </div>
 
                     <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">
