@@ -491,7 +491,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     }
 
     return (
-        <div className="min-h-screen bg-bg p-3 lg:p-6">
+        <div className="min-h-screen bg-bg p-3 lg:p-6 pt-16 md:pt-3 pb-24 md:pb-3">
             {/* Feedback toast */}
             {feedback && (
                 <div className={`fixed top-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold shadow-lg ${feedback.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'}`}>
@@ -624,7 +624,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
             {/* ── Mobile FAB (visible on mobile only) ────────────────────── */}
             <button onClick={() => setSheetOpen(true)}
-                className="lg:hidden fixed bottom-5 right-5 z-40 bg-figueira text-bg rounded-2xl px-5 py-3.5 flex items-center gap-2 shadow-xl shadow-figueira/20 active:scale-95 transition-transform">
+                className="lg:hidden fixed bottom-20 right-4 z-40 bg-figueira text-bg rounded-2xl px-5 py-3.5 flex items-center gap-2 shadow-xl shadow-figueira/20 active:scale-95 transition-transform">
                 <ShoppingCart size={18} />
                 {cartCount > 0 && (
                     <span className="bg-bg text-figueira text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>
