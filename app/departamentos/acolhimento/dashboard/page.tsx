@@ -7,12 +7,13 @@ import { getAcolhimentoRole, podeGerirEquipa, podeVerRelatorio, type Acolhimento
 import {
     HeartHandshake, Phone, MessageCircle, QrCode,
     AlertCircle, Clock, CheckCircle2, Users, BarChart3,
-    UserPlus, UserX, Activity, Calendar, Shield, Globe, MapPin
+    UserX, Activity, Calendar, Shield, Globe, MapPin
 } from 'lucide-react'
 import ModalAcompanhamento from '@/components/acolhimento/ModalAcompanhamento'
 import ModalHistorico from '@/components/acolhimento/ModalHistorico'
 import ModalListaConsolidados from '@/components/acolhimento/ModalListaConsolidados'
 import VisitantePipelineBar from '@/components/acolhimento/VisitantePipelineBar'
+import SeccaoColapsavel from '@/components/acolhimento/SeccaoColapsavel'
 
 export default async function AcolhimentoDashboard() {
     const db = await getDb()
@@ -160,47 +161,32 @@ export default async function AcolhimentoDashboard() {
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
 
             {/* HEADER */}
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
+            <header className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     <Link href={isAdmin ? '/admin/dashboard' : '/membros/dashboard'}
-                        className="text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
-                        ← Voltar
+                        className="hidden sm:flex text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors shrink-0">
+                        ←
                     </Link>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Acolhimento</h1>
-                        {isLiderOuAdmin && (
-                            <span className="text-[7px] font-black uppercase tracking-widest bg-figueira/10 text-figueira px-2 py-1 rounded-lg border border-figueira/20 flex items-center gap-1">
-                                <Shield size={9} /> {acolhimentoRole === 'ADMIN' ? 'Admin' : 'Lider'}
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-xs text-muted">Gestao de visitantes e ciclo de integracao.</p>
+                    <h1 className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter text-fg truncate">Acolhimento</h1>
+                    {isLiderOuAdmin && (
+                        <span className="text-[7px] font-black uppercase tracking-widest bg-figueira/10 text-figueira px-2 py-1 rounded-lg border border-figueira/20 flex items-center gap-1 shrink-0">
+                            <Shield size={9} /> {acolhimentoRole === 'ADMIN' ? 'Admin' : 'Lider'}
+                        </span>
+                    )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                     {podeVerRelatorio(acolhimentoRole) && (
                         <Link href="/departamentos/acolhimento/relatorio"
-                            className="flex items-center gap-2 bg-bg2 border border-soft text-muted px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
-                            <BarChart3 size={13} /> Relatorio
+                            className="flex items-center gap-2 bg-bg2 border border-soft text-muted px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:text-fg hover:border-figueira/30 transition-all">
+                            <BarChart3 size={13} /> <span className="hidden sm:inline">Relatorio</span>
                         </Link>
                     )}
                     <Link href="/boasvindas" target="_blank"
-                        className="flex items-center gap-2 bg-fg text-bg px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all shadow-sm">
-                        <QrCode size={13} /> Ficha Boas-Vindas
+                        className="flex items-center gap-2 bg-fg text-bg px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-figueira transition-all shadow-sm">
+                        <QrCode size={13} /> <span className="hidden sm:inline">Boas-Vindas</span>
                     </Link>
                 </div>
             </header>
-
-            {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                <Kpi label="Novos" value={novos.length} icon={<UserPlus size={13} />}
-                    cor={novos.length > 0 ? 'orange' : undefined} />
-                <Kpi label="Em Contacto" value={emContacto.length} icon={<Clock size={13} />} />
-                <Kpi label="Reuniao Pastor" value={reuniaoPastorRaw.length} icon={<Users size={13} />}
-                    cor={reuniaoPastorRaw.length > 0 ? 'blue' : undefined} />
-                <Kpi label="Atrasados (+24h)" value={atrasados} icon={<AlertCircle size={13} />}
-                    cor={atrasados > 0 ? 'red' : 'emerald'} />
-                <Kpi label="Consolidados" value={totalConsolidados} icon={<CheckCircle2 size={13} />} cor="emerald" />
-            </div>
 
             {/* ALERTA SEM RESPONSAVEL (LIDER) */}
             {isLiderOuAdmin && semResponsavel > 0 && (
@@ -275,15 +261,11 @@ export default async function AcolhimentoDashboard() {
             )}
 
             {/* EM ACOMPANHAMENTO */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
-                    <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-figueira" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Em Acompanhamento</h2>
-                        <span className="text-[8px] font-black bg-soft px-2 py-0.5 rounded text-muted">{emContacto.length}</span>
-                    </div>
-                </div>
-
+            <SeccaoColapsavel
+                titulo="Em Acompanhamento"
+                icon={<Clock size={14} className="text-figueira" />}
+                badge={<span className="text-[8px] font-black bg-soft px-2 py-0.5 rounded text-muted">{emContacto.length}</span>}
+            >
                 {emContacto.length === 0 ? (
                     <div className="py-12 text-center">
                         <HeartHandshake size={24} className="mx-auto text-muted/20 mb-3" />
@@ -295,7 +277,6 @@ export default async function AcolhimentoDashboard() {
                             const ultimaData = v.acompanhamentos[0]?.data_contacto || v.data_primeira_visita
                             const isAtrasado = new Date(ultimaData) < limite24h
                             const isSite = v.pedido_oracao?.includes('SITE') || v.pedido_oracao?.includes('CONTACTO') || v.origem === 'SITE'
-                            const origemInfo = origemIcon(v.origem)
 
                             return (
                                 <div key={v.id} className={`flex items-center justify-between gap-4 px-5 py-3.5 transition-colors ${isAtrasado ? 'bg-red-500/5' : 'hover:bg-soft/10'}`}>
@@ -323,7 +304,7 @@ export default async function AcolhimentoDashboard() {
                                                     <Phone size={8} /> {v.telefone}
                                                 </a>
                                                 <span className="text-[8px] font-bold text-muted">{v.quantidade_visitas} visita{v.quantidade_visitas !== 1 ? 's' : ''}</span>
-                                                <span className="text-[8px] font-bold text-muted">
+                                                <span className="text-[8px] font-bold text-muted hidden sm:inline">
                                                     Por: {v.acompanhamentos[0]?.membro?.first_name || 'Sistema'}
                                                 </span>
                                                 {v.proximo_contacto && (
@@ -351,7 +332,7 @@ export default async function AcolhimentoDashboard() {
                         })}
                     </div>
                 )}
-            </section>
+            </SeccaoColapsavel>
 
             {/* REUNIAO COM PASTOR */}
             {reuniaoPastorRaw.length > 0 && (
@@ -401,16 +382,12 @@ export default async function AcolhimentoDashboard() {
             )}
 
             {/* CONSOLIDADOS */}
-            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-soft">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 size={14} className="text-emerald-500" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Consolidados</h2>
-                        <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded">{totalConsolidados}</span>
-                    </div>
-                    <ModalListaConsolidados consolidados={consolidados} />
-                </div>
-
+            <SeccaoColapsavel
+                titulo="Consolidados"
+                icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+                badge={<span className="text-[8px] font-black bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded">{totalConsolidados}</span>}
+                headerExtra={<ModalListaConsolidados consolidados={consolidados} />}
+            >
                 {consolidados.length > 0 ? (
                     <div className="px-5 py-4">
                         <div className="flex -space-x-2">
@@ -434,16 +411,15 @@ export default async function AcolhimentoDashboard() {
                         <p className="text-[9px] font-bold text-muted uppercase tracking-widest">Nenhum consolidado ainda.</p>
                     </div>
                 )}
-            </section>
+            </SeccaoColapsavel>
 
             {/* SAIDAS */}
             {saidas.length > 0 && (
-                <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
-                    <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
-                        <UserX size={14} className="text-red-400" />
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Saidas</h2>
-                        <span className="text-[8px] font-black bg-red-500/10 text-red-500 px-2 py-0.5 rounded">{saidas.length}</span>
-                    </div>
+                <SeccaoColapsavel
+                    titulo="Saidas"
+                    icon={<UserX size={14} className="text-red-400" />}
+                    badge={<span className="text-[8px] font-black bg-red-500/10 text-red-500 px-2 py-0.5 rounded">{saidas.length}</span>}
+                >
                     <div className="divide-y divide-soft">
                         {saidas.slice(0, 10).map(v => (
                             <div key={v.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-soft/10 transition-colors">
@@ -465,7 +441,7 @@ export default async function AcolhimentoDashboard() {
                             </div>
                         ))}
                     </div>
-                </section>
+                </SeccaoColapsavel>
             )}
 
             {/* ═══════════ SECÇÕES DO LÍDER ═══════════ */}
@@ -550,20 +526,3 @@ export default async function AcolhimentoDashboard() {
     )
 }
 
-function Kpi({ label, value, icon, cor }: { label: string; value: any; icon: React.ReactNode; cor?: string }) {
-    const cores: Record<string, string> = {
-        emerald: 'text-emerald-600 bg-emerald-500/8 border-emerald-500/15',
-        orange: 'text-orange-600 bg-orange-500/8 border-orange-500/15',
-        red: 'text-red-500 bg-red-500/8 border-red-500/15',
-        blue: 'text-blue-600 bg-blue-500/8 border-blue-500/15',
-    }
-    return (
-        <div className={`p-4 rounded-2xl border flex flex-col gap-2 ${cor ? cores[cor] : 'bg-bg2 border-soft text-fg'}`}>
-            <div className="flex items-center justify-between">
-                <p className="text-[8px] font-black uppercase tracking-widest opacity-70">{label}</p>
-                <div className="opacity-40">{icon}</div>
-            </div>
-            <p className="text-xl font-black italic tracking-tighter leading-none">{value}</p>
-        </div>
-    )
-}
