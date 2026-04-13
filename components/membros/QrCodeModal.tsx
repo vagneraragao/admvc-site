@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, QrCode, RefreshCw, Loader2 } from 'lucide-react'
+import { QrCode, RefreshCw, Loader2 } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { gerarQrCodeMembro } from '@/actions/cantina-local-actions'
 import { createPortal } from 'react-dom'
@@ -41,13 +41,11 @@ export default function QrCodeModal({ membroId, qrCode: initial, membroNome }: P
 
             {/* MODAL FULLSCREEN */}
             {aberto && createPortal(
-                <div className="fixed inset-0 z-[200] bg-bg/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
-                    <button onClick={() => setAberto(false)}
-                        className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center bg-soft rounded-full text-muted hover:text-fg transition-all">
-                        <X size={20} />
-                    </button>
-
-                    <div className="text-center space-y-6">
+                <div
+                    className="fixed inset-0 z-[200] bg-bg/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200"
+                    onClick={() => setAberto(false)}
+                >
+                    <div className="text-center space-y-6" onClick={e => e.stopPropagation()}>
                         <div className="space-y-1">
                             <p className="text-[9px] font-black uppercase tracking-widest text-figueira">Cartao Cantina</p>
                             <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg">{membroNome}</h2>
@@ -59,6 +57,7 @@ export default function QrCodeModal({ membroId, qrCode: initial, membroNome }: P
                                     <QRCode value={qrCode} size={220} level="M" />
                                 </div>
                                 <p className="text-[10px] text-muted font-bold">Mostre este QR Code no POS da Cantina</p>
+                                <p className="text-[8px] text-muted/40 mt-2">Toque em qualquer lugar para fechar</p>
                             </div>
                         ) : (
                             <div className="space-y-4">

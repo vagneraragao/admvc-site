@@ -22,6 +22,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
     let escolaridades: any[] = []
     let ultimosAvisos: any[] = []
     let visitantesAtualizados: any[] = []
+    let proximosEventos: any[] = []
 
     try {
         const db = getTenantClient(Number(tenantIdStr))
@@ -69,12 +70,21 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
                 orderBy: { data_ultima_visita: 'desc' },
                 take: 5
             }),
+            db.evento.findMany({
+                where: { data: { gte: new Date() } },
+                select: { id: true, nome: true, data: true },
+                orderBy: { data: 'asc' },
+                take: 10,
+            }),
         ])
         membro = results[0]
         tenantData = results[1]
         escolaridades = results[2] as any[]
         ultimosAvisos = results[3] as any[]
         visitantesAtualizados = results[4] as any[]
+        proximosEventos = (results[5] as any[] || []).map((e: any) => ({
+            id: e.id, nome: e.nome, data: e.data.toISOString(),
+        }))
     } catch (err) {
         console.error('[MEMBRO LAYOUT] Erro ao carregar dados:', err)
         return <>{children}</>
@@ -130,7 +140,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
             <PullToRefresh>{children}</PullToRefresh>
 
             {/* Mobile bottom nav */}
-            <MobileBottomNav permissoes={permissoes} />
+            <MobileBottomNav permissoes={permissoes} proximosEventos={proximosEventos} />
         </>
     )
 }

@@ -30,7 +30,6 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
 
         function onScroll() {
             const y = window.scrollY
-            // Esconde ao descer, mostra ao subir (threshold 10px para evitar jitter)
             if (y > lastScrollY.current + 10) setHidden(true)
             else if (y < lastScrollY.current - 10) setHidden(false)
             lastScrollY.current = y
@@ -40,23 +39,40 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
         return () => window.removeEventListener('scroll', onScroll)
     }, [isHome])
 
-    // Reset ao mudar de rota
     useEffect(() => { setHidden(false); lastScrollY.current = 0 }, [pathname])
 
     const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
     if (hideHeader) return null
 
     return (
-        <header className={`bg-bg2 border-b border-soft fixed top-0 left-0 right-0 z-40 px-4 py-3 md:hidden transition-transform duration-300 ${hidden ? '-translate-y-full' : 'translate-y-0'}`}>
-            <div className="flex items-center justify-between">
-                {/* ESQUERDA: Nome da igreja */}
-                <Link href="/membros/dashboard" className="min-w-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-figueira truncate">
-                        {igrejaName}
-                    </p>
-                </Link>
+        <header className={`bg-bg2 border-b border-soft fixed top-0 left-0 right-0 z-40 pt-[env(safe-area-inset-top)] px-4 py-2.5 md:hidden transition-transform duration-300 ${hidden ? '-translate-y-full' : 'translate-y-0'}`}>
+            <div className="flex items-center justify-between gap-3">
+                {/* ESQUERDA: Foto + Nome da igreja */}
+                <DrawerEditarPerfil
+                    membro={membro}
+                    escolaridades={escolaridades}
+                    trigger={
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 flex items-center justify-center rounded-full bg-figueira text-white text-[11px] font-black overflow-hidden shrink-0">
+                                {membro.avatar_file ? (
+                                    <Image src={membro.avatar_file} alt="" width={36} height={36} className="rounded-full object-cover" />
+                                ) : (
+                                    iniciais
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase italic tracking-tighter text-fg truncate leading-tight">
+                                    {membro.first_name}
+                                </p>
+                                <p className="text-[7px] font-black uppercase tracking-widest text-figueira truncate leading-tight">
+                                    {igrejaName}
+                                </p>
+                            </div>
+                        </div>
+                    }
+                />
 
-                {/* DIREITA: Notificações + Logout + Iniciais (abre perfil) */}
+                {/* DIREITA: Notificações + Logout */}
                 <div className="flex items-center gap-2 shrink-0">
                     <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
                     <form action={logoutMembro}>
@@ -64,19 +80,6 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
                             <LogOut size={13} strokeWidth={3} />
                         </button>
                     </form>
-                    <DrawerEditarPerfil
-                        membro={membro}
-                        escolaridades={escolaridades}
-                        trigger={
-                            <div className="h-9 w-9 flex items-center justify-center rounded-full bg-figueira text-white text-[11px] font-black overflow-hidden">
-                                {membro.avatar_file ? (
-                                    <Image src={membro.avatar_file} alt="" width={36} height={36} className="rounded-full object-cover" />
-                                ) : (
-                                    iniciais
-                                )}
-                            </div>
-                        }
-                    />
                 </div>
             </div>
         </header>
