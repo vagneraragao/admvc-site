@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import {
     Home, HelpCircle, Calendar, Music2, MonitorPlay, HeartHandshake, Store,
-    BookOpen, ShieldCheck, X, ChevronDown, ChevronRight, MessageCircle, Clock
+    BookOpen, ShieldCheck, X, ChevronDown, ChevronRight, MessageCircle, Clock,
+    Lightbulb, Monitor
 } from 'lucide-react'
 import ModalAjuda from '@/components/membros/ModalAjuda'
 
@@ -36,6 +37,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const pathname = usePathname()
     const [agendaAberta, setAgendaAberta] = useState(false)
     const [louvorAberto, setLouvorAberto] = useState(false)
+    const [midiaAberto, setMidiaAberto] = useState(false)
     const [mostrarTodos, setMostrarTodos] = useState(false)
 
     const hideNav = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
@@ -45,11 +47,10 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const tabs: { key: string; icon: typeof Home; label: string; href?: string; action?: () => void; custom?: React.ReactNode }[] = [
         { key: 'home', icon: Home, label: 'Inicio', href: '/membros/dashboard' },
         { key: 'ajuda', icon: HelpCircle, label: 'Ajuda', custom: 'ajuda' },
-        { key: 'agenda', icon: Calendar, label: 'Agenda', action: () => setAgendaAberta(true) },
     ]
 
     if (permissoes.isLouvor) tabs.push({ key: 'louvor', icon: Music2, label: 'Louvor', action: () => setLouvorAberto(true) })
-    if (permissoes.isMidia) tabs.push({ key: 'midia', icon: MonitorPlay, label: 'Midia', href: '/midia/holyrics' })
+    if (permissoes.isMidia) tabs.push({ key: 'midia', icon: MonitorPlay, label: 'Midia', action: () => setMidiaAberto(true) })
     if (permissoes.isAcolhimento) tabs.push({ key: 'acolhimento', icon: HeartHandshake, label: 'Acolhimento', href: '/departamentos/acolhimento/dashboard' })
     if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', href: '/cantina' })
     if (permissoes.isDiaconia) tabs.push({ key: 'pregacao', icon: BookOpen, label: 'Pregacao', href: '/pregacao' })
@@ -265,6 +266,71 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-[11px] font-black uppercase text-fg">Mesa X32</h4>
                                     <p className="text-[8px] text-muted font-bold mt-0.5">Controlo de som</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* MODAL MÍDIA */}
+            {midiaAberto && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => setMidiaAberto(false)}
+                >
+                    <div
+                        className="bg-bg w-full max-w-md rounded-t-[2rem] border-t border-soft shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-soft">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                    <MonitorPlay size={18} />
+                                </div>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Mídia</h3>
+                            </div>
+                            <button onClick={() => setMidiaAberto(false)}
+                                className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:text-fg rounded-xl transition-all">
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            <Link href="/midia/holyrics" onClick={() => setMidiaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Monitor size={18} className="text-purple-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Holyrics</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Projeção de letras e media</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/midia/mesax32" onClick={() => setMidiaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Music2 size={18} className="text-blue-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Mesa X32</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Controlo de som</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/midia/lumikit" onClick={() => setMidiaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Lightbulb size={18} className="text-amber-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Iluminação</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Lumikit</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/louvor/repertorio" onClick={() => setMidiaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Calendar size={18} className="text-figueira shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Setlist do Culto</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Músicas e repertório do dia</p>
                                 </div>
                                 <ChevronRight size={14} className="text-muted" />
                             </Link>
