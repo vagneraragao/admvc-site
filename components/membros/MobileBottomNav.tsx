@@ -40,7 +40,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const [midiaAberto, setMidiaAberto] = useState(false)
     const [mostrarTodos, setMostrarTodos] = useState(false)
 
-    const hideNav = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
+    const hideNav = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist') || pathname === '/cantina/pos'
     if (hideNav) return null
 
     // Build dynamic tabs: Home, Ajuda, Agenda, depois departamentos

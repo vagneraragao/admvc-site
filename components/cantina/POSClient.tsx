@@ -88,7 +88,8 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const [qrOpen, setQrOpen] = useState(false)
     const scannerRef = useRef<any>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+    // Usar scanner live em todos os dispositivos (html5-qrcode funciona em iOS Safari moderno)
+    const isIOS = false
     const [selectedMembro, setSelectedMembro] = useState<Membro | null>(null)
     const [membroBusca, setMembroBusca] = useState('')
     const [membroDropdownOpen, setMembroDropdownOpen] = useState(false)
@@ -491,7 +492,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     }
 
     return (
-        <div className="min-h-screen bg-bg p-3 lg:p-6 pt-16 md:pt-3 pb-24 md:pb-3">
+        <div className="min-h-screen bg-bg p-3 lg:p-6">
             {/* Feedback toast */}
             {feedback && (
                 <div className={`fixed top-6 right-6 z-[60] flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold shadow-lg ${feedback.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'}`}>
@@ -624,7 +625,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
             {/* ── Mobile FAB (visible on mobile only) ────────────────────── */}
             <button onClick={() => setSheetOpen(true)}
-                className="lg:hidden fixed bottom-20 right-4 z-40 bg-figueira text-bg rounded-2xl px-5 py-3.5 flex items-center gap-2 shadow-xl shadow-figueira/20 active:scale-95 transition-transform">
+                className="lg:hidden fixed bottom-5 right-5 z-40 bg-figueira text-bg rounded-2xl px-5 py-3.5 flex items-center gap-2 shadow-xl shadow-figueira/20 active:scale-95 transition-transform">
                 <ShoppingCart size={18} />
                 {cartCount > 0 && (
                     <span className="bg-bg text-figueira text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>
@@ -634,9 +635,9 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
             {/* ── Mobile Bottom Sheet ────────────────────────────────────── */}
             {sheetOpen && (
-                <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+                <div className="lg:hidden fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSheetOpen(false)} />
-                    <div className="relative bg-bg2 rounded-t-[2rem] border-t border-soft max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <div className="relative bg-bg2 rounded-[2rem] border border-soft max-h-[90vh] w-full max-w-md flex flex-col animate-in zoom-in-95 duration-300 shadow-2xl">
                         <div className="flex items-center justify-between px-5 pt-5 pb-3">
                             <span className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                 <ShoppingCart size={14} className="text-figueira" /> Carrinho

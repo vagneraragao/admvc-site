@@ -41,7 +41,7 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
 
     useEffect(() => { setHidden(false); lastScrollY.current = 0 }, [pathname])
 
-    const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist')
+    const hideHeader = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist') || pathname === '/cantina/pos'
     if (hideHeader) return null
 
     return (
