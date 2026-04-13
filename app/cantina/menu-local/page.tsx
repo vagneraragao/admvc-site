@@ -48,12 +48,12 @@ export default async function MenuLocalPage() {
     const semCategoria = produtos.filter(p => !p.categoria_id)
 
     return (
-        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 space-y-10 pb-24 animate-in fade-in duration-700">
-            <header className="text-center space-y-4 pb-8 border-b border-soft">
-                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-6 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
+            <header className="text-center space-y-3 md:space-y-4 pb-5 md:pb-8 border-b border-soft">
+                <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
                     <Coffee size={14} /> Menu Cantina
                 </span>
-                <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                <h1 className="text-2xl md:text-6xl font-black italic uppercase tracking-tighter text-fg leading-none">
                     O que temos <span className="text-muted/20">hoje.</span>
                 </h1>
             </header>

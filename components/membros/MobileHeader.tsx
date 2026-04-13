@@ -62,7 +62,7 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
                             </div>
                             <div className="min-w-0">
                                 <p className="text-[10px] font-black uppercase italic tracking-tighter text-fg truncate leading-tight">
-                                    {membro.first_name}
+                                    {membro.first_name} {membro.last_name}
                                 </p>
                                 <p className="text-[7px] font-black uppercase tracking-widest text-figueira truncate leading-tight">
                                     {igrejaName}

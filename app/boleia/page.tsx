@@ -67,7 +67,7 @@ export default async function BoleiaPage() {
     ])
 
     return (
-        <main className="max-w-6xl mx-auto pt-4 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
 
             {/* HEADER */}
             <header className="bg-bg/95 backdrop-blur-sm -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 md:py-4 border-b border-soft">

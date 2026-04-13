@@ -1,11 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import {
     CalendarOff, Users, MessageSquare, Car, Coffee,
-    HelpCircle, CalendarDays, ChevronDown, ChevronUp
+    HelpCircle, CalendarDays, ChevronDown, ChevronUp, BookOpen
 } from 'lucide-react'
 
 import QrCodeModal from '@/components/membros/QrCodeModal'
@@ -38,9 +37,44 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
     const [deptosAberto, setDeptosAberto] = useState(false)
     const deptosRef = useRef<HTMLDivElement>(null)
 
-    const iniciais = `${membro.first_name?.[0] || ''}${membro.last_name?.[0] || ''}`
     const nomeCompleto = `${membro.first_name} ${membro.last_name || ''}`.trim()
-    const congregacao = membro.congregacao?.nome || ''
+
+    // Versículo do dia — roda entre versículos com base no dia do ano
+    const versiculos = [
+        { texto: 'Porque onde estiverem dois ou três reunidos em meu nome, ali eu estou no meio deles.', ref: 'Mateus 18:20' },
+        { texto: 'O Senhor é o meu pastor; nada me faltará.', ref: 'Salmos 23:1' },
+        { texto: 'Tudo posso naquele que me fortalece.', ref: 'Filipenses 4:13' },
+        { texto: 'Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.', ref: 'Provérbios 3:5' },
+        { texto: 'O Senhor é a minha luz e a minha salvação; a quem temerei?', ref: 'Salmos 27:1' },
+        { texto: 'Porque Deus amou o mundo de tal maneira que deu o seu Filho unigénito.', ref: 'João 3:16' },
+        { texto: 'Buscai primeiro o Reino de Deus e a sua justiça, e todas estas coisas vos serão acrescentadas.', ref: 'Mateus 6:33' },
+        { texto: 'Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus.', ref: 'Isaías 41:10' },
+        { texto: 'E conhecereis a verdade, e a verdade vos libertará.', ref: 'João 8:32' },
+        { texto: 'Mas os que esperam no Senhor renovarão as suas forças.', ref: 'Isaías 40:31' },
+        { texto: 'Lâmpada para os meus pés é a tua palavra e luz para o meu caminho.', ref: 'Salmos 119:105' },
+        { texto: 'Alegrai-vos sempre no Senhor; outra vez digo: alegrai-vos!', ref: 'Filipenses 4:4' },
+        { texto: 'Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.', ref: 'Salmos 46:1' },
+        { texto: 'Eu sou o caminho, a verdade e a vida.', ref: 'João 14:6' },
+        { texto: 'Tudo o que fizerem, façam de todo o coração, como para o Senhor.', ref: 'Colossenses 3:23' },
+        { texto: 'Porque os meus pensamentos não são os vossos pensamentos.', ref: 'Isaías 55:8' },
+        { texto: 'O amor é paciente, o amor é bondoso.', ref: '1 Coríntios 13:4' },
+        { texto: 'Clama a mim, e responder-te-ei, e anunciar-te-ei coisas grandes.', ref: 'Jeremias 33:3' },
+        { texto: 'O Senhor é bom, um refúgio no dia da angústia.', ref: 'Naum 1:7' },
+        { texto: 'Em tudo dai graças, porque esta é a vontade de Deus.', ref: '1 Tessalonicenses 5:18' },
+        { texto: 'Não vos inquieteis por coisa alguma; antes, as vossas petições sejam em tudo conhecidas diante de Deus.', ref: 'Filipenses 4:6' },
+        { texto: 'Sede fortes e corajosos. Não temais, nem vos espanteis.', ref: 'Deuteronómio 31:6' },
+        { texto: 'Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz.', ref: 'Jeremias 29:11' },
+        { texto: 'Grande é o Senhor e muito digno de louvor.', ref: 'Salmos 145:3' },
+        { texto: 'Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.', ref: 'Mateus 11:28' },
+        { texto: 'Aquele que habita no esconderijo do Altíssimo, à sombra do Omnipotente descansará.', ref: 'Salmos 91:1' },
+        { texto: 'Eis que estou à porta e bato; se alguém ouvir a minha voz e abrir a porta, entrarei.', ref: 'Apocalipse 3:20' },
+        { texto: 'Bem-aventurados os pacificadores, porque eles serão chamados filhos de Deus.', ref: 'Mateus 5:9' },
+        { texto: 'A fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.', ref: 'Hebreus 11:1' },
+        { texto: 'Todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.', ref: 'Romanos 8:28' },
+        { texto: 'O Senhor é fiel; ele vos fortalecerá e vos guardará do maligno.', ref: '2 Tessalonicenses 3:3' },
+    ]
+    const diaDoAno = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000)
+    const versiculoHoje = versiculos[diaDoAno % versiculos.length]
 
     const gridBtnClass = "bg-bg2 border border-soft rounded-2xl py-4 flex flex-col items-center gap-2 active:scale-95 transition-all"
 
@@ -54,22 +88,17 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
     return (
         <div className="space-y-5 px-4 pt-16 pb-28 animate-in fade-in duration-500">
 
-            {/* ── CARD DO MEMBRO ──────────────────────────── */}
+            {/* ── VERSÍCULO DO DIA + QR CODE ────────────── */}
             <div className="bg-bg2 border border-soft rounded-2xl p-4 flex items-center gap-3">
-                <div className="relative h-12 w-12 shrink-0">
-                    {membro.avatar_file ? (
-                        <Image src={membro.avatar_file} alt="" fill sizes="48px" className="rounded-xl object-cover border border-soft" />
-                    ) : (
-                        <div className="w-full h-full rounded-xl bg-fg text-bg flex items-center justify-center font-black text-sm border border-soft">
-                            {iniciais}
-                        </div>
-                    )}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h2 className="text-sm font-black uppercase italic tracking-tighter text-fg truncate">{nomeCompleto}</h2>
-                    {congregacao && (
-                        <p className="text-[8px] font-black uppercase tracking-widest text-figueira">{congregacao}</p>
-                    )}
+                <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                        <BookOpen size={10} className="text-figueira shrink-0" />
+                        <p className="text-[7px] font-black uppercase tracking-widest text-figueira">Versículo do Dia</p>
+                    </div>
+                    <p className="text-[11px] text-fg/80 italic leading-snug line-clamp-2">
+                        &ldquo;{versiculoHoje.texto}&rdquo;
+                    </p>
+                    <p className="text-[7px] font-bold text-muted uppercase tracking-widest">{versiculoHoje.ref}</p>
                 </div>
                 <QrCodeModal
                     membroId={membro.id}
@@ -109,6 +138,13 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </Link>
 
+                <ModalAjuda trigger={
+                    <div className={gridBtnClass}>
+                        <HelpCircle size={22} className="text-muted" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Ajuda</span>
+                    </div>
+                } />
+
                 <Link href="/cantina/menu-local">
                     <div className={gridBtnClass}>
                         <Coffee size={22} className="text-amber-500" />
@@ -116,12 +152,6 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </Link>
 
-                <ModalAjuda trigger={
-                    <div className={gridBtnClass}>
-                        <HelpCircle size={22} className="text-muted" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Ajuda</span>
-                    </div>
-                } />
             </div>
 
             {/* ── CARD COLAPSÁVEL: MINHAS ESCALAS ────────── */}
