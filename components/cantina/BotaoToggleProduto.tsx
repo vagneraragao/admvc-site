@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toggleDisponibilidadeProduto } from '@/actions/cantina-local-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     produtoId: number
@@ -10,12 +11,13 @@ interface Props {
 }
 
 export default function BotaoToggleProduto({ produtoId, disponivel }: Props) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
 
     async function handleToggle() {
         setLoading(true)
         const res = await toggleDisponibilidadeProduto(produtoId)
-        if (res?.error) alert(res.error)
+        if (res?.error) toast(res.error, 'erro')
         setLoading(false)
     }
 

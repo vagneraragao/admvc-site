@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { upload } from "@vercel/blob/client";
+import { useToast } from '@/components/ui/ConfirmDialog';
 
 interface FotoUploadProps {
     defaultValue?: string | null;
@@ -9,6 +10,7 @@ interface FotoUploadProps {
 }
 
 export default function FotoUploadBlob({ defaultValue, onUploadComplete }: FotoUploadProps) {
+    const toast = useToast();
     const [preview, setPreview] = useState(defaultValue);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +21,7 @@ export default function FotoUploadBlob({ defaultValue, onUploadComplete }: FotoU
 
         // 1. Validar tamanho (ex: 2MB)
         if (file.size > 2 * 1024 * 1024) {
-            alert("A imagem deve ter no máximo 2MB.");
+            toast("A imagem deve ter no máximo 2MB.", 'aviso');
             return;
         }
 
@@ -39,7 +41,7 @@ export default function FotoUploadBlob({ defaultValue, onUploadComplete }: FotoU
             setUploading(false);
         } catch (error) {
             console.error("ERRO DETALHADO DO BLOB:", error); // Olhe o console do navegador (F12)
-            alert("Falha ao enviar a foto: " + error.message);
+            toast("Falha ao enviar a foto: " + error.message, 'erro');
             setUploading(false);
         }
     };

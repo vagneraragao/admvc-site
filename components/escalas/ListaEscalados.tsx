@@ -7,7 +7,7 @@ import {
     Music, XCircle, AlertCircle
 } from 'lucide-react'
 import { removerEscalaAction, atualizarEscalaAction } from '@/actions/admin-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 import BotaoApagarEvento from '@/components/admin/BotaoApagarEvento'
 import ModalRepertorio from '@/components/louvor/ModalRepertorio'
@@ -31,6 +31,7 @@ export default function ListaEscalados({
     podeEditarMensagem?: boolean
 }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [editingId, setEditingId] = useState<number | null>(null)
     const [isPending, setIsPending] = useState(false)
 
@@ -40,7 +41,7 @@ export default function ListaEscalados({
         const ok = await confirmar({ mensagem: 'Tens a certeza que desejas remover este voluntário da escala?', tipo: 'perigo' })
         if (!ok) return
         const res = await removerEscalaAction(id)
-        if (res.error) alert(res.error)
+        if (res.error) toast(res.error, 'erro')
     }
 
     async function handleAtualizar(formData: FormData) {
@@ -48,7 +49,7 @@ export default function ListaEscalados({
         const res = await atualizarEscalaAction(formData)
         setIsPending(false)
         if (res.ok) setEditingId(null)
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     function handlePartilharWhatsApp(evento: any, escalasAgrupadas: any) {

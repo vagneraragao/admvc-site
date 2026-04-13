@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useMemo } from 'react'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import {
     atualizarDepartamento,
     adicionarFuncaoAoDepto,
@@ -19,6 +19,7 @@ import { alternarPermissaoEscala, removerFuncaoDoMembro, removerMembroTotal } fr
 
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congregacoes = [], onClose }: any) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes' | 'interessados'>('equipe')
     const [loading, setLoading] = useState(false)
     const [fotoPreview, setFotoPreview] = useState<string | null>(depto.foto_url || null)
@@ -121,13 +122,13 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                         <div className="space-y-6 animate-in fade-in">
                             <form ref={formEquipeRef} onSubmit={async (e) => {
                                 e.preventDefault()
-                                if (!membroEquipeSelecionado) return alert("Selecione um membro.")
-                                if (funcoesSelecionadas.length === 0) return alert("Selecione pelo menos um cargo.")
+                                if (!membroEquipeSelecionado) return toast("Selecione um membro.", 'aviso')
+                                if (funcoesSelecionadas.length === 0) return toast("Selecione pelo menos um cargo.", 'aviso')
                                 setLoading(true)
                                 const fd = new FormData(e.currentTarget)
                                 const res = await vincularMembroDepartamento(fd)
                                 if (res?.ok) { setMembroEquipeSelecionado(null); setFuncoesSelecionadas([]); setBuscaEquipe(""); formEquipeRef.current?.reset() }
-                                else if (res?.error) alert(res.error)
+                                else if (res?.error) toast(res.error, 'erro')
                                 setLoading(false)
                             }} className="bg-bg2 p-5 rounded-xl border border-soft space-y-4">
                                 <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
@@ -269,7 +270,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
 
                     {/* ABA DEFINIÇÕES */}
                     {aba === 'dados' && (
-                        <form action={async (formData) => { setLoading(true); const res = await atualizarDepartamento(formData); setLoading(false); if (res?.ok) alert("Atualizado!") }}
+                        <form action={async (formData) => { setLoading(true); const res = await atualizarDepartamento(formData); setLoading(false); if (res?.ok) toast("Atualizado!", 'sucesso') }}
                             className="space-y-5 animate-in fade-in">
                             <input type="hidden" name="id" value={depto.id} />
 
@@ -356,7 +357,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                                                 if (res?.ok && res.url) {
                                                     setFotoPreview(res.url)
                                                 } else {
-                                                    alert(res?.error || 'Erro ao enviar foto.')
+                                                    toast(res?.error || 'Erro ao enviar foto.', 'erro')
                                                 }
                                                 setUploadingFoto(false)
                                                 if (fotoInputRef.current) fotoInputRef.current.value = ''

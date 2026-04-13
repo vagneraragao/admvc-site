@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Search, Loader2, Check, X, Minus, Plus, Package, AlertCircle, Star, HeartHandshake, Eye, EyeOff } from 'lucide-react'
 import { atualizarStockLoyverseAction, atualizarPropriedadesItemLoyverse } from '@/actions/despensa-actions'
 import ModalEditarItem from './ModalEditarItem'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function CantinaManager({ produtos, categorias }: { produtos: any[], categorias: any[] }) {
     const [busca, setBusca] = useState('');
@@ -140,13 +141,14 @@ export default function CantinaManager({ produtos, categorias }: { produtos: any
 // COMPONENTES MINI PARA OS BOTÕES INDIVIDUAIS
 // ============================================================================
 function BotaoToggleDestaque({ itemId, isDestaque, nomeLimpo, nomeOriginal }: any) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false);
     const handleToggle = async () => {
         setLoading(true);
         const novoNome = isDestaque ? nomeLimpo : `-${nomeLimpo}`;
         // Enviamos o nome novo, os outros undefined não alteram o que já está!
         const res = await atualizarPropriedadesItemLoyverse(itemId, novoNome, undefined, undefined);
-        if (res.error) alert(res.error);
+        if (res.error) toast(res.error, 'erro');
         setLoading(false);
     }
     return (
@@ -157,12 +159,13 @@ function BotaoToggleDestaque({ itemId, isDestaque, nomeLimpo, nomeOriginal }: an
 }
 
 function BotaoToggleVisivel({ itemId, isAvailable }: any) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false);
     const handleToggle = async () => {
         setLoading(true);
         // O nome não vai ser mexido na nossa Action nova, por isso vai undefined
         const res = await atualizarPropriedadesItemLoyverse(itemId, undefined, !isAvailable, undefined);
-        if (res.error) alert(res.error);
+        if (res.error) toast(res.error, 'erro');
         setLoading(false);
     }
     return (
@@ -176,6 +179,7 @@ function BotaoToggleVisivel({ itemId, isAvailable }: any) {
 // COMPONENTE DE AJUSTE DE STOCK INLINE
 // ============================================================================
 function AjustadorStock({ itemId, variantId, stockAtual, trackStock }: any) {
+    const toast = useToast()
     const [valor, setValor] = useState(Math.floor(stockAtual));
     const [isSaving, setIsSaving] = useState(false);
 
@@ -184,7 +188,7 @@ function AjustadorStock({ itemId, variantId, stockAtual, trackStock }: any) {
     const handleAtivarControlo = async () => {
         setIsSaving(true);
         const res = await atualizarPropriedadesItemLoyverse(itemId, undefined, undefined, true);
-        if (res.error) alert(res.error);
+        if (res.error) toast(res.error, 'erro');
         setIsSaving(false);
     }
 
@@ -202,7 +206,7 @@ function AjustadorStock({ itemId, variantId, stockAtual, trackStock }: any) {
         setIsSaving(true);
         const res = await atualizarStockLoyverseAction(variantId, valor);
         if (res.error) {
-            alert(res.error);
+            toast(res.error, 'erro');
             setValor(Math.floor(stockAtual));
         }
         setIsSaving(false);

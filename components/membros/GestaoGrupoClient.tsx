@@ -10,8 +10,10 @@ import {
 } from 'lucide-react'
 import { registrarEncontroAction, atualizarDadosGrupoAction } from '@/actions/grupo-actions'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function GestaoGrupoClient({ grupo, ehLider }: { grupo: any, ehLider: boolean }) {
+    const toast = useToast()
     // Se não for líder, a aba padrão para interagir pode ser a 1 na mesma (para ver os dados)
     const [abaAtiva, setAbaAtiva] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -79,14 +81,14 @@ export default function GestaoGrupoClient({ grupo, ehLider }: { grupo: any, ehLi
             setTimeout(() => setSucesso(false), 3000);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-            alert(res.erro);
+            toast(res.erro, 'erro');
         }
     }
 
     async function handleRegistrarEncontro(formData: FormData) {
         if (!ehLider) return;
         if (!formData.get('data') || !formData.get('tema')) {
-            alert("A data e o resumo do encontro são obrigatórios.");
+            toast("A data e o resumo do encontro são obrigatórios.", 'aviso');
             return;
         }
 
@@ -104,7 +106,7 @@ export default function GestaoGrupoClient({ grupo, ehLider }: { grupo: any, ehLi
             setAbaAtiva(3); // Vai para o histórico após salvar
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-            alert(res.erro);
+            toast(res.erro, 'erro');
         }
     }
 

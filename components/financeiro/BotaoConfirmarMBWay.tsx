@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { confirmarMBWayCarneAction } from '@/actions/financeiro-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 interface Pendente {
     id: number
@@ -22,6 +22,7 @@ interface Props {
 
 export default function BotaoConfirmarMBWay({ pendentes }: Props) {
     const [loading, setLoading] = useState(false)
+    const toast = useToast()
     const confirmarDialog = useConfirm()
 
     async function confirmar() {
@@ -32,7 +33,7 @@ export default function BotaoConfirmarMBWay({ pendentes }: Props) {
         for (const lancamento of pendentes) {
             const res = await confirmarMBWayCarneAction(lancamento.id)
             if (res?.error) {
-                alert(`Erro ao confirmar lançamento #${lancamento.id}: ` + res.error)
+                toast(`Erro ao confirmar lançamento #${lancamento.id}: ` + res.error, 'erro')
             }
         }
 

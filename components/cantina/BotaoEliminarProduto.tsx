@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { Trash2, Loader2 } from 'lucide-react'
 import { eliminarProduto } from '@/actions/cantina-local-actions'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function BotaoEliminarProduto({ produtoId }: Props) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [confirmar, setConfirmar] = useState(false)
 
@@ -16,7 +18,7 @@ export default function BotaoEliminarProduto({ produtoId }: Props) {
         setLoading(true)
         const res = await eliminarProduto(produtoId)
         if (res?.error) {
-            alert(res.error)
+            toast(res.error, 'erro')
         }
         setLoading(false)
         setConfirmar(false)

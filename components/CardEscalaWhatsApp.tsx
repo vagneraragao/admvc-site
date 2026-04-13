@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from '@/components/ui/ConfirmDialog';
 
 export default function CardEscalaWhatsApp({ evento, departamento, escalas }: any) {
+    const toast = useToast();
     const dataFormatada = new Date(evento.data).toLocaleDateString('pt-PT', {
         weekday: 'long',
         day: '2-digit',
@@ -20,7 +22,7 @@ export default function CardEscalaWhatsApp({ evento, departamento, escalas }: an
             `_Por favor, confirmem a vossa presença!_ 🙏`;
 
         navigator.clipboard.writeText(textoBase);
-        alert("Escala copiada para o WhatsApp!");
+        toast("Escala copiada para o WhatsApp!", 'sucesso');
     };
 
     return (

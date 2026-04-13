@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import { createPortal } from 'react-dom'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -55,6 +55,7 @@ interface Props {
 
 export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, podeGerir = false }: Props) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -137,7 +138,7 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, po
             setRefs([])
             router.refresh()
         } else {
-            alert(res.error || 'Erro ao criar sermao.')
+            toast(res.error || 'Erro ao criar sermao.', 'erro')
         }
     }
 
@@ -147,7 +148,7 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, po
         if (res.ok) {
             router.refresh()
         } else {
-            alert(res.error || 'Erro ao remover.')
+            toast(res.error || 'Erro ao remover.', 'erro')
         }
     }
 
@@ -157,7 +158,7 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, po
             const encoded = encodeURIComponent(res.data)
             window.open(`https://wa.me/?text=${encoded}`, '_blank')
         } else {
-            alert(res.error || 'Erro ao gerar partilha.')
+            toast(res.error || 'Erro ao gerar partilha.', 'erro')
         }
     }
 

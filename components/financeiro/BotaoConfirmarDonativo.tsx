@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { confirmarDonativo } from '@/actions/donativo-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoConfirmarDonativo({ donativoId }: { donativoId: number }) {
     const [loading, setLoading] = useState(false)
+    const toast = useToast()
     const confirmar = useConfirm()
 
     async function handleConfirmar() {
@@ -14,7 +15,7 @@ export default function BotaoConfirmarDonativo({ donativoId }: { donativoId: num
         setLoading(true)
         const res = await confirmarDonativo(donativoId)
         if (!res.ok) {
-            alert(res.error || 'Erro ao confirmar donativo.')
+            toast(res.error || 'Erro ao confirmar donativo.', 'erro')
         }
         setLoading(false)
     }

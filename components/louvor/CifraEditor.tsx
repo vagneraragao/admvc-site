@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Save, Loader2, X, Eye, Edit3, HelpCircle, Download } from 'lucide-react'
 import { parseCifra, importarCifraClub } from '@/lib/cifra'
 import { salvarCifraInternaAction } from '@/actions/louvor-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     musicaId: string
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onSaved }: Props) {
+    const toast = useToast()
     const [texto, setTexto] = useState(cifraAtual || '')
     const [saving, setSaving] = useState(false)
     const [preview, setPreview] = useState(false)
@@ -34,7 +36,7 @@ export default function CifraEditor({ musicaId, titulo, cifraAtual, onClose, onS
             onSaved?.(cifraFinal)
             onClose()
         } else {
-            alert(res.error || 'Erro ao guardar.')
+            toast(res.error || 'Erro ao guardar.', 'erro')
         }
     }
 

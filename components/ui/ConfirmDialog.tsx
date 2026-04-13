@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, createContext, useContext, useRef } from 'react'
+import { useState, useCallback, createContext, useContext, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { AlertTriangle, X, Loader2 } from 'lucide-react'
+import { AlertTriangle, X, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 interface ConfirmOptions {
     titulo?: string
@@ -96,5 +96,77 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 document.body
             )}
         </ConfirmContext.Provider>
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TOAST — notificações in-app (substitui alert())
+// ══════════════════════════════════════════════════════════════════════
+
+interface ToastItem {
+    id: number
+    mensagem: string
+    tipo: 'sucesso' | 'erro' | 'aviso' | 'info'
+}
+
+type ToastFn = (mensagem: string, tipo?: ToastItem['tipo']) => void
+
+const ToastContext = createContext<ToastFn | null>(null)
+
+export function useToast(): ToastFn {
+    const fn = useContext(ToastContext)
+    if (!fn) throw new Error('useToast deve ser usado dentro de <ToastProvider>')
+    return fn
+}
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+    const [toasts, setToasts] = useState<ToastItem[]>([])
+    const nextId = useRef(0)
+
+    const toast = useCallback((mensagem: string, tipo: ToastItem['tipo'] = 'info') => {
+        const id = nextId.current++
+        setToasts(prev => [...prev, { id, mensagem, tipo }])
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id))
+        }, 4000)
+    }, [])
+
+    const remover = (id: number) => setToasts(prev => prev.filter(t => t.id !== id))
+
+    const icones = {
+        sucesso: <CheckCircle2 size={16} />,
+        erro: <XCircle size={16} />,
+        aviso: <AlertTriangle size={16} />,
+        info: <Info size={16} />,
+    }
+
+    const cores = {
+        sucesso: 'bg-emerald-500 text-white',
+        erro: 'bg-red-500 text-white',
+        aviso: 'bg-orange-500 text-white',
+        info: 'bg-fg text-bg',
+    }
+
+    return (
+        <ToastContext.Provider value={toast}>
+            {children}
+            {toasts.length > 0 && createPortal(
+                <div className="fixed top-4 left-4 right-4 z-[99998] flex flex-col items-center gap-2 pointer-events-none" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+                    {toasts.map(t => (
+                        <div
+                            key={t.id}
+                            className={`pointer-events-auto w-full max-w-sm flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl animate-in slide-in-from-top-4 fade-in duration-200 ${cores[t.tipo]}`}
+                        >
+                            <span className="shrink-0">{icones[t.tipo]}</span>
+                            <p className="flex-1 text-[11px] font-bold leading-snug">{t.mensagem}</p>
+                            <button onClick={() => remover(t.id)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>,
+                document.body
+            )}
+        </ToastContext.Provider>
     )
 }

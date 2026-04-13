@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function EditarMembroClient({
     membro,
@@ -21,6 +22,7 @@ export default function EditarMembroClient({
     congregacoes = []
 }: any) {
     const router = useRouter()
+    const toast = useToast()
     const [, startTransition] = useTransition()
 
     const [isPending, setIsPending] = useState(false)
@@ -105,7 +107,7 @@ export default function EditarMembroClient({
             setMostrarSucesso(true)
             window.scrollTo({ top: 0, behavior: 'smooth' })
         } else {
-            alert(res.error || "Erro ao atualizar.")
+            toast(res.error || "Erro ao atualizar.", 'erro')
         }
     }
 
@@ -130,10 +132,10 @@ export default function EditarMembroClient({
                 // Refresh para sincronizar com o servidor
                 startTransition(() => router.refresh())
             } else {
-                alert(res.error || 'Erro ao vincular família.')
+                toast(res.error || 'Erro ao vincular família.', 'erro')
             }
         } catch {
-            alert('Erro ao comunicar com o servidor.')
+            toast('Erro ao comunicar com o servidor.', 'erro')
         } finally {
             setVinculandoFamilia(false)
         }

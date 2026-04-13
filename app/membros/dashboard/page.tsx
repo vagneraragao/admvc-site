@@ -536,7 +536,7 @@ export default async function DashboardMembro({
         <>
         {/* MOBILE DASHBOARD */}
         <div className="md:hidden">
-            <MobileDashboard membro={membroParaMobile} escalas={escalasParaMobile} departamentos={departamentosParaMobile} membroId={membro.id} role={role} />
+            <MobileDashboard membro={membroParaMobile} escalas={escalasParaMobile} departamentos={departamentosParaMobile} membroId={membro.id} role={role} proximosEventos={(proximosEventos || []).map((e: any) => ({ id: e.id, nome: e.nome, data: e.data.toISOString() }))} />
         </div>
 
         {/* DESKTOP DASHBOARD */}
@@ -647,10 +647,12 @@ export default async function DashboardMembro({
                                                         )}
                                                     </div>
 
-                                                    {/* REPERTÓRIO (louvor) */}
+                                                    {/* REPERTÓRIO (louvor) — líder vê tudo, membro só modo palco */}
                                                     {(esc.departamento.nome.toLowerCase().includes('louvor') || esc.departamento.nome.toLowerCase().includes('música')) && (
                                                         <>
-                                                            <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
+                                                            {(isAdmin(role) || membro.departamentos_liderados?.some((d: any) => d.id === esc.departamento.id)) && (
+                                                                <ModalRepertorio eventoId={esc.evento.id} repertorioInical={esc.evento.repertorio || []} podeEditar={true} />
+                                                            )}
                                                             <BotaoSetlistPalco eventoId={esc.evento.id} totalMusicas={esc.evento.repertorio?.length || 0} />
                                                         </>
                                                     )}

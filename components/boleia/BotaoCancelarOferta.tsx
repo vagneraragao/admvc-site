@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { cancelarOfertaBoleia } from '@/actions/boleia-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import { Loader2, Trash2 } from 'lucide-react'
 
 export default function BotaoCancelarOferta({ ofertaId }: { ofertaId: number }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
 
     async function handleCancelar() {
@@ -15,7 +16,7 @@ export default function BotaoCancelarOferta({ ofertaId }: { ofertaId: number }) 
         setLoading(true)
         const res = await cancelarOfertaBoleia(ofertaId)
         if (res.error) {
-            alert(res.error)
+            toast(res.error, 'erro')
         }
         setLoading(false)
     }

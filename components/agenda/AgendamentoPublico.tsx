@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { Coffee, Mail, BookOpen, Users, Utensils, CalendarDays, ArrowLeft, ArrowRight, Clock, User, Phone, AlignLeft, CheckCircle2, Loader2 } from 'lucide-react'
 import { submeterMarcacaoPublica } from '@/actions/agenda-publica-actions' // Confirma o caminho
 
@@ -17,6 +18,7 @@ const CATEGORIAS = [
 ];
 
 export default function AgendamentoPublico({ agendaId, compromissosOcupados }: { agendaId: number, compromissosOcupados: any[] }) {
+    const toast = useToast();
     const [step, setStep] = useState(1);
     const [isPending, setIsPending] = useState(false);
 
@@ -59,7 +61,7 @@ export default function AgendamentoPublico({ agendaId, compromissosOcupados }: {
         if (res.ok) {
             setStep(4); // Vai para a página de sucesso
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
     }
 

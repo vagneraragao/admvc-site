@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Save, Loader2, Image as ImageIcon, Plus, Edit3, Camera, CheckCircle2 } from 'lucide-react'
 import { salvarItemLoyverseAction } from '@/actions/despensa-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarItem({ item, categorias }: { item?: any, categorias: any[] }) {
+    const toast = useToast()
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [progresso, setProgresso] = useState(0);
@@ -41,7 +43,7 @@ export default function ModalEditarItem({ item, categorias }: { item?: any, cate
                 setSucesso(false);
             }, 1500);
         } else {
-            alert("Erro: " + res.error);
+            toast("Erro: " + res.error, 'erro');
             setLoading(false);
         }
     }

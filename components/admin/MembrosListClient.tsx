@@ -14,6 +14,7 @@ import {
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { excluirMembroAction } from '@/actions/admin-actions'
 import BotoesImpressao from '@/components/print/BotoesImpressao'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Membro {
     id: number
@@ -65,6 +66,7 @@ const COR_ROLE: Record<string, string> = {
 }
 
 export default function MembrosListClient({ membros, kpis }: Props) {
+    const toast = useToast()
     const searchParams = useSearchParams()
     const router = useRouter()
     const [showToast, setShowToast] = useState(false)
@@ -631,7 +633,7 @@ export default function MembrosListClient({ membros, kpis }: Props) {
                                         setExcluindoId(membroParaExcluir.id)
                                         const res = await excluirMembroAction(membroParaExcluir.id)
                                         if (res.ok) setMembroParaExcluir(null)
-                                        else alert(res.error)
+                                        else toast(res.error, 'erro')
                                         setExcluindoId(null)
                                     }}
                                     className="w-full bg-red-500 text-white py-4 rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-red-600 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { salvarEvento } from "@/actions/admin-actions";
+import { useToast } from '@/components/ui/ConfirmDialog';
 import { formatInTimeZone } from 'date-fns-tz';
 
 export default function GerenciadorEventos({ eventos }: { eventos: any[] }) {
+    const toast = useToast();
     const [modo, setModo] = useState<'lista' | 'form'>('lista');
     const [eventoAtual, setEventoAtual] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
@@ -20,7 +22,7 @@ export default function GerenciadorEventos({ eventos }: { eventos: any[] }) {
             setModo('lista');
             window.location.reload();
         } else {
-            alert("Erro ao salvar evento.");
+            toast("Erro ao salvar evento.", 'erro');
         }
         setSalvando(false);
     };

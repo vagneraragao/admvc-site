@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { DollarSign, Loader2, Check, X } from 'lucide-react'
 import { lancarPagamentoCarne } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalPagamentoCarne({ carne }: { carne: any }) {
+    const toast = useToast()
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [qtd, setQtd] = useState(1);
@@ -20,7 +22,7 @@ export default function ModalPagamentoCarne({ carne }: { carne: any }) {
             setAberto(false);
             setQtd(1);
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
         setLoading(false);
     }

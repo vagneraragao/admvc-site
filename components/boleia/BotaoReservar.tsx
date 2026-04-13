@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { reservarBoleia } from '@/actions/boleia-actions'
 import { Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoReservar({ ofertaId }: { ofertaId: number }) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
 
     async function handleReservar() {
         setLoading(true)
         const res = await reservarBoleia(ofertaId)
         if (res.error) {
-            alert(res.error)
+            toast(res.error, 'erro')
         }
         setLoading(false)
     }

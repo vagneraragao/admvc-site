@@ -3,6 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { excluirGrupo, salvarGrupo } from "@/actions/admin-actions";
+import { useToast } from '@/components/ui/ConfirmDialog'
 import {
     Search, X, Shield, Users, MapPin, Clock, Trash2,
     Edit3, Loader2, Check, AlignLeft, ArrowLeft,
@@ -17,6 +18,7 @@ interface GerenciadorProps {
 }
 
 export default function GerenciadorGrupos({ grupos, departamentos, membrosDisponiveis, regioes = [] }: GerenciadorProps) {
+    const toast = useToast()
     const router = useRouter();
     // ✅ useTransition em vez de window.location.reload()
     const [isPending, startTransition] = useTransition();
@@ -81,10 +83,10 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                 // ✅ Revalida apenas os dados da página sem reload completo
                 startTransition(() => router.refresh());
             } else {
-                alert(res.error || "Erro ao guardar o grupo.");
+                toast(res.error || "Erro ao guardar o grupo.", 'erro');
             }
         } catch {
-            alert("Erro de ligação ao servidor.");
+            toast("Erro de ligação ao servidor.", 'erro');
         } finally {
             setSalvando(false);
         }
@@ -97,7 +99,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
             setConfirmarExclusao(null);
             startTransition(() => router.refresh());
         } else {
-            alert("Erro ao excluir.");
+            toast("Erro ao excluir.", 'erro');
             setConfirmarExclusao(null);
         }
         setSalvando(false);

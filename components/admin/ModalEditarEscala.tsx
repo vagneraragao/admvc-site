@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { X, Save, Loader2, Clock, Briefcase, Edit3 } from 'lucide-react'
 import { editarEscalaAction } from '@/actions/admin-actions' // Vamos criar esta action a seguir
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarEscala({ escala }: { escala: any }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
 
@@ -16,7 +18,7 @@ export default function ModalEditarEscala({ escala }: { escala: any }) {
         if (res.ok) {
             setIsOpen(false)
         } else {
-            alert(res.error || "Erro ao atualizar a escala.")
+            toast(res.error || "Erro ao atualizar a escala.", 'erro')
         }
     }
 

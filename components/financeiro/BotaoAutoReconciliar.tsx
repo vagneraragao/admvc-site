@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react'
 import { autoReconciliar } from '@/actions/reconciliacao-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAutoReconciliar({ contaId }: { contaId: number }) {
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ reconciled: number; total: number } | null>(null)
+    const toast = useToast()
     const confirmar = useConfirm()
 
     async function handleClick() {
@@ -20,7 +21,7 @@ export default function BotaoAutoReconciliar({ contaId }: { contaId: number }) {
                 setResultado({ reconciled: res.reconciled, total: res.total })
             }
         } catch {
-            alert('Erro ao executar reconciliacao automatica.')
+            toast('Erro ao executar reconciliacao automatica.', 'erro')
         } finally {
             setLoading(false)
         }

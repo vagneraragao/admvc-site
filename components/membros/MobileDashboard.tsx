@@ -4,12 +4,12 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import {
     CalendarOff, Users, MessageSquare, Car, Coffee,
-    HelpCircle, CalendarDays, ChevronDown, ChevronUp, BookOpen
+    Calendar, CalendarDays, ChevronDown, ChevronUp, BookOpen, Clock, ChevronRight, MessageCircle, X
 } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 import QrCodeModal from '@/components/membros/QrCodeModal'
 import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
-import ModalAjuda from '@/components/membros/ModalAjuda'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
 
@@ -24,17 +24,26 @@ interface EscalaItem {
     departamento: { id: number; nome: string }
 }
 
+interface EventoItem {
+    id: number
+    nome: string
+    data: string
+}
+
 interface Props {
     membro: any
     escalas: EscalaItem[]
     departamentos: any[]
     membroId: number
     role: string
+    proximosEventos?: EventoItem[]
 }
 
-export default function MobileDashboard({ membro, escalas, departamentos, membroId, role }: Props) {
+export default function MobileDashboard({ membro, escalas, departamentos, membroId, role, proximosEventos = [] }: Props) {
     const [escalasAberto, setEscalasAberto] = useState(false)
     const [deptosAberto, setDeptosAberto] = useState(false)
+    const [agendaAberta, setAgendaAberta] = useState(false)
+    const [mostrarTodosEventos, setMostrarTodosEventos] = useState(false)
     const deptosRef = useRef<HTMLDivElement>(null)
 
     const nomeCompleto = `${membro.first_name} ${membro.last_name || ''}`.trim()
@@ -138,12 +147,12 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </Link>
 
-                <ModalAjuda trigger={
+                <button onClick={() => setAgendaAberta(true)}>
                     <div className={gridBtnClass}>
-                        <HelpCircle size={22} className="text-muted" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Ajuda</span>
+                        <Calendar size={22} className="text-blue-400" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Agenda</span>
                     </div>
-                } />
+                </button>
 
                 <Link href="/cantina/menu-local">
                     <div className={gridBtnClass}>
@@ -260,6 +269,95 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 )}
             </div>
+            {/* ── MODAL AGENDA ─────────────────────────── */}
+            {agendaAberta && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => { setAgendaAberta(false); setMostrarTodosEventos(false) }}
+                >
+                    <div
+                        className="bg-bg w-full max-w-md rounded-t-[2rem] border-t border-soft shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-h-[80vh] flex flex-col"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-soft shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-figueira/10 text-figueira flex items-center justify-center">
+                                    <Calendar size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Agenda</h3>
+                                    <p className="text-[8px] font-bold text-muted uppercase tracking-widest">{proximosEventos.length} eventos</p>
+                                </div>
+                            </div>
+                            <button onClick={() => { setAgendaAberta(false); setMostrarTodosEventos(false) }}
+                                className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:text-fg rounded-xl transition-all">
+                                <X size={14} />
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto p-4 space-y-2 flex-1">
+                            {(mostrarTodosEventos ? proximosEventos : proximosEventos.slice(0, 4)).map((evento) => {
+                                const d = new Date(evento.data)
+                                const dia = d.toLocaleDateString('pt-PT', { day: '2-digit' })
+                                const mes = d.toLocaleDateString('pt-PT', { month: 'short' })
+                                const diaSemana = d.toLocaleDateString('pt-PT', { weekday: 'short' })
+                                const hora = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                                const dataCompleta = d.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+                                const dataCapitalizada = dataCompleta.charAt(0).toUpperCase() + dataCompleta.slice(1)
+
+                                return (
+                                    <details key={evento.id} className="bg-bg2 border border-soft rounded-xl overflow-hidden group/ev">
+                                        <summary className="flex items-center gap-3 p-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+                                            <div className="p-2 rounded-lg bg-fg text-bg text-center min-w-[44px] shrink-0">
+                                                <span className="block text-[7px] font-black uppercase opacity-60">{mes}</span>
+                                                <span className="block text-lg font-black italic leading-tight">{dia}</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-[11px] font-black uppercase italic text-fg truncate">{evento.nome}</h4>
+                                                <p className="text-[9px] text-muted font-bold mt-0.5">{diaSemana} · {hora}</p>
+                                            </div>
+                                            <ChevronRight size={14} className="text-muted shrink-0 transition-transform group-open/ev:rotate-90" />
+                                        </summary>
+                                        <div className="px-3 pb-3 pt-1 border-t border-soft space-y-3 animate-in fade-in duration-200">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-2 text-[10px] text-fg font-medium">
+                                                    <Calendar size={11} className="text-figueira shrink-0" /> {dataCapitalizada}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-muted">
+                                                    <Clock size={11} className="shrink-0" /> {hora}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const texto = `⛪ *${evento.nome.toUpperCase()}*\n📅 ${dataCapitalizada}\n⏰ ${hora}\n\n🙏 Vemo-nos lá!`
+                                                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-600 border border-green-200 text-[9px] font-black uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all active:scale-95"
+                                            >
+                                                <MessageCircle size={13} /> Partilhar no WhatsApp
+                                            </button>
+                                        </div>
+                                    </details>
+                                )
+                            })}
+                            {proximosEventos.length === 0 && (
+                                <div className="text-center py-8">
+                                    <Calendar size={28} className="mx-auto text-muted/20 mb-2" />
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Sem eventos agendados</p>
+                                </div>
+                            )}
+                            {proximosEventos.length > 4 && (
+                                <button onClick={() => setMostrarTodosEventos(!mostrarTodosEventos)}
+                                    className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center justify-center gap-1.5">
+                                    <ChevronDown size={12} className={`transition-transform ${mostrarTodosEventos ? 'rotate-180' : ''}`} />
+                                    {mostrarTodosEventos ? 'Ver menos' : `Ver todos (${proximosEventos.length})`}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     )
 }

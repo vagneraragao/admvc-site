@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { Link2, Loader2, X, Unlink, CheckCircle2 } from 'lucide-react'
 import { reconciliarMovimento, desreconciliar } from '@/actions/reconciliacao-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export function BotaoReconciliar({ movimentoId }: { movimentoId: number }) {
+    const toast = useToast()
     const [aberto, setAberto] = useState(false)
     const [loading, setLoading] = useState(false)
     const [referencia, setReferencia] = useState('')
@@ -15,7 +16,7 @@ export function BotaoReconciliar({ movimentoId }: { movimentoId: number }) {
         setLoading(true)
         const res = await reconciliarMovimento(movimentoId, referencia.trim())
         if (!res.ok) {
-            alert(res.error || 'Erro ao reconciliar.')
+            toast(res.error || 'Erro ao reconciliar.', 'erro')
         }
         setLoading(false)
         setAberto(false)

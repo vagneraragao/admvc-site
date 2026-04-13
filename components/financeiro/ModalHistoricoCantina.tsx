@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Receipt, X, ShoppingBag, Loader2, Coffee, ChevronDown, HandPlatter } from 'lucide-react'
 import { getHistoricoComprasLoyverse } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: string }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [recibos, setRecibos] = useState<any[]>([])
@@ -21,7 +23,7 @@ export default function ModalHistoricoCantina({ loyverseId }: { loyverseId: stri
         e.stopPropagation()
 
         if (!loyverseId) {
-            alert("A sua conta ainda não está ligada à Cantina.")
+            toast("A sua conta ainda não está ligada à Cantina.", 'aviso')
             return
         }
 

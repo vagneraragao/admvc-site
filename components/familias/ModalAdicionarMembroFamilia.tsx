@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Search, UserPlus, Loader2, X, CheckCircle2 } from 'lucide-react'
 import { buscarMembrosSemFamiliaAction, vincularMembroFamiliaAction } from '@/actions/familia-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalAdicionarMembroFamilia({ familiaId, familiaNome }: { familiaId: string, familiaNome: string }) {
+    const toast = useToast()
     const [aberto, setAberto] = useState(false);
 
     // Estados da Busca
@@ -42,7 +44,7 @@ export default function ModalAdicionarMembroFamilia({ familiaId, familiaNome }: 
         if (res.ok) {
             fecharModal();
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
             setLoadingSalvar(false);
         }
     }

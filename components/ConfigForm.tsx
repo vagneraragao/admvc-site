@@ -2,6 +2,7 @@
 "use client"
 
 import { useRef, useTransition } from "react"
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface ConfigFormProps {
     action: (fd: FormData) => Promise<any>;
@@ -11,6 +12,7 @@ interface ConfigFormProps {
 }
 
 export default function ConfigForm({ action, placeholder, label, buttonColor = "bg-fg" }: ConfigFormProps) {
+    const toast = useToast()
     const formRef = useRef<HTMLFormElement>(null);
     const [isPending, startTransition] = useTransition(); // Para feedback de carregamento
 
@@ -18,10 +20,10 @@ export default function ConfigForm({ action, placeholder, label, buttonColor = "
         startTransition(async () => {
             try {
                 await action(fd);
-                alert(`${label} cadastrado com sucesso!`);
+                toast(`${label} cadastrado com sucesso!`, 'sucesso');
                 formRef.current?.reset();
             } catch (error) {
-                alert("Erro ao cadastrar. Tente novamente.");
+                toast("Erro ao cadastrar. Tente novamente.", 'erro');
             }
         });
     }

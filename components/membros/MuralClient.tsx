@@ -4,11 +4,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Hash, MessageSquare, UserCircle, Loader2, Trash2 } from 'lucide-react'
 import { publicarAviso, apagarAviso } from '@/actions/mural-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import Image from 'next/image'
 
 export default function MuralClient({ canais, avisos, membroAtualId }: { canais: any[], avisos: any[], membroAtualId: number }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [canalAtivo, setCanalAtivo] = useState(canais[0]?.id);
     const [loading, setLoading] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null); // Para mostrar loading ao apagar
@@ -33,7 +34,7 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
         if (res.ok) {
             formRef.current?.reset();
         } else {
-            alert(res.error || "Erro ao publicar.");
+            toast(res.error || "Erro ao publicar.", 'erro');
         }
     }
 
@@ -44,7 +45,7 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
         setDeletingId(id);
         const res = await apagarAviso(id);
         setDeletingId(null);
-        if (res.error) alert(res.error);
+        if (res.error) toast(res.error, 'erro');
     }
 
     const formatDate = (dateString: string) => {

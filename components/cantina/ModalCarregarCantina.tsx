@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Coffee, Euro, Loader2, CheckCircle2, X, Check, RefreshCw } from 'lucide-react'
 import { solicitarSaldoCantinaAction } from '@/actions/financeiro-actions'
 import { useRouter } from 'next/navigation' // 👈 Importação para forçar o refresh
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalCarregarCantina({ membroId }: { membroId: number }) {
     const router = useRouter(); // Hook de navegação
+    const toast = useToast()
 
     // ESTADOS DO MODAL
     const [aberto, setAberto] = useState(false);
@@ -47,7 +49,7 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
 
     async function handleSubmit(formData: FormData) {
         if (!valorSelecionado || Number(valorSelecionado) <= 0) {
-            alert("Por favor, insira um valor válido.");
+            toast("Por favor, insira um valor válido.", 'aviso');
             return;
         }
 
@@ -63,7 +65,7 @@ export default function ModalCarregarCantina({ membroId }: { membroId: number })
                 setIsCustom(false);
             }, 3000);
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
         setLoading(false);
     }

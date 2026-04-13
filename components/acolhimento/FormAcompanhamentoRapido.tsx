@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { Send, CheckCircle2, Loader2, History, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { salvarRelatoRapido } from '@/actions/visitante-actions'
 import ModalHistorico from './ModalHistorico'
 
 export default function FormAcompanhamentoRapido({ visitante }: { visitante: any }) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [sucesso, setSucesso] = useState(false)
     const [expanded, setExpanded] = useState(false)
@@ -25,7 +27,7 @@ export default function FormAcompanhamentoRapido({ visitante }: { visitante: any
             setExpanded(false)
             setTimeout(() => setSucesso(false), 3000)
         } else {
-            alert(res.error)
+            toast(res.error, 'erro')
         }
     }
 

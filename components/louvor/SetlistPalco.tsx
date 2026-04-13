@@ -2,13 +2,15 @@
 // components/louvor/SetlistPalco.tsx
 // Modo palco — fullscreen no telemóvel, dark, navegação por swipe e setas
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import {
     ChevronLeft, ChevronRight, X, FileText, Guitar,
     Headphones, Youtube, Music, Hash, Gauge,
-    List, Maximize2, ArrowLeft, CheckCircle2, Home, Download, Loader2
+    List, Maximize2, ArrowLeft, CheckCircle2, Home, Download, Loader2, RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 import CifraViewer from './CifraViewer'
 import CifraEditor from './CifraEditor'
@@ -78,6 +80,9 @@ function BotaoRecurso({
 }
 
 export default function SetlistPalco({ evento }: Props) {
+    const toast = useToast()
+    const router = useRouter()
+    const [isRefreshing, startRefresh] = useTransition()
     const [indexActual, setIndexActual] = useState(0)
     const [mostrarLista, setMostrarLista] = useState(false)
     const [marcadas, setMarcadas] = useState<Set<string>>(new Set())
@@ -237,6 +242,14 @@ export default function SetlistPalco({ evento }: Props) {
                         title="Home">
                         <Home size={16} />
                     </Link>
+                    <button
+                        onClick={() => startRefresh(() => { router.refresh(); toast('Setlist atualizada', 'sucesso') })}
+                        disabled={isRefreshing}
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-all active:scale-90"
+                        title="Atualizar setlist"
+                    >
+                        <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                    </button>
                 </div>
 
                 <div className="text-center">
@@ -372,7 +385,7 @@ export default function SetlistPalco({ evento }: Props) {
                                         if (res.ok && res.cifra) {
                                             setCifrasEditadas(prev => ({ ...prev, [musica.id]: res.cifra! }))
                                         } else {
-                                            alert(res.error || 'Erro ao importar.')
+                                            toast(res.error || 'Erro ao importar.', 'erro')
                                         }
                                     }}
                                     disabled={importandoUrl}

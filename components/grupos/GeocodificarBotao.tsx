@@ -2,12 +2,13 @@
 // components/grupos/GeocodificarBotao.tsx
 
 import { useState } from 'react'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import { MapPin, Loader2, CheckCircle2 } from 'lucide-react'
 import { geocodificarTodosGruposAction } from '@/actions/admin-actions'
 
 export default function GeocodificarBotao() {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [estado, setEstado] = useState<'idle' | 'loading' | 'done'>('idle')
     const [resultado, setResultado] = useState<{ sucesso: number; falhou: number } | null>(null)
 
@@ -19,7 +20,7 @@ export default function GeocodificarBotao() {
             setResultado({ sucesso: res.sucesso, falhou: res.falhou })
             setEstado('done')
         } else {
-            alert(res.error || 'Erro ao geocodificar.')
+            toast(res.error || 'Erro ao geocodificar.', 'erro')
             setEstado('idle')
         }
     }

@@ -611,8 +611,24 @@ export async function associarMembroAFamilia(membroId: number, familiaId: number
 
 export async function removerEscalaAction(id: number) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const session = await requireAuth()
         const { db, tenantId } = await getDb();
+
+        // Admin ou CONGREGATION_ADMIN pode sempre
+        const isAdminRole = session.role === 'ADMIN' || session.role === 'CONGREGATION_ADMIN'
+        if (!isAdminRole) {
+            // Verifica se é líder ou delegado do departamento da escala
+            const escala = await db.escala.findUnique({ where: { id }, select: { departamento_id: true } })
+            if (!escala) return { error: 'Escala não encontrada.' }
+            const depto = await db.departamento.findUnique({ where: { id: escala.departamento_id }, select: { lider_id: true } })
+            const vinculo = await db.integranteDepartamento.findFirst({
+                where: { membro_id: session.membroId, departamento_id: escala.departamento_id, pode_gerir_escalas: true }
+            })
+            if (depto?.lider_id !== session.membroId && !vinculo) {
+                return { error: 'Sem permissão para remover desta escala.' }
+            }
+        }
+
         await db.escala.delete({ where: { id } });
         revalidatePath('/escalas/gestao');
         return { ok: true };
@@ -623,9 +639,24 @@ export async function removerEscalaAction(id: number) {
 
 export async function atualizarEscalaAction(formData: FormData) {
     try {
-        await requireRole(['ADMIN', 'CONGREGATION_ADMIN'])
+        const session = await requireAuth()
         const { db, tenantId } = await getDb();
         const id = Number(formData.get('id'));
+
+        // Admin ou CONGREGATION_ADMIN pode sempre
+        const isAdminRole = session.role === 'ADMIN' || session.role === 'CONGREGATION_ADMIN'
+        if (!isAdminRole) {
+            const escala = await db.escala.findUnique({ where: { id }, select: { departamento_id: true } })
+            if (!escala) return { error: 'Escala não encontrada.' }
+            const depto = await db.departamento.findUnique({ where: { id: escala.departamento_id }, select: { lider_id: true } })
+            const vinculo = await db.integranteDepartamento.findFirst({
+                where: { membro_id: session.membroId, departamento_id: escala.departamento_id, pode_gerir_escalas: true }
+            })
+            if (depto?.lider_id !== session.membroId && !vinculo) {
+                return { error: 'Sem permissão para editar esta escala.' }
+            }
+        }
+
         const funcao = formData.get('funcao') as string;
         const horario = formData.get('horario') as string;
 

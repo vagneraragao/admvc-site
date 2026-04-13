@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PlusCircle, Loader2 } from 'lucide-react'
 import { criarFundoAction } from '@/actions/fundos-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 const TIPOS_FUNDO = [
     { value: 'GERAL', label: 'Geral' },
@@ -14,15 +15,16 @@ const TIPOS_FUNDO = [
 ]
 
 export default function FormCriarFundo() {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
         const result = await criarFundoAction(formData)
         if (result.ok) {
-            alert('Fundo criado com sucesso!')
+            toast('Fundo criado com sucesso!', 'sucesso')
         } else {
-            alert(result.error || 'Erro ao criar fundo.')
+            toast(result.error || 'Erro ao criar fundo.', 'erro')
         }
         setLoading(false)
     }

@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { criarNovaFamilia } from '@/actions/familia-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { Plus, X, Loader2, Home, AlertTriangle } from 'lucide-react'
 
 export default function NovaFamiliaModal({ familiasExistentes = [] }: { familiasExistentes?: string[] }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
 
@@ -26,7 +28,7 @@ export default function NovaFamiliaModal({ familiasExistentes = [] }: { familias
 
         // Se a sua action devolver um erro, mostramos um alerta. Senão, fechamos e limpamos.
         if (res?.erro) {
-            alert(res.erro)
+            toast(res.erro, 'erro')
         } else {
             fecharModal()
         }

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Check, Loader2, XCircle, CheckCircle2, Clock, X, AlertCircle } from 'lucide-react'
 import { alternarConfirmacaoEscala } from '@/actions/membro-actions'
 import { recusarEscala } from '@/actions/escalas-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     escalaIds: number[]
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function BotoesEscala({ escalaIds, confirmado, motivoRecusa, colapsado }: Props) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [popupAberto, setPopupAberto] = useState(false)
     const [motivo, setMotivo] = useState('')
@@ -36,7 +38,7 @@ export default function BotoesEscala({ escalaIds, confirmado, motivoRecusa, cola
     }
 
     async function handleCancelar() {
-        if (!motivo.trim()) { alert('Indica o motivo do cancelamento.'); return }
+        if (!motivo.trim()) { toast('Indica o motivo do cancelamento.', 'aviso'); return }
         setLoading(true)
         await recusarEscala(escalaIds, motivo)
         setLoading(false)

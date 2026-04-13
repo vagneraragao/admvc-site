@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRightLeft, Loader2 } from 'lucide-react'
 import { transferirEntreeFundosAction } from '@/actions/fundos-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface FundoResumido {
     id: number
@@ -14,6 +15,7 @@ const euro = (v: number) =>
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v)
 
 export default function FormTransferencia({ fundos }: { fundos: FundoResumido[] }) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [origemId, setOrigemId] = useState('')
     const [destinoId, setDestinoId] = useState('')
@@ -24,11 +26,11 @@ export default function FormTransferencia({ fundos }: { fundos: FundoResumido[] 
         setLoading(true)
         const result = await transferirEntreeFundosAction(formData)
         if (result.ok) {
-            alert('Transferencia realizada com sucesso!')
+            toast('Transferencia realizada com sucesso!', 'sucesso')
             setOrigemId('')
             setDestinoId('')
         } else {
-            alert(result.error || 'Erro ao transferir.')
+            toast(result.error || 'Erro ao transferir.', 'erro')
         }
         setLoading(false)
     }

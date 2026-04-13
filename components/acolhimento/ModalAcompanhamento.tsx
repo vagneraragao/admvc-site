@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { ClipboardEdit, X, Loader2, Save } from 'lucide-react'
 import { registarAcompanhamento } from '@/actions/visitante-actions'
 
@@ -21,6 +22,7 @@ interface Visitante {
 }
 
 export default function ModalAcompanhamento({ visitante }: { visitante: Visitante }) {
+    const toast = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -32,7 +34,7 @@ export default function ModalAcompanhamento({ visitante }: { visitante: Visitant
         setLoading(false);
 
         if (res.error) {
-            alert(res.error);
+            toast(res.error, 'erro');
         } else if (res.credenciais) {
             setCredenciais(res.credenciais);
         } else {

@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { Trash2, Loader2 } from 'lucide-react'
 import { apagarEventoAction } from '@/actions/admin-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoApagarEvento({ id, nome }: { id: number, nome: string }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [isPending, setIsPending] = useState(false);
 
     async function handleApagar() {
@@ -18,7 +19,7 @@ export default function BotaoApagarEvento({ id, nome }: { id: number, nome: stri
         setIsPending(false);
 
         if (!res.ok) {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
     }
 

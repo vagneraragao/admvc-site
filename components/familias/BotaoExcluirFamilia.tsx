@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { Trash2, AlertTriangle, Loader2, Check } from 'lucide-react'
 import { excluirFamiliaAction } from '@/actions/familia-actions'
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function BotaoExcluirFamilia({ familiaId, nomeFamilia, qtdMembros }: Props) {
+    const toast = useToast();
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -20,7 +22,7 @@ export default function BotaoExcluirFamilia({ familiaId, nomeFamilia, qtdMembros
         if (res.ok) {
             setAberto(false);
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
             setLoading(false);
         }
     }
