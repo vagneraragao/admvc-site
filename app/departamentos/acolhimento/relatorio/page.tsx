@@ -3,15 +3,31 @@ import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getAcolhimentoRole, podeVerRelatorio } from '@/lib/acolhimento-permissions'
 import {
-    ArrowLeft, Users, UserPlus, UserCheck, Clock,
-    TrendingUp, HeartHandshake, Calendar
+    ArrowLeft, Users, UserPlus, UserCheck, Clock, UserX,
+    TrendingUp, HeartHandshake, Calendar, Shield, BarChart3
 } from 'lucide-react'
 
 export default async function RelatorioAcolhimentoPage() {
     const db = await getDb()
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
+
+    // Permissão: só líder ou admin
+    const membroLogado = await db.membro.findUnique({
+        where: { id: session.membroId },
+        include: {
+            ministerios: { include: { departamento: true } },
+            departamentos_liderados: true
+        }
+    })
+    if (!membroLogado) redirect('/membros/login')
+
+    const acolhimentoRole = getAcolhimentoRole(membroLogado, session.role)
+    if (!podeVerRelatorio(acolhimentoRole)) {
+        redirect('/membros/dashboard?error=Acesso restrito ao relatorio.')
+    }
 
     const agora = new Date()
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1)
@@ -28,14 +44,16 @@ export default async function RelatorioAcolhimentoPage() {
         acompanhamentosEsteMes,
         visitantesPorMes,
         ultimosConsolidados,
+        porStatus,
+        followUpsPorMembro,
     ] = await Promise.all([
         db.visitante.count(),
         db.visitante.count({ where: { data_primeira_visita: { gte: inicioMes } } }),
         db.visitante.count({ where: { data_primeira_visita: { gte: inicioMesAnterior, lte: fimMesAnterior } } }),
         db.visitante.count({ where: { status: 'EM_CONTACTO' } }),
         db.visitante.count({ where: { status: 'CONSOLIDADO' } }),
-        db.acompanhamentoVisitante.count(),
-        db.acompanhamentoVisitante.count({ where: { data_contacto: { gte: inicioMes } } }),
+        db.acompanhamentoVisitante.count({ where: { tipo_evento: 'CONTACTO' } }),
+        db.acompanhamentoVisitante.count({ where: { data_contacto: { gte: inicioMes }, tipo_evento: 'CONTACTO' } }),
         // Visitantes por mes (ultimos 6 meses)
         Promise.all(
             Array.from({ length: 6 }, (_, i) => {
@@ -54,14 +72,57 @@ export default async function RelatorioAcolhimentoPage() {
             orderBy: { data_ultima_visita: 'desc' },
             take: 10,
         }),
+        // Distribuição por status (funil)
+        db.visitante.groupBy({
+            by: ['status'],
+            _count: true
+        }),
+        // Follow-ups por membro este mês
+        db.acompanhamentoVisitante.groupBy({
+            by: ['membro_id'],
+            where: { data_contacto: { gte: inicioMes }, tipo_evento: 'CONTACTO' },
+            _count: true
+        }),
     ])
+
+    // Buscar nomes dos membros para follow-ups
+    const membroIds = followUpsPorMembro.map(f => f.membro_id)
+    const membros = membroIds.length > 0
+        ? await db.membro.findMany({
+            where: { id: { in: membroIds } },
+            select: { id: true, first_name: true, last_name: true }
+        })
+        : []
+    const membroMap = new Map(membros.map(m => [m.id, m]))
+
+    const followUpsComNome = followUpsPorMembro
+        .map(f => ({
+            membro: membroMap.get(f.membro_id),
+            count: f._count
+        }))
+        .filter(f => f.membro)
+        .sort((a, b) => b.count - a.count)
 
     const taxaConsolidacao = totalVisitantes > 0 ? Math.round((consolidados / totalVisitantes) * 100) : 0
     const crescimento = novosMesAnterior > 0
         ? Math.round(((novosEsteMes - novosMesAnterior) / novosMesAnterior) * 100)
         : novosEsteMes > 0 ? 100 : 0
 
-    const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    // Funil
+    const statusLabels: Record<string, string> = {
+        NOVO: 'Novos', EM_CONTACTO: 'Em Contacto', REUNIAO_PASTOR: 'Reuniao Pastor',
+        CONSOLIDADO: 'Consolidados', NAO_RETORNOU: 'Nao Retornou', OUTRA_IGREJA: 'Outra Igreja', DESISTIU: 'Desistiu'
+    }
+    const statusCores: Record<string, string> = {
+        NOVO: 'bg-orange-500', EM_CONTACTO: 'bg-figueira', REUNIAO_PASTOR: 'bg-blue-500',
+        CONSOLIDADO: 'bg-emerald-500', NAO_RETORNOU: 'bg-red-400', OUTRA_IGREJA: 'bg-red-300', DESISTIU: 'bg-red-500'
+    }
+    const totalFunil = porStatus.reduce((sum, s) => sum + s._count, 0) || 1
+
+    const saidasCount = porStatus
+        .filter(s => ['NAO_RETORNOU', 'OUTRA_IGREJA', 'DESISTIU'].includes(s.status))
+        .reduce((sum, s) => sum + s._count, 0)
+    const taxaSaida = totalVisitantes > 0 ? Math.round((saidasCount / totalVisitantes) * 100) : 0
 
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
@@ -69,7 +130,12 @@ export default async function RelatorioAcolhimentoPage() {
                 <Link href="/departamentos/acolhimento/dashboard" className="flex items-center gap-2 text-[10px] font-black uppercase text-muted hover:text-figueira transition-all mb-2">
                     <ArrowLeft size={12} /> Acolhimento
                 </Link>
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Relatorio de Acolhimento</h1>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Relatorio de Acolhimento</h1>
+                    <span className="text-[7px] font-black uppercase tracking-widest bg-figueira/10 text-figueira px-2 py-1 rounded-lg border border-figueira/20 flex items-center gap-1">
+                        <Shield size={9} /> Lider
+                    </span>
+                </div>
                 <p className="text-xs text-muted">Metricas de visitantes, acompanhamentos e consolidacao.</p>
             </header>
 
@@ -89,10 +155,47 @@ export default async function RelatorioAcolhimentoPage() {
                 <Kpi label="Crescimento vs Mes Ant." value={`${crescimento > 0 ? '+' : ''}${crescimento}%`}
                     icon={<TrendingUp size={13} />} cor={crescimento >= 0 ? 'emerald' : 'red'} />
                 <Kpi label="Total Follow-ups" value={totalAcompanhamentos} icon={<HeartHandshake size={13} />} />
-                <Kpi label="Follow-ups este Mes" value={acompanhamentosEsteMes} icon={<Calendar size={13} />} />
+                <Kpi label="Taxa de Saida" value={`${taxaSaida}%`} icon={<UserX size={13} />}
+                    cor={taxaSaida > 30 ? 'red' : taxaSaida > 15 ? 'orange' : 'emerald'} />
             </div>
 
-            {/* GRAFICO SIMPLES - Visitantes por Mes */}
+            {/* FUNIL */}
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
+                    <BarChart3 size={14} className="text-figueira" />
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Funil de Integracao</h2>
+                </div>
+                <div className="p-5 space-y-3">
+                    {porStatus
+                        .sort((a, b) => {
+                            const order = ['NOVO', 'EM_CONTACTO', 'REUNIAO_PASTOR', 'CONSOLIDADO', 'NAO_RETORNOU', 'OUTRA_IGREJA', 'DESISTIU']
+                            return order.indexOf(a.status) - order.indexOf(b.status)
+                        })
+                        .map(s => {
+                            const pct = Math.round((s._count / totalFunil) * 100)
+                            return (
+                                <div key={s.status} className="flex items-center gap-3">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted w-28 shrink-0 text-right">
+                                        {statusLabels[s.status] || s.status}
+                                    </span>
+                                    <div className="flex-1 bg-soft/30 rounded-full h-5 overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full ${statusCores[s.status] || 'bg-muted'} flex items-center justify-end pr-2 transition-all`}
+                                            style={{ width: `${Math.max(pct, 3)}%` }}
+                                        >
+                                            {pct > 10 && (
+                                                <span className="text-[8px] font-black text-white">{s._count}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-[9px] font-black text-fg w-10 text-right">{pct}%</span>
+                                </div>
+                            )
+                        })}
+                </div>
+            </section>
+
+            {/* GRAFICO - Visitantes por Mes */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-2 px-5 py-4 border-b border-soft">
                     <TrendingUp size={14} className="text-figueira" />
@@ -116,6 +219,29 @@ export default async function RelatorioAcolhimentoPage() {
                     </div>
                 </div>
             </section>
+
+            {/* FOLLOW-UPS POR MEMBRO */}
+            {followUpsComNome.length > 0 && (
+                <section className="bg-bg2 border border-figueira/20 rounded-2xl overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-figueira/10">
+                        <HeartHandshake size={14} className="text-figueira" />
+                        <h2 className="text-sm font-black uppercase tracking-widest text-fg">Follow-ups por Membro (este mes)</h2>
+                    </div>
+                    <div className="divide-y divide-soft">
+                        {followUpsComNome.map((f, i) => (
+                            <div key={i} className="flex items-center justify-between px-5 py-3 hover:bg-soft/10 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-figueira/10 flex items-center justify-center">
+                                        <span className="text-[9px] font-black text-figueira">{f.membro?.first_name?.[0]}</span>
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase text-fg">{f.membro?.first_name} {f.membro?.last_name}</span>
+                                </div>
+                                <span className="text-sm font-black text-fg">{f.count}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* ULTIMOS CONSOLIDADOS */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">

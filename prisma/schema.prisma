@@ -244,6 +244,7 @@ model Membro {
   pedidoSaldoCantinas        PedidoSaldoCantina[]
   rifa_numeros               RifaNumero[]
   companhamentos_visitantes  AcompanhamentoVisitante[]
+  visitantes_responsavel     Visitante[]               @relation("ResponsavelVisitante")
   congregacao                Congregacao?              @relation(fields: [congregacao_id], references: [id])
   escolaridade               Escolaridade?             @relation(fields: [escolaridade_id], references: [id])
   familia                    Familia?                  @relation(fields: [familia_id], references: [id])
@@ -596,28 +597,39 @@ model Visitante {
   quantidade_visitas   Int                       @default(1)
   status               String                    @default("NOVO")
   email                String?
+  responsavel_id       Int?
+  proximo_contacto     DateTime?
+  origem               String?
+  notas_lider          String?
+  prioridade           String                    @default("NORMAL")
   tenant_id            Int
   acompanhamentos      AcompanhamentoVisitante[]
+  responsavel          Membro?                   @relation("ResponsavelVisitante", fields: [responsavel_id], references: [id])
   tenant               Tenant                    @relation(fields: [tenant_id], references: [id])
   compromissos         Compromisso[]             @relation("CompromissoVisitantes")
 
   @@index([tenant_id])
+  @@index([responsavel_id])
   @@map("visitantes")
 }
 
 model AcompanhamentoVisitante {
-  id            Int       @id @default(autoincrement())
-  visitante_id  Int
-  membro_id     Int
-  tipo_contacto String
-  observacoes   String?
-  data_contacto DateTime  @default(now())
-  tenant_id     Int
-  membro        Membro    @relation(fields: [membro_id], references: [id])
-  tenant        Tenant    @relation(fields: [tenant_id], references: [id])
-  visitante     Visitante @relation(fields: [visitante_id], references: [id], onDelete: Cascade)
+  id              Int       @id @default(autoincrement())
+  visitante_id    Int
+  membro_id       Int
+  tipo_contacto   String
+  observacoes     String?
+  data_contacto   DateTime  @default(now())
+  tipo_evento     String    @default("CONTACTO")
+  status_anterior String?
+  status_novo     String?
+  tenant_id       Int
+  membro          Membro    @relation(fields: [membro_id], references: [id])
+  tenant          Tenant    @relation(fields: [tenant_id], references: [id])
+  visitante       Visitante @relation(fields: [visitante_id], references: [id], onDelete: Cascade)
 
   @@index([tenant_id])
+  @@index([visitante_id])
   @@map("acompanhamento_visitantes")
 }
 

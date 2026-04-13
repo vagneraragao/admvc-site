@@ -248,18 +248,24 @@ export default async function DashboardMembro({
             orderBy: { createdAt: 'desc' }
         }), []),
 
-        // INDEX 6 - meusAcompanhamentos
+        // INDEX 6 - meusAcompanhamentos (expandido: vários status + responsavel)
         safe('meusAcompanhamentos', () => permissoes.isAcolhimento ? db.visitante.findMany({
             where: {
                 tenant_id: Number(tenantIdStr),
-                status: 'EM_CONTACTO',
-                acompanhamentos: { some: { membro_id: membroId } }
+                status: { in: ['NOVO', 'EM_CONTACTO', 'REUNIAO_PASTOR'] },
+                OR: [
+                    { acompanhamentos: { some: { membro_id: membroId } } },
+                    { responsavel_id: membroId }
+                ]
             },
             select: {
                 id: true,
                 nome: true,
+                telefone: true,
                 status: true,
                 data_ultima_visita: true,
+                proximo_contacto: true,
+                responsavel_id: true,
                 acompanhamentos: {
                     select: {
                         id: true,
@@ -267,11 +273,12 @@ export default async function DashboardMembro({
                         tipo_contacto: true,
                         observacoes: true,
                         membro_id: true,
-                    }
+                    },
+                    orderBy: { data_contacto: 'desc' as const },
                 }
             },
             orderBy: { data_ultima_visita: 'desc' },
-            take: 6
+            take: 8
         }) : Promise.resolve([]), []),
 
         // INDEX 7 - saldoCantina
@@ -916,12 +923,23 @@ export default async function DashboardMembro({
                                 </div>
 
                                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {meusAcompanhamentos.map((visitante: any) => (
-                                        <div key={visitante.id} className="bg-bg2 border border-soft rounded-[2rem] p-5 hover:border-emerald-500/30 transition-all space-y-3">
+                                    {meusAcompanhamentos.map((visitante: any) => {
+                                        const ultimaData = visitante.acompanhamentos?.[0]?.data_contacto || visitante.data_ultima_visita
+                                        const isAtrasado = ultimaData && new Date(ultimaData) < new Date(Date.now() - 24 * 60 * 60 * 1000)
+                                        const statusCores: Record<string, string> = {
+                                            NOVO: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+                                            EM_CONTACTO: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+                                            REUNIAO_PASTOR: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+                                        }
+                                        const statusLabels: Record<string, string> = {
+                                            NOVO: 'Novo', EM_CONTACTO: 'Contacto', REUNIAO_PASTOR: 'Pastor',
+                                        }
+                                        return (
+                                        <div key={visitante.id} className={`bg-bg2 border rounded-[2rem] p-5 transition-all space-y-3 ${isAtrasado ? 'border-red-500/30 bg-red-500/[0.02]' : 'border-soft hover:border-emerald-500/30'}`}>
                                             <div className="flex items-center justify-between gap-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                                                        <span className="text-xs font-black text-emerald-600 uppercase">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isAtrasado ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
+                                                        <span className={`text-xs font-black uppercase ${isAtrasado ? 'text-red-500' : 'text-emerald-600'}`}>
                                                             {visitante.nome?.[0]}
                                                         </span>
                                                     </div>
@@ -929,18 +947,29 @@ export default async function DashboardMembro({
                                                         <h3 className="text-xs font-black text-fg uppercase italic tracking-tight leading-none">
                                                             {visitante.nome}
                                                         </h3>
-                                                        <p className="text-[9px] text-muted font-bold uppercase tracking-widest mt-0.5">
+                                                        <a href={`tel:${visitante.telefone}`} className="text-[9px] text-muted font-bold uppercase tracking-widest mt-0.5 hover:text-fg transition-colors">
                                                             {visitante.telefone}
-                                                        </p>
+                                                        </a>
                                                     </div>
                                                 </div>
-                                                <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                                                    {visitante.status}
-                                                </span>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${statusCores[visitante.status] || 'bg-soft text-muted border-soft'}`}>
+                                                        {statusLabels[visitante.status] || visitante.status}
+                                                    </span>
+                                                    {isAtrasado && (
+                                                        <span className="text-[7px] font-black text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 animate-pulse">+24h</span>
+                                                    )}
+                                                    {visitante.proximo_contacto && !isAtrasado && (
+                                                        <span className="text-[7px] font-bold text-blue-600 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                                                            {new Date(visitante.proximo_contacto).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <FormAcompanhamentoRapido visitante={visitante} />
                                         </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </section>
                         )}

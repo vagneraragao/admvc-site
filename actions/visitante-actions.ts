@@ -153,16 +153,33 @@ export async function registarAcompanhamento(formData: FormData) {
             return { error: "Não é possível alterar o status de um visitante já consolidado." };
         }
 
-        // 1. Grava o histórico
+        // 1. Grava o histórico do contacto
         await prisma.acompanhamentoVisitante.create({
             data: {
                 tenant_id: membro.tenant_id,
                 visitante_id: visitanteId,
                 membro_id: session.membroId,
                 tipo_contacto: tipoContacto,
-                observacoes: observacoes
+                observacoes: observacoes,
+                tipo_evento: 'CONTACTO',
             }
         });
+
+        // 1b. Se houve mudança de status, grava evento de sistema
+        if (visitanteAtual && visitanteAtual.status !== novoStatus) {
+            await prisma.acompanhamentoVisitante.create({
+                data: {
+                    tenant_id: membro.tenant_id,
+                    visitante_id: visitanteId,
+                    membro_id: session.membroId,
+                    tipo_contacto: tipoContacto,
+                    tipo_evento: 'MUDANCA_STATUS',
+                    status_anterior: visitanteAtual.status,
+                    status_novo: novoStatus,
+                    observacoes: `Status alterado de ${visitanteAtual.status} para ${novoStatus}`,
+                }
+            });
+        }
 
         // 2. Atualiza o visitante
         const visitanteAtualizado = await prisma.visitante.update({
@@ -291,5 +308,103 @@ export async function registarAcompanhamento(formData: FormData) {
     } catch (error) {
         console.error("Erro ao registar acompanhamento:", error);
         return { error: "Falha ao gravar os dados." };
+    }
+}
+
+export async function atribuirResponsavel(visitanteId: number, responsavelId: number) {
+    try {
+        const session = await getSessionData();
+        if (!session) return { error: "Sessao expirada." };
+
+        const membro = await prisma.membro.findUnique({ where: { id: session.membroId } });
+        if (!membro) return { error: "Membro nao encontrado." };
+
+        const responsavel = await prisma.membro.findUnique({
+            where: { id: responsavelId },
+            select: { first_name: true, last_name: true }
+        });
+        if (!responsavel) return { error: "Responsavel nao encontrado." };
+
+        await prisma.visitante.update({
+            where: { id: visitanteId },
+            data: { responsavel_id: responsavelId }
+        });
+
+        await prisma.acompanhamentoVisitante.create({
+            data: {
+                tenant_id: membro.tenant_id,
+                visitante_id: visitanteId,
+                membro_id: session.membroId,
+                tipo_contacto: 'PRESENCIAL',
+                tipo_evento: 'ATRIBUICAO',
+                observacoes: `Responsavel atribuido: ${responsavel.first_name} ${responsavel.last_name}`,
+            }
+        });
+
+        audit({
+            tenant_id: membro.tenant_id,
+            categoria: 'VISITANTES',
+            acao: 'EDITAR',
+            actor_id: session.membroId,
+            alvo_id: visitanteId,
+            alvo_tipo: 'VISITANTE',
+            descricao: `Responsavel atribuido: ${responsavel.first_name}`,
+        }).catch((err) => console.error('[VISITANTE] Falha no audit:', err));
+
+        revalidatePath('/departamentos/acolhimento/dashboard');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao atribuir responsavel:", error);
+        return { error: "Falha ao atribuir responsavel." };
+    }
+}
+
+export async function guardarNotaLider(visitanteId: number, nota: string) {
+    try {
+        const session = await getSessionData();
+        if (!session) return { error: "Sessao expirada." };
+
+        const membro = await prisma.membro.findUnique({ where: { id: session.membroId } });
+        if (!membro) return { error: "Membro nao encontrado." };
+
+        await prisma.visitante.update({
+            where: { id: visitanteId },
+            data: { notas_lider: nota }
+        });
+
+        await prisma.acompanhamentoVisitante.create({
+            data: {
+                tenant_id: membro.tenant_id,
+                visitante_id: visitanteId,
+                membro_id: session.membroId,
+                tipo_contacto: 'PRESENCIAL',
+                tipo_evento: 'NOTA_LIDER',
+                observacoes: nota,
+            }
+        });
+
+        revalidatePath('/departamentos/acolhimento/dashboard');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao guardar nota:", error);
+        return { error: "Falha ao guardar nota." };
+    }
+}
+
+export async function agendarProximoContacto(visitanteId: number, data: string) {
+    try {
+        const session = await getSessionData();
+        if (!session) return { error: "Sessao expirada." };
+
+        await prisma.visitante.update({
+            where: { id: visitanteId },
+            data: { proximo_contacto: new Date(data) }
+        });
+
+        revalidatePath('/departamentos/acolhimento/dashboard');
+        return { ok: true };
+    } catch (error) {
+        console.error("Erro ao agendar contacto:", error);
+        return { error: "Falha ao agendar." };
     }
 }

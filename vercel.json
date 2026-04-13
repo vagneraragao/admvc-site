@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/lembretes",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/acolhimento-lembretes",
+      "schedule": "0 9 * * *"
     }
   ]
 }
