@@ -536,7 +536,19 @@ export default async function DashboardMembro({
         <>
         {/* MOBILE DASHBOARD */}
         <div className="md:hidden">
-            <MobileDashboard membro={membroParaMobile} escalas={escalasParaMobile} departamentos={departamentosParaMobile} membroId={membro.id} role={role} proximosEventos={(proximosEventos || []).map((e: any) => ({ id: e.id, nome: e.nome, data: e.data.toISOString() }))} />
+            <MobileDashboard
+                membro={membroParaMobile}
+                escalas={escalasParaMobile}
+                departamentos={departamentosParaMobile}
+                membroId={membro.id}
+                role={role}
+                proximosEventos={(proximosEventos || []).map((e: any) => ({ id: e.id, nome: e.nome, data: e.data.toISOString() }))}
+                temEscalaCantina={listaEscalas.some((e: any) => {
+                    const dataEvento = new Date(e.evento.data)
+                    return dataEvento >= hojeInicio && dataEvento < amanha &&
+                        e.departamento.nome.toLowerCase().includes('cantina')
+                })}
+            />
         </div>
 
         {/* DESKTOP DASHBOARD */}

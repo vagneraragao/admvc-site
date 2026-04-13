@@ -37,9 +37,10 @@ interface Props {
     membroId: number
     role: string
     proximosEventos?: EventoItem[]
+    temEscalaCantina?: boolean
 }
 
-export default function MobileDashboard({ membro, escalas, departamentos, membroId, role, proximosEventos = [] }: Props) {
+export default function MobileDashboard({ membro, escalas, departamentos, membroId, role, proximosEventos = [], temEscalaCantina = false }: Props) {
     const [escalasAberto, setEscalasAberto] = useState(false)
     const [deptosAberto, setDeptosAberto] = useState(false)
     const [agendaAberta, setAgendaAberta] = useState(false)
@@ -116,6 +117,20 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                 />
             </div>
 
+            {/* ── BANNER POS CANTINA (escala activa hoje) ── */}
+            {temEscalaCantina && (
+                <Link href="/cantina/pos" className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 active:scale-[0.98] transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                        <Coffee size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-[11px] font-black uppercase text-fg">Abrir Ponto de Venda</h3>
+                        <p className="text-[8px] text-amber-600 font-bold mt-0.5">Estás escalado na Cantina hoje</p>
+                    </div>
+                    <ChevronRight size={16} className="text-amber-500 shrink-0" />
+                </Link>
+            )}
+
             {/* ── GRID 6 BOTÕES ──────────────────────────── */}
             <div className="grid grid-cols-3 gap-3">
                 <ModalIndisponibilidade trigger={
@@ -133,18 +148,14 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </button>
 
-                <Link href="/membros/mural">
-                    <div className={gridBtnClass}>
-                        <MessageSquare size={22} className="text-blue-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Mural</span>
-                    </div>
+                <Link href="/membros/mural" className={gridBtnClass}>
+                    <MessageSquare size={22} className="text-blue-500" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Mural</span>
                 </Link>
 
-                <Link href="/boleia">
-                    <div className={gridBtnClass}>
-                        <Car size={22} className="text-emerald-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Boleia</span>
-                    </div>
+                <Link href="/boleia" className={gridBtnClass}>
+                    <Car size={22} className="text-emerald-500" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Boleia</span>
                 </Link>
 
                 <button onClick={() => setAgendaAberta(true)}>
@@ -154,11 +165,9 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </button>
 
-                <Link href="/cantina/menu-local">
-                    <div className={gridBtnClass}>
-                        <Coffee size={22} className="text-amber-500" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Cantina</span>
-                    </div>
+                <Link href="/cantina/menu-local" className={gridBtnClass}>
+                    <Coffee size={22} className="text-amber-500" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Cantina</span>
                 </Link>
 
             </div>

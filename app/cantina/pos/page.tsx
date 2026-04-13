@@ -58,6 +58,22 @@ export default async function POSPage() {
         }
     }
 
+    // Verificar se tem escala activa na Cantina para hoje
+    if (!temPermissao) {
+        const hoje = new Date()
+        hoje.setHours(0, 0, 0, 0)
+        const amanha = new Date(hoje.getTime() + 24 * 60 * 60 * 1000)
+
+        const escalaCantina = await db.escala.findFirst({
+            where: {
+                membro_id: membroId,
+                departamento: { nome: { contains: 'Cantina', mode: 'insensitive' } },
+                evento: { data: { gte: hoje, lt: amanha } },
+            },
+        })
+        if (escalaCantina) temPermissao = true
+    }
+
     if (!temPermissao) {
         return (
             <main className="max-w-lg mx-auto py-20 px-6 text-center space-y-6">
