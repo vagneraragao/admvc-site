@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { HeartHandshake, Package, ArrowDown, ArrowUp, AlertTriangle } from 'lucide-react'
+import { HeartHandshake, Package, ArrowDown, ArrowUp, AlertTriangle, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +14,13 @@ const CATEGORIAS_LABEL: Record<string, string> = {
     OUTRO: 'Outro',
 }
 
+const CATEGORIAS_COR: Record<string, string> = {
+    ALIMENTO: 'bg-green-500/10 text-green-500 border-green-500/20',
+    HIGIENE: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    VESTUARIO: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    OUTRO: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+}
+
 export default async function AssistenciaDashboardPage() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login?error=Sessao expirada')
@@ -22,40 +29,40 @@ export default async function AssistenciaDashboardPage() {
 
     const membroLogado = await db.membro.findUnique({
         where: { id: session.membroId },
-        include: { ministerios: { include: { departamento: true } } }
+        include: {
+            ministerios: { include: { departamento: true } },
+            departamentos_liderados: true,
+        }
     })
     if (!membroLogado) redirect('/membros/login')
 
     const isAdmin = isAdminCheck(session.role)
     const isFinance = session.role === 'FINANCE'
-    const isEquipaSocial = membroLogado.ministerios.some(vinculo => {
+    const termosDepto = ['social', 'despensa', 'assist']
+    const isEquipaSocial = membroLogado.ministerios.some((vinculo: any) => {
         const nomeDepto = vinculo.departamento?.nome.toLowerCase() || ''
-        return nomeDepto.includes('social') || nomeDepto.includes('despensa') || nomeDepto.includes('assist')
+        return termosDepto.some(t => nomeDepto.includes(t))
     })
+    const isLiderSocial = membroLogado.departamentos_liderados.some((d: any) =>
+        termosDepto.some(t => d.nome.toLowerCase().includes(t))
+    )
 
-    if (!isAdmin && !isFinance && !isEquipaSocial) {
+    if (!isAdmin && !isFinance && !isEquipaSocial && !isLiderSocial) {
         redirect('/membros/dashboard?error=Acesso restrito a equipa de Assistencia Social.')
     }
 
-    // Buscar dados
-    const itens = await db.itemAssistenciaSocial.findMany({
-        orderBy: [{ categoria: 'asc' }, { nome: 'asc' }],
-    })
+    const [itens, movimentosMes] = await Promise.all([
+        db.itemAssistenciaSocial.findMany({
+            orderBy: [{ categoria: 'asc' }, { nome: 'asc' }],
+        }),
+        db.movimentoAssistencia.count({
+            where: { criado_em: { gte: (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d })() } },
+        }),
+    ])
 
-    const inicioMes = new Date()
-    inicioMes.setDate(1)
-    inicioMes.setHours(0, 0, 0, 0)
-
-    const movimentosMes = await db.movimentoAssistencia.count({
-        where: { criado_em: { gte: inicioMes } },
-    })
-
-    // Stats
     const totalItens = itens.length
     const itensStockBaixo = itens.filter(i => i.stock <= i.stock_minimo)
-    const totalStockBaixo = itensStockBaixo.length
 
-    // Agrupar por categoria
     const porCategoria = itens.reduce<Record<string, typeof itens>>((acc, item) => {
         const cat = item.categoria || 'OUTRO'
         if (!acc[cat]) acc[cat] = []
@@ -64,54 +71,72 @@ export default async function AssistenciaDashboardPage() {
     }, {})
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-8 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* Header */}
-            <header className="space-y-2">
-                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <HeartHandshake size={14} /> Assistencia Social
+            <header className="space-y-1 md:space-y-2">
+                <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <HeartHandshake size={13} /> Assistencia Social
                 </span>
-                <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-fg">
+                <h1 className="text-xl md:text-4xl font-black italic uppercase tracking-tighter text-fg">
                     Painel Geral
                 </h1>
-                <p className="text-xs text-muted">Gestao de donativos, entregas e stock social.</p>
             </header>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                        <Package size={12} /> Total de Itens
-                    </p>
-                    <p className="text-3xl font-black italic text-fg">{totalItens}</p>
+            {/* Stats — compactos no mobile */}
+            <div className="flex items-center gap-4 md:gap-6">
+                <div className="text-center">
+                    <p className="text-xl md:text-2xl font-black italic text-fg">{totalItens}</p>
+                    <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-muted">Itens</p>
                 </div>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                        <AlertTriangle size={12} className="text-orange-500" /> Stock Baixo
-                    </p>
-                    <p className={`text-3xl font-black italic ${totalStockBaixo > 0 ? 'text-orange-500' : 'text-fg'}`}>
-                        {totalStockBaixo}
-                    </p>
+                <div className="w-px h-6 md:h-8 bg-soft" />
+                <div className="text-center">
+                    <p className={`text-xl md:text-2xl font-black italic ${itensStockBaixo.length > 0 ? 'text-orange-500' : 'text-fg'}`}>{itensStockBaixo.length}</p>
+                    <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-muted">Baixo</p>
                 </div>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
-                        <ArrowDown size={12} className="text-green-500" /> Movimentos este Mes
-                    </p>
-                    <p className="text-3xl font-black italic text-fg">{movimentosMes}</p>
+                <div className="w-px h-6 md:h-8 bg-soft" />
+                <div className="text-center">
+                    <p className="text-xl md:text-2xl font-black italic text-fg">{movimentosMes}</p>
+                    <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-muted">Mov. Mes</p>
                 </div>
             </div>
 
-            {/* Low stock alerts */}
+            {/* Acções rápidas */}
+            <div className="grid grid-cols-3 gap-3">
+                <Link href="/assistencia/stock"
+                    className="flex flex-col items-center gap-2 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all active:scale-[0.98]">
+                    <div className="w-9 h-9 rounded-xl bg-figueira/10 text-figueira flex items-center justify-center">
+                        <Package size={16} />
+                    </div>
+                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Stock</h4>
+                </Link>
+                <Link href="/assistencia/cestas"
+                    className="flex flex-col items-center gap-2 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all active:scale-[0.98]">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <HeartHandshake size={16} />
+                    </div>
+                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Cestas</h4>
+                </Link>
+                <Link href="/assistencia/movimentos"
+                    className="flex flex-col items-center gap-2 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all active:scale-[0.98]">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                        <ArrowUp size={16} />
+                    </div>
+                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Movimentos</h4>
+                </Link>
+            </div>
+
+            {/* Alertas de stock baixo */}
             {itensStockBaixo.length > 0 && (
-                <div className="bg-orange-500/10 border border-orange-500/20 rounded-[2rem] p-6 space-y-3">
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 space-y-2">
                     <p className="text-[9px] font-black uppercase tracking-widest text-orange-500 flex items-center gap-1.5">
-                        <AlertTriangle size={12} /> Alertas de Stock Baixo
+                        <AlertTriangle size={11} /> Stock Baixo
                     </p>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                         {itensStockBaixo.map(item => (
                             <div key={item.id} className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-fg">{item.nome}</span>
-                                <span className="text-sm font-black text-orange-500">
-                                    {item.stock} / {item.stock_minimo} {item.unidade}
+                                <span className="text-[11px] font-bold text-fg">{item.nome}</span>
+                                <span className="text-[10px] font-black text-orange-500">
+                                    {item.stock}/{item.stock_minimo}
                                 </span>
                             </div>
                         ))}
@@ -119,70 +144,50 @@ export default async function AssistenciaDashboardPage() {
                 </div>
             )}
 
-            {/* Items grouped by category */}
+            {/* Itens por categoria */}
             {totalItens === 0 ? (
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
-                    <Package size={32} className="mx-auto text-muted/20" />
-                    <p className="text-sm font-bold text-muted">Nenhum item de assistencia cadastrado.</p>
-                    <p className="text-[10px] text-muted">
-                        Comece por adicionar itens em{' '}
-                        <Link href="/assistencia/stock" className="text-figueira underline">
-                            Gestao de Stock
-                        </Link>.
-                    </p>
+                <div className="bg-bg2 border border-soft rounded-2xl p-8 md:p-12 text-center space-y-3">
+                    <Package size={28} className="mx-auto text-muted/20" />
+                    <p className="text-xs font-bold text-muted">Nenhum item cadastrado.</p>
+                    <Link href="/assistencia/stock" className="text-[10px] text-figueira font-black uppercase tracking-widest">
+                        Adicionar itens
+                    </Link>
                 </div>
             ) : (
-                <div className="space-y-8">
+                <div className="space-y-4">
                     {Object.entries(porCategoria).map(([cat, catItens]) => (
-                        <section key={cat} className="space-y-4">
-                            <h2 className="text-lg font-black uppercase tracking-widest text-fg flex items-center gap-3">
-                                <Package size={16} className="text-figueira" />
-                                {CATEGORIAS_LABEL[cat] || cat}
-                                <span className="text-[9px] font-bold text-muted">({catItens.length})</span>
-                            </h2>
-                            <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                        <details key={cat} className="bg-bg2 border border-soft rounded-2xl overflow-hidden group/cat" open>
+                            <summary className="flex items-center justify-between p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${CATEGORIAS_COR[cat] || CATEGORIAS_COR.OUTRO}`}>
+                                        {CATEGORIAS_LABEL[cat] || cat}
+                                    </span>
+                                    <span className="text-[8px] font-bold text-muted">{catItens.length} itens</span>
+                                </div>
+                                <ChevronRight size={14} className="text-muted transition-transform group-open/cat:rotate-90" />
+                            </summary>
+                            <div className="border-t border-soft">
                                 {catItens.map((item, idx) => (
-                                    <div key={item.id} className={`flex items-center justify-between px-6 py-4 ${idx > 0 ? 'border-t border-soft' : ''}`}>
-                                        <div>
-                                            <p className="text-sm font-black uppercase text-fg">{item.nome}</p>
-                                            <p className="text-[9px] text-muted">{item.unidade}</p>
+                                    <div key={item.id} className={`flex items-center justify-between px-4 py-3 ${idx > 0 ? 'border-t border-soft/50' : ''}`}>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-black uppercase text-fg truncate">{item.nome}</p>
+                                            <p className="text-[8px] text-muted">{item.unidade}</p>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right">
-                                                <p className={`text-lg font-black italic ${item.stock <= item.stock_minimo ? 'text-orange-500' : 'text-fg'}`}>
-                                                    {item.stock}
-                                                </p>
-                                                <p className="text-[8px] font-black uppercase tracking-widest text-muted">
-                                                    {item.unidade}
-                                                </p>
-                                            </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <p className={`text-base font-black italic ${item.stock <= item.stock_minimo ? 'text-orange-500' : 'text-fg'}`}>
+                                                {item.stock}
+                                            </p>
                                             {item.stock <= item.stock_minimo && (
-                                                <AlertTriangle size={14} className="text-orange-500" />
+                                                <AlertTriangle size={12} className="text-orange-500" />
                                             )}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </section>
+                        </details>
                     ))}
                 </div>
             )}
-
-            {/* Navigation links */}
-            <div className="flex flex-wrap gap-3">
-                <Link
-                    href="/assistencia/stock"
-                    className="flex items-center gap-2 bg-figueira text-bg px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:brightness-110 transition-all active:scale-95"
-                >
-                    <Package size={14} /> Gestao de Stock
-                </Link>
-                <Link
-                    href="/assistencia/movimentos"
-                    className="flex items-center gap-2 bg-bg2 border border-soft text-fg px-6 py-3.5 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:border-figueira/50 transition-all active:scale-95"
-                >
-                    <ArrowUp size={14} /> Movimentos
-                </Link>
-            </div>
         </main>
     )
 }

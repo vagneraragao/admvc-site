@@ -121,6 +121,8 @@ model Tenant {
   cardapios                CardapioCantina[]
   itensAssistencia         ItemAssistenciaSocial[]
   movimentosAssistencia    MovimentoAssistencia[]
+  tiposCesta               TipoCesta[]
+  entregasCesta            EntregaCesta[]
   fundosFinanceiros        FundoFinanceiro[]
   categoriasOrcamento      CategoriaOrcamento[]
   despesasFinanceiras      DespesaFinanceira[]
@@ -1537,6 +1539,7 @@ model ItemAssistenciaSocial {
 
   tenant      Tenant                   @relation(fields: [tenant_id], references: [id])
   movimentos  MovimentoAssistencia[]
+  itensCesta  ItemCesta[]
 
   @@index([tenant_id])
   @@map("assistencia_itens")
@@ -1559,6 +1562,54 @@ model MovimentoAssistencia {
   @@index([tenant_id])
   @@index([item_id])
   @@map("assistencia_movimentos")
+}
+
+// ── CESTAS BASICAS ───────────────────────────────────────────────────────────
+
+model TipoCesta {
+  id          Int                @id @default(autoincrement())
+  tenant_id   Int
+  nome        String             // Ex: "Cesta Basica Padrao", "Kit Higiene"
+  descricao   String?
+  ativo       Boolean            @default(true)
+  criado_em   DateTime           @default(now())
+
+  tenant      Tenant             @relation(fields: [tenant_id], references: [id])
+  itens       ItemCesta[]
+  entregas    EntregaCesta[]
+
+  @@index([tenant_id])
+  @@map("assistencia_tipos_cesta")
+}
+
+model ItemCesta {
+  id              Int                    @id @default(autoincrement())
+  tipo_cesta_id   Int
+  item_id         Int
+  quantidade      Int                    @default(1)
+
+  tipoCesta       TipoCesta              @relation(fields: [tipo_cesta_id], references: [id], onDelete: Cascade)
+  item            ItemAssistenciaSocial  @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@unique([tipo_cesta_id, item_id])
+  @@map("assistencia_itens_cesta")
+}
+
+model EntregaCesta {
+  id              Int                @id @default(autoincrement())
+  tenant_id       Int
+  tipo_cesta_id   Int
+  destinatario    String             // Nome da familia/pessoa
+  observacao       String?
+  entregue_por    Int?               // Membro que entregou
+  criado_em       DateTime           @default(now())
+
+  tenant          Tenant             @relation(fields: [tenant_id], references: [id])
+  tipoCesta       TipoCesta          @relation(fields: [tipo_cesta_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([tipo_cesta_id])
+  @@map("assistencia_entregas_cesta")
 }
 
 // ── GESTAO FINANCEIRA — FUNDOS, DESPESAS, ORCAMENTO ──────────────────────────

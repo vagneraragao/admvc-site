@@ -108,8 +108,9 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
         isFinance: isAdmin(role) || role === 'FINANCE',
         isLouvor: checkDepto(['louvor', 'música', 'musica', 'banda']),
         isDiaconia: checkDepto(['diaconia', 'diácono', 'diacono']),
+        isSocial: checkDepto(['social', 'despensa', 'assistência', 'assistencia']),
     }
-    const mostraServico = permissoes.isAdmin || permissoes.isFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isMidia || permissoes.isLouvor || permissoes.isLider || permissoes.isDiaconia
+    const mostraServico = permissoes.isAdmin || permissoes.isFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isMidia || permissoes.isLouvor || permissoes.isLider || permissoes.isDiaconia || permissoes.isSocial
 
     const alertas = permissoes.isAcolhimento || permissoes.isAdmin ? visitantesAtualizados : []
     const igrejaName = tenantData?.nome || 'Igreja'

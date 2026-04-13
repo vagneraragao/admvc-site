@@ -31,27 +31,36 @@ export default async function StockPage() {
 
     const membroLogado = await db.membro.findUnique({
         where: { id: session.membroId },
-        include: { ministerios: { include: { departamento: true } } }
+        include: {
+            ministerios: { include: { departamento: true } },
+            departamentos_liderados: true,
+        }
     })
     if (!membroLogado) redirect('/membros/login')
 
     const isAdmin = isAdminCheck(session.role)
     const isFinance = session.role === 'FINANCE'
-    const isEquipaSocial = membroLogado.ministerios.some(vinculo => {
+    const termosDepto = ['social', 'despensa', 'assist']
+    const isEquipaSocial = membroLogado.ministerios.some((vinculo: any) => {
         const nomeDepto = vinculo.departamento?.nome.toLowerCase() || ''
-        return nomeDepto.includes('social') || nomeDepto.includes('despensa') || nomeDepto.includes('assist')
+        return termosDepto.some(t => nomeDepto.includes(t))
     })
+    const isLiderSocial = isAdmin || isFinance || membroLogado.departamentos_liderados.some((d: any) =>
+        termosDepto.some(t => d.nome.toLowerCase().includes(t))
+    )
 
-    if (!isAdmin && !isFinance && !isEquipaSocial) {
+    if (!isAdmin && !isFinance && !isEquipaSocial && !isLiderSocial) {
         redirect('/membros/dashboard?error=Acesso restrito a equipa de Assistencia Social.')
     }
+
+    const podeGerirStock = isLiderSocial
 
     const itens = await db.itemAssistenciaSocial.findMany({
         orderBy: [{ categoria: 'asc' }, { nome: 'asc' }],
     })
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* Header */}
             <header className="space-y-2">
                 <Link href="/assistencia" className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 hover:brightness-125 transition-all">
@@ -63,15 +72,17 @@ export default async function StockPage() {
                 <p className="text-xs text-muted">Adicionar, editar e remover itens do inventario social.</p>
             </header>
 
-            {/* Form to add new item */}
-            <section className="space-y-4">
-                <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
-                    <Plus size={14} className="text-figueira" /> Novo Item
-                </h2>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6">
-                    <FormNovoItem />
-                </div>
-            </section>
+            {/* Form to add new item — apenas líder/admin */}
+            {podeGerirStock && (
+                <section className="space-y-4">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                        <Plus size={14} className="text-figueira" /> Novo Item
+                    </h2>
+                    <div className="bg-bg2 border border-soft rounded-[2rem] p-6">
+                        <FormNovoItem />
+                    </div>
+                </section>
+            )}
 
             {/* Items table */}
             <section className="space-y-4">
@@ -124,9 +135,9 @@ export default async function StockPage() {
                                         {item.stock}
                                     </p>
 
-                                    {/* Actions */}
+                                    {/* Actions — apenas líder/admin */}
                                     <div className="flex justify-end">
-                                        <BotaoEliminarItem itemId={item.id} itemNome={item.nome} />
+                                        {podeGerirStock && <BotaoEliminarItem itemId={item.id} itemNome={item.nome} />}
                                     </div>
                                 </div>
                             )

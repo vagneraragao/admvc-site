@@ -120,6 +120,137 @@ export async function registarMovimentoAssistencia(formData: FormData) {
     }
 }
 
+// ── CESTAS BASICAS ──────────────────────────────────────────────────────────────
+
+export async function criarTipoCesta(formData: FormData) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        const tenantId = await getTenantIdFromHeaders()
+
+        const nome = formData.get('nome') as string
+        const descricao = formData.get('descricao') as string || null
+
+        if (!nome?.trim()) return { error: 'Nome da cesta e obrigatorio.' }
+
+        const cesta = await db.tipoCesta.create({
+            data: { tenant_id: tenantId, nome: nome.trim(), descricao }
+        })
+
+        revalidatePath('/assistencia/cestas')
+        return { ok: true, id: cesta.id }
+    } catch (err: any) {
+        return { error: err.message || 'Erro ao criar tipo de cesta.' }
+    }
+}
+
+export async function adicionarItemCesta(tipoCestaId: number, itemId: number, quantidade: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+
+        await db.itemCesta.upsert({
+            where: { tipo_cesta_id_item_id: { tipo_cesta_id: tipoCestaId, item_id: itemId } },
+            create: { tipo_cesta_id: tipoCestaId, item_id: itemId, quantidade },
+            update: { quantidade },
+        })
+
+        revalidatePath('/assistencia/cestas')
+        return { ok: true }
+    } catch (err: any) {
+        return { error: err.message || 'Erro ao adicionar item a cesta.' }
+    }
+}
+
+export async function removerItemCesta(itemCestaId: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        await db.itemCesta.delete({ where: { id: itemCestaId } })
+        revalidatePath('/assistencia/cestas')
+        return { ok: true }
+    } catch (err: any) {
+        return { error: err.message || 'Erro ao remover item.' }
+    }
+}
+
+export async function eliminarTipoCesta(tipoCestaId: number) {
+    try {
+        await requireAuth()
+        const db = await getDb()
+        await db.tipoCesta.delete({ where: { id: tipoCestaId } })
+        revalidatePath('/assistencia/cestas')
+        return { ok: true }
+    } catch (err: any) {
+        return { error: err.message || 'Erro ao eliminar cesta.' }
+    }
+}
+
+export async function montarCesta(tipoCestaId: number, destinatario: string, observacao?: string) {
+    try {
+        const session = await requireAuth()
+        const db = await getDb()
+        const tenantId = await getTenantIdFromHeaders()
+
+        if (!destinatario?.trim()) return { error: 'Destinatario e obrigatorio.' }
+
+        const tipoCesta = await db.tipoCesta.findUnique({
+            where: { id: tipoCestaId },
+            include: { itens: { include: { item: true } } }
+        })
+
+        if (!tipoCesta) return { error: 'Tipo de cesta nao encontrado.' }
+        if (tipoCesta.itens.length === 0) return { error: 'Esta cesta nao tem itens definidos.' }
+
+        // Verificar stock de todos os itens
+        for (const ic of tipoCesta.itens) {
+            if (ic.item.stock < ic.quantidade) {
+                return { error: `Stock insuficiente de "${ic.item.nome}": precisa ${ic.quantidade}, tem ${ic.item.stock}.` }
+            }
+        }
+
+        // Descontar stock e registar movimentos numa transacção
+        await db.$transaction([
+            // Registar entrega
+            db.entregaCesta.create({
+                data: {
+                    tenant_id: tenantId,
+                    tipo_cesta_id: tipoCestaId,
+                    destinatario: destinatario.trim(),
+                    observacao: observacao?.trim() || null,
+                    entregue_por: session.membroId,
+                }
+            }),
+            // Descontar stock de cada item + registar movimento
+            ...tipoCesta.itens.flatMap(ic => [
+                db.itemAssistenciaSocial.update({
+                    where: { id: ic.item_id },
+                    data: { stock: { decrement: ic.quantidade } }
+                }),
+                db.movimentoAssistencia.create({
+                    data: {
+                        tenant_id: tenantId,
+                        item_id: ic.item_id,
+                        tipo: 'ENTREGA_FAMILIA',
+                        quantidade: ic.quantidade,
+                        destinatario: destinatario.trim(),
+                        observacao: `Cesta: ${tipoCesta.nome}`,
+                        registrado_por: session.membroId,
+                    }
+                }),
+            ])
+        ])
+
+        revalidatePath('/assistencia')
+        revalidatePath('/assistencia/cestas')
+        revalidatePath('/assistencia/stock')
+        revalidatePath('/assistencia/movimentos')
+        return { ok: true }
+    } catch (err: any) {
+        return { error: err.message || 'Erro ao montar cesta.' }
+    }
+}
+
 // ── ELIMINAR ITEM ───────────────────────────────────────────────────────────────
 export async function eliminarItemAssistencia(itemId: number) {
     try {

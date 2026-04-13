@@ -20,6 +20,7 @@ interface Permissoes {
     isFinance: boolean
     isLouvor: boolean
     isDiaconia: boolean
+    isSocial: boolean
 }
 
 interface Evento {
@@ -53,6 +54,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     if (permissoes.isMidia) tabs.push({ key: 'midia', icon: MonitorPlay, label: 'Midia', action: () => setMidiaAberto(true) })
     if (permissoes.isAcolhimento) tabs.push({ key: 'acolhimento', icon: HeartHandshake, label: 'Acolhimento', href: '/departamentos/acolhimento/dashboard' })
     if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', href: '/cantina' })
+    if (permissoes.isSocial) tabs.push({ key: 'social', icon: HeartHandshake, label: 'Social', href: '/assistencia' })
     if (permissoes.isDiaconia) tabs.push({ key: 'pregacao', icon: BookOpen, label: 'Pregacao', href: '/pregacao' })
     if (permissoes.isAdmin) tabs.push({ key: 'admin', icon: ShieldCheck, label: 'Admin', href: '/admin/dashboard' })
 

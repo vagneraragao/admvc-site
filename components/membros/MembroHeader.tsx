@@ -32,6 +32,7 @@ interface Props {
         isFinance: boolean
         isLouvor: boolean
         isDiaconia: boolean
+        isSocial: boolean
     }
     mostraServico: boolean
     escolaridades: any[]
