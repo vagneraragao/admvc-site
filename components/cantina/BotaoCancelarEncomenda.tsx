@@ -3,14 +3,16 @@ import { useState } from 'react'
 import { Loader2, XCircle } from 'lucide-react'
 import { cancelarPreEncomenda } from '@/actions/encomenda-actions'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoCancelarEncomenda({ encomendaId }: { encomendaId: number }) {
     const [loading, setLoading] = useState(false)
     const [done, setDone] = useState(false)
     const router = useRouter()
+    const confirmar = useConfirm()
 
     async function handleCancelar() {
-        if (!confirm('Tem a certeza que quer cancelar esta encomenda? O saldo sera devolvido se aplicavel.')) return
+        if (!await confirmar({ mensagem: 'Tem a certeza que quer cancelar esta encomenda? O saldo sera devolvido se aplicavel.', tipo: 'perigo' })) return
         setLoading(true)
         const res = await cancelarPreEncomenda(encomendaId)
         if (res.success) {

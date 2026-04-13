@@ -166,7 +166,7 @@ export default function BotoesEscala({ escalaIds, confirmado, motivoRecusa, cola
                                 >
                                     {loading
                                         ? <Loader2 size={13} className="animate-spin" />
-                                        : <><XCircle size={13} /> Cancelar</>
+                                        : <><Check size={13} /> Confirmar</>
                                     }
                                 </button>
                             </div>

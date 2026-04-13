@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { aprovarDespesaAction } from '@/actions/fundos-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAprovarDespesa({ despesaId }: { despesaId: number }) {
     const [loading, setLoading] = useState(false)
+    const confirmar = useConfirm()
 
     async function handleAprovar() {
-        if (!confirm('Aprovar esta despesa?')) return
+        if (!await confirmar({ mensagem: 'Aprovar esta despesa?', tipo: 'info' })) return
         setLoading(true)
         const res = await aprovarDespesaAction(despesaId)
         if (!res.ok) {

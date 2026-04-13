@@ -3,12 +3,15 @@
 import { useState } from 'react'
 import { Trash2, Loader2 } from 'lucide-react'
 import { apagarEventoAction } from '@/actions/admin-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoApagarEvento({ id, nome }: { id: number, nome: string }) {
+    const confirmar = useConfirm()
     const [isPending, setIsPending] = useState(false);
 
     async function handleApagar() {
-        if (!confirm(`Tens a certeza que queres APAGAR o evento "${nome}"? Todas as escalas associadas serão perdidas.`)) return;
+        const ok = await confirmar({ mensagem: `Tens a certeza que queres APAGAR o evento "${nome}"? Todas as escalas associadas serão perdidas.`, tipo: 'perigo' })
+        if (!ok) return;
 
         setIsPending(true);
         const res = await apagarEventoAction(id);

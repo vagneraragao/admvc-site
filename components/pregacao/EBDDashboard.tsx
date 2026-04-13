@@ -17,6 +17,7 @@ import {
     manifestarInteresse, cancelarInteresse,
     aprovarInteresse, rejeitarInteresse
 } from '@/actions/pregacao-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const MESES = [
     'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
@@ -100,6 +101,7 @@ export default function EBDDashboard({
     mes, ano, sermaoIdInicial, podeGerir = false, membroId,
     meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ensino'
 }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -199,7 +201,7 @@ export default function EBDDashboard({
     }
 
     async function handleAprovar(id: string) {
-        if (!confirm('Aprovar este curso e abrir para inscrições?')) return
+        if (!await confirmar({ mensagem: 'Aprovar este curso e abrir para inscrições?', tipo: 'info' })) return
         setLoading(true)
         const res = await aprovarCurso(id)
         setLoading(false)
@@ -216,7 +218,7 @@ export default function EBDDashboard({
     }
 
     async function handleCancelarInteresse(cursoId: string) {
-        if (!confirm('Cancelar o seu interesse neste curso?')) return
+        if (!await confirmar({ mensagem: 'Cancelar o seu interesse neste curso?', tipo: 'aviso' })) return
         setLoadingInscricao(cursoId)
         const res = await cancelarInteresse(cursoId)
         setLoadingInscricao(null)
@@ -233,7 +235,7 @@ export default function EBDDashboard({
     }
 
     async function handleRejeitarInteresse(interesseId: number) {
-        if (!confirm('Rejeitar este interesse?')) return
+        if (!await confirmar({ mensagem: 'Rejeitar este interesse?', tipo: 'perigo' })) return
         setLoading(true)
         const res = await rejeitarInteresse(interesseId)
         setLoading(false)
@@ -351,7 +353,7 @@ export default function EBDDashboard({
                                         <Layers size={9} /> {t.nome} ({t._count.matriculas})
                                     </Link>
                                 ))}
-                                <button onClick={async () => { if (confirm('Remover este curso?')) { const r = await removerCurso(curso.id); if (r.ok) router.refresh() } }}
+                                <button onClick={async () => { const ok = await confirmar({ mensagem: 'Remover este curso?', tipo: 'perigo' }); if (ok) { const r = await removerCurso(curso.id); if (r.ok) router.refresh() } }}
                                     className="flex items-center gap-1.5 px-4 py-2 bg-red-600/10 border border-red-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-red-400 hover:bg-red-600/20 transition-colors ml-auto">
                                     <Trash2 size={10} /> Remover
                                 </button>

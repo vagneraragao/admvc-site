@@ -84,7 +84,7 @@ export default function MembroHeader({ membro, igrejaName, role, permissoes, mos
     const menuItemClass = "text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-2.5"
 
     return (
-        <header ref={headerRef} className="bg-bg2 border-b border-soft sticky top-0 z-40">
+        <header ref={headerRef} className="bg-bg2 border-b border-soft sticky top-0 z-40 hidden md:block">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* LINHA PRINCIPAL */}
                 <div className={`flex items-center justify-between gap-3 transition-all duration-300 ${expandido ? 'py-4' : 'py-3'}`}>

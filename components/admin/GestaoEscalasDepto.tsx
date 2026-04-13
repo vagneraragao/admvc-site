@@ -3,8 +3,10 @@
 import { useState, useMemo } from 'react'
 import FormCriarEscala from './FormCriarEscala'
 import { Calendar, Trash2, Clock, User, Zap, ChevronRight, LayoutList } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function GestaoEscalasDepto({ departamento, eventos, escalasIniciais }: any) {
+    const confirmar = useConfirm()
     const [escalas, setEscalas] = useState(escalasIniciais)
 
     // --- LÓGICA DE AGRUPAMENTO POR EVENTO ---
@@ -27,7 +29,8 @@ export default function GestaoEscalasDepto({ departamento, eventos, escalasInici
     }, [escalas]);
 
     async function deletarEscala(id: number) {
-        if (!confirm("Remover voluntário desta escala?")) return;
+        const ok = await confirmar({ mensagem: 'Remover voluntário desta escala?', tipo: 'perigo' })
+        if (!ok) return;
         const res = await fetch(`/api/escalas/deletar?id=${id}`, { method: 'DELETE' });
         if (res.ok) {
             setEscalas(escalas.filter((e: any) => e.id !== id));

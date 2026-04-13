@@ -3,14 +3,16 @@ import { useState } from 'react'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { liquidarFiado } from '@/actions/fiado-actions'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoLiquidarFiado({ fiadoId }: { fiadoId: number }) {
     const [loading, setLoading] = useState(false)
     const [done, setDone] = useState(false)
     const router = useRouter()
+    const confirmar = useConfirm()
 
     async function handleLiquidar() {
-        if (!confirm('Tem a certeza que quer liquidar este fiado?')) return
+        if (!await confirmar({ mensagem: 'Tem a certeza que quer liquidar este fiado?', tipo: 'aviso' })) return
         setLoading(true)
         const res = await liquidarFiado(fiadoId)
         if (res.success) {

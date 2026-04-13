@@ -1,5 +1,6 @@
 "use client"
 import { useState, useRef, useMemo } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import {
     atualizarDepartamento,
     adicionarFuncaoAoDepto,
@@ -17,6 +18,7 @@ import {
 import { alternarPermissaoEscala, removerFuncaoDoMembro, removerMembroTotal } from '@/actions/admin-actions'
 
 export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congregacoes = [], onClose }: any) {
+    const confirmar = useConfirm()
     const [aba, setAba] = useState<'equipe' | 'dados' | 'funcoes' | 'interessados'>('equipe')
     const [loading, setLoading] = useState(false)
     const [fotoPreview, setFotoPreview] = useState<string | null>(depto.foto_url || null)
@@ -202,7 +204,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                                                             <CalendarDays size={8} className="inline mr-0.5" />{grupo.pode_gerir_escalas ? 'Delegado' : 'Delegar?'}
                                                         </button>
                                                     )}
-                                                    <button disabled={loading} onClick={async () => { if (confirm(`Remover ${grupo.membro.first_name}?`)) { setLoading(true); await removerMembroTotal(grupo.membro.id, depto.id); setLoading(false) } }}
+                                                    <button disabled={loading} onClick={async () => { const ok = await confirmar({ mensagem: `Remover ${grupo.membro.first_name}?`, tipo: 'perigo' }); if (ok) { setLoading(true); await removerMembroTotal(grupo.membro.id, depto.id); setLoading(false) } }}
                                                         className="text-[7px] font-black uppercase text-red-400 hover:text-red-600 bg-red-500/5 px-1.5 py-0.5 rounded transition-all">
                                                         <UserMinus size={8} className="inline mr-0.5" />Remover
                                                     </button>
@@ -211,7 +213,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                                         </div>
                                         <div className="flex flex-wrap gap-1 shrink-0 max-w-[200px] justify-end">
                                             {grupo.atribuicoes.map((a: any) => (
-                                                <button key={a.id} disabled={loading} onClick={async () => { if (confirm(`Remover ${a.nome}?`)) { setLoading(true); await removerFuncaoDoMembro(a.id); setLoading(false) } }}
+                                                <button key={a.id} disabled={loading} onClick={async () => { const ok = await confirmar({ mensagem: `Remover ${a.nome}?`, tipo: 'perigo' }); if (ok) { setLoading(true); await removerFuncaoDoMembro(a.id); setLoading(false) } }}
                                                     className="group flex items-center gap-1 bg-bg border border-soft px-2 py-1 rounded-lg hover:bg-red-50 hover:border-red-200 transition-all">
                                                     <span className="w-1 h-1 rounded-full bg-figueira group-hover:bg-red-500" />
                                                     <span className="text-[8px] font-bold text-fg uppercase group-hover:text-red-700">{a.nome}</span>
@@ -250,7 +252,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
                                         <span className="text-[10px] font-black uppercase text-fg tracking-widest flex items-center gap-2">
                                             <span className="w-1.5 h-1.5 rounded-full bg-figueira" /> {f.nome}
                                         </span>
-                                        <button onClick={() => confirm("Excluir esta funcao?") && removerFuncaoDoDepto(f.id)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-bg border border-soft hover:bg-red-50 hover:border-red-200 text-muted hover:text-red-500 transition-all">
+                                        <button onClick={async () => { const ok = await confirmar({ mensagem: 'Excluir esta funcao?', tipo: 'perigo' }); if (ok) removerFuncaoDoDepto(f.id) }} className="w-7 h-7 flex items-center justify-center rounded-lg bg-bg border border-soft hover:bg-red-50 hover:border-red-200 text-muted hover:text-red-500 transition-all">
                                             <Trash2 size={12} />
                                         </button>
                                     </div>
@@ -385,6 +387,7 @@ export default function PainelGerenciarDepto({ depto, membrosDisponiveis, congre
 }
 
 function InteressadosTab({ deptoId, interesses }: { deptoId: number; interesses: any[] }) {
+    const confirmar = useConfirm()
     const [loading, setLoading] = useState<number | null>(null)
 
     const pendentes = interesses.filter((i: any) => i.status === 'PENDENTE')
@@ -397,7 +400,7 @@ function InteressadosTab({ deptoId, interesses }: { deptoId: number; interesses:
     }
 
     const handleRejeitar = async (id: number) => {
-        if (!confirm('Rejeitar este interesse?')) return
+        if (!await confirmar({ mensagem: 'Rejeitar este interesse?', tipo: 'perigo' })) return
         setLoading(id)
         await rejeitarInteresseDepartamento(id)
         setLoading(null)

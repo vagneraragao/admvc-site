@@ -5,6 +5,8 @@ import { headers } from 'next/headers'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { getTenantClient } from '@/lib/prisma'
 import MembroHeader from '@/components/membros/MembroHeader'
+import MobileHeader from '@/components/membros/MobileHeader'
+import MobileBottomNav from '@/components/membros/MobileBottomNav'
 import PullToRefresh from '@/components/ui/PullToRefresh'
 
 export default async function MembroLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -99,19 +101,36 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
     }
     const mostraServico = permissoes.isAdmin || permissoes.isFinance || permissoes.isAcolhimento || permissoes.isCantina || permissoes.isMidia || permissoes.isLouvor || permissoes.isLider || permissoes.isDiaconia
 
+    const alertas = permissoes.isAcolhimento || permissoes.isAdmin ? visitantesAtualizados : []
+    const igrejaName = tenantData?.nome || 'Igreja'
+
     return (
         <>
+            {/* Desktop header — hidden on mobile via className inside MembroHeader */}
             <MembroHeader
                 membro={membro}
-                igrejaName={tenantData?.nome || 'Igreja'}
+                igrejaName={igrejaName}
                 role={role}
                 permissoes={permissoes}
                 mostraServico={mostraServico}
                 escolaridades={escolaridades}
                 avisos={ultimosAvisos}
-                alertasAcolhimento={permissoes.isAcolhimento || permissoes.isAdmin ? visitantesAtualizados : []}
+                alertasAcolhimento={alertas}
             />
+
+            {/* Mobile header */}
+            <MobileHeader
+                membro={membro}
+                igrejaName={igrejaName}
+                escolaridades={escolaridades}
+                avisos={ultimosAvisos}
+                alertasAcolhimento={alertas}
+            />
+
             <PullToRefresh>{children}</PullToRefresh>
+
+            {/* Mobile bottom nav */}
+            <MobileBottomNav permissoes={permissoes} />
         </>
     )
 }

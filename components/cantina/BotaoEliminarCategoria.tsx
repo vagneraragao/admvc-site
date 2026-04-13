@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Trash2, Loader2 } from 'lucide-react'
 import { eliminarCategoria } from '@/actions/cantina-local-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     categoriaId: number
@@ -10,9 +11,10 @@ interface Props {
 
 export default function BotaoEliminarCategoria({ categoriaId }: Props) {
     const [loading, setLoading] = useState(false)
+    const confirmar = useConfirm()
 
     async function handleDelete() {
-        if (!confirm('Eliminar esta categoria? Produtos associados ficarao sem categoria.')) return
+        if (!await confirmar({ mensagem: 'Eliminar esta categoria? Produtos associados ficarao sem categoria.', tipo: 'perigo' })) return
         setLoading(true)
         const res = await eliminarCategoria(categoriaId)
         if (res?.error) alert(res.error)

@@ -42,8 +42,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
         redirect('/membros/dashboard?error=Acesso negado');
     }
 
-    // 2. BUSCA EVENTOS E ESCALAS ATUAIS (Com Repertório)
-    // Filtra eventos pela congregacao do departamento (ou todos se global)
+    // 2. QUERIES PARALELAS — eventos, equipa, historico e permissão diaconia
     const eventoWhere: any = { data: { gte: new Date() } }
     if (depto.congregacaoId) {
         eventoWhere.OR = [
@@ -52,63 +51,80 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
         ]
     }
 
-    const eventos = await db.evento.findMany({
-        where: eventoWhere,
-        include: {
-            repertorio: {
-                include: { musica: true },
-                orderBy: { ordem: 'asc' }
-            },
-            escalas: {
-                where: { departamento_id: deptoId },
-                include: {
-                    membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
-                    departamento: { select: { nome: true } }
+    const [eventos, equipaDoDepartamento, historicoEscalas, vinculoDiaconia, liderDiaconia] = await Promise.all([
+        // Eventos com escalas e repertório
+        db.evento.findMany({
+            where: eventoWhere,
+            include: {
+                repertorio: {
+                    include: { musica: true },
+                    orderBy: { ordem: 'asc' }
+                },
+                escalas: {
+                    where: { departamento_id: deptoId },
+                    include: {
+                        membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
+                        departamento: { select: { nome: true } }
+                    }
                 }
+            },
+            orderBy: { data: 'asc' }
+        }),
+        // Equipa do departamento
+        db.integranteDepartamento.findMany({
+            where: { departamento_id: deptoId },
+            include: {
+                membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
+                funcoes: { include: { funcao: true } }
             }
-        },
-        orderBy: { data: 'asc' }
-    });
-
-    const equipaDoDepartamento = await db.integranteDepartamento.findMany({
-        where: { departamento_id: deptoId },
-        include: {
-            membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true, phone_1: true } },
-            funcoes: { include: { funcao: true } }
-        }
-    });
+        }),
+        // Histórico de escalas (6 meses atrás + 3 meses à frente)
+        db.escala.findMany({
+            where: {
+                departamento_id: deptoId,
+                evento: {
+                    data: {
+                        gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
+                        lte: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+                    }
+                }
+            },
+            include: {
+                membro: { select: { id: true, first_name: true, last_name: true, avatar_file: true } },
+                evento: { select: { id: true, nome: true, data: true } }
+            },
+            orderBy: { evento: { data: 'desc' } }
+        }),
+        // Permissão diaconia — vínculo
+        eAdmin ? Promise.resolve(null) : db.integranteDepartamento.findFirst({
+            where: {
+                membro_id: membroId,
+                departamento: { nome: { contains: 'diaconia', mode: 'insensitive' } },
+                OR: [
+                    { pode_gerir_escalas: true },
+                    { funcoes: { some: { funcao: { nome: { contains: 'Lider', mode: 'insensitive' } } } } }
+                ]
+            }
+        }),
+        // Permissão diaconia — líder directo
+        eAdmin ? Promise.resolve(null) : db.departamento.findFirst({
+            where: {
+                nome: { contains: 'diaconia', mode: 'insensitive' },
+                lider_id: membroId
+            }
+        }),
+    ]);
 
     const membrosFormatados = equipaDoDepartamento.map(i => ({
         ...i.membro,
         funcoesHabilitadas: i.funcoes.map(f => f.funcao_id)
     }));
 
-    const proximoEvento = eventos.length > 0 ? eventos[0] : null;
-
     // 3. IDENTIFICAR SE É LOUVOR
     const isLouvor = depto.nome.toLowerCase().includes('louvor') || depto.nome.toLowerCase().includes('música') || depto.nome.toLowerCase().includes('musica');
 
-    const historicoEscalas = await db.escala.findMany({
-        where: {
-            departamento_id: deptoId,
-            // Busca os últimos 6 meses + próximos 3 meses para ter contexto completo
-            evento: {
-                data: {
-                    gte: new Date(new Date().setMonth(new Date().getMonth() - 6)),
-                    lte: new Date(new Date().setMonth(new Date().getMonth() + 3)),
-                }
-            }
-        },
-        include: {
-            membro: {
-                select: { id: true, first_name: true, last_name: true, avatar_file: true }
-            },
-            evento: {
-                select: { id: true, nome: true, data: true }
-            }
-        },
-        orderBy: { evento: { data: 'desc' } }
-    })
+    // 4. PERMISSÃO PARA EDITAR MENSAGEM DO CULTO
+    const podeEditarMensagem = eAdmin || !!(vinculoDiaconia || liderDiaconia);
 
     const historicoSerializado = historicoEscalas.map(e => ({
         ...e,
@@ -121,41 +137,42 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
 
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto pt-4 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* HEADER */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b border-soft">
-                <div className="space-y-2">
-                    <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                        <ShieldCheck size={14} /> Painel do Líder
+            <header className="flex justify-between items-center md:items-end gap-3 md:gap-6 pb-4 md:pb-6 border-b border-soft">
+                <div className="space-y-1 md:space-y-2 min-w-0">
+                    <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                        <ShieldCheck size={12} /> Painel do Líder
                     </span>
-                    <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
-                        Escalas: <span className="text-muted/30">{depto.nome}</span>
+                    <h1 className="text-xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none truncate">
+                        <span className="hidden md:inline">Escalas: </span><span className="text-muted/30 md:text-muted/30">{depto.nome}</span>
                     </h1>
                 </div>
 
-                {/* BOTÃO RELATÓRIO ESTRATÉGICO */}
-                <ModalRelatorioEscalaLider
-                    departamentoId={deptoId}
-                    departamentoNome={depto.nome}
-                    equipaDoDepartamento={equipaDoDepartamento}
-                />
+                <div className="shrink-0">
+                    <ModalRelatorioEscalaLider
+                        departamentoId={deptoId}
+                        departamentoNome={depto.nome}
+                        equipaDoDepartamento={equipaDoDepartamento}
+                    />
+                </div>
             </header>
 
-            {/* MONTADOR — FULL WIDTH */}
+            {/* MONTADOR */}
             <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm relative">
                 <div className="absolute top-0 left-0 w-full h-1 bg-figueira" />
-                <div className="flex items-center gap-4 px-6 py-5 border-b border-soft">
-                    <div className="w-10 h-10 rounded-2xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0">
-                        <Calendar size={18} />
+                <div className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-5 border-b border-soft">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-figueira/10 text-figueira flex items-center justify-center shrink-0">
+                        <Calendar size={16} />
                     </div>
                     <div>
-                        <h2 className="text-sm font-black uppercase tracking-widest text-fg leading-none">Atribuir Escala</h2>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted mt-1">
-                            Selecionar evento, funcao e membro
+                        <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-fg leading-none">Atribuir Escala</h2>
+                        <p className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-muted mt-0.5 md:mt-1">
+                            Evento, funcao e membro
                         </p>
                     </div>
                 </div>
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                     <MontadorEscalas
                         eventos={eventos}
                         funcoesDisponiveis={depto.funcoes}
@@ -166,10 +183,10 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
             </section>
 
             {/* QUADRO DE ESCALAS */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-3 px-1">
-                    <Activity size={16} className="text-emerald-500" />
-                    <h2 className="text-sm font-black uppercase tracking-widest text-fg">Quadro de Escalas</h2>
+            <section className="space-y-3 md:space-y-4">
+                <div className="flex items-center gap-2 md:gap-3 px-1">
+                    <Activity size={14} className="text-emerald-500" />
+                    <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-fg">Quadro de Escalas</h2>
                 </div>
                 <div className="animate-in slide-in-from-bottom-4 duration-500">
                     <ListaEscalados
@@ -178,6 +195,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
                         membros={membrosFormatados}
                         isLouvor={isLouvor}
                         podeEditarRepertorio={eAdmin || eLiderModel || !!vinculoLider}
+                        podeEditarMensagem={podeEditarMensagem}
                     />
                 </div>
             </section>

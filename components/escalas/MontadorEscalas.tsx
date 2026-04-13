@@ -124,7 +124,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                     }}
                     className="space-y-5"
                 >
-                    <div className={`grid md:grid-cols-2 ${departamentos ? 'xl:grid-cols-5' : 'xl:grid-cols-4'} gap-4`}>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${departamentos ? 'xl:grid-cols-5' : 'xl:grid-cols-4'} gap-3 md:gap-4`}>
 
                     {/* PASSO 0 — DEPARTAMENTO (apenas admin) */}
                     {departamentos && (
@@ -139,7 +139,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                     required
                                     value={deptoSelecionadoId}
                                     onChange={e => { setDeptoSelecionadoId(e.target.value); setEventoId(''); setFuncaoId(''); setMembroId('') }}
-                                    className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
+                                    className="w-full bg-bg border border-soft rounded-xl md:rounded-2xl pl-10 md:pl-12 pr-8 md:pr-10 py-3 md:py-4 text-[11px] md:text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                                 >
                                     <option value="">Selecionar Departamento...</option>
                                     {departamentos.map((d: any) => (
@@ -163,7 +163,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 required
                                 value={eventoId}
                                 onChange={handleEventoChange}
-                                className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
+                                className="w-full bg-bg border border-soft rounded-xl md:rounded-2xl pl-10 md:pl-12 pr-8 md:pr-10 py-3 md:py-4 text-[11px] md:text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                             >
                                 <option value="">Selecionar Culto/Evento...</option>
                                 {eventosFiltrados.map((ev: any) => (
@@ -188,7 +188,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 required
                                 value={funcaoId}
                                 onChange={e => { setFuncaoId(e.target.value); setMembroId('') }}
-                                className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
+                                className="w-full bg-bg border border-soft rounded-xl md:rounded-2xl pl-10 md:pl-12 pr-8 md:pr-10 py-3 md:py-4 text-[11px] md:text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                             >
                                 <option value="">Selecionar Cargo...</option>
                                 {funcoesActuais.map((f: any) => (
@@ -218,7 +218,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                                 required
                                 value={membroId}
                                 onChange={handleMembroChange}
-                                className="w-full bg-bg border border-soft rounded-2xl pl-12 pr-10 py-4 text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
+                                className="w-full bg-bg border border-soft rounded-xl md:rounded-2xl pl-10 md:pl-12 pr-8 md:pr-10 py-3 md:py-4 text-[11px] md:text-xs font-bold text-fg focus:border-figueira outline-none cursor-pointer appearance-none shadow-sm transition-all"
                             >
                                 <option value="">
                                     {funcaoId
@@ -277,7 +277,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                             <span className="w-5 h-5 rounded-full bg-figueira text-white text-[9px] font-black flex items-center justify-center shadow-sm">{departamentos ? '5' : '4'}</span>
                             <label className="text-[10px] font-black uppercase text-muted tracking-widest">Horario</label>
                         </div>
-                        <div className="flex items-center justify-between bg-figueira/5 border border-figueira/20 px-5 py-4 rounded-2xl">
+                        <div className="flex items-center justify-between bg-figueira/5 border border-figueira/20 px-4 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl">
                             <label className="text-[10px] font-black uppercase text-figueira tracking-widest flex items-center gap-2">
                                 <Clock size={14} /> Chegada
                             </label>
@@ -323,7 +323,7 @@ function BotaoSubmit({
         <button
             type="submit"
             disabled={desativado}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-md
+            className={`w-full flex items-center justify-center gap-2 md:gap-3 px-4 md:px-6 py-4 md:py-5 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-[0.2em] transition-all shadow-md
                 ${pending || verificando ? 'bg-soft text-muted cursor-wait shadow-none' :
                     bloqueado ? 'bg-red-500/10 text-red-400 border border-red-500/20 cursor-not-allowed shadow-none' :
                         ativo ? 'bg-fg text-bg hover:bg-figueira hover:text-white active:scale-95 shadow-figueira/20 hover:shadow-xl' :

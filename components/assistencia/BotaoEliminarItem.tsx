@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { Trash2, Loader2 } from 'lucide-react'
 import { eliminarItemAssistencia } from '@/actions/assistencia-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoEliminarItem({ itemId, itemNome }: { itemId: number; itemNome: string }) {
     const [loading, setLoading] = useState(false)
+    const confirmar = useConfirm()
 
     async function handleEliminar() {
-        if (!confirm(`Tem certeza que deseja eliminar "${itemNome}"? Esta acao nao pode ser desfeita.`)) {
+        if (!await confirmar({ mensagem: `Tem certeza que deseja eliminar "${itemNome}"? Esta acao nao pode ser desfeita.`, tipo: 'perigo' })) {
             return
         }
 

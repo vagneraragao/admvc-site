@@ -9,9 +9,10 @@ interface Props {
     membro: any
     escolaridades: any[]
     isMenuItem?: boolean
+    trigger?: React.ReactNode
 }
 
-export default function DrawerEditarPerfil({ membro, escolaridades, isMenuItem }: Props) {
+export default function DrawerEditarPerfil({ membro, escolaridades, isMenuItem, trigger }: Props) {
     const [aberto, setAberto] = useState(false)
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
@@ -25,7 +26,11 @@ export default function DrawerEditarPerfil({ membro, escolaridades, isMenuItem }
 
     return (
         <>
-            {isMenuItem ? (
+            {trigger ? (
+                <div onClick={() => setAberto(true)} className="cursor-pointer">
+                    {trigger}
+                </div>
+            ) : isMenuItem ? (
                 <button onClick={() => setAberto(true)}
                     className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 w-full text-left">
                     <UserCircle size={13} className="text-figueira" /> Editar Perfil

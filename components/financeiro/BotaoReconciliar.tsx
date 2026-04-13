@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Link2, Loader2, X, Unlink, CheckCircle2 } from 'lucide-react'
 import { reconciliarMovimento, desreconciliar } from '@/actions/reconciliacao-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export function BotaoReconciliar({ movimentoId }: { movimentoId: number }) {
     const [aberto, setAberto] = useState(false)
@@ -63,9 +64,10 @@ export function BotaoReconciliar({ movimentoId }: { movimentoId: number }) {
 
 export function BotaoDesreconciliar({ movimentoId }: { movimentoId: number }) {
     const [loading, setLoading] = useState(false)
+    const confirmar = useConfirm()
 
     async function handleClick() {
-        if (!confirm('Remover reconciliacao deste movimento?')) return
+        if (!await confirmar({ mensagem: 'Remover reconciliacao deste movimento?', tipo: 'perigo' })) return
         setLoading(true)
         await desreconciliar(movimentoId)
         setLoading(false)

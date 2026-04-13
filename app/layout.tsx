@@ -6,6 +6,7 @@ import { SITE_NAME } from "@/lib/constants";
 import BrandingProvider from "@/components/ui/BrandingProvider";
 import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
 import PWAInstallPrompt from "@/components/ui/PWAInstallPrompt";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} Cloud`,
@@ -44,9 +45,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-PT" className="dark">
       <body className="min-h-dvh bg-bg text-fg antialiased">
-        <BrandingProvider>
-          {children}
-        </BrandingProvider>
+        <ConfirmProvider>
+          <BrandingProvider>
+            {children}
+          </BrandingProvider>
+        </ConfirmProvider>
         <ServiceWorkerRegister />
         <PWAInstallPrompt />
       </body>

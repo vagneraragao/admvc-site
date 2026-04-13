@@ -2,15 +2,17 @@
 // components/grupos/GeocodificarBotao.tsx
 
 import { useState } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { MapPin, Loader2, CheckCircle2 } from 'lucide-react'
 import { geocodificarTodosGruposAction } from '@/actions/admin-actions'
 
 export default function GeocodificarBotao() {
+    const confirmar = useConfirm()
     const [estado, setEstado] = useState<'idle' | 'loading' | 'done'>('idle')
     const [resultado, setResultado] = useState<{ sucesso: number; falhou: number } | null>(null)
 
     async function handleClick() {
-        if (!confirm('Vai geocodificar todos os grupos sem coordenadas. Pode demorar alguns segundos. Continuar?')) return
+        if (!await confirmar({ mensagem: 'Vai geocodificar todos os grupos sem coordenadas. Pode demorar alguns segundos. Continuar?', tipo: 'aviso' })) return
         setEstado('loading')
         const res = await geocodificarTodosGruposAction() as any
         if (res.ok) {

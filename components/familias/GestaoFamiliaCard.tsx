@@ -1,17 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { removerMembroDaFamilia } from '@/actions/familia-actions'
 import { Settings2, Trash2, User, Loader2, Users, X, UserPlus } from 'lucide-react'
 import BotaoExcluirFamilia from '@/components/familias/BotaoExcluirFamilia'
 import ModalAdicionarMembroFamilia from '@/components/familias/ModalAdicionarMembroFamilia'
 
 export function GestaoFamiliaCard({ familia }: any) {
+    const confirmar = useConfirm()
     const [aberto, setAberto] = useState(false)
     const [removingId, setRemovingId] = useState<number | null>(null)
 
     async function handleRemover(membroId: number) {
-        if (window.confirm('Remover este membro da familia?')) {
+        if (await confirmar({ mensagem: 'Remover este membro da familia?', tipo: 'perigo' })) {
             setRemovingId(membroId)
             await removerMembroDaFamilia(membroId)
             setRemovingId(null)

@@ -38,6 +38,7 @@ import AcoesRapidas from '@/components/membros/AcoesRapidas'
 import EstatisticasPessoais from '@/components/membros/EstatisticasPessoais'
 import WidgetYouTube from '@/components/membros/WidgetYouTube'
 import WidgetInstagram from '@/components/membros/WidgetInstagram'
+import MobileDashboard from '@/components/membros/MobileDashboard'
 import { fetchLatestYouTubeVideo } from '@/lib/youtube-rss'
 
 export default async function DashboardMembro({
@@ -508,8 +509,38 @@ export default async function DashboardMembro({
     const escalasEsteMes = listaEscalas.filter((e: any) => new Date(e.evento.data) >= inicioMes).length
     const contribuicaoAno = (minhasContribuicoes || []).filter((c: any) => new Date(c.data) >= inicioAno).reduce((s: number, c: any) => s + c.valor, 0)
 
+    // Serializa dados para o componente mobile (client component precisa de dados plain)
+    const escalasParaMobile = listaEscalas.map((esc: any) => ({
+        id: esc.id,
+        ids: esc.ids,
+        funcoes: esc.funcoes,
+        confirmado: esc.confirmado,
+        motivo_recusa: esc.motivo_recusa ?? null,
+        horario: esc.horario ?? null,
+        evento: { id: esc.evento.id, nome: esc.evento.nome, data: esc.evento.data.toISOString() },
+        departamento: { id: esc.departamento.id, nome: esc.departamento.nome },
+    }))
+
+    const membroParaMobile = {
+        id: membro.id,
+        first_name: membro.first_name,
+        last_name: membro.last_name,
+        avatar_file: membro.avatar_file,
+        qr_code: membro.qr_code || null,
+        congregacao: membro.congregacao ? { nome: membro.congregacao.nome } : null,
+    }
+
+    const departamentosParaMobile = Array.from(departamentosAgrupados.values())
+
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6 pb-20 animate-in fade-in duration-700">
+        <>
+        {/* MOBILE DASHBOARD */}
+        <div className="md:hidden">
+            <MobileDashboard membro={membroParaMobile} escalas={escalasParaMobile} departamentos={departamentosParaMobile} membroId={membro.id} role={role} />
+        </div>
+
+        {/* DESKTOP DASHBOARD */}
+        <div className="hidden md:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6 pb-20 animate-in fade-in duration-700">
 
             {/* MODAL DE MÓDULO BLOQUEADO */}
             <Suspense fallback={null}>
@@ -939,6 +970,7 @@ export default async function DashboardMembro({
                 )}
             </div>
 
-        </div>
+        </div>{/* fecha desktop dashboard */}
+        </>
     )
 }

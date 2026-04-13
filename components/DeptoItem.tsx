@@ -1,9 +1,11 @@
 "use client"
 import { useState } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import PainelGerenciarDepto from '@/components/PainelGerenciarDepto'
 import { LayoutGrid, Users, Wrench, Settings2, Trash2, Church, Globe } from 'lucide-react'
 
 export default function DeptoItem({ depto, membrosDisponiveis, congregacoes = [], onExcluir }: any) {
+    const confirmar = useConfirm()
     const [painelAberto, setPainelAberto] = useState(false)
     const total = depto._count?.integrantes || 0
 
@@ -25,7 +27,7 @@ export default function DeptoItem({ depto, membrosDisponiveis, congregacoes = []
                         </div>
                     </div>
                     <button
-                        onClick={() => confirm('Excluir este departamento?') && onExcluir(depto.id)}
+                        onClick={async () => { const ok = await confirmar({ mensagem: 'Excluir este departamento?', tipo: 'perigo' }); if (ok) onExcluir(depto.id) }}
                         className="p-1.5 rounded-lg text-muted opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 transition-all"
                     >
                         <Trash2 size={13} />

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { Plus, Trash2, Calendar as CalendarIcon, User, Star, Sparkles } from 'lucide-react'
 // Ajustei o import para o caminho que definimos anteriormente (membros em vez de admin)
 import { criarEscalaAction, deletarEscalaAction } from '@/actions/escalas-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function GerenciadorEscalaClient({ deptoId, integrantes, eventos, escalasIniciais }: any) {
+    const confirmar = useConfirm()
     const [escalas, setEscalas] = useState(escalasIniciais);
     const [loading, setLoading] = useState(false);
 
@@ -188,7 +190,8 @@ export default function GerenciadorEscalaClient({ deptoId, integrantes, eventos,
 
                         <button
                             onClick={async () => {
-                                if (confirm(`Remover ${esc.membro.first_name} desta escala?`)) {
+                                const ok = await confirmar({ mensagem: `Remover ${esc.membro.first_name} desta escala?`, tipo: 'perigo' })
+                                if (ok) {
                                     await deletarEscalaAction(esc.id);
                                     window.location.reload();
                                 }

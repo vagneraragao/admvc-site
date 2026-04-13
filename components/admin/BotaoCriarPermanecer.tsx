@@ -3,13 +3,16 @@
 import { useState } from 'react'
 import { BookOpen, Loader2, CheckCircle2 } from 'lucide-react'
 import { criarCursoPermanecer } from '@/actions/admin-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoCriarPermanecer() {
+    const confirmar = useConfirm()
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ ok: boolean; msg: string } | null>(null)
 
     const handleCriar = async () => {
-        if (!confirm('Criar o curso Permanecer com 10 perguntas baseadas na apostila? Novos membros serao auto-matriculados.')) return
+        const ok = await confirmar({ mensagem: 'Criar o curso Permanecer com 10 perguntas baseadas na apostila? Novos membros serão auto-matriculados.', tipo: 'info' })
+        if (!ok) return
         setLoading(true)
         const res = await criarCursoPermanecer()
         setLoading(false)

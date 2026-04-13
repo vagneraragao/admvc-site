@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useRouter } from 'next/navigation'
 import { suspenderIgreja, ativarIgreja } from '@/actions/super-admin-actions'
 import { Loader2, Ban, CheckCircle2 } from 'lucide-react'
@@ -11,12 +12,13 @@ interface Props {
 }
 
 export default function BotaoSuspender({ tenantId, status }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const isSuspenso = status === 'SUSPENSO'
 
     async function handleToggle() {
-        if (!confirm(isSuspenso ? 'Deseja ativar esta igreja?' : 'Deseja suspender esta igreja? Os membros nao conseguirao aceder.')) return
+        if (!await confirmar({ mensagem: isSuspenso ? 'Deseja ativar esta igreja?' : 'Deseja suspender esta igreja? Os membros nao conseguirao aceder.', tipo: isSuspenso ? 'info' : 'perigo' })) return
         setLoading(true)
         if (isSuspenso) {
             await ativarIgreja(tenantId)

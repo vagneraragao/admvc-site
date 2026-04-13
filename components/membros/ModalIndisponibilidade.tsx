@@ -32,7 +32,7 @@ type Indisponibilidade = {
     motivo: string | null
 }
 
-export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: boolean }) {
+export default function ModalIndisponibilidade({ isMenuItem, trigger }: { isMenuItem?: boolean; trigger?: React.ReactNode }) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [aberto, setAberto] = useState(false)
@@ -403,7 +403,11 @@ export default function ModalIndisponibilidade({ isMenuItem }: { isMenuItem?: bo
 
     return (
         <>
-            {isMenuItem ? (
+            {trigger ? (
+                <div onClick={() => setAberto(true)} className="cursor-pointer">
+                    {trigger}
+                </div>
+            ) : isMenuItem ? (
                 <button onClick={() => setAberto(true)}
                     className="text-[10px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 w-full text-left">
                     <CalendarOff size={13} className="text-orange-500" /> Indisponibilidade

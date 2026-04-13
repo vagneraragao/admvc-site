@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { cancelarReservaBoleia } from '@/actions/boleia-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { Loader2, X } from 'lucide-react'
 
 export default function BotaoCancelarReserva({ reservaId }: { reservaId: number }) {
+    const confirmar = useConfirm()
     const [loading, setLoading] = useState(false)
 
     async function handleCancelar() {
-        if (!confirm('Tem a certeza que quer cancelar a sua reserva?')) return
+        const ok = await confirmar({ mensagem: 'Tem a certeza que quer cancelar a sua reserva?', tipo: 'aviso' })
+        if (!ok) return
         setLoading(true)
         const res = await cancelarReservaBoleia(reservaId)
         if (res.error) {

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Briefcase, MapPin, X, Plus, Save, Loader2, Trash2 } from 'lucide-react'
 import { criarCargo, excluirCargo } from '@/actions/admin-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { salvarRegioesAction } from '@/actions/admin-actions'
 
 interface Props {
@@ -38,6 +39,7 @@ export default function EstruturaSubMenu({ cargos: cargosIniciais, regioesInicia
 // ── MODAL CARGOS ────────────────────────────────────────────────────────────
 
 function ModalCargos({ cargos, onClose }: { cargos: { id: number; nome: string }[]; onClose: () => void }) {
+    const confirmar = useConfirm()
     const [novoCargo, setNovoCargo] = useState('')
     const [loading, setLoading] = useState(false)
     const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -60,7 +62,8 @@ function ModalCargos({ cargos, onClose }: { cargos: { id: number; nome: string }
     }
 
     async function handleExcluir(id: number, nome: string) {
-        if (!confirm(`Excluir o cargo "${nome}"?`)) return
+        const ok = await confirmar({ mensagem: `Excluir o cargo "${nome}"?`, tipo: 'perigo' })
+        if (!ok) return
         setDeletingId(id)
         try {
             await excluirCargo(id)

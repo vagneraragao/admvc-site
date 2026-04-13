@@ -4,9 +4,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Hash, MessageSquare, UserCircle, Loader2, Trash2 } from 'lucide-react'
 import { publicarAviso, apagarAviso } from '@/actions/mural-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import Image from 'next/image'
 
 export default function MuralClient({ canais, avisos, membroAtualId }: { canais: any[], avisos: any[], membroAtualId: number }) {
+    const confirmar = useConfirm()
     const [canalAtivo, setCanalAtivo] = useState(canais[0]?.id);
     const [loading, setLoading] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null); // Para mostrar loading ao apagar
@@ -37,7 +39,8 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
 
     // NOVA FUNÇÃO: APAGAR MENSAGEM
     async function handleDelete(id: string) {
-        if (!confirm('Tens a certeza que queres apagar esta mensagem? Todos vão deixar de a ver.')) return;
+        const ok = await confirmar({ mensagem: 'Tens a certeza que queres apagar esta mensagem? Todos vão deixar de a ver.', tipo: 'perigo' })
+        if (!ok) return;
         setDeletingId(id);
         const res = await apagarAviso(id);
         setDeletingId(null);
@@ -50,25 +53,25 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
     };
 
     return (
-        <div className="h-full flex flex-col md:flex-row gap-6">
+        <div className="h-full flex flex-col md:flex-row gap-3 md:gap-6">
 
-            {/* LADO ESQUERDO: LISTA DE CANAIS */}
-            <div className="md:w-64 shrink-0 flex flex-col gap-2 overflow-x-auto md:overflow-y-auto custom-scrollbar md:pr-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted mb-2 hidden md:block px-2">Meus Canais</span>
+            {/* LISTA DE CANAIS — horizontal scroll no mobile, sidebar no desktop */}
+            <div className="md:w-64 shrink-0 flex flex-col gap-2 overflow-x-auto md:overflow-y-auto custom-scrollbar md:pr-2 -mx-4 px-4 md:mx-0 md:px-0">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted mb-1 hidden md:block px-2">Meus Canais</span>
                 <div className="flex md:flex-col gap-2">
                     {canais.map(canal => (
                         <button
                             key={canal.id}
                             onClick={() => setCanalAtivo(canal.id)}
-                            className={`flex items-center gap-3 p-4 rounded-2xl text-left transition-all shrink-0 md:shrink border ${canalAtivo === canal.id
+                            className={`flex items-center gap-2 md:gap-3 px-3 py-2.5 md:p-4 rounded-xl md:rounded-2xl text-left transition-all shrink-0 md:shrink border ${canalAtivo === canal.id
                                 ? 'bg-figueira text-white border-figueira shadow-lg'
                                 : 'bg-bg2 text-muted border-soft hover:bg-soft'
                                 }`}
                         >
-                            <Hash size={16} className={canalAtivo === canal.id ? 'text-white' : 'text-figueira'} />
+                            <Hash size={14} className={`md:w-4 md:h-4 ${canalAtivo === canal.id ? 'text-white' : 'text-figueira'}`} />
                             <div className="overflow-hidden">
-                                <p className="text-[11px] font-black uppercase tracking-wider truncate">{canal.nome}</p>
-                                <p className={`text-[8px] font-bold uppercase tracking-widest mt-0.5 ${canalAtivo === canal.id ? 'text-white/70' : 'text-muted/50'}`}>
+                                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-wider truncate">{canal.nome}</p>
+                                <p className={`text-[7px] md:text-[8px] font-bold uppercase tracking-widest mt-0.5 hidden md:block ${canalAtivo === canal.id ? 'text-white/70' : 'text-muted/50'}`}>
                                     {canal.tipo}
                                 </p>
                             </div>
@@ -78,16 +81,16 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
             </div>
 
             {/* LADO DIREITO: FEED E INPUT */}
-            <div className="flex-1 flex flex-col bg-bg2 border border-soft rounded-[2.5rem] overflow-hidden shadow-sm h-[60vh] md:h-full">
+            <div className="flex-1 flex flex-col bg-bg2 border border-soft rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-sm min-h-0">
 
-                <div className="bg-bg border-b border-soft p-5 shrink-0">
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest flex items-center gap-2">
-                        <Hash size={16} className="text-figueira" />
+                <div className="bg-bg border-b border-soft p-3 md:p-5 shrink-0">
+                    <h3 className="text-xs md:text-sm font-black text-fg uppercase tracking-widest flex items-center gap-2">
+                        <Hash size={14} className="text-figueira" />
                         {canais.find(c => c.id === canalAtivo)?.nome}
                     </h3>
                 </div>
 
-                <div ref={feedRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-bg2/50">
+                <div ref={feedRef} className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6 custom-scrollbar bg-bg2/50">
                     {mensagensDoCanal.length > 0 ? (
                         mensagensDoCanal.map((msg: any) => {
                             // Verifica se a mensagem é do membro atual
@@ -141,22 +144,22 @@ export default function MuralClient({ canais, avisos, membroAtualId }: { canais:
                     )}
                 </div>
 
-                <div className="bg-bg border-t border-soft p-4 shrink-0">
-                    <form ref={formRef} action={handlePost} className="flex gap-3">
+                <div className="bg-bg border-t border-soft p-3 md:p-4 shrink-0">
+                    <form ref={formRef} action={handlePost} className="flex gap-2 md:gap-3">
                         <input type="hidden" name="destino" value={canalAtivo} />
                         <input
                             name="texto"
                             required
                             autoComplete="off"
-                            placeholder="Escreve um aviso ou mensagem para a equipa..."
-                            className="flex-1 bg-bg2 border border-soft rounded-2xl px-5 py-4 text-sm font-bold text-fg focus:border-figueira outline-none transition-colors"
+                            placeholder="Escreve uma mensagem..."
+                            className="flex-1 bg-bg2 border border-soft rounded-xl md:rounded-2xl px-4 py-3 md:px-5 md:py-4 text-xs md:text-sm font-bold text-fg focus:border-figueira outline-none transition-colors"
                         />
                         <button
                             disabled={loading}
                             type="submit"
-                            className="bg-figueira text-white px-6 py-4 rounded-2xl hover:bg-figueira/90 transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0 flex items-center justify-center"
+                            className="bg-figueira text-white px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl hover:bg-figueira/90 transition-all shadow-lg active:scale-95 disabled:opacity-50 shrink-0 flex items-center justify-center"
                         >
-                            {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                            {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         </button>
                     </form>
                 </div>

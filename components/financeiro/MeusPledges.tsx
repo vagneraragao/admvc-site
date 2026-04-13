@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { HeartHandshake, AlertTriangle, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { obterMeusPledges, cancelarPledge } from '@/actions/pledge-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const euro = (v: number) =>
     new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v)
@@ -18,6 +19,7 @@ export default function MeusPledges() {
     const [pledges, setPledges] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [cancelando, setCancelando] = useState<number | null>(null)
+    const confirmar = useConfirm()
 
     async function carregar() {
         setLoading(true)
@@ -38,7 +40,7 @@ export default function MeusPledges() {
     }, [])
 
     async function handleCancelar(id: number) {
-        if (!confirm('Tem a certeza que deseja cancelar esta promessa?')) return
+        if (!await confirmar({ mensagem: 'Tem a certeza que deseja cancelar esta promessa?', tipo: 'perigo' })) return
         setCancelando(id)
         try {
             const res = await cancelarPledge(id)

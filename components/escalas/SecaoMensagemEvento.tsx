@@ -11,6 +11,7 @@ import {
     salvarMensagemEventoAction,
     removerMensagemEventoAction
 } from '@/actions/escalas-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Membro {
     id: number
@@ -45,6 +46,7 @@ export default function SecaoMensagemEvento({
     podeEditar
 }: Props) {
     const router = useRouter()
+    const confirmar = useConfirm()
     const [isPending, startTransition] = useTransition()
 
     const [loading, setLoading] = useState(false)
@@ -141,7 +143,8 @@ export default function SecaoMensagemEvento({
     }
 
     async function handleRemover() {
-        if (!confirm('Remover a mensagem deste evento?')) return
+        const ok = await confirmar({ mensagem: 'Remover a mensagem deste evento?', tipo: 'perigo' })
+        if (!ok) return
         const res = await removerMensagemEventoAction(eventoId)
         if (res.sucesso) {
             setMensagem(null)

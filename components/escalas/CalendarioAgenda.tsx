@@ -6,8 +6,10 @@ import { pt } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, Trash2, Loader2 } from 'lucide-react'
 import { apagarEventoAction } from '@/actions/admin-actions'
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function CalendarioAgenda({ eventos, congregacoes }: { eventos: any[]; congregacoes?: { id: number; nome: string; cidade: string }[] }) {
+    const confirmar = useConfirm()
     const [mesAtual, setMesAtual] = useState(new Date())
     const [diaSelecionado, setDiaSelecionado] = useState(new Date())
     const [isDeleting, setIsDeleting] = useState<number | null>(null)
@@ -24,14 +26,14 @@ export default function CalendarioAgenda({ eventos, congregacoes }: { eventos: a
     const mesAnterior = () => setMesAtual(subMonths(mesAtual, 1))
 
     const handleApagarEvento = async (eventoId: number) => {
-        if (window.confirm("Tem a certeza que deseja cancelar e apagar este evento? Esta ação removerá também as equipas escaladas.")) {
-            setIsDeleting(eventoId);
-            const res = await apagarEventoAction(eventoId);
-            setIsDeleting(null);
+        const ok = await confirmar({ mensagem: 'Tem a certeza que deseja cancelar e apagar este evento? Esta ação removerá também as equipas escaladas.', tipo: 'perigo' })
+        if (!ok) return
+        setIsDeleting(eventoId);
+        const res = await apagarEventoAction(eventoId);
+        setIsDeleting(null);
 
-            if (!res.ok) {
-                alert(res.error);
-            }
+        if (!res.ok) {
+            alert(res.error);
         }
     }
 

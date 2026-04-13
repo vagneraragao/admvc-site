@@ -7,6 +7,7 @@ import {
     Music, XCircle, AlertCircle
 } from 'lucide-react'
 import { removerEscalaAction, atualizarEscalaAction } from '@/actions/admin-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import ModalEditarEvento from '@/components/admin/ModalEditarEvento'
 import BotaoApagarEvento from '@/components/admin/BotaoApagarEvento'
 import ModalRepertorio from '@/components/louvor/ModalRepertorio'
@@ -18,7 +19,8 @@ export default function ListaEscalados({
     membros,
     isLouvor,
     congregacoes,
-    podeEditarRepertorio
+    podeEditarRepertorio,
+    podeEditarMensagem
 }: {
     eventos: any[]
     isAdmin?: boolean
@@ -26,14 +28,17 @@ export default function ListaEscalados({
     isLouvor?: boolean
     congregacoes?: { id: number; nome: string; cidade: string }[]
     podeEditarRepertorio?: boolean
+    podeEditarMensagem?: boolean
 }) {
+    const confirmar = useConfirm()
     const [editingId, setEditingId] = useState<number | null>(null)
     const [isPending, setIsPending] = useState(false)
 
     const eventosComEscala = eventos.filter(ev => ev.escalas && ev.escalas.length > 0)
 
     async function handleRemover(id: number) {
-        if (!confirm('Tens a certeza que desejas remover este voluntário da escala?')) return
+        const ok = await confirmar({ mensagem: 'Tens a certeza que desejas remover este voluntário da escala?', tipo: 'perigo' })
+        if (!ok) return
         const res = await removerEscalaAction(id)
         if (res.error) alert(res.error)
     }
@@ -85,10 +90,10 @@ export default function ListaEscalados({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
             {eventosComEscala.map((evento, index) => {
                 const dataFormatada = new Intl.DateTimeFormat('pt-PT', {
-                    weekday: 'long', day: '2-digit', month: 'long'
+                    weekday: 'short', day: '2-digit', month: 'short'
                 }).format(new Date(evento.data))
 
                 const escalasAgrupadasPorDepto = evento.escalas.reduce((acc: any, escala: any) => {
@@ -98,7 +103,6 @@ export default function ListaEscalados({
                     return acc
                 }, {})
 
-                // ── CONTAGEM DE ESTADOS ───────────────────────────────────
                 const totalEscalas = evento.escalas.length
                 const confirmados = evento.escalas.filter((e: any) => e.confirmado).length
                 const recusados = evento.escalas.filter((e: any) => !e.confirmado && e.motivo_recusa).length
@@ -108,62 +112,46 @@ export default function ListaEscalados({
                     <details
                         key={evento.id}
                         open={index === 0}
-                        className="group bg-bg border border-soft rounded-[2.5rem] overflow-hidden shadow-sm transition-all duration-300"
+                        className="group bg-bg border border-soft rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-sm transition-all duration-300"
                     >
                         {/* CABEÇALHO */}
-                        <summary className="list-none cursor-pointer bg-bg2 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 outline-none [&::-webkit-details-marker]:hidden hover:bg-soft/10 transition-colors group-open:border-b border-soft">
-                            <div className="flex items-start sm:items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-soft/50 flex items-center justify-center text-muted group-open:bg-blue-500 group-open:text-white transition-colors shrink-0">
-                                    <ChevronDown size={18} className="group-open:rotate-180 transition-transform duration-300" />
+                        <summary className="list-none cursor-pointer bg-bg2 p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 outline-none [&::-webkit-details-marker]:hidden hover:bg-soft/10 transition-colors group-open:border-b border-soft">
+                            <div className="flex items-start sm:items-center gap-3 md:gap-4">
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-soft/50 flex items-center justify-center text-muted group-open:bg-blue-500 group-open:text-white transition-colors shrink-0">
+                                    <ChevronDown size={16} className="group-open:rotate-180 transition-transform duration-300" />
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-none">
+                                <div className="min-w-0">
+                                    <h3 className="text-sm md:text-lg font-black uppercase italic tracking-tighter text-fg leading-none truncate">
                                         {evento.nome}
                                     </h3>
-                                    <p className="text-[10px] font-black uppercase text-muted tracking-widest mt-1.5 flex items-center gap-1.5">
-                                        <CalendarDays size={12} className="text-figueira" /> {dataFormatada}
+                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-muted tracking-widest mt-1 flex items-center gap-1.5">
+                                        <CalendarDays size={11} className="text-figueira" /> {dataFormatada}
                                     </p>
 
-                                    {/* ── PILLS DE ESTADO ── */}
-                                    <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                                        <StatPill
-                                            count={confirmados}
-                                            label="confirmado"
-                                            color="emerald"
-                                            icon={<CheckCircle2 size={10} />}
-                                        />
-                                        <StatPill
-                                            count={pendentes}
-                                            label="pendente"
-                                            color="orange"
-                                            icon={<AlertCircle size={10} />}
-                                        />
-                                        <StatPill
-                                            count={recusados}
-                                            label="recusado"
-                                            color="red"
-                                            icon={<XCircle size={10} />}
-                                        />
+                                    <div className="flex items-center gap-1.5 md:gap-2 mt-2 flex-wrap">
+                                        <StatPill count={confirmados} label="conf" color="emerald" icon={<CheckCircle2 size={9} />} />
+                                        <StatPill count={pendentes} label="pend" color="orange" icon={<AlertCircle size={9} />} />
+                                        <StatPill count={recusados} label="rec" color="red" icon={<XCircle size={9} />} />
                                     </div>
                                 </div>
 
                                 {isAdmin && (
-                                    <div className="mt-1 sm:mt-0 flex gap-2" onClick={e => e.stopPropagation()}>
+                                    <div className="mt-1 sm:mt-0 flex gap-1.5 md:gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                                         <ModalEditarEvento evento={evento} congregacoes={congregacoes} />
                                         <BotaoApagarEvento id={evento.id} nome={evento.nome} />
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3" onClick={e => e.preventDefault()}>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 pl-11 md:pl-0" onClick={e => e.preventDefault()}>
                                 <button
                                     onClick={() => handlePartilharWhatsApp(evento, escalasAgrupadasPorDepto)}
-                                    className="bg-green-50 text-green-600 hover:bg-green-500 hover:text-white border border-green-200 transition-all text-[9px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 active:scale-95"
+                                    className="bg-green-50 text-green-600 hover:bg-green-500 hover:text-white border border-green-200 transition-all text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl shadow-sm flex items-center gap-1.5 active:scale-95"
                                 >
-                                    <MessageCircle size={14} /> Partilhar
+                                    <MessageCircle size={12} /> Partilhar
                                 </button>
-                                <span className="bg-bg border border-soft text-[9px] font-black uppercase tracking-widest text-fg px-4 py-2.5 rounded-xl shadow-sm whitespace-nowrap">
-                                    {totalEscalas} Voluntários
+                                <span className="bg-bg border border-soft text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fg px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl shadow-sm whitespace-nowrap">
+                                    {totalEscalas} Vol.
                                 </span>
                             </div>
                         </summary>
@@ -172,9 +160,9 @@ export default function ListaEscalados({
                         <div className="flex flex-col animate-in slide-in-from-top-2 duration-300">
                             {Object.entries(escalasAgrupadasPorDepto).map(([deptoNome, escalasDoDepto]: any) => (
                                 <div key={deptoNome}>
-                                    <div className="bg-soft/20 px-6 py-3 flex items-center gap-2 border-b border-soft">
-                                        <LayoutGrid size={12} className="text-blue-500" />
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-fg">{deptoNome}</h4>
+                                    <div className="bg-soft/20 px-4 md:px-6 py-2.5 md:py-3 flex items-center gap-2 border-b border-soft">
+                                        <LayoutGrid size={11} className="text-blue-500" />
+                                        <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-fg">{deptoNome}</h4>
                                     </div>
 
                                     <div className="divide-y divide-soft">
@@ -204,7 +192,7 @@ export default function ListaEscalados({
                                             return (
                                                 <div
                                                     key={escala.id}
-                                                    className={`p-4 sm:p-5 hover:bg-soft/10 transition-colors
+                                                    className={`p-3 md:p-5 hover:bg-soft/10 transition-colors
                                                         ${isConfirmado ? 'border-l-2 border-emerald-500' : ''}
                                                         ${isRecusado ? 'border-l-2 border-red-400 bg-red-500/3' : ''}
                                                         ${isPendente ? 'border-l-2 border-orange-400' : ''}
@@ -337,7 +325,7 @@ export default function ListaEscalados({
                                         eventoId={evento.id}
                                         eventoNome={evento.nome}
                                         membros={membros || []}
-                                        podeEditar={!!isAdmin}
+                                        podeEditar={!!isAdmin || !!podeEditarMensagem}
                                     />
                                 </div>
 

@@ -4,6 +4,7 @@
 // botão de editar links inline na lista
 
 import { useState, useRef, useEffect, useTransition } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import {
     Music, Youtube, Save, ChevronRight, Hash, GripVertical, Trash2,
     Loader2, X, Plus, CheckCircle2, ListMusic, MonitorUp, Search,
@@ -67,6 +68,7 @@ function BotaoLink({ href, icon, label, cor }: { href: string; icon: React.React
 }
 
 export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
     const [logsAbertos, setLogsAbertos] = useState(false)
@@ -154,7 +156,7 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
         const ip = localStorage.getItem('holyrics_ip')
         const token = localStorage.getItem('holyrics_token')
         if (!ip || !token) { alert('Conecte ao Holyrics primeiro no menu Ferramentas.'); return }
-        if (!confirm('Sincronizar base com o Holyrics?')) return
+        if (!await confirmar({ mensagem: 'Sincronizar base com o Holyrics?', tipo: 'info' })) return
 
         setIsSyncing(true); setSyncLogs([])
         addLog('A conectar ao Holyrics...', 'info')
@@ -275,8 +277,8 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
         startTransition(async () => { await atualizarOrdemRepertorio(payload) })
     }
 
-    const handleDelete = (id: string) => {
-        if (!confirm('Remover esta música?')) return
+    const handleDelete = async (id: string) => {
+        if (!await confirmar({ mensagem: 'Remover esta música?', tipo: 'perigo' })) return
         startTransition(async () => { await removerMusicaDoRepertorio(id); router.refresh() })
     }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Ticket, User, CheckCircle2, Loader2, X, Euro, Edit3, Layers, Power, Search, Trophy, Medal } from 'lucide-react'
 import { atualizarCompradorRifaAction, venderNumerosRifaLoteAction, finalizarRifaAction, setVencedoresRifaAction } from '@/actions/financeiro-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface GrelhaRifaProps {
     rifa: any;
@@ -16,7 +17,8 @@ export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: Gr
     const [numeroEditando, setNumeroEditando] = useState<number | null>(null);
 
     const [loading, setLoading] = useState(false);
-    
+    const confirmar = useConfirm();
+
     // 🔴 LÓGICA INTELIGENTE: Se recebeu membro do modal, já define como MEMBRO
     const [tipoComprador, setTipoComprador] = useState<'MEMBRO' | 'EXTERNO'>(
         membroPreSelecionadoId && membroPreSelecionadoId !== 'anonimo' ? 'MEMBRO' : 'EXTERNO'
@@ -122,7 +124,7 @@ export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: Gr
     }
 
     async function handleEncerrarSemVencedor() {
-        if (window.confirm("Atenção: Deseja encerrar a Rifa sem declarar vencedores?")) {
+        if (await confirmar({ mensagem: 'Atenção: Deseja encerrar a Rifa sem declarar vencedores?', tipo: 'aviso' })) {
             setLoading(true);
             const result = await finalizarRifaAction(rifa.id);
             if (!result.ok) { alert(result.error); setLoading(false); }

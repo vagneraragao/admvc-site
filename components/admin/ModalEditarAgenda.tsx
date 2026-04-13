@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { MoreHorizontal, X, Save, Loader2, Link as LinkIcon, User, Type, Trash2, Shield, Search } from 'lucide-react'
 import { editarAgendaAction, apagarAgendaAction } from '@/actions/agenda-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, membros: any[] }) {
+    const confirmar = useConfirm()
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [slugPreview, setSlugPreview] = useState(agenda.slug);
@@ -41,7 +43,8 @@ export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, me
     }
 
     async function handleDelete() {
-        if (!confirm(`Tens a certeza que queres APAGAR a "${agenda.nome}"? Todos os compromissos serão apagados!`)) return;
+        const ok = await confirmar({ mensagem: `Tens a certeza que queres APAGAR a "${agenda.nome}"? Todos os compromissos serão apagados!`, tipo: 'perigo' })
+        if (!ok) return;
         setIsPending(true);
         const res = await apagarAgendaAction(agenda.id);
         setIsPending(false);

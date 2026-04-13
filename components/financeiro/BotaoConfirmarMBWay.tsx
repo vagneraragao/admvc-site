@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { confirmarMBWayCarneAction } from '@/actions/financeiro-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Pendente {
     id: number
@@ -21,9 +22,10 @@ interface Props {
 
 export default function BotaoConfirmarMBWay({ pendentes }: Props) {
     const [loading, setLoading] = useState(false)
+    const confirmarDialog = useConfirm()
 
     async function confirmar() {
-        if (!confirm(`Confirmar ${pendentes.length} transação(ões) MBWay pendente(s)?`)) return
+        if (!await confirmarDialog({ mensagem: `Confirmar ${pendentes.length} transação(ões) MBWay pendente(s)?`, tipo: 'info' })) return
 
         setLoading(true)
 

@@ -58,18 +58,19 @@ export default async function MuralPage() {
     });
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 h-[calc(100vh-80px)] flex flex-col">
+        <main className="max-w-5xl mx-auto py-4 md:py-10 px-4 sm:px-6 space-y-4 md:space-y-8 animate-in fade-in duration-700 h-[calc(100dvh-60px)] md:h-[calc(100vh-80px)] flex flex-col">
 
             <header className="shrink-0 space-y-4">
-                <div className="flex items-center gap-4 border-b border-soft pb-6">
-                    <div className="p-4 bg-figueira/10 text-figueira rounded-2xl">
-                        <MessageSquare size={24} />
+                <div className="flex items-center gap-3 md:gap-4 border-b border-soft pb-4 md:pb-6">
+                    <div className="p-2.5 md:p-4 bg-figueira/10 text-figueira rounded-xl md:rounded-2xl">
+                        <MessageSquare size={18} className="md:hidden" />
+                        <MessageSquare size={24} className="hidden md:block" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg leading-none">
+                        <h1 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-fg leading-none">
                             Mural de <span className="text-muted/30">Avisos.</span>
                         </h1>
-                        <p className="text-xs text-muted font-bold tracking-widest uppercase mt-1">
+                        <p className="text-[9px] md:text-xs text-muted font-bold tracking-widest uppercase mt-1">
                             Comunicação interna das tuas equipas.
                         </p>
                     </div>

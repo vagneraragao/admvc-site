@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react'
 import { autoReconciliar } from '@/actions/reconciliacao-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAutoReconciliar({ contaId }: { contaId: number }) {
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ reconciled: number; total: number } | null>(null)
+    const confirmar = useConfirm()
 
     async function handleClick() {
-        if (!confirm('Executar reconciliacao automatica? Isto ira tentar associar movimentos bancarios a contribuicoes, despesas e donativos.')) return
+        if (!await confirmar({ mensagem: 'Executar reconciliacao automatica? Isto ira tentar associar movimentos bancarios a contribuicoes, despesas e donativos.', tipo: 'aviso' })) return
         setLoading(true)
         setResultado(null)
         try {

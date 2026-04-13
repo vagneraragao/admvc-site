@@ -16,6 +16,7 @@ import {
     criarEBD, registarPresencasEBD, removerEBD,
     calcularAprovacao, responderAtividade
 } from '@/actions/pregacao-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const TIPO_LABELS: Record<string, string> = {
     EXERCICIO: 'Exercicio',
@@ -106,6 +107,7 @@ interface Props {
 }
 
 export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ensino', membroId }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -165,7 +167,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     }
 
     async function handleRemoverMatricula(membroId: number) {
-        if (!confirm('Remover este aluno da turma?')) return
+        if (!await confirmar({ mensagem: 'Remover este aluno da turma?', tipo: 'perigo' })) return
         const res = await removerMatricula(turma.id, membroId)
         if (res.ok) router.refresh()
         else alert(res.error)
@@ -287,7 +289,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     }
 
     async function handleCalcularAprovacao() {
-        if (!confirm('Calcular aprovacao para todos os alunos desta turma?')) return
+        if (!await confirmar({ mensagem: 'Calcular aprovacao para todos os alunos desta turma?', tipo: 'info' })) return
         setLoading(true)
         const res = await calcularAprovacao(turma.id)
         setLoading(false)
@@ -729,7 +731,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                         {podeGerir && (
                                             <div className="flex items-center gap-2 pt-2 border-t border-soft/50">
                                                 <button onClick={() => abrirPresencas(a)} className="text-[8px] font-black uppercase text-figueira hover:underline flex items-center gap-1"><Users size={10} /> Presencas</button>
-                                                <button onClick={async () => { if (confirm('Remover aula?')) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1 ml-auto"><Trash2 size={12} /></button>
+                                                <button onClick={async () => { const ok = await confirmar({ mensagem: 'Remover aula?', tipo: 'perigo' }); if (ok) { const r = await removerEBD(a.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1 ml-auto"><Trash2 size={12} /></button>
                                             </div>
                                         )}
                                     </div>
@@ -778,7 +780,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
                                         )}
                                         {podeGerir && <button onClick={() => abrirEdicaoAtividade(atv)} className="text-[8px] font-black uppercase text-blue-400 hover:underline">Editar</button>}
                                         {podeGerir && <button onClick={() => abrirNotas(atv.id)} className="text-[8px] font-black uppercase text-figueira hover:underline">Lancar Notas</button>}
-                                        {podeGerir && <button onClick={async () => { if (confirm('Remover atividade?')) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
+                                        {podeGerir && <button onClick={async () => { const ok = await confirmar({ mensagem: 'Remover atividade?', tipo: 'perigo' }); if (ok) { const r = await removerAtividade(atv.id); if (r.ok) router.refresh() } }} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={12} /></button>}
                                     </div>
                                 </div>
                             ))}

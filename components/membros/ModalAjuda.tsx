@@ -31,12 +31,16 @@ const SECOES = [
     },
 ]
 
-export default function ModalAjuda({ isMenuItem = false }: { isMenuItem?: boolean }) {
+export default function ModalAjuda({ isMenuItem = false, trigger }: { isMenuItem?: boolean; trigger?: React.ReactNode }) {
     const [aberto, setAberto] = useState(false)
 
     return (
         <>
-            {isMenuItem ? (
+            {trigger ? (
+                <div onClick={() => setAberto(true)} className="cursor-pointer">
+                    {trigger}
+                </div>
+            ) : isMenuItem ? (
                 <button
                     onClick={() => setAberto(true)}
                     className="text-[9px] font-bold uppercase tracking-widest text-fg hover:bg-soft px-2.5 py-2 rounded-lg transition-all flex items-center gap-2.5 w-full text-left"

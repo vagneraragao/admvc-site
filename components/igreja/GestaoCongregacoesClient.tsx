@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { criarCongregacao, atualizarCongregacao, excluirCongregacao, associarMembrosACongregacao, removerMembroDeCongregacao } from '@/actions/admin-actions'
 import { PlusCircle, Loader2, CheckCircle2, Building2, Edit3, ArrowLeft, Users, MapPin, Trash2, UserPlus, X, Search } from 'lucide-react'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -15,6 +16,7 @@ export default function GestaoCongregacoesClient({
     congregacoes: any[]
     membrosSemCongregacao?: Membro[]
 }) {
+    const confirmar = useConfirm()
     const [modo, setModo] = useState<'lista' | 'criar' | 'editar'>('lista')
     const [selecionada, setSelecionada] = useState<any>(null)
     const [loading, setLoading] = useState(false)
@@ -47,7 +49,7 @@ export default function GestaoCongregacoesClient({
     }
 
     async function handleDelete() {
-        if (!confirm('Tem a certeza que deseja apagar esta congregacao?')) return
+        if (!await confirmar({ mensagem: 'Tem a certeza que deseja apagar esta congregacao?', tipo: 'perigo' })) return
         setLoading(true)
         const res = await excluirCongregacao(selecionada.id)
         if (res?.error) {
@@ -75,7 +77,7 @@ export default function GestaoCongregacoesClient({
     }
 
     async function handleRemoverMembro(membroId: number) {
-        if (!confirm('Remover este membro da congregacao?')) return
+        if (!await confirmar({ mensagem: 'Remover este membro da congregacao?', tipo: 'perigo' })) return
         setLoading(true)
         const res = await removerMembroDeCongregacao(membroId)
         if (res.ok) {

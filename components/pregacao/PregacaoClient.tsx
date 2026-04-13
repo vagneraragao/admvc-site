@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { createPortal } from 'react-dom'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, podeGerir = false }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -140,7 +142,7 @@ export default function PregacaoClient({ sermoes, membros, eventos, mes, ano, po
     }
 
     async function handleRemover(id: string) {
-        if (!confirm('Tens certeza que queres remover este sermao?')) return
+        if (!await confirmar({ mensagem: 'Tens certeza que queres remover este sermao?', tipo: 'perigo' })) return
         const res = await removerSermao(id)
         if (res.ok) {
             router.refresh()

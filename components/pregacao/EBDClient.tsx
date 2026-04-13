@@ -10,6 +10,7 @@ import {
     X, Loader2, Check, ChevronDown
 } from 'lucide-react'
 import { criarEBD, removerEBD, registarPresencasEBD } from '@/actions/pregacao-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const MESES = [
     'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdInicial }: Props) {
+    const confirmar = useConfirm()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -131,7 +133,7 @@ export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdI
     }
 
     async function handleRemover(id: string) {
-        if (!confirm('Tens certeza que queres remover esta aula?')) return
+        if (!await confirmar({ mensagem: 'Tens certeza que queres remover esta aula?', tipo: 'perigo' })) return
         const res = await removerEBD(id)
         if (res.ok) {
             router.refresh()

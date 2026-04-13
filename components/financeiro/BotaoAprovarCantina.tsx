@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Loader2, Euro } from 'lucide-react'
 import { aprovarSaldoCantinaAction } from '@/actions/financeiro-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAprovarCantina({
     pedidoId,
@@ -16,9 +17,10 @@ export default function BotaoAprovarCantina({
     nomeMembro: string
 }) {
     const [loading, setLoading] = useState(false)
+    const confirmar = useConfirm()
 
     async function handleAprovar() {
-        if (!confirm(`Aprovar o carregamento de €${valor} para ${nomeMembro}?`)) return
+        if (!await confirmar({ mensagem: `Aprovar o carregamento de €${valor} para ${nomeMembro}?`, tipo: 'info' })) return
 
         setLoading(true)
 

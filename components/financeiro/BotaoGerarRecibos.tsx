@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import { Loader2, FileStack, CheckCircle2 } from 'lucide-react'
 import { gerarRecibosLote } from '@/actions/recibo-actions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoGerarRecibos({ ano }: { ano: number }) {
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ total?: number; error?: string } | null>(null)
+    const confirmar = useConfirm()
 
     async function handleGerar() {
-        if (!confirm(`Gerar recibos para todos os membros contribuintes de ${ano}? Recibos existentes serao atualizados.`)) {
+        if (!await confirmar({ mensagem: `Gerar recibos para todos os membros contribuintes de ${ano}? Recibos existentes serao atualizados.`, tipo: 'aviso' })) {
             return
         }
 

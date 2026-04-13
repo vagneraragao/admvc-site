@@ -1,5 +1,7 @@
 "use client"
 
+import { useConfirm } from '@/components/ui/ConfirmDialog'
+
 interface BotaoExcluirProps {
     id: number;
     nome: string;
@@ -7,8 +9,9 @@ interface BotaoExcluirProps {
 }
 
 export default function BotaoExcluirCargo({ id, nome, onExcluir }: BotaoExcluirProps) {
+    const confirmar = useConfirm()
     const handleExcluir = async () => {
-        const confirmou = confirm(`Tem certeza que deseja excluir o cargo "${nome.toUpperCase()}"?`);
+        const confirmou = await confirmar({ mensagem: `Tem certeza que deseja excluir o cargo "${nome.toUpperCase()}"?`, tipo: 'perigo' });
 
         if (confirmou) {
             try {
