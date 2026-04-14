@@ -18,7 +18,7 @@ export default function QrCodeMembro({ membroId, qrCode: initial }: Props) {
     }
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] p-6 text-center space-y-3">
+        <div className="bg-bg2 border border-soft rounded-2xl p-6 text-center space-y-3">
             <div className="flex items-center justify-center gap-2">
                 <QrCode size={16} className="text-figueira" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted">Cartao Cantina</span>

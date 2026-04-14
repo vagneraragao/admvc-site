@@ -25,7 +25,7 @@ export default function BotaoCriarPermanecer() {
 
     if (resultado?.ok) {
         return (
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-5 py-4">
                     <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                     <p className="text-xs font-bold text-emerald-600">{resultado.msg}</p>
@@ -35,7 +35,7 @@ export default function BotaoCriarPermanecer() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
             <div className="bg-figueira/5 border border-figueira/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-figueira/20 flex items-center justify-center shrink-0">

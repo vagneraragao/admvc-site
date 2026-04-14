@@ -62,7 +62,7 @@ export default async function ReconciliacaoPage({
     }
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700">
 
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -72,7 +72,7 @@ export default async function ReconciliacaoPage({
                 </div>
                 <Link
                     href="/financeiro/fundos"
-                    className="h-11 px-4 bg-bg2 border border-soft text-fg rounded-xl flex items-center gap-2 hover:bg-bg transition-all active:scale-95 text-[9px] font-black uppercase tracking-widest w-fit"
+                    className="h-11 px-4 bg-bg2 border border-soft text-fg rounded-xl flex items-center gap-2 hover:bg-bg transition-all active:scale-95 text-[9px] md:text-[11px] font-black uppercase tracking-widest w-fit"
                 >
                     <ArrowLeft size={14} />
                     Financeiro
@@ -85,7 +85,7 @@ export default async function ReconciliacaoPage({
                     <Link
                         key={conta.id}
                         href={`/financeiro/reconciliacao?conta=${conta.id}`}
-                        className={`h-10 px-4 rounded-xl flex items-center gap-2 text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${
+                        className={`h-10 px-4 rounded-xl flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest transition-all active:scale-95 ${
                             conta.id === contaSelecionadaId
                                 ? 'bg-accent text-white'
                                 : 'bg-bg2 border border-soft text-fg hover:bg-bg'
@@ -93,7 +93,7 @@ export default async function ReconciliacaoPage({
                     >
                         <Landmark size={12} />
                         {conta.nome}
-                        {conta.banco && <span className="text-[8px] opacity-60">({conta.banco})</span>}
+                        {conta.banco && <span className="text-[8px] md:text-[10px] opacity-60">({conta.banco})</span>}
                     </Link>
                 ))}
                 <FormCriarConta />
@@ -118,7 +118,7 @@ export default async function ReconciliacaoPage({
                     {/* Stats Cards */}
                     <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div className="bg-bg2 border border-soft rounded-2xl p-4 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">Total Movimentos</p>
+                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted">Total Movimentos</p>
                             <p className="text-2xl font-black text-fg">{stats.total}</p>
                         </div>
                         <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4 space-y-1">
@@ -134,7 +134,7 @@ export default async function ReconciliacaoPage({
                             <p className="text-2xl font-black text-orange-400">{stats.pendentes}</p>
                         </div>
                         <div className="bg-bg2 border border-soft rounded-2xl p-4 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted flex items-center gap-1">
+                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-1">
                                 <TrendingUp size={10} /> Creditos
                             </p>
                             <p className="text-lg font-black text-green-400">{euro(stats.totalCreditos)}</p>
@@ -143,7 +143,7 @@ export default async function ReconciliacaoPage({
                             </p>
                         </div>
                         <div className="bg-bg2 border border-soft rounded-2xl p-4 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted flex items-center gap-1">
+                            <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted flex items-center gap-1">
                                 <Banknote size={10} /> Saldo
                             </p>
                             <p className={`text-2xl font-black ${stats.saldo >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -158,12 +158,12 @@ export default async function ReconciliacaoPage({
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b border-soft">
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted">Data</th>
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted">Descricao</th>
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted text-right">Valor</th>
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted text-right">Saldo</th>
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted">Estado</th>
-                                        <th className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted">Accoes</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Data</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Descricao</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">Valor</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">Saldo</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Estado</th>
+                                        <th className="px-4 py-3 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Accoes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -182,7 +182,7 @@ export default async function ReconciliacaoPage({
                                             <td className="px-4 py-3 text-xs text-fg max-w-xs truncate" title={mov.descricao}>
                                                 {mov.descricao}
                                                 {mov.referencia && (
-                                                    <span className="ml-1 text-[10px] text-muted">({mov.referencia})</span>
+                                                    <span className="ml-1 text-[10px] md:text-xs text-muted">({mov.referencia})</span>
                                                 )}
                                             </td>
                                             <td className={`px-4 py-3 text-xs font-bold text-right whitespace-nowrap ${
@@ -196,18 +196,18 @@ export default async function ReconciliacaoPage({
                                             <td className="px-4 py-3">
                                                 {mov.reconciliado ? (
                                                     <div className="space-y-0.5">
-                                                        <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">
+                                                        <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest">
                                                             <CheckCircle2 size={10} />
                                                             Reconciliado
                                                         </span>
                                                         {mov.reconciliado_com && (
-                                                            <p className="text-[9px] text-muted truncate max-w-[140px]" title={mov.reconciliado_com}>
+                                                            <p className="text-[9px] md:text-[11px] text-muted truncate max-w-[140px]" title={mov.reconciliado_com}>
                                                                 {mov.reconciliado_com}
                                                             </p>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">
+                                                    <span className="inline-flex items-center gap-1 bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest">
                                                         <Clock size={10} />
                                                         Pendente
                                                     </span>

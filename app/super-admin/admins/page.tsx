@@ -2,13 +2,18 @@ import prismaGlobal from '@/lib/prisma'
 import { requireSAAuth } from '@/lib/sa-auth'
 import FormNovoSA from '@/components/superadmin/FormNovoSA'
 import BotaoToggleSA from '@/components/superadmin/BotaoToggleSA'
+import AdminRoleSelect from '@/components/superadmin/AdminRoleSelect'
+import BotaoEliminarSA from '@/components/superadmin/BotaoEliminarSA'
 import { ShieldCheck } from 'lucide-react'
 
 export default async function AdminsPage() {
-    await requireSAAuth()
+    const session = await requireSAAuth()
 
     const admins = await prismaGlobal.superAdmin.findMany({
         orderBy: { criado_em: 'desc' },
+        include: {
+            _count: { select: { logs: true } }
+        }
     })
 
     const roleBadge = (role: string) => {
@@ -42,7 +47,7 @@ export default async function AdminsPage() {
                                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Email</th>
                                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Role</th>
                                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Estado</th>
-                                <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Criado em</th>
+                                <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Actividade</th>
                                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500">Acoes</th>
                             </tr>
                         </thead>
@@ -50,11 +55,9 @@ export default async function AdminsPage() {
                             {admins.map((sa) => (
                                 <tr key={sa.id} className="border-b border-[#1A1A1A] hover:bg-[#1A1A1A] transition">
                                     <td className="px-6 py-4 text-white font-bold">{sa.nome}</td>
-                                    <td className="px-6 py-4 text-gray-400">{sa.email}</td>
+                                    <td className="px-6 py-4 text-gray-400 text-xs">{sa.email}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${roleBadge(sa.role)}`}>
-                                            {sa.role}
-                                        </span>
+                                        <AdminRoleSelect saId={sa.id} currentRole={sa.role} />
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
@@ -65,11 +68,21 @@ export default async function AdminsPage() {
                                             {sa.is_active ? 'Ativo' : 'Inativo'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-500 text-xs">
-                                        {new Date(sa.criado_em).toLocaleDateString('pt-PT')}
+                                    <td className="px-6 py-4">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] text-zinc-400">{sa._count.logs} acoes</p>
+                                            <p className="text-[9px] text-zinc-600">
+                                                Criado {new Date(sa.criado_em).toLocaleDateString('pt-PT')}
+                                            </p>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <BotaoToggleSA saId={sa.id} isActive={sa.is_active} />
+                                        <div className="flex items-center gap-2">
+                                            <BotaoToggleSA saId={sa.id} isActive={sa.is_active} />
+                                            {sa.id !== session.saId && (
+                                                <BotaoEliminarSA saId={sa.id} nome={sa.nome} />
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

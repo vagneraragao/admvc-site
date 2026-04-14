@@ -71,7 +71,7 @@ export default async function CestasPage() {
     }))
 
     return (
-        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-8 animate-in fade-in duration-700 pb-28 md:pb-32">
+        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-5 md:space-y-8 animate-in fade-in duration-700 pb-28 md:pb-32">
             <header className="space-y-1 md:space-y-2">
                 <Link href="/assistencia" className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 hover:brightness-125 transition-all">
                     <HeartHandshake size={13} /> Assistencia Social

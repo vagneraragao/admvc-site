@@ -15,14 +15,14 @@ export default function ExtratoFinanceiro({ objetivos }: { objetivos: any[] }) {
 
     if (todosLancamentos.length === 0) {
         return (
-            <div className="py-10 border-2 border-dashed border-soft rounded-[2rem] text-center bg-bg2/30">
+            <div className="py-10 border-2 border-dashed border-soft rounded-2xl text-center bg-bg2/30">
                 <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">Nenhum registo financeiro encontrado.</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] p-4 space-y-2 shadow-sm">
+        <div className="bg-bg2 border border-soft rounded-2xl p-4 space-y-2 shadow-sm">
             {todosLancamentos.slice(0, 10).map((item) => (
                 <div key={item.id} className="flex justify-between items-center p-3 hover:bg-soft rounded-xl transition-all group">
                     <div className="flex items-center gap-3">

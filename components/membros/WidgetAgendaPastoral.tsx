@@ -36,7 +36,7 @@ export default async function WidgetAgendaPastoral({ membroId }: { membroId: num
     // Vamos mostrar um card verde a dizer que o dia está livre!
     if (pendentes.length === 0 && agendadosHoje.length === 0) {
         return (
-            <div className="bg-figueira/5 border border-figueira/20 rounded-[2rem] p-6 flex items-center justify-between">
+            <div className="bg-figueira/5 border border-figueira/20 rounded-2xl p-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center">
                         <CheckCircle2 size={20} />
@@ -58,7 +58,7 @@ export default async function WidgetAgendaPastoral({ membroId }: { membroId: num
             
             {/* ALERTA DE PENDENTES (Laranja/Urgente) */}
             {pendentes.length > 0 && (
-                <div className="bg-orange-500/5 border border-orange-500/20 rounded-[2rem] p-6 flex items-center justify-between group hover:bg-orange-500/10 transition-colors">
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-6 flex items-center justify-between group hover:bg-orange-500/10 transition-colors">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-orange-500/20 text-orange-600 rounded-2xl flex items-center justify-center animate-pulse">
                             <BellRing size={20} />
@@ -78,7 +78,7 @@ export default async function WidgetAgendaPastoral({ membroId }: { membroId: num
 
             {/* ALERTA DE COMPROMISSOS DE HOJE */}
             {agendadosHoje.length > 0 && (
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 flex items-center justify-between group hover:border-figueira/30 transition-colors">
+                <div className="bg-bg2 border border-soft rounded-2xl p-6 flex items-center justify-between group hover:border-figueira/30 transition-colors">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center">
                             <CalendarDays size={20} />

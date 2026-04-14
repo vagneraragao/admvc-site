@@ -106,7 +106,7 @@ export default async function GestaoObraFinanceiro() {
                 <form action={salvarProgresso} className="space-y-8">
                     <input type="hidden" name="projetoId" value={projeto.id} />
 
-                    <div className="p-6 bg-green-500/5 border border-green-500/20 rounded-[2rem] flex justify-between items-center">
+                    <div className="p-6 bg-green-500/5 border border-green-500/20 rounded-2xl flex justify-between items-center">
                         <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-muted block mb-1">Total Arrecadado até Hoje</span>
                             <span className="text-4xl font-black italic text-green-500 valor-dinheiro inline-block">{euro(totalArrecadado)}</span>
@@ -126,7 +126,7 @@ export default async function GestaoObraFinanceiro() {
                         <h3 className="text-sm font-black uppercase tracking-widest text-fg border-b border-soft pb-2">Etapas do Projeto</h3>
 
                         {projeto.etapas.map((etapa) => (
-                            <div key={etapa.id} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center p-6 bg-bg border border-soft rounded-[2rem] hover:border-green-500/30 transition-colors">
+                            <div key={etapa.id} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center p-6 bg-bg border border-soft rounded-2xl hover:border-green-500/30 transition-colors">
                                 <div>
                                     <h4 className="font-black text-fg uppercase text-sm">{etapa.nome}</h4>
                                     <span className="text-[9px] font-bold text-muted uppercase tracking-widest">Alvo: {euro(etapa.alvo)}</span>

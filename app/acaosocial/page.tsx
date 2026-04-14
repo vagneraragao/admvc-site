@@ -55,9 +55,9 @@ export default async function AdminDespensaPage() {
         : []
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-32">
             <header className="space-y-2">
-                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="text-figueira font-black text-[10px] md:text-xs uppercase tracking-[0.3em] flex items-center gap-2">
                     <HeartHandshake size={14} /> Acao Social
                 </span>
                 <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-fg">Despensa</h1>
@@ -65,10 +65,10 @@ export default async function AdminDespensaPage() {
             </header>
 
             {produtos.length === 0 ? (
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
+                <div className="bg-bg2 border border-soft rounded-2xl p-12 text-center space-y-3">
                     <Package size={32} className="mx-auto text-muted/20" />
                     <p className="text-sm font-bold text-muted">Nenhum produto de despensa encontrado.</p>
-                    <p className="text-[10px] text-muted">
+                    <p className="text-[10px] md:text-xs text-muted">
                         Crie categorias como &quot;Despensa&quot; ou &quot;Assistencia&quot; em{' '}
                         <a href="/cantina/produtos" className="text-figueira underline">Produtos</a>{' '}
                         para que aparecam aqui.
@@ -83,9 +83,9 @@ export default async function AdminDespensaPage() {
                             <section key={cat.id} className="space-y-4">
                                 <h2 className="text-lg font-black uppercase tracking-widest text-fg flex items-center gap-3">
                                     <Package size={16} className="text-figueira" /> {cat.nome}
-                                    <span className="text-[9px] font-bold text-muted">({catProdutos.length})</span>
+                                    <span className="text-[9px] md:text-[11px] font-bold text-muted">({catProdutos.length})</span>
                                 </h2>
-                                <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                                     {catProdutos.map((p, idx) => (
                                         <div key={p.id} className={`flex items-center justify-between px-6 py-4 ${idx > 0 ? 'border-t border-soft' : ''}`}>
                                             <div>
@@ -96,7 +96,7 @@ export default async function AdminDespensaPage() {
                                                     <p className={`text-lg font-black italic ${p.stock <= (p.stock_minimo || 0) ? 'text-red-400' : 'text-fg'}`}>
                                                         {p.stock}
                                                     </p>
-                                                    <p className="text-[8px] font-black uppercase tracking-widest text-muted">unidades</p>
+                                                    <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted">unidades</p>
                                                 </div>
                                                 {p.stock <= (p.stock_minimo || 0) && (
                                                     <AlertTriangle size={14} className="text-orange-500" />

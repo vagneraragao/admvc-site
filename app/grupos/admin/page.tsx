@@ -65,7 +65,7 @@ export default async function AdminGruposPage({ searchParams }: { searchParams: 
     const semRegiao = grupos.filter(g => !g.regiao || !REGIOES.includes(g.regiao))
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-32">
 
             <Breadcrumb items={[
                 { label: 'Painel Admin', href: '/admin/dashboard', isBackIcon: true },
@@ -129,7 +129,7 @@ export default async function AdminGruposPage({ searchParams }: { searchParams: 
             )}
 
             {/* MAPA ADMIN */}
-            <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-3 px-6 py-5 border-b border-soft">
                     <Map size={16} className="text-figueira" />
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Mapa de Grupos</h2>
@@ -151,7 +151,7 @@ export default async function AdminGruposPage({ searchParams }: { searchParams: 
                 {[...REGIOES.map(r => ({ regiao: r, lista: porRegiao[r] || [] })),
                 ...(semRegiao.length > 0 ? [{ regiao: 'Sem Regiao', lista: semRegiao }] : [])
                 ].filter(({ lista }) => lista.length > 0).map(({ regiao, lista }) => (
-                    <div key={regiao} className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                    <div key={regiao} className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                         {/* CABEÇALHO DA REGIÃO */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-soft">
                             <div className="flex items-center gap-3">

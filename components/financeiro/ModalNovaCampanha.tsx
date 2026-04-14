@@ -183,7 +183,7 @@ export default function ModalNovaCampanha({ membros, tipoPredefinido = 'CARNE', 
                             {/* MODO: ADICIONAR A CAMPANHA EXISTENTE */}
                             {!isRifa && modo === 'EXISTENTE' && (
                                 <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="space-y-2 bg-figueira/5 p-6 rounded-[2rem] border border-figueira/20">
+                                    <div className="space-y-2 bg-figueira/5 p-6 rounded-2xl border border-figueira/20">
                                         <label className="text-[10px] font-black uppercase text-figueira ml-2 tracking-[0.2em]">
                                             Selecione a Campanha
                                         </label>

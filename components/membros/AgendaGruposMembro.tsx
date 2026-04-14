@@ -59,7 +59,7 @@ export default function AgendaGruposMembro({ gruposMembro }: { gruposMembro: any
                     const eHoje = dataProximo.toDateString() === new Date().toDateString();
 
                     return (
-                        <div key={grupo.id} className="group bg-bg2 border border-soft hover:border-blue-300 p-5 rounded-[2rem] transition-all shadow-sm relative overflow-hidden flex flex-col justify-between w-full">
+                        <div key={grupo.id} className="group bg-bg2 border border-soft hover:border-blue-300 p-5 rounded-2xl transition-all shadow-sm relative overflow-hidden flex flex-col justify-between w-full">
 
                             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
 

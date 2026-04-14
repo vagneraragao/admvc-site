@@ -56,7 +56,7 @@ export default function MeusPledges() {
 
     if (loading) {
         return (
-            <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-3">
+            <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-3">
                 <div className="flex items-center gap-2">
                     <HeartHandshake size={16} className="text-figueira" />
                     <h3 className="text-sm font-black italic uppercase tracking-tighter text-fg">Minhas Promessas</h3>
@@ -69,7 +69,7 @@ export default function MeusPledges() {
     }
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4">
+        <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <HeartHandshake size={16} className="text-figueira" />

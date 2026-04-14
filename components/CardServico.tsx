@@ -15,7 +15,7 @@ export default function CardServico({ escala }: { escala: any }) {
     const dataEvento = new Date(escala.evento.data);
 
     return (
-        <div className={`p-6 rounded-[2rem] border transition-all ${status ? 'bg-figueira/5 border-figueira/20' : 'bg-bg border-soft shadow-lg'}`}>
+        <div className={`p-6 rounded-2xl border transition-all ${status ? 'bg-figueira/5 border-figueira/20' : 'bg-bg border-soft shadow-lg'}`}>
             <div className="flex justify-between items-start mb-4">
                 <div>
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-figueira">

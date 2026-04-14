@@ -164,7 +164,7 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
     const relatorioAtual = relatoriosDisponiveis.find(r => r.id === relatorioAtivo);
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-32">
 
             {/* HEADER */}
             <header className="space-y-1">
@@ -180,7 +180,7 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
                         <button
                             key={btn.id}
                             onClick={() => handleAbrirRelatorio(btn.id)}
-                            className="group flex flex-col items-center justify-center gap-4 p-6 bg-bg border border-soft rounded-[2rem] hover:border-figueira/50 hover:bg-figueira/5 transition-all active:scale-95 text-center shadow-sm"
+                            className="group flex flex-col items-center justify-center gap-4 p-6 bg-bg border border-soft rounded-2xl hover:border-figueira/50 hover:bg-figueira/5 transition-all active:scale-95 text-center shadow-sm"
                         >
                             <div className="text-muted group-hover:text-figueira group-hover:-translate-y-1 transition-all duration-300">
                                 {btn.icon}
@@ -192,7 +192,7 @@ export default function RelatoriosClient({ membros }: { membros: any[] }) {
                     ))}
                     <Link
                         href={linkEscalas}
-                        className="group flex flex-col items-center justify-center gap-4 p-6 bg-bg border border-soft rounded-[2rem] hover:border-figueira/50 hover:bg-figueira/5 transition-all active:scale-95 text-center shadow-sm"
+                        className="group flex flex-col items-center justify-center gap-4 p-6 bg-bg border border-soft rounded-2xl hover:border-figueira/50 hover:bg-figueira/5 transition-all active:scale-95 text-center shadow-sm"
                     >
                         <div className="text-muted group-hover:text-figueira group-hover:-translate-y-1 transition-all duration-300">
                             <Calendar size={20} />

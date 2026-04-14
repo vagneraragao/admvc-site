@@ -855,7 +855,7 @@ export default async function DashboardMembro({
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {Array.from(gruposAgrupados.values()).map((grupo: any) => (
-                                        <div key={grupo.id} className="bg-bg2 border border-soft p-6 rounded-[2rem] shadow-sm hover:border-blue-500/40 transition-all space-y-4">
+                                        <div key={grupo.id} className="bg-bg2 border border-soft p-6 rounded-2xl shadow-sm hover:border-blue-500/40 transition-all space-y-4">
 
                                             {/* CABEÇALHO */}
                                             <div className="flex items-start gap-4">
@@ -965,7 +965,7 @@ export default async function DashboardMembro({
                                             NOVO: 'Novo', EM_CONTACTO: 'Contacto', REUNIAO_PASTOR: 'Pastor',
                                         }
                                         return (
-                                        <div key={visitante.id} className={`bg-bg2 border rounded-[2rem] p-5 transition-all space-y-3 ${isAtrasado ? 'border-red-500/30 bg-red-500/[0.02]' : 'border-soft hover:border-emerald-500/30'}`}>
+                                        <div key={visitante.id} className={`bg-bg2 border rounded-2xl p-5 transition-all space-y-3 ${isAtrasado ? 'border-red-500/30 bg-red-500/[0.02]' : 'border-soft hover:border-emerald-500/30'}`}>
                                             <div className="flex items-center justify-between gap-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isAtrasado ? 'bg-red-500/10' : 'bg-emerald-500/10'}`}>
@@ -1033,7 +1033,7 @@ export default async function DashboardMembro({
                                     <QrCodeMembro membroId={membro.id} qrCode={membro.qr_code || null} />
                                     <CardLimiteFilhos />
                                 </div>
-                                <div className="lg:col-span-8 bg-bg border border-soft rounded-[2rem] p-6 shadow-inner relative overflow-hidden space-y-4">
+                                <div className="lg:col-span-8 bg-bg border border-soft rounded-2xl p-6 shadow-inner relative overflow-hidden space-y-4">
                                     <ExtratoCantinaLocal membroId={membro.id} />
                                     <ConsumoFilhos />
                                 </div>

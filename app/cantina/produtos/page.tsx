@@ -58,7 +58,7 @@ export default async function ProdutosPage() {
     }))
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-28">
             {/* ── HEADER ─────────────────────────────────────────────── */}
             <header className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -75,26 +75,26 @@ export default async function ProdutosPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-5 space-y-1">
+                        <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">
                             Total Produtos
                         </p>
                         <p className="text-3xl font-black text-fg">{totalProdutos}</p>
                     </div>
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-5 space-y-1">
+                        <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">
                             Categorias
                         </p>
                         <p className="text-3xl font-black text-fg">{totalCategorias}</p>
                     </div>
                     <div
-                        className={`bg-bg2 border rounded-[2rem] p-5 space-y-1 ${
+                        className={`bg-bg2 border rounded-2xl p-5 space-y-1 ${
                             alertasStock > 0
                                 ? 'border-orange-500/30 bg-orange-500/5'
                                 : 'border-soft'
                         }`}
                     >
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
+                        <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                             {alertasStock > 0 && (
                                 <AlertTriangle size={10} className="text-orange-500" />
                             )}
@@ -130,7 +130,7 @@ export default async function ProdutosPage() {
                                 className="flex items-center gap-2 bg-bg2 border border-soft rounded-2xl px-4 py-2.5"
                             >
                                 <span className="text-sm font-bold text-fg">{cat.nome}</span>
-                                <span className="text-[9px] font-black text-muted">
+                                <span className="text-[9px] md:text-[11px] font-black text-muted">
                                     ({produtos.filter((p) => p.categoria_id === cat.id).length})
                                 </span>
                                 <BotaoEliminarCategoria categoriaId={cat.id} />
@@ -140,7 +140,7 @@ export default async function ProdutosPage() {
                 )}
 
                 {/* Add category form */}
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6">
+                <div className="bg-bg2 border border-soft rounded-2xl p-6">
                     <FormAdicionarCategoria />
                 </div>
             </section>
@@ -156,38 +156,38 @@ export default async function ProdutosPage() {
                 </div>
 
                 {produtos.length === 0 ? (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-10 text-center">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-10 text-center">
                         <Package size={32} className="mx-auto text-muted2 mb-3" />
                         <p className="text-sm font-bold text-muted">
                             Nenhum produto criado. Adicione o primeiro produto abaixo.
                         </p>
                     </div>
                 ) : (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                    <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                         {/* Desktop table header */}
                         <div className="hidden md:grid grid-cols-[1fr_100px_70px_90px_90px_auto_auto_auto] gap-4 px-6 py-3 border-b border-soft">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">
                                 Produto
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">
                                 Categoria
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-right">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">
                                 Preco
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-center">
                                 Stock
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-center">
                                 Status
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-center">
                                 Promos
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-center">
                                 Acoes
                             </p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-muted" />
+                            <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted" />
                         </div>
 
                         {/* Product rows */}
@@ -262,14 +262,14 @@ export default async function ProdutosPage() {
                                             promocoes.map((promo, i) => (
                                                 <span
                                                     key={i}
-                                                    className="inline-flex items-center gap-0.5 bg-figueira/10 text-figueira border border-figueira/20 rounded-lg px-2 py-0.5 text-[10px] font-black"
+                                                    className="inline-flex items-center gap-0.5 bg-figueira/10 text-figueira border border-figueira/20 rounded-lg px-2 py-0.5 text-[10px] md:text-xs font-black"
                                                 >
                                                     <Tag size={8} />
                                                     {promo.quantidade}&rarr;{promo.preco_total.toFixed(0)}&euro;
                                                 </span>
                                             ))
                                         ) : (
-                                            <span className="text-[10px] text-muted2 font-bold">--</span>
+                                            <span className="text-[10px] md:text-xs text-muted2 font-bold">--</span>
                                         )}
                                     </div>
 
@@ -298,7 +298,7 @@ export default async function ProdutosPage() {
                     <div className="h-[1px] flex-1 bg-soft" />
                 </div>
 
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6">
+                <div className="bg-bg2 border border-soft rounded-2xl p-6">
                     <FormAdicionarProduto categorias={categoriasSimples} />
                 </div>
             </section>

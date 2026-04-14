@@ -1,9 +1,8 @@
-// app/super-admin/layout.tsx
-import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { Server, Building, CreditCard, Settings, LogOut, ShieldAlert, ShieldCheck, UserCog, Megaphone, Rocket } from 'lucide-react'
+import { LogOut, ShieldAlert } from 'lucide-react'
 import { logoutSuperAdmin } from '@/actions/sa-auth-actions'
 import prismaGlobal from '@/lib/prisma'
+import SANav from '@/components/superadmin/SANav'
 
 export default async function SuperAdminLayout({
     children,
@@ -13,87 +12,40 @@ export default async function SuperAdminLayout({
     const cookieStore = await cookies()
     const saSession = cookieStore.get('admvc_sa_session')
 
-    // Sem sessão SA → renderizar apenas children (página de login)
     if (!saSession) {
         return <>{children}</>
     }
 
-    // Count churches pending onboarding
     const onboardingPendente = await prismaGlobal.tenant.count({
         where: { onboarding_completo: false },
     })
 
-    // Com sessão SA → layout completo com sidebar
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col md:flex-row font-sans text-white">
 
-            {/* SIDEBAR DO SUPER ADMIN */}
-            <aside className="w-full md:w-64 bg-[#111111] border-r border-[#222] flex flex-col justify-between shrink-0">
-                <div>
-                    <div className="h-20 flex items-center px-8 border-b border-[#222]">
-                        <Link href="/super-admin/dashboard" className="flex items-center gap-3">
+            {/* SIDEBAR */}
+            <aside className="hidden md:flex w-64 bg-[#111111] border-r border-[#222] flex-col justify-between shrink-0 sticky top-0 h-dvh">
+                <div className="flex flex-col flex-1 overflow-y-auto">
+                    <div className="h-20 flex items-center px-8 border-b border-[#222] shrink-0">
+                        <a href="/super-admin/dashboard" className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.5)]">
-                                <Server size={16} className="text-white" />
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
                             </div>
                             <span className="font-black italic uppercase tracking-tighter text-lg">
                                 ADMVC <span className="text-blue-500">Cloud</span>
                             </span>
-                        </Link>
+                        </a>
                     </div>
 
-                    <nav className="p-4 space-y-2 mt-4">
-                        <p className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4">Plataforma</p>
-
-                        <Link href="/super-admin/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <Server size={16} /> Visao Geral
-                        </Link>
-
-                        <Link href="/super-admin/igrejas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <Building size={16} /> Tenants (Igrejas)
-                        </Link>
-
-                        <Link href="/super-admin/billing" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <CreditCard size={16} /> Facturacao
-                        </Link>
-
-                        <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-600 cursor-not-allowed">
-                            <Settings size={16} /> Configuracoes
-                        </Link>
-
-                        <p className="px-4 pt-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4">Gestao</p>
-
-                        <Link href="/super-admin/admins" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <ShieldCheck size={16} /> Admins
-                        </Link>
-
-                        <Link href="/super-admin/impersonar" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <UserCog size={16} /> Impersonar
-                        </Link>
-
-                        <Link href="/super-admin/comunicacao" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300 hover:bg-[#222] hover:text-white transition-all">
-                            <Megaphone size={16} /> Comunicacao
-                        </Link>
-
-                        {onboardingPendente > 0 && (
-                            <p className="px-4 pt-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4">Setup</p>
-                        )}
-
-                        {onboardingPendente > 0 && (
-                            <Link href="/super-admin/igrejas" className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-all">
-                                <Rocket size={16} />
-                                <span className="flex-1">Onboarding</span>
-                                <span className="bg-amber-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center">{onboardingPendente}</span>
-                            </Link>
-                        )}
-                    </nav>
+                    <SANav onboardingPendente={onboardingPendente} />
                 </div>
 
-                <div className="p-4 border-t border-[#222]">
+                <div className="p-4 border-t border-[#222] shrink-0">
                     <div className="flex items-center gap-3 px-4 py-3 bg-[#1A1A1A] rounded-xl border border-[#333] mb-4">
                         <ShieldAlert size={16} className="text-orange-500" />
                         <div>
                             <p className="text-[9px] font-black uppercase tracking-widest text-orange-500">Acesso Restrito</p>
-                            <p className="text-[10px] font-bold text-gray-400">Super Administrador</p>
+                            <p className="text-[10px] font-bold text-zinc-400">Super Administrador</p>
                         </div>
                     </div>
 
@@ -105,11 +57,30 @@ export default async function SuperAdminLayout({
                 </div>
             </aside>
 
+            {/* MOBILE HEADER */}
+            <SAMobileHeader onboardingPendente={onboardingPendente} />
+
             <main className="flex-1 overflow-y-auto bg-[#0A0A0A]">
                 <div className="min-h-screen text-white bg-gradient-to-br from-[#0A0A0A] to-[#111111]">
                     {children}
                 </div>
             </main>
+        </div>
+    )
+}
+
+function SAMobileHeader({ onboardingPendente }: { onboardingPendente: number }) {
+    return (
+        <div className="md:hidden sticky top-0 z-50 bg-[#111] border-b border-[#222] px-4 py-3 flex items-center justify-between">
+            <a href="/super-admin/dashboard" className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+                </div>
+                <span className="font-black italic uppercase tracking-tighter text-sm text-white">
+                    ADMVC <span className="text-blue-500">Cloud</span>
+                </span>
+            </a>
+            <SANav onboardingPendente={onboardingPendente} mobile />
         </div>
     )
 }

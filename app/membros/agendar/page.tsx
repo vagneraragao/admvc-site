@@ -30,7 +30,7 @@ export default async function AgendarPage() {
     })
 
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
             <AgendarClient agendas={agendas} membro={membro} />
         </div>
     )

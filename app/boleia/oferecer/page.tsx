@@ -31,7 +31,7 @@ export default async function OferecerBoleiaPage() {
     }))
 
     return (
-        <main className="max-w-lg mx-auto py-10 px-4 sm:px-6 space-y-8 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-lg mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 pb-24 animate-in fade-in duration-700">
 
             {/* HEADER */}
             <div className="space-y-4">

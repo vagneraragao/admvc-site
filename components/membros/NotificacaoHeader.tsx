@@ -133,6 +133,7 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
             {/* BOTÃO BELL */}
             <button
                 onClick={handleToggle}
+                title="Notificacoes"
                 className={`relative h-12 w-12 flex items-center justify-center rounded-2xl transition-all shadow-sm ${
                     flash
                         ? 'bg-orange-500 text-white animate-pulse'
@@ -157,7 +158,7 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
                 <div className="absolute right-0 top-full mt-2 w-64 bg-orange-500 text-white p-3 rounded-xl shadow-xl animate-in slide-in-from-top-2 duration-300 z-50">
                     <div className="flex items-center gap-2">
                         <Heart size={14} className="shrink-0" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">
+                        <p className="text-[10px] md:text-xs font-black uppercase tracking-widest">
                             {novosVisitantes} novo{novosVisitantes > 1 ? 's' : ''} visitante{novosVisitantes > 1 ? 's' : ''}!
                         </p>
                     </div>
@@ -171,7 +172,7 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
                     <div className="absolute right-0 top-full mt-2 w-[340px] bg-bg2 border border-soft rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200 z-50">
 
                         <div className="px-4 py-3 border-b border-soft flex items-center justify-between bg-bg">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-fg flex items-center gap-2">
+                            <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                 <Bell size={13} className="text-figueira" /> Notificacoes
                             </h4>
                             <button onClick={() => setOpen(false)} className="text-muted hover:text-fg p-1 rounded-lg">
@@ -273,7 +274,7 @@ export default function NotificacaoHeader({ avisos = [], alertasAcolhimento = []
                         {avisos.length > 0 && (
                             <div className="p-2 border-t border-soft">
                                 <Link href="/membros/mural" onClick={() => setOpen(false)}
-                                    className="flex items-center justify-center gap-1.5 w-full py-2 text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
+                                    className="flex items-center justify-center gap-1.5 w-full py-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
                                     Ver todo o mural <ArrowRight size={11} />
                                 </Link>
                             </div>

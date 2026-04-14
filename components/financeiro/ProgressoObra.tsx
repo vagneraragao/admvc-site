@@ -80,7 +80,7 @@ export default async function ProgressoObra() {
                     const concluido = porcentagemEtapa >= 100;
 
                     return (
-                        <div key={index} className="space-y-4 rounded-[2rem] border border-soft bg-bg p-6 transition-transform hover:border-figueira/30 group">
+                        <div key={index} className="space-y-4 rounded-2xl border border-soft bg-bg p-6 transition-transform hover:border-figueira/30 group">
                             <div>
                                 <h3 className="font-black text-fg text-sm uppercase tracking-tight">{etapa.nome}</h3>
                                 <p className="text-[10px] font-bold text-muted mt-1 uppercase tracking-widest">

@@ -54,7 +54,7 @@ export default function VisualizarMembroClient({ membro }: any) {
     }
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-24">
+        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-24">
 
             {/* HEADER DE NAVEGAÇÃO E AÇÕES */}
             <div className="flex items-center justify-between gap-4 mb-6">

@@ -15,8 +15,8 @@ export default async function DiagnosticoLoyversePage() {
 
     if (!token) {
         return (
-            <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
-                <div className="bg-orange-500/5 border border-orange-500/20 p-8 rounded-[2rem] text-center space-y-2">
+            <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-32">
+                <div className="bg-orange-500/5 border border-orange-500/20 p-8 rounded-2xl text-center space-y-2">
                     <AlertTriangle className="mx-auto text-orange-500" size={32} />
                     <h2 className="text-lg font-black uppercase text-orange-700">Loyverse nao configurado</h2>
                     <p className="text-sm text-orange-600">Configure o token Loyverse nas definicoes do tenant para utilizar esta funcionalidade.</p>
@@ -56,7 +56,7 @@ export default async function DiagnosticoLoyversePage() {
     const semVinculo = membrosApp.filter(m => !m.loyverse_id)
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-32">
 
             {/* HEADER */}
             <header className="flex flex-col md:flex-row justify-between md:items-end gap-6 pb-6 border-b border-soft">
@@ -77,7 +77,7 @@ export default async function DiagnosticoLoyversePage() {
 
             {/* ── MATCHES AUTOMÁTICOS ───────────────────────────────────────── */}
             {matchesAutomaticos.length > 0 && (
-                <section className="bg-orange-500/5 border border-orange-500/20 p-6 rounded-[2rem] space-y-4">
+                <section className="bg-orange-500/5 border border-orange-500/20 p-6 rounded-2xl space-y-4">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center shrink-0">
                             <AlertTriangle size={18} />
@@ -181,7 +181,7 @@ export default async function DiagnosticoLoyversePage() {
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Diretório Completo</h2>
                 </div>
 
-                <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[700px]">
                             <thead>

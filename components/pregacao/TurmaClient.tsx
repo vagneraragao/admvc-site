@@ -579,7 +579,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
     ) : null
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 pb-24 animate-in fade-in duration-700">
             {/* Back + Header */}
             <div>
                 <Link href={basePath} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors mb-4">

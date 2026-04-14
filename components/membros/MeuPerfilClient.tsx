@@ -138,7 +138,7 @@ export default function MeuPerfilClient({
     }
 
     return (
-        <div className={isDrawer ? 'p-6 space-y-6' : 'max-w-5xl mx-auto p-4 sm:p-6 pb-20 animate-in fade-in duration-700'}>
+        <div className={isDrawer ? 'p-6 space-y-6' : 'max-w-6xl mx-auto p-4 sm:p-6 pb-20 animate-in fade-in duration-700'}>
             <form action={handleAction} className="space-y-6">
 
                 {/* BREADCRUMB — só fora do drawer */}
@@ -184,7 +184,7 @@ export default function MeuPerfilClient({
                 </header>
 
                 {/* BANNER FAMÍLIA E COMPLIANCE */}
-                <div className="bg-bg2 border border-soft p-5 rounded-[2rem] flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
+                <div className="bg-bg2 border border-soft p-5 rounded-2xl flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${membro.familia ? 'bg-figueira text-white shadow-md' : 'bg-soft text-muted'}`}>
                             <Home size={20} />
@@ -238,7 +238,7 @@ export default function MeuPerfilClient({
                     <div className={abaAtiva === 'pessoal' ? 'block space-y-6 animate-in fade-in slide-in-from-bottom-4' : 'hidden'}>
                         <div className="flex flex-col md:flex-row items-center gap-6 pb-6 border-b border-soft/50">
                             <div className="relative group shrink-0">
-                                <div className="w-28 h-28 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl bg-soft relative">
+                                <div className="w-28 h-28 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-soft relative">
                                     {previewFoto ? (
                                         <Image src={previewFoto} alt="Perfil" fill sizes="128px" className="object-cover" />
                                     ) : (

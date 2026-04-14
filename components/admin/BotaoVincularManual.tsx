@@ -185,7 +185,7 @@ export default function BotaoVincularManual({ membroId, membroNome, clientesLoyv
                     onClick={() => setPopupAberto(false)}
                 >
                     <div
-                        className="bg-bg w-full max-w-sm rounded-[2rem] border border-soft shadow-2xl animate-in zoom-in-95 duration-200"
+                        className="bg-bg w-full max-w-sm rounded-2xl border border-soft shadow-2xl animate-in zoom-in-95 duration-200"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* HEADER */}

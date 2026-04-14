@@ -597,7 +597,7 @@ export default function EBDDashboard({
     ) : null
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 pb-24 animate-in fade-in duration-700">
             <header className="space-y-4">
                 <div className="flex items-center gap-2 text-figueira">
                     <GraduationCap size={16} />

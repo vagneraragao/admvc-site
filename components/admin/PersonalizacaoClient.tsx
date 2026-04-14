@@ -97,7 +97,7 @@ export default function PersonalizacaoClient({ tenant }: { tenant: TenantData })
     }
 
     return (
-        <main className="max-w-5xl mx-auto p-6 md:p-10 space-y-8 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto p-6 md:p-10 space-y-8 animate-in fade-in duration-700">
 
             <header className="space-y-1">
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Personalizacao</h1>

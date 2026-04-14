@@ -160,7 +160,7 @@ export default function EditorSermao({ sermao, membros, eventos }: Props) {
     const tagsArr = tagsStr.split(',').map(t => t.trim()).filter(Boolean)
 
     return (
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pb-24 animate-in fade-in duration-700">
             {/* Back + Title */}
             <div className="flex items-center gap-4 mb-8">
                 <Link

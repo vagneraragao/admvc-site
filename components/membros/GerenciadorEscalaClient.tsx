@@ -167,7 +167,7 @@ export default function GerenciadorEscalaClient({ deptoId, integrantes, eventos,
                 )}
 
                 {escalas.map((esc: any) => (
-                    <div key={esc.id} className="bg-bg2 border border-soft p-6 rounded-[2rem] flex items-center justify-between group hover:border-figueira/30 transition-all shadow-sm">
+                    <div key={esc.id} className="bg-bg2 border border-soft p-6 rounded-2xl flex items-center justify-between group hover:border-figueira/30 transition-all shadow-sm">
                         <div className="flex items-center gap-6">
                             <div className="bg-soft p-4 rounded-2xl text-center min-w-[70px] border border-soft/50">
                                 <span className="block text-[10px] font-black text-figueira uppercase">

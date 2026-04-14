@@ -318,7 +318,7 @@ export default function ModalRepertorio({ eventoId, repertorioInical, podeEditar
         <>
             {/* BOTÃO TRIGGER */}
             <button onClick={() => setIsOpen(true)}
-                className="group relative w-full overflow-hidden rounded-[2rem] border border-soft bg-bg2 p-1 transition-all hover:border-figueira/40 hover:shadow-xl hover:shadow-figueira/5 active:scale-[0.98]">
+                className="group relative w-full overflow-hidden rounded-2xl border border-soft bg-bg2 p-1 transition-all hover:border-figueira/40 hover:shadow-xl hover:shadow-figueira/5 active:scale-[0.98]">
                 <div className="absolute inset-0 bg-gradient-to-r from-figueira/0 via-figueira/5 to-figueira/0 opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="relative flex items-center justify-between bg-bg rounded-[1.75rem] p-3 sm:p-4 border border-transparent group-hover:border-soft/50 transition-all">
                     <div className="flex items-center gap-4">

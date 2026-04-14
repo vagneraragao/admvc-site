@@ -73,7 +73,7 @@ export default async function GestaoObraWidget() {
     const porcentagemGeral = projeto.objetivoFinal > 0 ? Math.min(100, Math.round((totalArrecadado / projeto.objetivoFinal) * 100)) : 0;
 
     return (
-        <div className="bg-bg2 border border-soft p-6 rounded-[2rem] shadow-sm flex flex-col h-full">
+        <div className="bg-bg2 border border-soft p-6 rounded-2xl shadow-sm flex flex-col h-full">
             {/* Cabeçalho Compacto */}
             <div className="flex justify-between items-start mb-6">
                 <div>

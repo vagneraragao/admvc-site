@@ -74,7 +74,7 @@ export default async function FundosDashboard() {
     }
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700">
 
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -85,8 +85,8 @@ export default async function FundosDashboard() {
                 <div className="flex items-center gap-2">
                     <Link
                         href="/financeiro/despesas"
-                        className="h-11 px-4 bg-bg2 border border-soft text-fg rounded-xl flex items-center gap-2 hover:bg-bg transition-all active:scale-95 text-[9px] font-black uppercase tracking-widest"
-                    >
+                        className="h-11 px-4 bg-bg2 border border-soft text-fg rounded-xl flex items-center gap-2 hover:bg-bg transition-all active:scale-95 text-[9px] md:text-[11px] font-black uppercase tracking-widest"
+
                         <Wallet size={14} />
                         Despesas
                     </Link>
@@ -111,7 +111,7 @@ export default async function FundosDashboard() {
                     <p className="text-xs font-bold text-amber-500">
                         {alertasExcedidos.length} categoria{alertasExcedidos.length !== 1 ? 's' : ''} de orcamento acima do limiar definido
                     </p>
-                    <span className="ml-auto text-[8px] font-black uppercase tracking-widest text-amber-500 group-hover:translate-x-0.5 transition-transform">
+                    <span className="ml-auto text-[8px] md:text-[10px] font-black uppercase tracking-widest text-amber-500 group-hover:translate-x-0.5 transition-transform">
                         Ver detalhes &rarr;
                     </span>
                 </Link>
@@ -119,7 +119,7 @@ export default async function FundosDashboard() {
 
             {/* Fund Grid */}
             <section className="space-y-3">
-                <h2 className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                <h2 className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
                     <Layers size={14} /> Fundos Ativos ({fundos.length})
                 </h2>
 
@@ -132,7 +132,7 @@ export default async function FundosDashboard() {
                         return (
                             <div
                                 key={fundo.id}
-                                className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4 hover:-translate-y-0.5 transition-all"
+                                className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4 hover:-translate-y-0.5 transition-all"
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1.5">
@@ -141,12 +141,12 @@ export default async function FundosDashboard() {
                                                 {fundo.nome}
                                             </h3>
                                             {fundo.restrito && (
-                                                <span className="flex items-center gap-1 text-[7px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
+                                                <span className="flex items-center gap-1 text-[7px] md:text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">
                                                     <Lock size={8} /> Restrito
                                                 </span>
                                             )}
                                         </div>
-                                        <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${badgeClass}`}>
+                                        <span className={`text-[7px] md:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${badgeClass}`}>
                                             {fundo.tipo}
                                         </span>
                                     </div>
@@ -156,7 +156,7 @@ export default async function FundosDashboard() {
                                 </div>
 
                                 {fundo.descricao && (
-                                    <p className="text-[10px] text-muted leading-relaxed">{fundo.descricao}</p>
+                                    <p className="text-[10px] md:text-xs text-muted leading-relaxed">{fundo.descricao}</p>
                                 )}
 
                                 <p className="text-3xl font-black italic tracking-tighter text-fg leading-none valor-dinheiro">
@@ -166,13 +166,13 @@ export default async function FundosDashboard() {
                                 <div className="flex items-center gap-4 pt-2 border-t border-soft">
                                     <div className="flex items-center gap-1.5">
                                         <TrendingUp size={12} className="text-green-500" />
-                                        <span className="text-[9px] font-bold text-green-500">{euro(entradas)}</span>
-                                        <span className="text-[7px] text-muted font-black uppercase tracking-widest">este mes</span>
+                                        <span className="text-[9px] md:text-[11px] font-bold text-green-500">{euro(entradas)}</span>
+                                        <span className="text-[7px] md:text-[9px] text-muted font-black uppercase tracking-widest">este mes</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <TrendingDown size={12} className="text-red-500" />
-                                        <span className="text-[9px] font-bold text-red-500">{euro(saidas)}</span>
-                                        <span className="text-[7px] text-muted font-black uppercase tracking-widest">este mes</span>
+                                        <span className="text-[9px] md:text-[11px] font-bold text-red-500">{euro(saidas)}</span>
+                                        <span className="text-[7px] md:text-[9px] text-muted font-black uppercase tracking-widest">este mes</span>
                                     </div>
                                 </div>
                             </div>
@@ -181,16 +181,16 @@ export default async function FundosDashboard() {
                 </div>
 
                 {fundos.length === 0 && (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-12 text-center space-y-3">
                         <Landmark size={32} className="text-muted mx-auto" />
-                        <p className="text-[10px] font-bold text-muted">Nenhum fundo criado ainda.</p>
+                        <p className="text-[10px] md:text-xs font-bold text-muted">Nenhum fundo criado ainda.</p>
                     </div>
                 )}
             </section>
 
             {/* Transfer Between Funds */}
             <section className="space-y-3">
-                <h2 className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                <h2 className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
                     <ArrowRightLeft size={14} /> Transferencia entre Fundos
                 </h2>
                 <FormTransferencia fundos={fundos.map(f => ({ id: f.id, nome: f.nome, saldo_atual: f.saldo_atual }))} />
@@ -198,7 +198,7 @@ export default async function FundosDashboard() {
 
             {/* Create Fund */}
             <section className="space-y-3">
-                <h2 className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                <h2 className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
                     <PlusCircle size={14} /> Criar Fundo
                 </h2>
                 <FormCriarFundo />
@@ -211,7 +211,7 @@ function KpiCard({ label, value, accent }: { label: string; value: any; accent?:
     return (
         <div className={`p-5 rounded-2xl border flex flex-col gap-3 transition-all hover:-translate-y-0.5
             ${accent ? 'bg-figueira/5 border-figueira/20' : 'bg-bg2 border-soft'}`}>
-            <p className={`text-[8px] font-black uppercase tracking-widest ${accent ? 'text-figueira' : 'text-muted'}`}>{label}</p>
+            <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest ${accent ? 'text-figueira' : 'text-muted'}`}>{label}</p>
             <p className={`text-2xl font-black italic tracking-tighter leading-none ${accent ? 'text-figueira' : 'text-fg'}`}>{value}</p>
         </div>
     )

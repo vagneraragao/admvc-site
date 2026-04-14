@@ -85,7 +85,7 @@ export default function ModalEditarItem({ item, categorias }: { item?: any, cate
                             <div className="flex flex-col items-center gap-2">
                                 <div
                                     onClick={() => !loading && fileInputRef.current?.click()}
-                                    className={`relative w-32 h-32 rounded-[2rem] border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer transition-all ${loading ? 'opacity-50' : 'hover:border-figueira'}`}
+                                    className={`relative w-32 h-32 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer transition-all ${loading ? 'opacity-50' : 'hover:border-figueira'}`}
                                 >
                                     {preview ? <img src={preview} className="w-full h-full object-cover" /> : <ImageIcon className="opacity-20" size={32} />}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-white text-[8px] font-black uppercase">Trocar Foto</div>

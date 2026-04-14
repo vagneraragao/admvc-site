@@ -28,7 +28,7 @@ export default async function AdminFamiliasPage() {
     const totalMembrosFamilia = familias.reduce((sum, f) => sum + f.members.length, 0)
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
 
             <header className="flex items-center justify-between">
                 <div className="space-y-1">

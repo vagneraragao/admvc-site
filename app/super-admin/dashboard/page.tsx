@@ -121,13 +121,13 @@ export default async function SuperAdminDashboardPage() {
                 {/* ── HEADER ────────────────────────────────────────────── */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
                     <div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">
+                        <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">
                             <Shield size={12} /> Plataforma <ChevronRight size={10} /> Dashboard Super Admin
                         </div>
                         <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white flex items-center gap-3">
                             <Server size={32} className="text-blue-500" /> Controle Global
                         </h1>
-                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">
+                        <p className="text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest mt-1">
                             Visao analitica de todos os Tenants e infraestrutura
                         </p>
                     </div>
@@ -143,14 +143,14 @@ export default async function SuperAdminDashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
                     {/* 1. Total Igrejas */}
-                    <div className="bg-[#111] border border-zinc-800 p-5 rounded-2xl relative overflow-hidden group">
+                    <Link href="/super-admin/igrejas" className="bg-[#111] border border-zinc-800 p-5 rounded-2xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full -mr-6 -mt-6 transition-transform group-hover:scale-110" />
                         <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center mb-4">
                             <Building size={20} />
                         </div>
                         <h3 className="text-3xl font-black text-white tracking-tighter leading-none">{tenants.length}</h3>
                         <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Total Igrejas</p>
-                    </div>
+                    </Link>
 
                     {/* 2. Total Membros */}
                     <div className="bg-[#111] border border-zinc-800 p-5 rounded-2xl relative overflow-hidden group">
@@ -183,14 +183,14 @@ export default async function SuperAdminDashboardPage() {
                     </div>
 
                     {/* 5. Planos Pagos */}
-                    <div className="bg-white text-black p-5 rounded-2xl relative overflow-hidden group shadow-xl">
+                    <Link href="/super-admin/billing" className="bg-white text-black p-5 rounded-2xl relative overflow-hidden group shadow-xl hover:shadow-2xl transition-all">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-black/5 rounded-bl-full -mr-6 -mt-6 transition-transform group-hover:scale-110" />
                         <div className="w-10 h-10 bg-black/10 text-black rounded-xl flex items-center justify-center mb-4">
                             <Crown size={20} />
                         </div>
                         <h3 className="text-3xl font-black tracking-tighter leading-none">{planosPagos}</h3>
                         <p className="text-[9px] font-bold text-black/50 uppercase tracking-widest mt-2">Planos Pagos</p>
-                    </div>
+                    </Link>
 
                     {/* 6. Igrejas em Risco */}
                     <div className={`p-5 rounded-2xl relative overflow-hidden group ${igrejasEmRisco.length > 0 ? 'bg-red-500/10 border border-red-500/20' : 'bg-[#111] border border-zinc-800'}`}>

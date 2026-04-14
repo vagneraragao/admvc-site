@@ -99,7 +99,7 @@ export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, me
                             </div>
 
                             {/* DELEGAR GESTORES (NOVO) */}
-                            <div className="bg-bg2 p-6 rounded-[2rem] border border-soft space-y-4">
+                            <div className="bg-bg2 p-6 rounded-2xl border border-soft space-y-4">
                                 <label className="text-[10px] font-black uppercase text-fg tracking-[0.2em] flex items-center gap-2">
                                     <Shield size={12} className="text-figueira"/> Delegar a Gestores / Secretariado
                                 </label>

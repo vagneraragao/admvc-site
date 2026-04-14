@@ -196,7 +196,7 @@ export default async function AgendasDashboard() {
 const isPendente = comp.status === 'PENDENTE';
 
                                         return (
-                                            <div key={comp.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border rounded-[2rem] transition-all shadow-sm group ${isPendente ? 'bg-orange-500/5 border-orange-500/30' : 'bg-bg border-soft hover:border-figueira/30'}`}>
+                                            <div key={comp.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border rounded-2xl transition-all shadow-sm group ${isPendente ? 'bg-orange-500/5 border-orange-500/30' : 'bg-bg border-soft hover:border-figueira/30'}`}>
                                                 
                                                 <div className="flex items-center gap-5">
                                                     {/* DATA E HORA */}

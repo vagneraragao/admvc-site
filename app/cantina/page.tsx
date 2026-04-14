@@ -53,11 +53,11 @@ export default async function GestaoCantinaPage() {
     ]
 
     return (
-        <main className="max-w-5xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-28">
 
             {/* HEADER */}
             <header className="space-y-4">
-                <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="text-figueira font-black text-[10px] md:text-xs uppercase tracking-[0.3em] flex items-center gap-2">
                     <Store size={14} /> Gestao Cantina
                 </span>
                 <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-fg leading-none">
@@ -70,17 +70,17 @@ export default async function GestaoCantinaPage() {
 
             {/* STATS */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                <div className="bg-bg2 border border-soft rounded-2xl p-5 text-center">
                     <p className="text-2xl font-black italic text-fg">{totalProdutos}</p>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Produtos</p>
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Produtos</p>
                 </div>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                <div className="bg-bg2 border border-soft rounded-2xl p-5 text-center">
                     <p className="text-2xl font-black italic text-fg">{totalCategorias}</p>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Categorias</p>
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Categorias</p>
                 </div>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-5 text-center">
+                <div className="bg-bg2 border border-soft rounded-2xl p-5 text-center">
                     <p className="text-2xl font-black italic text-fg">{encomendaHoje}</p>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Encomendas Hoje</p>
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Encomendas Hoje</p>
                 </div>
             </div>
 
@@ -88,32 +88,32 @@ export default async function GestaoCantinaPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {links.map(link => (
                     <Link key={link.href} href={link.href}
-                        className="bg-bg2 border border-soft rounded-[2rem] p-6 hover:border-figueira/30 transition-all group">
+                        className="bg-bg2 border border-soft rounded-2xl p-6 hover:border-figueira/30 hover:-translate-y-0.5 transition-all group">
                         <div className="flex items-center gap-3 mb-2">
                             <link.icon size={18} className={link.cor} />
                             <h3 className="text-sm font-black uppercase tracking-widest text-fg group-hover:text-figueira transition-colors">
                                 {link.label}
                             </h3>
                         </div>
-                        <p className="text-[10px] text-muted font-bold">{link.desc}</p>
+                        <p className="text-[10px] md:text-xs text-muted font-bold">{link.desc}</p>
                     </Link>
                 ))}
             </div>
 
             {/* LOYVERSE OPCIONAL */}
             {isAdmin && (
-                <section className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                <section className="bg-bg2 border border-soft rounded-2xl p-6 space-y-3">
+                    <h3 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-muted flex items-center gap-2">
                         <Settings size={12} /> Integracao Loyverse (Opcional)
                     </h3>
-                    <p className="text-[10px] text-muted">
+                    <p className="text-[10px] md:text-xs text-muted">
                         A integracao com o Loyverse e opcional. Use apenas se quiser sincronizar produtos de uma conta Loyverse existente.
                     </p>
                     <div className="flex flex-wrap gap-3">
-                        <Link href="/admin/relatorios/loyverse" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
+                        <Link href="/admin/relatorios/loyverse" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
                             Diagnostico Loyverse
                         </Link>
-                        <Link href="/cantina/produtos" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
+                        <Link href="/cantina/produtos" className="bg-bg border border-soft text-fg px-4 py-2 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest hover:border-figueira/30 transition-all">
                             Importar Produtos
                         </Link>
                     </div>

@@ -59,12 +59,12 @@ export default function ModalHistoricoEscalas({ departamentoId }: { departamento
                                     <>
                                         {/* Cards de Resumo */}
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <div className="bg-bg2 border border-soft p-5 rounded-[2rem]">
+                                            <div className="bg-bg2 border border-soft p-5 rounded-2xl">
                                                 <Users size={20} className="text-blue-500 mb-2" />
                                                 <span className="block text-2xl font-black italic text-fg leading-none">{dados.data.length}</span>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-muted">Membros Ativos</span>
                                             </div>
-                                            <div className="bg-bg2 border border-soft p-5 rounded-[2rem]">
+                                            <div className="bg-bg2 border border-soft p-5 rounded-2xl">
                                                 <History size={20} className="text-figueira mb-2" />
                                                 <span className="block text-2xl font-black italic text-fg leading-none">{dados.historicoCompleto.length}</span>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-muted">Últimos Eventos</span>

@@ -18,7 +18,7 @@ export default function CardSaldoLocal({ membroId }: { membroId: number }) {
     useEffect(() => { fetchSaldo() }, [membroId])
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-3">
+        <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-3">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Wallet2 size={16} className="text-figueira" />

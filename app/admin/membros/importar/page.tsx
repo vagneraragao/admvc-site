@@ -176,7 +176,7 @@ export default function ImportExportPage() {
         : []
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-32">
 
             {/* HEADER */}
             <header className="flex flex-col gap-2 pb-6 border-b border-soft">
@@ -215,7 +215,7 @@ export default function ImportExportPage() {
             <div className="grid md:grid-cols-2 gap-6">
 
                 {/* ── EXPORTAR ─────────────────────────────────────────────── */}
-                <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     <div className="p-6 border-b border-soft">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 bg-blue-500/10 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -250,7 +250,7 @@ export default function ImportExportPage() {
                 </section>
 
                 {/* ── IMPORTAR ─────────────────────────────────────────────── */}
-                <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     <div className="p-6 border-b border-soft">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center shrink-0">
@@ -361,7 +361,7 @@ export default function ImportExportPage() {
 
             {/* ── RESULTADO DA ANALISE ────────────────────────────────────── */}
             {analise && (
-                <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+                <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
 
                     {/* CABECALHO */}
                     <div className="p-6 border-b border-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -60,7 +60,7 @@ export default async function StockPage() {
     })
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
+        <main className="max-w-7xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* Header */}
             <header className="space-y-2">
                 <Link href="/assistencia" className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 hover:brightness-125 transition-all">
@@ -78,7 +78,7 @@ export default async function StockPage() {
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
                         <Plus size={14} className="text-figueira" /> Novo Item
                     </h2>
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-6">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-6">
                         <FormNovoItem />
                     </div>
                 </section>
@@ -91,12 +91,12 @@ export default async function StockPage() {
                 </h2>
 
                 {itens.length === 0 ? (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-12 text-center space-y-3">
                         <Package size={32} className="mx-auto text-muted/20" />
                         <p className="text-sm font-bold text-muted">Nenhum item cadastrado.</p>
                     </div>
                 ) : (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                    <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                         {/* Header row */}
                         <div className="hidden sm:grid sm:grid-cols-6 gap-4 px-6 py-3 border-b border-soft">
                             <p className="text-[8px] font-black uppercase tracking-widest text-muted col-span-2">Nome</p>

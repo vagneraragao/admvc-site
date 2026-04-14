@@ -66,7 +66,7 @@ export default async function DespesasPage() {
     const isFinanceOrAdmin = ['FINANCE', 'ADMIN'].includes(session.role)
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700">
 
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -88,7 +88,7 @@ export default async function DespesasPage() {
                 <section className="space-y-3">
                     <details open className="group">
                         <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden">
-                            <div className="bg-orange-500/5 border border-orange-500/20 rounded-[2rem] px-6 py-4 flex items-center gap-4">
+                            <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl px-6 py-4 flex items-center gap-4">
                                 <div className="bg-orange-500/10 p-3 rounded-2xl text-orange-500">
                                     <AlertCircle size={20} />
                                 </div>
@@ -151,12 +151,12 @@ export default async function DespesasPage() {
                 </h2>
 
                 {recentes.length === 0 ? (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-12 text-center space-y-3">
                         <Wallet size={32} className="text-muted mx-auto" />
                         <p className="text-[10px] font-bold text-muted">Nenhuma despesa registada.</p>
                     </div>
                 ) : (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                    <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>

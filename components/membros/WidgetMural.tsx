@@ -85,7 +85,7 @@ export default function WidgetMural({ avisos = [], alertasAcolhimento = [] }: Wi
         <div className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[100] flex flex-col items-end">
 
             {open && (
-                <div className="mb-4 w-[calc(100vw-3rem)] sm:w-[400px] bg-bg2 border border-soft rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 origin-bottom-right">
+                <div className="mb-4 w-[calc(100vw-3rem)] sm:w-[400px] bg-bg2 border border-soft rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 origin-bottom-right">
 
                     {/* CABEÇALHO DO WIDGET */}
                     <div className="bg-bg border-b border-soft p-5 flex items-center justify-between">

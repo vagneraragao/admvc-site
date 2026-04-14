@@ -71,7 +71,7 @@ export default async function AssistenciaDashboardPage() {
     }, {})
 
     return (
-        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-8 animate-in fade-in duration-700 pb-28 md:pb-32">
+        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-5 md:space-y-8 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* Header */}
             <header className="space-y-1 md:space-y-2">
                 <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
@@ -107,35 +107,35 @@ export default async function AssistenciaDashboardPage() {
                     <div className="w-9 h-9 rounded-xl bg-figueira/10 text-figueira flex items-center justify-center">
                         <Package size={16} />
                     </div>
-                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Stock</h4>
+                    <h4 className="text-[9px] md:text-[11px] font-black uppercase text-fg text-center">Stock</h4>
                 </Link>
                 <Link href="/assistencia/cestas"
                     className="flex flex-col items-center gap-2 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all active:scale-[0.98]">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
                         <HeartHandshake size={16} />
                     </div>
-                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Cestas</h4>
+                    <h4 className="text-[9px] md:text-[11px] font-black uppercase text-fg text-center">Cestas</h4>
                 </Link>
                 <Link href="/assistencia/movimentos"
                     className="flex flex-col items-center gap-2 bg-bg2 border border-soft rounded-2xl p-4 hover:border-figueira/30 transition-all active:scale-[0.98]">
                     <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                         <ArrowUp size={16} />
                     </div>
-                    <h4 className="text-[9px] font-black uppercase text-fg text-center">Movimentos</h4>
+                    <h4 className="text-[9px] md:text-[11px] font-black uppercase text-fg text-center">Movimentos</h4>
                 </Link>
             </div>
 
             {/* Alertas de stock baixo */}
             {itensStockBaixo.length > 0 && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 space-y-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-500 flex items-center gap-1.5">
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-orange-500 flex items-center gap-1.5">
                         <AlertTriangle size={11} /> Stock Baixo
                     </p>
                     <div className="space-y-1.5">
                         {itensStockBaixo.map(item => (
                             <div key={item.id} className="flex items-center justify-between">
                                 <span className="text-[11px] font-bold text-fg">{item.nome}</span>
-                                <span className="text-[10px] font-black text-orange-500">
+                                <span className="text-[10px] md:text-xs font-black text-orange-500">
                                     {item.stock}/{item.stock_minimo}
                                 </span>
                             </div>
@@ -149,7 +149,7 @@ export default async function AssistenciaDashboardPage() {
                 <div className="bg-bg2 border border-soft rounded-2xl p-8 md:p-12 text-center space-y-3">
                     <Package size={28} className="mx-auto text-muted/20" />
                     <p className="text-xs font-bold text-muted">Nenhum item cadastrado.</p>
-                    <Link href="/assistencia/stock" className="text-[10px] text-figueira font-black uppercase tracking-widest">
+                    <Link href="/assistencia/stock" className="text-[10px] md:text-xs text-figueira font-black uppercase tracking-widest">
                         Adicionar itens
                     </Link>
                 </div>
@@ -159,10 +159,10 @@ export default async function AssistenciaDashboardPage() {
                         <details key={cat} className="bg-bg2 border border-soft rounded-2xl overflow-hidden group/cat" open>
                             <summary className="flex items-center justify-between p-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${CATEGORIAS_COR[cat] || CATEGORIAS_COR.OUTRO}`}>
+                                    <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${CATEGORIAS_COR[cat] || CATEGORIAS_COR.OUTRO}`}>
                                         {CATEGORIAS_LABEL[cat] || cat}
                                     </span>
-                                    <span className="text-[8px] font-bold text-muted">{catItens.length} itens</span>
+                                    <span className="text-[8px] md:text-[10px] font-bold text-muted">{catItens.length} itens</span>
                                 </div>
                                 <ChevronRight size={14} className="text-muted transition-transform group-open/cat:rotate-90" />
                             </summary>
@@ -171,7 +171,7 @@ export default async function AssistenciaDashboardPage() {
                                     <div key={item.id} className={`flex items-center justify-between px-4 py-3 ${idx > 0 ? 'border-t border-soft/50' : ''}`}>
                                         <div className="min-w-0">
                                             <p className="text-[11px] font-black uppercase text-fg truncate">{item.nome}</p>
-                                            <p className="text-[8px] text-muted">{item.unidade}</p>
+                                            <p className="text-[8px] md:text-[10px] text-muted">{item.unidade}</p>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
                                             <p className={`text-base font-black italic ${item.stock <= item.stock_minimo ? 'text-orange-500' : 'text-fg'}`}>

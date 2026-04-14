@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { criarNovaIgreja, atualizarIgreja } from '@/actions/super-admin-actions'
-import { PlusCircle, Loader2, CheckCircle2, Building, Edit3, ArrowLeft, Users, Church, Settings2, Rocket } from 'lucide-react'
+import { PlusCircle, Loader2, CheckCircle2, Building, Edit3, ArrowLeft, Users, Church, Settings2, Rocket, Palette, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasIniciais: any[] }) {
     // Estado para controlar a vista: 'lista', 'criar', ou 'editar'
     const [modo, setModo] = useState<'lista' | 'criar' | 'editar'>('lista');
     const [igrejaSelecionada, setIgrejaSelecionada] = useState<any>(null);
+    const [busca, setBusca] = useState('')
+    const [filtroPlano, setFiltroPlano] = useState<string>('todos')
 
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null);
@@ -82,8 +84,39 @@ export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasInicia
             {/* VISTA 1: LISTA DE IGREJAS                                 */}
             {/* ========================================================= */}
             {modo === 'lista' && (
+                <>
+                {/* FILTROS */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1 relative">
+                        <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                        <input
+                            type="text"
+                            value={busca}
+                            onChange={e => setBusca(e.target.value)}
+                            placeholder="Pesquisar igreja..."
+                            className="w-full bg-[#0A0A0A] border border-[#333] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white outline-none focus:border-blue-500 transition-colors placeholder:text-zinc-600"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Filter size={12} className="text-zinc-500" />
+                        {['todos', 'FREE', 'BASIC', 'PRO', 'ENTERPRISE'].map(p => (
+                            <button key={p} onClick={() => setFiltroPlano(p)}
+                                className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    filtroPlano === p
+                                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                                        : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                                }`}>
+                                {p === 'todos' ? 'Todos' : p}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {igrejasIniciais.map((igreja) => (
+                    {igrejasIniciais
+                        .filter(i => filtroPlano === 'todos' || i.plano === filtroPlano)
+                        .filter(i => !busca || i.nome.toLowerCase().includes(busca.toLowerCase()) || i.slug.toLowerCase().includes(busca.toLowerCase()))
+                        .map((igreja) => (
                         <div key={igreja.id} className="bg-bg2 border border-soft p-6 rounded-[2.5rem] shadow-sm hover:shadow-lg hover:border-figueira/30 transition-all flex flex-col justify-between group">
                             <div>
                                 <div className="flex justify-between items-start mb-4">
@@ -118,6 +151,9 @@ export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasInicia
                                 <Link href={`/super-admin/igrejas/${igreja.id}/modulos`} className="flex-1 flex items-center justify-center gap-2 py-3 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all">
                                     <Settings2 size={14} /> Modulos
                                 </Link>
+                                <Link href={`/super-admin/igrejas/${igreja.id}/tema`} className="flex-1 flex items-center justify-center gap-2 py-3 bg-bg border border-soft rounded-xl text-[9px] font-black uppercase tracking-widest text-muted hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-all">
+                                    <Palette size={14} /> Tema
+                                </Link>
                                 {!igreja.onboarding_completo && (
                                     <Link href={`/super-admin/onboarding/${igreja.id}`} className="flex-1 flex items-center justify-center gap-2 py-3 bg-bg border border-amber-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-500/10 transition-all">
                                         <Rocket size={14} /> Setup
@@ -127,6 +163,7 @@ export default function GestaoIgrejasClient({ igrejasIniciais }: { igrejasInicia
                         </div>
                     ))}
                 </div>
+                </>
             )}
 
             {/* ========================================================= */}

@@ -90,12 +90,12 @@ export default function WidgetAgendaIgreja({ eventos = [], isAdmin = false }: { 
                         </div>
                         <div className="p-8 space-y-6">
                             <h3 className="text-2xl font-black uppercase italic text-fg tracking-tighter">{eventoSelecionado.nome}</h3>
-                            <div className="bg-bg2/50 border-2 border-dashed border-soft p-5 rounded-[2rem]">
+                            <div className="bg-bg2/50 border-2 border-dashed border-soft p-5 rounded-2xl">
                                 <p className="text-xs font-bold text-muted leading-relaxed italic">
                                     {eventoSelecionado.descricao || "Sem descrição disponível."}
                                 </p>
                             </div>
-                            <button onClick={() => setEventoSelecionado(null)} className="w-full py-5 bg-fg text-bg rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em]">Fechar</button>
+                            <button onClick={() => setEventoSelecionado(null)} className="w-full py-5 bg-fg text-bg rounded-2xl font-black text-[10px] uppercase tracking-[0.3em]">Fechar</button>
                         </div>
                     </div>
                 </div>

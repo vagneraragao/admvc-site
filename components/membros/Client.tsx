@@ -164,7 +164,7 @@ export default function EditarMembroClient({
     }
 
     return (
-        <main className="max-w-5xl mx-auto p-4 sm:p-6 pb-20 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto p-4 sm:p-6 pb-20 animate-in fade-in duration-700">
             <form action={handleAction} className="space-y-8">
                 <input type="hidden" name="id" value={membro.id} />
                 <input type="hidden" name="familia_id" value={familiaSelecionada} />

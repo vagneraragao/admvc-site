@@ -19,7 +19,7 @@ export default function SessaoExtratoCantina({ carregamentos, objetivos }: Sessa
 
             {/* 1. HISTÓRICO DE CARREGAMENTOS (ENTRADAS) */}
             {carregamentos && carregamentos.length > 0 && (
-                <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden shadow-sm transition-all">
+                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm transition-all">
                     <button
                         onClick={() => setMostrarCarregamentos(!mostrarCarregamentos)}
                         className="w-full flex items-center justify-between p-5 hover:bg-soft transition-colors active:scale-[0.99]"
@@ -76,7 +76,7 @@ export default function SessaoExtratoCantina({ carregamentos, objetivos }: Sessa
             )}
 
             {/* 2. HISTÓRICO DE CONSUMOS E EXTRATOS (SAÍDAS) */}
-            <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden shadow-sm transition-all">
+            <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm transition-all">
 
 
                 {mostrarExtrato && (

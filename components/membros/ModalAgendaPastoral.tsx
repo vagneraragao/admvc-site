@@ -40,7 +40,7 @@ export default function ModalAgendaPastoral({ aberto, onClose }: Props) {
             onClick={onClose}
         >
             <div
-                className="bg-bg w-full max-w-md rounded-[2rem] border border-soft shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col"
+                className="bg-bg w-full max-w-md rounded-2xl border border-soft shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}

@@ -239,7 +239,7 @@ export default async function DashboardFinanceiro() {
         transacoesFlat.reduce((s, t) => s + t.valor, 0)
 
     return (
-        <main className="max-w-7xl mx-auto pt-16 md:pt-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-28">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-28">
 
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-30">
                 <div className="space-y-1">
@@ -407,7 +407,7 @@ export default async function DashboardFinanceiro() {
                         const concluida = pct >= 100
 
                         return (
-                            <details key={campanha.nome} className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                            <details key={campanha.nome} className="group bg-bg2 border border-soft rounded-2xl overflow-hidden">
                                 {/* BARRA DE PROGRESSO TOPO */}
                                 <div className="h-0.5 bg-soft">
                                     <div className={`h-full transition-all duration-700 ${concluida ? 'bg-emerald-500' : 'bg-figueira'}`} style={{ width: `${pct}%` }} />
@@ -498,7 +498,7 @@ export default async function DashboardFinanceiro() {
             </section>
 
             {/* ── HISTÓRICO RECENTE ─────────────────────────────────────────── */}
-            <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+            <details className="group bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <summary className="cursor-pointer px-6 py-4 flex items-center justify-between list-none [&::-webkit-details-marker]:hidden hover:bg-soft/20 transition-colors">
                     <div className="flex items-center gap-3">
                         <History size={14} className="text-muted" />
@@ -583,7 +583,7 @@ function Alerta({ icon, cor, titulo, subtitulo, children }: {
     const c = cores[cor]
 
     return (
-        <details className={`group border rounded-[2rem] overflow-hidden ${c.wrap}`}>
+        <details className={`group border rounded-2xl overflow-hidden ${c.wrap}`}>
             <summary className="cursor-pointer px-6 py-5 flex items-center justify-between list-none [&::-webkit-details-marker]:hidden hover:brightness-95 transition-all">
                 <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${c.icon}`}>{icon}</div>
@@ -612,7 +612,7 @@ function SecaoColapsavel({ icon, titulo, subtitulo, corIcone, children, defaultO
     defaultOpen?: boolean
 }) {
     return (
-        <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden" open={defaultOpen}>
+        <details className="group bg-bg2 border border-soft rounded-2xl overflow-hidden" open={defaultOpen}>
             <summary className="cursor-pointer px-6 py-5 flex items-center justify-between list-none [&::-webkit-details-marker]:hidden hover:bg-soft/10 transition-colors">
                 <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${corIcone}`}>{icon}</div>

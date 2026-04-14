@@ -125,7 +125,7 @@ export default async function RelatorioAcolhimentoPage() {
     const taxaSaida = totalVisitantes > 0 ? Math.round((saidasCount / totalVisitantes) * 100) : 0
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
             <header className="space-y-1">
                 <Link href="/departamentos/acolhimento/dashboard" className="flex items-center gap-2 text-[10px] font-black uppercase text-muted hover:text-figueira transition-all mb-2">
                     <ArrowLeft size={12} /> Acolhimento

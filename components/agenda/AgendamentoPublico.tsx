@@ -200,8 +200,8 @@ export default function AgendamentoPublico({ agendaId, compromissosOcupados }: {
             {/* STEP 4: SUCESSO */}
             {step === 4 && (
                 <div className="text-center py-10 animate-in zoom-in-95 duration-500 flex flex-col items-center">
-                    <div className="w-24 h-24 bg-figueira/10 text-figueira rounded-[2rem] flex items-center justify-center mb-6 shadow-inner relative">
-                        <div className="absolute inset-0 border-2 border-figueira rounded-[2rem] animate-ping opacity-20"></div>
+                    <div className="w-24 h-24 bg-figueira/10 text-figueira rounded-2xl flex items-center justify-center mb-6 shadow-inner relative">
+                        <div className="absolute inset-0 border-2 border-figueira rounded-2xl animate-ping opacity-20"></div>
                         <CheckCircle2 size={40} />
                     </div>
                     <h2 className="text-3xl font-black uppercase italic tracking-tighter text-fg mb-2">Pedido Enviado!</h2>

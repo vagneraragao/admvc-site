@@ -310,7 +310,7 @@ export default function ModalEntradaUnificada({ membros, carnesAtivos, rifaAtiva
                     <div className="absolute inset-0" onClick={fecharModal} />
 
                     <div className={`bg-bg border border-soft rounded-[2.5rem] shadow-2xl w-full relative z-10 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar transition-all duration-300
-                        ${tipoEntrada === 'RIFA' ? 'max-w-5xl' : 'max-w-lg'}`}>
+                        ${tipoEntrada === 'RIFA' ? 'max-w-6xl' : 'max-w-lg'}`}>
 
                         {/* HEADER */}
                         <div className="flex items-center justify-between p-6 border-b border-soft sticky top-0 bg-bg z-10 rounded-t-[2.5rem]">

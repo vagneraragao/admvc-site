@@ -444,7 +444,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                     </SeccaoColapsavel>
 
                     {/* BLOCO 3: RODAPÉ */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-bg2 border border-soft p-5 rounded-[2rem]">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-bg2 border border-soft p-5 rounded-2xl">
                         <div className="space-y-1.5 flex-1">
                             <label className="text-[9px] font-black text-muted uppercase tracking-widest flex items-center gap-1.5">
                                 <Building2 size={10} /> Departamento

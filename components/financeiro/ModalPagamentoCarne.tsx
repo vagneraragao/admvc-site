@@ -39,7 +39,7 @@ export default function ModalPagamentoCarne({ carne }: { carne: any }) {
 
             {aberto && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-bg2 w-full max-w-sm rounded-[2rem] border border-soft shadow-2xl p-8 space-y-6">
+                    <div className="bg-bg2 w-full max-w-sm rounded-2xl border border-soft shadow-2xl p-8 space-y-6">
                         <div className="text-center space-y-2">
                             <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
                                 <DollarSign size={32} />

@@ -94,7 +94,7 @@ export default function FormEditarProduto({ produto, categorias }: Props) {
             />
 
             {/* Modal */}
-            <div className="relative bg-bg2 border border-soft rounded-[2rem] p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative bg-bg2 border border-soft rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-6 animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <h3 className="text-xl font-black uppercase italic tracking-tighter text-fg">

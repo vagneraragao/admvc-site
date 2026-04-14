@@ -137,7 +137,7 @@ export default async function GestaoEscalaLider({ params }: { params: { id: stri
 
 
     return (
-        <main className="max-w-7xl mx-auto pt-4 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
+        <main className="max-w-7xl mx-auto pt-4 md:py-10 px-4 sm:px-6 lg:px-8 space-y-5 md:space-y-10 animate-in fade-in duration-700 pb-28 md:pb-32">
             {/* HEADER */}
             <header className="flex justify-between items-center md:items-end gap-3 md:gap-6 pb-4 md:pb-6 border-b border-soft">
                 <div className="space-y-1 md:space-y-2 min-w-0">

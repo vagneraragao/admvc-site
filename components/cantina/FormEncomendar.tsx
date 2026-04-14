@@ -115,7 +115,7 @@ export default function FormEncomendar({ eventoId, eventoNome, eventoData, produ
     // Resultado de sucesso
     if (resultado?.success) {
         return (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[2rem] p-8 text-center space-y-4">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-4">
                 <CheckCircle size={48} className="mx-auto text-emerald-400" />
                 <h2 className="text-xl font-black uppercase text-fg">Encomenda Confirmada!</h2>
                 <p className="text-sm text-muted">
@@ -182,7 +182,7 @@ export default function FormEncomendar({ eventoId, eventoNome, eventoData, produ
 
             {/* Carrinho */}
             {cart.length > 0 && (
-                <section className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4 sticky bottom-4">
+                <section className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4 sticky bottom-4">
                     <h3 className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
                         <ShoppingCart size={14} className="text-figueira" /> Carrinho
                     </h3>

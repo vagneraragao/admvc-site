@@ -41,7 +41,7 @@ export default function CardAniversariantesMes({ aniversariantes }: Props) {
     const aniversariantesHoje = lista.filter(m => isHoje(m.birthdate))
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+        <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
             {/* HEADER */}
             <div className={`px-5 py-4 flex items-center justify-between ${aniversariantesHoje.length > 0 ? 'bg-figueira/5 border-b border-figueira/15' : 'border-b border-soft'}`}>
                 <div className="flex items-center gap-3">

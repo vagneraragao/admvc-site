@@ -15,6 +15,9 @@ export async function criarNovaIgreja(formData: FormData) {
     const nomeIgreja = formData.get('nomeIgreja') as string;
     const slug = formData.get('slug') as string; // Ex: 'assembleia-central'
 
+    const plano = (formData.get('plano') as string) || 'PRO'
+    const valorMensal = parseFloat(formData.get('valorMensal') as string) || 0
+
     // 2. Dados do Primeiro Admin (Pastor/Líder)
     const adminNome = formData.get('adminNome') as string;
     const adminEmail = formData.get('adminEmail') as string;
@@ -42,8 +45,10 @@ export async function criarNovaIgreja(formData: FormData) {
             const tenant = await tx.tenant.create({
                 data: {
                     nome: nomeIgreja,
-                    slug: slug.toLowerCase().replace(/\s+/g, '-'), // Garante que o slug é válido
-                    plano: 'PRO', // Ou 'FREE', dependendo da sua regra de negócio
+                    slug: slug.toLowerCase().replace(/\s+/g, '-'),
+                    plano,
+                    valor_mensal: valorMensal,
+                    plano_inicio: new Date(),
                 }
             });
 
@@ -64,8 +69,8 @@ export async function criarNovaIgreja(formData: FormData) {
             return tenant;
         });
 
-        revalidatePath('/admin/dashboard'); // Atualiza a página do super admin
-        return { success: true, message: `Igreja ${novaIgreja.nome} criada com sucesso!` };
+        revalidatePath('/super-admin/igrejas')
+        return { success: true, message: `Igreja ${novaIgreja.nome} criada com sucesso!`, tenantId: novaIgreja.id };
 
     } catch (error) {
         console.error("Erro ao criar igreja:", error);
@@ -515,4 +520,98 @@ export async function enviarAviso(formData: FormData) {
         console.error('Erro ao enviar aviso:', error)
         return { error: 'Erro interno ao enviar aviso.' }
     }
+}
+
+// ── GESTAO DE SUPER ADMINS (avancado) ────────────────────────────────────────
+
+export async function alterarRoleSA(saId: number, novoRole: string) {
+    'use server'
+    const session = await requireSAAuth()
+
+    if (!['ADMIN', 'VIEWER', 'SUPPORT'].includes(novoRole)) {
+        return { error: 'Role inválido.' }
+    }
+
+    try {
+        await prisma.superAdmin.update({
+            where: { id: saId },
+            data: { role: novoRole },
+        })
+
+        await prisma.superAdminLog.create({
+            data: { sa_id: session.saId, acao: 'ALTERAR_ROLE_SA', detalhes: `SA ${saId} alterado para ${novoRole}` },
+        })
+
+        revalidatePath('/super-admin/admins')
+        return { success: true }
+    } catch {
+        return { error: 'Erro ao alterar role.' }
+    }
+}
+
+export async function eliminarSA(saId: number) {
+    'use server'
+    const session = await requireSAAuth()
+
+    if (saId === session.saId) return { error: 'Nao pode eliminar a si mesmo.' }
+
+    try {
+        await prisma.superAdmin.delete({ where: { id: saId } })
+
+        await prisma.superAdminLog.create({
+            data: { sa_id: session.saId, acao: 'ELIMINAR_SA', detalhes: `SA ${saId} eliminado` },
+        })
+
+        revalidatePath('/super-admin/admins')
+        return { success: true }
+    } catch {
+        return { error: 'Erro ao eliminar administrador.' }
+    }
+}
+
+// ── TEMA DA IGREJA ──────────────────────────────────────────────────────────
+
+export async function atualizarTemaIgreja(formData: FormData) {
+    'use server'
+    const session = await requireSAAuth()
+
+    const tenantId = Number(formData.get('tenantId'))
+    const cor_primaria = String(formData.get('cor_primaria') || '#3F6B4F')
+    const cor_secundaria = String(formData.get('cor_secundaria') || '#7FAE93')
+    const cor_fundo = String(formData.get('cor_fundo') || '#0b0d0c')
+
+    if (!tenantId) return { error: 'ID da igreja obrigatório.' }
+
+    try {
+        await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { cor_primaria, cor_secundaria, cor_fundo },
+        })
+
+        await prisma.superAdminLog.create({
+            data: {
+                sa_id: session.saId,
+                acao: 'ALTERAR_TEMA',
+                detalhes: `Tema atualizado para tenant ${tenantId}: ${cor_primaria}, ${cor_secundaria}, ${cor_fundo}`,
+            },
+        })
+
+        revalidatePath(`/super-admin/igrejas/${tenantId}/tema`)
+        return { success: true }
+    } catch (error) {
+        console.error('Erro ao atualizar tema:', error)
+        return { error: 'Erro interno ao atualizar tema.' }
+    }
+}
+
+export async function buscarTemaIgreja(tenantId: number) {
+    'use server'
+    await requireSAAuth()
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, nome: true, slug: true, cor_primaria: true, cor_secundaria: true, cor_fundo: true, logo_url: true },
+    })
+
+    return tenant
 }

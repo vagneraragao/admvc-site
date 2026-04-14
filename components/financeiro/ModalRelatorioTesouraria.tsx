@@ -91,7 +91,7 @@ export default function ModalRelatorioTesouraria({ membros }: { membros: any[] }
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-bg/90 backdrop-blur-sm print:bg-white print:p-0 animate-in fade-in">
                     
                     {/* CONTAINER DO ECRÃ (Fica invisível na impressão) */}
-                    <div className="bg-bg2 w-full max-w-5xl border border-soft p-6 md:p-10 rounded-[3rem] shadow-2xl relative max-h-[95vh] flex flex-col overflow-hidden print:hidden">
+                    <div className="bg-bg2 w-full max-w-6xl border border-soft p-6 md:p-10 rounded-[3rem] shadow-2xl relative max-h-[95vh] flex flex-col overflow-hidden print:hidden">
                         
                         <div className="flex flex-col gap-4 mb-6 shrink-0">
                             <div className="flex items-center justify-between">

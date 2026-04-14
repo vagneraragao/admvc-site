@@ -46,7 +46,7 @@ export default async function RelatorioFinanceiroPage({
     const anoDe = `${now.getFullYear()}-01-01`
 
     return (
-        <main className="max-w-5xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-28">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-28">
             {/* ── HEADER ─────────────────────────────────────────────── */}
             <header className="flex items-center gap-4">
                 <Link
@@ -69,26 +69,26 @@ export default async function RelatorioFinanceiroPage({
             <section className="flex flex-wrap gap-2">
                 <Link
                     href={`/cantina/relatorio-financeiro?de=${mesAtualDe}&ate=${mesAtualAte}`}
-                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     Este Mes
                 </Link>
                 <Link
                     href={`/cantina/relatorio-financeiro?de=${trimestreDe}&ate=${mesAtualAte}`}
-                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     Este Trimestre
                 </Link>
                 <Link
                     href={`/cantina/relatorio-financeiro?de=${anoDe}&ate=${mesAtualAte}`}
-                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     Este Ano
                 </Link>
             </section>
 
             {/* ── P&L STATEMENT ────────────────────────────────────────── */}
-            <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-soft">
                     <DollarSign size={20} className="text-figueira" />
                     <h2 className="text-xl font-black uppercase italic tracking-tighter text-fg">
@@ -159,7 +159,7 @@ export default async function RelatorioFinanceiroPage({
             )}
 
             {/* ── REVENUE BY PAYMENT METHOD ───────────────────────────── */}
-            <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-soft">
                     <BarChart3 size={20} className="text-figueira" />
                     <h2 className="text-lg font-black uppercase italic tracking-tighter text-fg">
@@ -184,7 +184,7 @@ export default async function RelatorioFinanceiroPage({
                             return entries.map(([key, val]) => (
                                 <div key={key} className="space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-fg">
+                                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-fg">
                                             {labels[key] || key}
                                         </span>
                                         <span className="text-sm font-black text-figueira">
@@ -205,7 +205,7 @@ export default async function RelatorioFinanceiroPage({
             </section>
 
             {/* ── EXPENSES BY CATEGORY ─────────────────────────────────── */}
-            <section className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+            <section className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-soft">
                     <TrendingDown size={20} className="text-red-400" />
                     <h2 className="text-lg font-black uppercase italic tracking-tighter text-fg">
@@ -224,7 +224,7 @@ export default async function RelatorioFinanceiroPage({
                             return entries.map(([cat, val]) => (
                                 <div key={cat} className="space-y-1.5">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-fg">
+                                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-fg">
                                             {cat}
                                         </span>
                                         <span className="text-sm font-black text-red-400">

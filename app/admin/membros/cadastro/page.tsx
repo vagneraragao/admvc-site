@@ -212,7 +212,7 @@ export default function AdminCadastroMembroPage() {
     )
 
     return (
-        <main className="max-w-5xl mx-auto space-y-8 py-10 px-4 sm:px-6 animate-in fade-in pb-32">
+        <main className="max-w-6xl mx-auto space-y-8 py-10 px-4 sm:px-6 lg:px-8 animate-in fade-in pb-32">
 
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-soft pb-6 gap-6">
                 <div className="space-y-2">
@@ -241,7 +241,7 @@ export default function AdminCadastroMembroPage() {
                 </div>
             )}
 
-            <nav className="flex flex-wrap gap-2 bg-bg2 p-1.5 rounded-[2rem] border border-soft">
+            <nav className="flex flex-wrap gap-2 bg-bg2 p-1.5 rounded-2xl border border-soft">
                 {ABAS.map(tab => (
                     <button key={tab.id} type="button" onClick={() => { setErros([]); setAbaAtiva(tab.id) }}
                         className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all
@@ -258,7 +258,7 @@ export default function AdminCadastroMembroPage() {
                     <div className="space-y-8 animate-in fade-in duration-200">
                         <div className="flex items-center gap-6 pb-6 border-b border-soft/50">
                             <div className="relative shrink-0">
-                                <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl bg-soft">
+                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-soft">
                                     {previewFoto
                                         ? <Image src={previewFoto} alt="Preview" fill sizes="128px" className="object-cover" />
                                         : <div className="w-full h-full flex items-center justify-center text-muted"><User size={32} /></div>
@@ -433,7 +433,7 @@ export default function AdminCadastroMembroPage() {
             </div>
 
             {/* NAVEGACAO */}
-            <div className="flex justify-between items-center bg-bg2 p-4 rounded-[2rem] border border-soft shadow-lg sticky bottom-4 z-10">
+            <div className="flex justify-between items-center bg-bg2 p-4 rounded-2xl border border-soft shadow-lg sticky bottom-4 z-10">
                 <button type="button" onClick={recuar} disabled={abaAtiva === 1}
                     className={`px-6 py-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted hover:text-fg transition-all rounded-xl hover:bg-soft
                         ${abaAtiva === 1 ? 'opacity-0 pointer-events-none' : ''}`}>

@@ -84,7 +84,7 @@ export default function FiltroTotaisFinanceiro({ transacoes }: { transacoes: Tra
             </div>
 
             {/* CARTÃO DE TOTAIS (Otimizado para largura estreita) */}
-            <div className="bg-blue-600 text-white p-6 md:p-8 rounded-[2rem] shadow-lg shadow-blue-600/20 relative overflow-hidden flex-1 flex flex-col justify-between">
+            <div className="bg-blue-600 text-white p-6 md:p-8 rounded-2xl shadow-lg shadow-blue-600/20 relative overflow-hidden flex-1 flex flex-col justify-between">
                 
                 {/* Ícone de fundo subtil */}
                 <TrendingUp className="absolute -bottom-6 -right-6 w-40 h-40 text-white/10 rotate-12" />

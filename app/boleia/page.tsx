@@ -67,10 +67,10 @@ export default async function BoleiaPage() {
     ])
 
     return (
-        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-5 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-5 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
 
             {/* HEADER */}
-            <header className="bg-bg/95 backdrop-blur-sm -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 md:py-4 border-b border-soft">
+            <header className="bg-bg/95 backdrop-blur-sm -mx-4 sm:-mx-6 px-4 sm:px-6 lg:px-8 py-3 md:py-4 border-b border-soft">
                 <div className="flex justify-between items-center gap-3 max-w-6xl mx-auto">
                     <div>
                         <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2 mb-0.5">
@@ -136,7 +136,7 @@ export default async function BoleiaPage() {
                 if (ofertasComCoordenadas.length === 0) return null
                 return (
                     <section className="hidden md:block space-y-3">
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted flex items-center gap-2">
+                        <h2 className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-muted flex items-center gap-2">
                             <Map size={14} /> Mapa de Boleias
                         </h2>
                         <MapaBoleiasWrapper ofertas={ofertasComCoordenadas} />
@@ -155,7 +155,7 @@ export default async function BoleiaPage() {
                         const horaFormatada = new Date(oferta.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
 
                         return (
-                            <div key={oferta.id} className="bg-bg2 border border-soft rounded-2xl md:rounded-[2rem] overflow-hidden hover:border-figueira/20 transition-all shadow-sm">
+                            <div key={oferta.id} className="bg-bg2 border border-soft rounded-2xl md:rounded-2xl overflow-hidden hover:border-figueira/20 transition-all shadow-sm">
                                 <div className={`h-1 md:h-1.5 ${vagasLivres > 0 ? 'bg-figueira' : 'bg-soft'}`} />
 
                                 <div className="p-4 md:p-6 space-y-3 md:space-y-4">
@@ -171,7 +171,7 @@ export default async function BoleiaPage() {
                                                 {oferta.motorista.first_name} {oferta.motorista.last_name}
                                             </p>
                                             {souMotorista && (
-                                                <span className="text-[8px] font-black uppercase text-figueira tracking-widest">Voce</span>
+                                                <span className="text-[8px] md:text-[10px] font-black uppercase text-figueira tracking-widest">Voce</span>
                                             )}
                                         </div>
                                     </div>
@@ -221,7 +221,7 @@ export default async function BoleiaPage() {
                                     {/* Acao */}
                                     <div className="pt-1 md:pt-2 flex items-center gap-3">
                                         {souMotorista ? (
-                                            <Link href="/boleia/minhas" className="text-[9px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
+                                            <Link href="/boleia/minhas" className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-figueira hover:text-fg transition-colors flex items-center gap-1">
                                                 Gerir <ChevronRight size={12} />
                                             </Link>
                                         ) : minhaReserva ? (
@@ -234,7 +234,7 @@ export default async function BoleiaPage() {
                                         ) : vagasLivres > 0 ? (
                                             <BotaoReservar ofertaId={oferta.id} />
                                         ) : (
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-muted">Sem vagas</span>
+                                            <span className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Sem vagas</span>
                                         )}
                                     </div>
                                 </div>
@@ -245,10 +245,10 @@ export default async function BoleiaPage() {
             ) : (
                 <div className="py-20 text-center">
                     <Car size={32} className="mx-auto text-muted/20 mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-muted">
                         Nenhuma boleia disponivel de momento
                     </p>
-                    <Link href="/boleia/oferecer" className="inline-flex items-center gap-2 mt-4 text-figueira text-[10px] font-black uppercase tracking-widest hover:text-fg transition-colors">
+                    <Link href="/boleia/oferecer" className="inline-flex items-center gap-2 mt-4 text-figueira text-[10px] md:text-xs font-black uppercase tracking-widest hover:text-fg transition-colors">
                         <Plus size={12} /> Seja o primeiro a oferecer
                     </Link>
                 </div>
@@ -256,7 +256,7 @@ export default async function BoleiaPage() {
             {/* BOLEIAS PASSADAS — AGRADECER */}
             {minhasReservasPassadas.length > 0 && (
                 <section className="space-y-4">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">
+                    <h2 className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-muted">
                         Boleias Recentes — Agradecer
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
@@ -267,12 +267,12 @@ export default async function BoleiaPage() {
                             const horaFormatada = new Date(oferta.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
 
                             return (
-                                <div key={oferta.id} className="bg-bg2 border border-soft rounded-2xl md:rounded-[2rem] overflow-hidden opacity-75">
+                                <div key={oferta.id} className="bg-bg2 border border-soft rounded-2xl md:rounded-2xl overflow-hidden opacity-75">
                                     <div className="h-1 md:h-1.5 bg-soft" />
                                     <div className="p-4 md:p-6 space-y-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-soft flex items-center justify-center shrink-0">
-                                                <span className="text-[10px] font-black text-muted">
+                                                <span className="text-[10px] md:text-xs font-black text-muted">
                                                     {oferta.motorista.first_name[0]}{oferta.motorista.last_name[0]}
                                                 </span>
                                             </div>
@@ -280,7 +280,7 @@ export default async function BoleiaPage() {
                                                 <p className="text-sm font-black uppercase text-fg leading-none">
                                                     {oferta.motorista.first_name} {oferta.motorista.last_name}
                                                 </p>
-                                                <p className="text-[10px] text-muted">{dataFormatada} as {horaFormatada}</p>
+                                                <p className="text-[10px] md:text-xs text-muted">{dataFormatada} as {horaFormatada}</p>
                                             </div>
                                         </div>
                                         <div className="pt-1">

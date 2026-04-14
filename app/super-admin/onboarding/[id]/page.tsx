@@ -54,7 +54,7 @@ export default async function OnboardingPage({
     const initialStep = Math.min(Math.max(parseInt(step || '1') || 1, 1), 5)
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[#222] pb-6">
                 <div className="flex items-center gap-4">

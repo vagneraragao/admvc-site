@@ -47,7 +47,7 @@ export default function ModalListaConsolidados({ consolidados }: { consolidados:
                                     const isExpanded = expandedId === v.id;
                                     
                                     return (
-                                        <div key={v.id} className={`p-5 bg-bg border rounded-[2rem] flex flex-col transition-all duration-300 ${isExpanded ? 'border-figueira/50 shadow-md' : 'border-soft hover:border-figueira/30'}`}>
+                                        <div key={v.id} className={`p-5 bg-bg border rounded-2xl flex flex-col transition-all duration-300 ${isExpanded ? 'border-figueira/50 shadow-md' : 'border-soft hover:border-figueira/30'}`}>
                                             
                                             {/* CABEÇALHO DO CARTÃO */}
                                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">

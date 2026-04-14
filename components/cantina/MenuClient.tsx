@@ -47,7 +47,7 @@ export default function MenuClient({ produtos }: { produtos: any[] }) {
                         style={{ animationDelay: `${idx * 50}ms` }}
                     >
                         {/* FOTO E TAGS */}
-                        <div className="relative h-48 w-full rounded-[2rem] overflow-hidden bg-bg border border-soft shrink-0">
+                        <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-bg border border-soft shrink-0">
                             {p.imagem ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img

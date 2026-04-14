@@ -30,7 +30,7 @@ export default function ConsumoFilhos() {
     if (loading || filhos.length === 0) return null
 
     return (
-        <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-3">
+        <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-3">
             <div className="flex items-center gap-2">
                 <Users size={16} className="text-figueira" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted">Consumo da Familia</span>

@@ -10,12 +10,12 @@ O **ADMVC Cloud** e uma plataforma SaaS completa para gestao de igrejas que cobr
 
 | | Quantidade |
 |---|---|
-| Paginas | 95+ |
+| Paginas | 100+ |
 | APIs REST | 20+ |
 | Server Actions | 35+ ficheiros |
-| Componentes React | 220+ |
+| Componentes React | 270+ |
 | Modelos de Dados | 60+ |
-| Features em Producao | 64 |
+| Features em Producao | 70+ |
 
 ---
 
@@ -98,6 +98,17 @@ admvc-site/
 │   ├── midia/                  # Holyrics, Mesa de Som X32, Lumikit
 │   ├── tesouraria/             # Dashboard do tesoureiro
 │   ├── super-admin/            # Gestao da plataforma SaaS
+│   │   ├── dashboard/          # KPIs globais e alertas
+│   │   ├── igrejas/            # CRUD de tenants
+│   │   ├── igrejas/[id]/modulos/ # Modulos por igreja
+│   │   ├── igrejas/[id]/tema/  # Temas visuais por igreja
+│   │   ├── planos/             # Visualizacao de planos
+│   │   ├── billing/            # Facturacao e receita
+│   │   ├── admins/             # Gestao de super-admins
+│   │   ├── impersonar/         # Impersonar igrejas
+│   │   ├── comunicacao/        # Avisos plataforma
+│   │   ├── nova-igreja/        # Criar nova igreja + admin
+│   │   └── onboarding/[id]/    # Wizard de setup
 │   └── api/                    # API routes (REST + docs)
 ├── actions/                    # Server Actions (35+ ficheiros)
 ├── components/                 # Componentes React (220+ ficheiros)
@@ -179,6 +190,20 @@ admvc-site/
 - Status: NOVO, EM_CONTACTO, CONSOLIDADO, NAO_RETORNOU, OUTRA_IGREJA, DESISTIU
 - Acompanhamento com historico
 
+### Portal Super-Admin (Plataforma SaaS)
+- Dashboard com KPIs globais (igrejas, membros, planos pagos, alertas de saude)
+- Gestao de igrejas: criar, editar, suspender, pesquisa e filtro por plano
+- **Configuracao de Planos**: visualizacao comparativa dos 4 tiers (FREE/BASIC/PRO/ENTERPRISE) com modulos e limites
+- **Temas Visuais por Igreja**: 6 presets de paleta (Figueira, Oceano, Vinho, Ouro, Noite, Coral), color pickers e preview em tempo real
+- Gestao de modulos por igreja (16 modulos com override custom)
+- Onboarding wizard (5 steps: branding, congregacoes, departamentos, admin, checklist)
+- Billing: receita mensal, historico de planos, datas de inicio/fim
+- Impersonar igrejas (auditado, sessao de 2h)
+- Comunicacao: avisos plataforma (INFO/ALERTA/MANUTENCAO/NOVIDADE)
+- Gestao de super-admins: criar, toggle ativo, alterar role (ADMIN/SUPPORT/VIEWER), eliminar
+- Sidebar com highlight de pagina activa e suporte mobile
+- Audit logging de todas as acoes criticas
+
 ### Louvor e Midia
 - Repertorio por evento (so lideres/delegados podem gerir)
 - Integracao Holyrics (projeccao)
@@ -252,20 +277,35 @@ Barra expansivel mostra: role badge, email, n. departamentos, n. grupos, telefon
 
 ## Sidebar Admin
 
-Menu organizado em grupos colapsaveis:
+Menu organizado em grupos colapsaveis com icones padronizados (14px):
 
 ```
-IGREJA: Dashboard, Membros, Familias, Congregacoes, Estrutura
-AGENDA & ESCALAS: Eventos, Escalas, Inventario
-FORMACAO: Pregacao, Cursos/EBD
-CANTINA: Painel, Produtos, POS, Vendas, Turnos, Cardapio, Encomendas, Fiados, Recargas
-FINANCEIRO: Fundos, Despesas, Orcamento, Recibos, Relatorio, Donativos, Pledges, Reconciliacao, Exportacao
-RELATORIOS: Geral, Escalas, Loyverse
-SOCIAL: Assistencia Social
-SISTEMA: Personalizacao, Midia, Auditoria
+IGREJA: Estrutura, Membros, Congregacoes, Familias, Inventario
+AGENDA: Eventos, Escalas
+FORMACAO: Pregacoes, Cursos
+CANTINA: Painel, Cardapio, Produtos, Turnos, Vendas, Fiados, Encomendas, Recargas, Relatorios
+FINANCEIRO: Fundos, Despesas, Orcamento, Recibos, Relatorios, Donativos, Pledges, Reconciliacao, Exportacao
+MINISTERIOS: Louvor, Midia, Assistencia Social, Acolhimento, Diaconia, Obreiros, Boleia, EBD, Agenda Pastoral
+CONFIGURACOES: Personalizacao, Auditoria
 ```
 
 Auto-expande quando a rota activa esta dentro do grupo.
+
+---
+
+## Experiencia Desktop
+
+Padronizacao UX para desktop (v2.6.0):
+
+- **Tipografia responsiva**: textos de 7-10px no mobile escalam para 9-12px no desktop via breakpoints `md:`
+- **Icones padronizados**: 14px para navegacao, 18px para cards, 10px para badges
+- **Containers consistentes**: `max-w-6xl` como padrao, `max-w-7xl` para tabelas densas
+- **Padding 3 breakpoints**: `px-4 sm:px-6 lg:px-8` em todas as paginas
+- **Border radius**: `rounded-2xl` unificado (141 ocorrencias corrigidas)
+- **Hover states**: `hover:border-figueira/30 hover:-translate-y-0.5` em cards navegaveis
+- **Tooltips**: adicionados a todos os botoes icon-only no desktop
+- **Botoes desktop**: `md:h-10 md:w-10` para melhor area de clique
+- **Nav tabs**: escaladas para `md:text-xs` no desktop
 
 ---
 
@@ -352,7 +392,7 @@ Deploy via Vercel CLI: `vercel --prod`
 
 ## Versao
 
-**v2.5.0** — Abril 2026
+**v2.6.0** — Abril 2026
 
 ---
 

@@ -17,7 +17,7 @@ export default function BotaoSetlistPalco({ eventoId, totalMusicas }: Props) {
     return (
         <Link
             href={`/louvor/setlist/${eventoId}`}
-            className="group relative w-full overflow-hidden rounded-[2rem] border border-soft bg-bg2 p-1 transition-all hover:border-figueira/40 hover:shadow-xl hover:shadow-figueira/5 active:scale-[0.98]"
+            className="group relative w-full overflow-hidden rounded-2xl border border-soft bg-bg2 p-1 transition-all hover:border-figueira/40 hover:shadow-xl hover:shadow-figueira/5 active:scale-[0.98]"
         >
             <div className="absolute inset-0 bg-gradient-to-r from-figueira/0 via-figueira/5 to-figueira/0 opacity-0 transition-opacity group-hover:opacity-100" />
 

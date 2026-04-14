@@ -13,7 +13,7 @@ export default function FotoUpload({ defaultValue }: { defaultValue?: string }) 
     };
 
     return (
-        <div className="flex flex-col items-center gap-4 p-6 bg-bg rounded-[2rem] border-2 border-dashed border-soft">
+        <div className="flex flex-col items-center gap-4 p-6 bg-bg rounded-2xl border-2 border-dashed border-soft">
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-soft bg-bg2 flex items-center justify-center">
                 {preview ? (
                     <img src={preview} alt="Preview" className="w-full h-full object-cover" />

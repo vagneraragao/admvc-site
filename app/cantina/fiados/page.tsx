@@ -33,8 +33,8 @@ export default async function FiadosPage() {
     const { fiados, total } = await obterTodosFiadosPendentes()
 
     return (
-        <main className="max-w-5xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
-            <Link href="/cantina" className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-28">
+            <Link href="/cantina" className="inline-flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
                 <ArrowLeft size={14} /> Voltar a Cantina
             </Link>
 
@@ -50,19 +50,19 @@ export default async function FiadosPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Total em divida</p>
+                <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-1">
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Total em divida</p>
                     <p className="text-2xl font-black text-figueira">{total.toFixed(2)}&euro;</p>
                 </div>
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Fiados pendentes</p>
+                <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-1">
+                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Fiados pendentes</p>
                     <p className="text-2xl font-black text-fg">{fiados.length}</p>
                 </div>
             </div>
 
             {/* List */}
             {fiados.length === 0 ? (
-                <div className="bg-bg2 border border-soft rounded-[2rem] p-12 text-center space-y-3">
+                <div className="bg-bg2 border border-soft rounded-2xl p-12 text-center space-y-3">
                     <HandCoins size={32} className="text-muted mx-auto" />
                     <p className="text-sm font-bold text-muted">Nenhum fiado pendente.</p>
                 </div>
@@ -75,14 +75,14 @@ export default async function FiadosPage() {
                                     <span className="text-xs font-black text-fg">
                                         {fiado.membro?.first_name} {fiado.membro?.last_name}
                                     </span>
-                                    <span className="text-[9px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-full">
+                                    <span className="text-[9px] md:text-[11px] font-black text-figueira bg-figueira/10 px-2 py-0.5 rounded-full">
                                         {fiado.valor.toFixed(2)}&euro;
                                     </span>
                                 </div>
                                 {fiado.descricao && (
-                                    <p className="text-[10px] text-muted truncate">{fiado.descricao}</p>
+                                    <p className="text-[10px] md:text-xs text-muted truncate">{fiado.descricao}</p>
                                 )}
-                                <p className="text-[9px] text-muted">
+                                <p className="text-[9px] md:text-[11px] text-muted">
                                     {new Date(fiado.criado_em).toLocaleDateString('pt-PT', {
                                         day: '2-digit', month: '2-digit', year: 'numeric',
                                         hour: '2-digit', minute: '2-digit',
@@ -90,7 +90,7 @@ export default async function FiadosPage() {
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-400">
+                                <span className="inline-flex items-center gap-1 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-amber-400">
                                     <AlertTriangle size={11} /> Pendente
                                 </span>
                                 <BotaoLiquidarFiado fiadoId={fiado.id} />

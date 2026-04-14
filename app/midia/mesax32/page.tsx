@@ -27,7 +27,7 @@ export default async function X32Page() {
     const temHolyrics = !!tenant?.holyrics_url && !!tenant?.holyrics_token
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
             <header className="space-y-1">
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Mesa de Som</h1>
                 <p className="text-xs text-muted">

@@ -508,7 +508,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             {/* Receipt overlay */}
             {receipt && (
                 <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-8 max-w-sm w-full space-y-4 animate-in zoom-in duration-300">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-8 max-w-sm w-full space-y-4 animate-in zoom-in duration-300">
                         <div className="text-center space-y-2">
                             <CheckCircle size={32} className="text-emerald-500 mx-auto" />
                             <h2 className="text-lg font-black uppercase tracking-tighter text-fg">Venda Confirmada</h2>
@@ -611,7 +611,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
 
                 {/* ── Desktop Cart (hidden on mobile) ────────────────────── */}
                 <div className="hidden lg:block lg:w-1/3 lg:max-w-[400px]">
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-4 sticky top-6">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-5 space-y-4 sticky top-6">
                         {MemberSelector}
                         <div className="border-t border-soft" />
                         <div className="flex items-center justify-between">
@@ -641,7 +641,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             {sheetOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSheetOpen(false)} />
-                    <div className="relative bg-bg2 rounded-[2rem] border border-soft max-h-[90vh] w-full max-w-md flex flex-col animate-in zoom-in-95 duration-300 shadow-2xl">
+                    <div className="relative bg-bg2 rounded-2xl border border-soft max-h-[90vh] w-full max-w-md flex flex-col animate-in zoom-in-95 duration-300 shadow-2xl">
                         <div className="flex items-center justify-between px-5 pt-5 pb-3">
                             <span className="text-xs font-black uppercase tracking-widest text-fg flex items-center gap-2">
                                 <ShoppingCart size={14} className="text-figueira" /> Carrinho

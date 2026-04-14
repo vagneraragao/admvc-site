@@ -48,7 +48,7 @@ export default async function MenuLocalPage() {
     const semCategoria = produtos.filter(p => !p.categoria_id)
 
     return (
-        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-6 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-10 pb-28 md:pb-24 animate-in fade-in duration-700">
             <header className="text-center space-y-3 md:space-y-4 pb-5 md:pb-8 border-b border-soft">
                 <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
                     <Coffee size={14} /> Menu Cantina
@@ -60,7 +60,7 @@ export default async function MenuLocalPage() {
 
             {/* PRE-ENCOMENDAS — colapsado por defeito */}
             {proximosEventos.length > 0 && (
-                <details className="group bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                <details className="group bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden p-5 flex items-center justify-between hover:bg-soft/20 transition-all">
                         <span className="text-sm font-black uppercase tracking-widest text-figueira flex items-center gap-2">
                             <ShoppingCart size={14} /> Encomendar para o Proximo Evento
@@ -103,7 +103,7 @@ export default async function MenuLocalPage() {
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {cat.produtos.map(p => (
-                            <div key={p.id} className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-2 hover:border-figueira/20 transition-all">
+                            <div key={p.id} className="bg-bg2 border border-soft rounded-2xl p-5 space-y-2 hover:border-figueira/20 transition-all">
                                 {p.imagem_url && (
                                     <div className="w-full h-24 rounded-xl bg-soft overflow-hidden mb-2">
                                         <img src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover" />
@@ -127,7 +127,7 @@ export default async function MenuLocalPage() {
                     <h2 className="text-lg font-black uppercase tracking-widest text-fg">Outros</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {semCategoria.map(p => (
-                            <div key={p.id} className="bg-bg2 border border-soft rounded-[2rem] p-5 space-y-2">
+                            <div key={p.id} className="bg-bg2 border border-soft rounded-2xl p-5 space-y-2">
                                 <h3 className="text-sm font-black uppercase text-fg leading-tight">{p.nome}</h3>
                                 <p className="text-lg font-black italic text-figueira">{p.preco.toFixed(2)}€</p>
                             </div>

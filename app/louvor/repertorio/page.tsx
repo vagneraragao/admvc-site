@@ -52,7 +52,7 @@ export default async function RepertorioPage() {
     })
 
     return (
-        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 space-y-6 md:space-y-8 pb-28 md:pb-24 animate-in fade-in duration-700">
+        <main className="max-w-4xl mx-auto pt-16 md:py-10 px-4 sm:px-6 lg:px-8 space-y-6 md:space-y-8 pb-28 md:pb-24 animate-in fade-in duration-700">
             <header className="space-y-2 pb-4 md:pb-6 border-b border-soft">
                 <span className="text-figueira font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
                     <Music2 size={14} /> Louvor
@@ -74,7 +74,7 @@ export default async function RepertorioPage() {
                             <div key={evento.id} className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                                 <div className="p-4 md:p-5 flex items-center gap-4">
                                     <div className="p-2 rounded-lg bg-fg text-bg text-center min-w-[44px] shrink-0">
-                                        <span className="block text-[7px] font-black uppercase opacity-60">
+                                        <span className="block text-[7px] md:text-[9px] font-black uppercase opacity-60">
                                             {d.toLocaleDateString('pt-PT', { month: 'short' })}
                                         </span>
                                         <span className="block text-lg font-black italic leading-tight">
@@ -83,8 +83,8 @@ export default async function RepertorioPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-sm font-black uppercase italic text-fg truncate">{evento.nome}</h3>
-                                        <p className="text-[9px] text-muted font-bold mt-0.5">{dataFormatada} · {hora}</p>
-                                        <p className="text-[8px] text-figueira font-black uppercase tracking-widest mt-1">
+                                        <p className="text-[9px] md:text-[11px] text-muted font-bold mt-0.5">{dataFormatada} · {hora}</p>
+                                        <p className="text-[8px] md:text-[10px] text-figueira font-black uppercase tracking-widest mt-1">
                                             {totalMusicas > 0 ? `${totalMusicas} música${totalMusicas !== 1 ? 's' : ''}` : 'Sem repertório'}
                                         </p>
                                     </div>
@@ -102,7 +102,7 @@ export default async function RepertorioPage() {
             ) : (
                 <div className="text-center py-16">
                     <Calendar size={32} className="mx-auto text-muted/20 mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+                    <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-muted">
                         Sem eventos agendados
                     </p>
                 </div>

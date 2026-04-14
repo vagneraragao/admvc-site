@@ -47,7 +47,7 @@ export default async function MinhasBoleiasPage() {
     const ofertasPassadas = minhasOfertas.filter(o => o.status !== 'ATIVA')
 
     return (
-        <main className="max-w-4xl mx-auto py-10 px-4 sm:px-6 space-y-10 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-10 pb-24 animate-in fade-in duration-700">
 
             {/* HEADER */}
             <header className="space-y-4">
@@ -87,7 +87,7 @@ export default async function MinhasBoleiasPage() {
                             const horaFormatada = new Date(oferta.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
 
                             return (
-                                <div key={oferta.id} className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4">
+                                <div key={oferta.id} className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 text-[11px] text-fg font-medium">
@@ -159,7 +159,7 @@ export default async function MinhasBoleiasPage() {
                             const horaFormatada = new Date(oferta.data_hora_saida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
 
                             return (
-                                <div key={reserva.id} className="bg-bg2 border border-soft rounded-[2rem] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div key={reserva.id} className="bg-bg2 border border-soft rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="space-y-2">
                                         <p className="text-sm font-black uppercase text-fg">
                                             Boleia com {oferta.motorista.first_name} {oferta.motorista.last_name}

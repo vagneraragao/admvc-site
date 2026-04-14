@@ -372,7 +372,7 @@ export default function MembrosListClient({ membros, kpis }: Props) {
 
             {/* TABELA */}
             {vista === 'tabela' && (
-                <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden shadow-sm">
+                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left min-w-[900px]">
                             <thead>

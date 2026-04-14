@@ -97,7 +97,7 @@ export default async function TurnosPage() {
     }
 
     return (
-        <main className="max-w-5xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-10 animate-in fade-in duration-700 pb-28">
             {/* ── HEADER ─────────────────────────────────────────────── */}
             <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div className="space-y-1">
@@ -108,7 +108,7 @@ export default async function TurnosPage() {
                 </div>
                 <Link
                     href="/cantina/dashboard"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     <BarChart3 size={14} className="text-figueira" /> Dashboard
                 </Link>
@@ -119,14 +119,14 @@ export default async function TurnosPage() {
                 {turnoAberto ? (
                     <>
                         {/* Active shift banner */}
-                        <div className="bg-green-500/10 border border-green-500/30 rounded-[2rem] p-6 space-y-4">
+                        <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-6 space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                                 <div>
                                     <h2 className="text-sm font-black uppercase tracking-widest text-green-400">
                                         Turno Aberto
                                     </h2>
-                                    <p className="text-[10px] font-bold text-green-400/70 mt-0.5">
+                                    <p className="text-[10px] md:text-xs font-bold text-green-400/70 mt-0.5">
                                         Desde {fmtTime(turnoAberto.abertura_em)} &middot;{' '}
                                         {turnoAberto.operador.first_name} {turnoAberto.operador.last_name || ''}
                                     </p>
@@ -135,23 +135,23 @@ export default async function TurnosPage() {
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-bg/50 rounded-xl p-3 space-y-0.5">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Vendas</p>
+                                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Vendas</p>
                                     <p className="text-xl font-black text-fg">{turnoStats.count}</p>
                                 </div>
                                 <div className="bg-bg/50 rounded-xl p-3 space-y-0.5">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Total</p>
+                                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Total</p>
                                     <p className="text-xl font-black text-fg">{fmt(turnoStats.total)} EUR</p>
                                 </div>
                                 <div className="bg-bg/50 rounded-xl p-3 space-y-0.5">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted">Caixa Inicial</p>
+                                    <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Caixa Inicial</p>
                                     <p className="text-xl font-black text-fg">{fmt(turnoAberto.valor_inicial)} EUR</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Close shift form */}
-                        <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted">
+                        <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4">
+                            <h3 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-muted">
                                 Fechar Turno
                             </h3>
                             <FormFecharTurno
@@ -164,14 +164,14 @@ export default async function TurnosPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="bg-bg2 border border-soft rounded-[2rem] p-6 space-y-4">
+                    <div className="bg-bg2 border border-soft rounded-2xl p-6 space-y-4">
                         <div className="flex items-center gap-3">
                             <Clock size={20} className="text-muted" />
                             <div>
                                 <h2 className="text-sm font-black uppercase tracking-widest text-fg">
                                     Nenhum Turno Aberto
                                 </h2>
-                                <p className="text-[10px] font-bold text-muted mt-0.5">
+                                <p className="text-[10px] md:text-xs font-bold text-muted mt-0.5">
                                     Abra um turno para comecar a registar vendas.
                                 </p>
                             </div>
@@ -191,20 +191,20 @@ export default async function TurnosPage() {
                     <div className="h-[1px] flex-1 bg-soft" />
                 </div>
 
-                <div className="bg-bg2 border border-soft rounded-[2rem] overflow-hidden">
+                <div className="bg-bg2 border border-soft rounded-2xl overflow-hidden">
                     {turnosFechados.length === 0 ? (
                         <p className="text-sm text-muted text-center py-8">Nenhum turno fechado.</p>
                     ) : (
                         <>
                             {/* Desktop header */}
                             <div className="hidden lg:grid grid-cols-[80px_1fr_80px_70px_100px_100px_80px] gap-4 px-6 py-3 border-b border-soft">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted">Data</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted">Operador</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted">Duracao</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted text-right">Vendas</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted text-right">Total</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted text-right">Diferenca</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">Status</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Data</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Operador</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted">Duracao</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">Vendas</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">Total</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-right">Diferenca</p>
+                                <p className="text-[9px] md:text-[11px] font-black uppercase tracking-widest text-muted text-center">Status</p>
                             </div>
 
                             {turnosFechados.map((turno) => {
@@ -259,7 +259,7 @@ export default async function TurnosPage() {
 
                                         {/* Status badge */}
                                         <div className="flex lg:justify-center mt-2 lg:mt-0">
-                                            <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-widest">
+                                            <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg px-2.5 py-1 text-[9px] md:text-[11px] font-black uppercase tracking-widest">
                                                 Fechado
                                             </span>
                                         </div>
@@ -275,13 +275,13 @@ export default async function TurnosPage() {
             <section className="flex flex-wrap gap-2 pt-6 border-t border-soft">
                 <Link
                     href="/cantina/pos"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     <ShoppingCart size={14} className="text-figueira" /> Ponto de Venda
                 </Link>
                 <Link
                     href="/cantina"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] md:text-[11px] font-black uppercase tracking-widest text-fg"
                 >
                     Cantina
                 </Link>

@@ -39,7 +39,7 @@ export default async function CarregarSaldoPage() {
     })
 
     return (
-        <main className="max-w-4xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-8 pb-28 animate-in fade-in duration-700">
+        <main className="max-w-4xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 lg:px-8 space-y-8 pb-28 animate-in fade-in duration-700">
             <header className="space-y-4">
                 <Link
                     href="/cantina/menu-local"

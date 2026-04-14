@@ -108,7 +108,7 @@ export default function GestaoCongregacoesClient({
     }
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in">
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in">
 
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-soft pb-8">
                 <div>
@@ -142,11 +142,11 @@ export default function GestaoCongregacoesClient({
             {modo === 'lista' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {congregacoes.length === 0 ? (
-                        <div className="col-span-full p-10 border-2 border-dashed border-soft rounded-[2rem] text-center bg-bg2/50">
+                        <div className="col-span-full p-10 border-2 border-dashed border-soft rounded-2xl text-center bg-bg2/50">
                             <p className="text-xs font-black uppercase tracking-widest text-muted italic">Nenhuma congregacao registada.</p>
                         </div>
                     ) : congregacoes.map((c) => (
-                        <div key={c.id} className="bg-bg2 border border-soft p-6 rounded-[2rem] shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group">
+                        <div key={c.id} className="bg-bg2 border border-soft p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group">
                             <div>
                                 <div className="w-10 h-10 bg-figueira/10 text-figueira rounded-xl flex items-center justify-center mb-3">
                                     <Building2 size={20} />

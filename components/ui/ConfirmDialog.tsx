@@ -52,7 +52,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                     onClick={() => handleClose(false)}
                 >
                     <div
-                        className="bg-bg w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] border border-soft shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+                        className="bg-bg w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-2xl border border-soft shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between px-6 py-5 border-b border-soft">

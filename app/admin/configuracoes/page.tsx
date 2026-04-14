@@ -79,7 +79,7 @@ export default async function EstruturaPage() {
     const cargosSerializados = cargos.map((c: any) => ({ id: c.id, nome: c.nome }))
 
     return (
-        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-20">
 
             <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div className="space-y-1">
@@ -99,7 +99,7 @@ export default async function EstruturaPage() {
                     <div className="flex items-center gap-2">
                         <LayoutGrid size={14} className="text-blue-500 group-open:rotate-0 transition-transform" />
                         <h2 className="text-sm font-black uppercase tracking-widest text-fg">Departamentos</h2>
-                        <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{deptos.length}</span>
+                        <span className="text-[8px] md:text-[10px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{deptos.length}</span>
                     </div>
                     <StopPropagation className="flex items-center gap-2">
                         <Popover titulo="Departamento" cor="blue">
@@ -131,7 +131,7 @@ export default async function EstruturaPage() {
                 <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 px-5 py-4 border-b border-soft hover:bg-soft/10 transition-colors">
                     <Users size={14} className="text-emerald-500" />
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Grupos & PGs</h2>
-                    <span className="text-[8px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{grupos.length}</span>
+                    <span className="text-[8px] md:text-[10px] bg-soft/50 px-2 py-0.5 rounded text-muted font-bold">{grupos.length}</span>
                 </summary>
                 <div className="p-5">
                     <GerenciadorGrupos
@@ -149,7 +149,7 @@ export default async function EstruturaPage() {
 function Empty({ message }: { message: string }) {
     return (
         <div className="py-10 text-center border border-dashed border-soft rounded-2xl bg-bg2/30">
-            <p className="text-[10px] font-bold text-muted uppercase tracking-widest">{message}</p>
+            <p className="text-[10px] md:text-xs font-bold text-muted uppercase tracking-widest">{message}</p>
         </div>
     )
 }
@@ -162,13 +162,13 @@ function Popover({ titulo, cor = 'figueira', children }: { titulo: string; cor?:
     return (
         <details className="group relative z-30">
             <summary className="list-none cursor-pointer marker:hidden [&::-webkit-details-marker]:hidden outline-none">
-                <div className={`${btnClass} px-3 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all flex items-center gap-1.5 active:scale-95`}>
+                <div className={`${btnClass} px-3 py-2 rounded-xl font-black text-[9px] md:text-[11px] uppercase tracking-widest transition-all flex items-center gap-1.5 active:scale-95`}>
                     <Plus size={12} className="group-open:rotate-45 transition-transform" />
                     {titulo}
                 </div>
             </summary>
             <div className="absolute right-0 top-full mt-2 w-[300px] bg-bg border border-soft p-5 rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-                <p className="text-[9px] font-black uppercase text-muted tracking-widest border-b border-soft pb-2 mb-3">
+                <p className="text-[9px] md:text-[11px] font-black uppercase text-muted tracking-widest border-b border-soft pb-2 mb-3">
                     Novo(a) {titulo}
                 </p>
                 {children}

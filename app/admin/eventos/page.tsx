@@ -76,7 +76,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
     const tipoAtivo = params.tipo || 'TODOS'
 
     return (
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
 
             {/* HEADER */}
             <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -91,7 +91,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
             <div className="flex flex-wrap gap-2">
                 <Link
                     href="/admin/eventos"
-                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                    className={`px-4 py-2 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest border transition-all ${
                         tipoAtivo === 'TODOS'
                             ? 'bg-fg text-bg border-fg'
                             : 'bg-bg2 text-muted border-soft hover:border-fg/30'
@@ -106,7 +106,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
                         <Link
                             key={t.value}
                             href={`/admin/eventos?tipo=${t.value}`}
-                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                            className={`px-4 py-2 rounded-xl text-[9px] md:text-[11px] font-black uppercase tracking-widest border transition-all ${
                                 tipoAtivo === t.value
                                     ? `${t.corFundo} ${t.corTexto} ${t.corBorda}`
                                     : 'bg-bg2 text-muted border-soft hover:border-fg/30'
@@ -122,12 +122,12 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
             {/* STATS */}
             <div className="flex flex-wrap gap-3">
                 <div className="bg-bg2 border border-soft rounded-2xl px-5 py-4">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-muted">Este Mes</p>
+                    <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted">Este Mes</p>
                     <p className="text-2xl font-black italic text-fg">{eventosEsteMes.length}</p>
                 </div>
                 {LISTA_TIPOS.filter(t => (contagemPorTipo[t.value] || 0) > 0).map(t => (
                     <div key={t.value} className={`border rounded-2xl px-5 py-4 ${t.corFundo} ${t.corBorda}`}>
-                        <p className={`text-[8px] font-black uppercase tracking-widest ${t.corTexto}`}>{t.label}</p>
+                        <p className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest ${t.corTexto}`}>{t.label}</p>
                         <p className={`text-2xl font-black italic ${t.corTexto}`}>{contagemPorTipo[t.value]}</p>
                     </div>
                 ))}
@@ -149,7 +149,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
                 <div className="flex items-center gap-3 px-1">
                     <CalendarDays size={15} className="text-figueira" />
                     <h2 className="text-sm font-black uppercase tracking-widest text-fg">Proximos Eventos</h2>
-                    <span className="text-[8px] font-black uppercase tracking-widest bg-soft border border-soft px-2 py-1 rounded-lg text-muted">
+                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-soft border border-soft px-2 py-1 rounded-lg text-muted">
                         {eventosFuturos.length} evento{eventosFuturos.length !== 1 ? 's' : ''}
                     </span>
                 </div>
@@ -179,20 +179,20 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
                                 <div className="flex-1 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
                                     {/* Date block */}
                                     <div className="text-center sm:text-left shrink-0 w-20">
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-muted">{diaSemana}</p>
+                                        <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted">{diaSemana}</p>
                                         <p className="text-lg font-black italic text-fg leading-tight">{dataEvento.getDate()}</p>
-                                        <p className="text-[8px] font-bold text-muted">{dataEvento.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase()}</p>
+                                        <p className="text-[8px] md:text-[10px] font-bold text-muted">{dataEvento.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase()}</p>
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0 space-y-1">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h3 className="text-sm font-black uppercase tracking-wider text-fg truncate">{evento.nome}</h3>
-                                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${tipoInfo.corFundo} ${tipoInfo.corTexto} ${tipoInfo.corBorda}`}>
+                                            <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${tipoInfo.corFundo} ${tipoInfo.corTexto} ${tipoInfo.corBorda}`}>
                                                 {tipoInfo.label}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-4 text-[9px] font-bold text-muted">
+                                        <div className="flex items-center gap-4 text-[9px] md:text-[11px] font-bold text-muted">
                                             <span>{dataFormatada} as {horaFormatada}</span>
                                             <span className="flex items-center gap-1">
                                                 <Users size={10} /> {nEscalados} escalado{nEscalados !== 1 ? 's' : ''}
@@ -203,7 +203,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
                                     {/* Link to escalas */}
                                     <Link
                                         href={`/admin/escalas?evento=${evento.id}`}
-                                        className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-figueira hover:text-figueira/70 transition-all shrink-0"
+                                        className="flex items-center gap-2 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-figueira hover:text-figueira/70 transition-all shrink-0"
                                     >
                                         Escalas <ArrowRight size={12} />
                                     </Link>

@@ -94,8 +94,8 @@ function NavItems({ items, collapsed, pathname, isFullAdmin, onNavigate }: {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
                     <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} onClick={onNavigate}
-                        className={`flex items-center rounded-xl transition-all ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'} ${isActive ? 'bg-figueira/10 text-figueira' : 'text-muted hover:bg-soft/30 hover:text-fg'} text-[10px] font-bold uppercase tracking-widest`}>
-                        <Icon size={15} className="shrink-0" />
+                        className={`flex items-center rounded-xl transition-all ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2'} ${isActive ? 'bg-figueira/10 text-figueira' : 'text-muted hover:bg-soft/30 hover:text-fg'} text-[10px] md:text-[11px] font-bold uppercase tracking-widest`}>
+                        <Icon size={14} className="shrink-0" />
                         {!collapsed && <span>{item.label}</span>}
                     </Link>
                 )
@@ -130,9 +130,9 @@ function CollapsibleGroup({ titulo, icon: Icon, items, collapsed, pathname, isFu
     return (
         <div className="space-y-0.5">
             <button onClick={() => setOpen(!open)}
-                className="w-full flex items-center justify-between px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-muted hover:text-fg transition-all rounded-lg">
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-muted hover:text-fg transition-all rounded-lg">
                 <span className="flex items-center gap-1.5">
-                    <Icon size={11} /> {titulo}
+                    <Icon size={12} /> {titulo}
                 </span>
                 {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
             </button>
@@ -200,7 +200,7 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
                     </div>
                     {(isMobile || !c) && igrejaName && (
                         <div className="mt-2 px-1 space-y-0.5">
-                            <p className="text-[8px] font-black uppercase tracking-[0.15em] text-figueira truncate">{igrejaName}</p>
+                            <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.15em] text-figueira truncate">{igrejaName}</p>
                             {congregacaoNome && <p className="text-[8px] font-bold text-muted truncate">{congregacaoNome}</p>}
                         </div>
                     )}
@@ -239,14 +239,14 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
                 {/* FOOTER */}
                 <div className={`border-t border-soft space-y-1 ${c ? 'p-1.5' : 'p-3'}`}>
                     <Link href="/membros/dashboard" onClick={nav} title={c ? 'Painel do Membro' : undefined}
-                        className={`flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-muted hover:bg-soft/30 hover:text-fg transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
-                        <Home size={16} className="shrink-0" />
+                        className={`flex items-center rounded-xl text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-muted hover:bg-soft/30 hover:text-fg transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
+                        <Home size={14} className="shrink-0" />
                         {!c && <span>Painel do Membro</span>}
                     </Link>
                     <form action={logoutAdmin}>
                         <button type="submit" title={c ? 'Sair' : undefined}
-                            className={`w-full flex items-center rounded-xl text-[10px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
-                            <LogOut size={16} className="shrink-0" />
+                            className={`w-full flex items-center rounded-xl text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all ${c ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5'}`}>
+                            <LogOut size={14} className="shrink-0" />
                             {!c && <span>Sair</span>}
                         </button>
                     </form>
