@@ -208,11 +208,6 @@ export default async function DashboardFinanceiro() {
             data: n.createdAt.toISOString(),
             categoria: 'RIFA'
         })),
-        ...carregamentosAprovados.map((c: any) => ({
-            valor: c.valor,
-            data: c.createdAt.toISOString(),
-            categoria: 'CANTINA'
-        })),
         ...todasContribuicoes.map((c: any) => ({
             valor: c.valor,
             data: (c.data || c.createdAt).toISOString(),
@@ -244,7 +239,7 @@ export default async function DashboardFinanceiro() {
         transacoesFlat.reduce((s, t) => s + t.valor, 0)
 
     return (
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-28">
 
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-30">
                 <div className="space-y-1">
