@@ -81,7 +81,7 @@ export default async function GestaoObraFinanceiro() {
     const totalArrecadado = projeto.etapas.reduce((acc, curr) => acc + curr.atual, 0);
 
     return (
-        <main className="max-w-4xl mx-auto py-10 px-6 space-y-8 animate-in fade-in duration-700">
+        <main className="max-w-4xl mx-auto pt-16 md:pt-8 pb-28 px-6 space-y-8 animate-in fade-in duration-700">
             <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted mb-8">
                 <Link href="/departamentos/financeiro/dashboard" className="hover:text-green-500 transition-colors flex items-center gap-2">
                     <ArrowLeft size={12} strokeWidth={3} /> Dashboard Financeira

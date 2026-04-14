@@ -58,7 +58,7 @@ export default async function ProdutosPage() {
     }))
 
     return (
-        <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
             {/* ── HEADER ─────────────────────────────────────────────── */}
             <header className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

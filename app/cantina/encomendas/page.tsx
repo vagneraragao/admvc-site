@@ -67,7 +67,7 @@ export default async function EncomendasPage() {
     }
 
     return (
-        <main className="max-w-6xl mx-auto py-10 px-4 sm:px-6 space-y-10 pb-24 animate-in fade-in duration-700">
+        <main className="max-w-6xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 pb-28 animate-in fade-in duration-700">
             <header className="text-center space-y-4 pb-8 border-b border-soft">
                 <span className="text-figueira font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
                     <ClipboardList size={14} /> Gestao de Encomendas

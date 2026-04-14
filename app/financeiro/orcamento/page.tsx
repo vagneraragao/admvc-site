@@ -88,7 +88,7 @@ export default async function OrcamentoPage({
     const alertasExcedidos = alertas.filter(a => a.excedeu)
 
     return (
-        <div className="space-y-6">
+        <div className="pt-16 md:pt-8 pb-28 space-y-6">
             {alertasExcedidos.length > 0 && (
                 <AlertasOrcamento alertas={alertas} />
             )}

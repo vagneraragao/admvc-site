@@ -1,3 +1,5 @@
+import MembroLayoutWrapper from '@/components/membros/MembroLayoutWrapper'
+
 export default function FinanceiroLayout({ children }: { children: React.ReactNode }) {
-    return <>{children}</>
+    return <MembroLayoutWrapper>{children}</MembroLayoutWrapper>
 }

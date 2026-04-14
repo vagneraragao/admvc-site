@@ -60,7 +60,7 @@ export default async function PledgesPage() {
     const totalCumprido = pledges.reduce((s, p) => s + p.valor_cumprido, 0)
 
     return (
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700 pb-20">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 space-y-6 animate-in fade-in duration-700">
 
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

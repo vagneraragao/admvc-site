@@ -205,7 +205,7 @@ export default async function RelatoriosFinanceiros() {
     }
 
     return (
-        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 pb-20 print:py-2 print:px-0 print:space-y-4">
+        <main className="max-w-7xl mx-auto pt-16 md:pt-8 pb-28 px-4 sm:px-6 space-y-8 animate-in fade-in duration-700 print:py-2 print:px-0 print:space-y-4">
 
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">

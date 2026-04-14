@@ -12,7 +12,7 @@ export default async function ExportarPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto pt-16 md:pt-8 pb-28 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-figueira/10 rounded-xl">

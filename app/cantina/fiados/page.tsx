@@ -33,7 +33,7 @@ export default async function FiadosPage() {
     const { fiados, total } = await obterTodosFiadosPendentes()
 
     return (
-        <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-32">
+        <main className="max-w-5xl mx-auto pt-16 md:pt-10 px-4 sm:px-6 space-y-10 animate-in fade-in duration-700 pb-28">
             <Link href="/cantina" className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors">
                 <ArrowLeft size={14} /> Voltar a Cantina
             </Link>

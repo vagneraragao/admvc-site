@@ -9,7 +9,7 @@ import {
     BookOpen, ShieldCheck, X, ChevronDown, ChevronRight, MessageCircle, Clock,
     Lightbulb, Monitor, GraduationCap, Users, Wallet, Receipt, FileText,
     TrendingUp, Heart, HandCoins, RefreshCw, Download, Package, CreditCard,
-    BarChart3
+    BarChart3, PlusCircle, Target, Building2
 } from 'lucide-react'
 import ModalAjuda from '@/components/membros/ModalAjuda'
 import ModalAgendaPastoral from '@/components/membros/ModalAgendaPastoral'
@@ -539,6 +539,33 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                             </button>
                         </div>
                         <div className="overflow-y-auto p-4 space-y-2 flex-1">
+                            <Link href="/tesouraria" onClick={() => setTesourariaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <PlusCircle size={18} className="text-emerald-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Lancar Entrada</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Registar ofertas e dizimos</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/tesouraria" onClick={() => setTesourariaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Target size={18} className="text-blue-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Campanhas</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Gerir carnes e campanhas</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/departamentos/financeiro/obra" onClick={() => setTesourariaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Building2 size={18} className="text-amber-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Progresso da Obra</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Status e etapas do projeto</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
                             <Link href="/financeiro/fundos" onClick={() => setTesourariaAberto(false)}
                                 className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
                                 <Wallet size={18} className="text-figueira shrink-0" />

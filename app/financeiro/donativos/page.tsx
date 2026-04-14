@@ -49,7 +49,7 @@ export default async function DonativosDashboard() {
     const totalAno = confirmadosAno.reduce((s, d) => s + d.valor, 0)
 
     return (
-        <div className="space-y-6">
+        <div className="pt-16 md:pt-8 pb-28 space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
