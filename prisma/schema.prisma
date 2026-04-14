@@ -116,6 +116,7 @@ model Tenant {
   saldosCantina            SaldoCantina[]
   transacoesCantina        TransacaoCantina[]
   fiadosCantina            FiadoCantina[]
+  despesasCantina          DespesaCantina[]
   turnosCantina            TurnoCantina[]
   preEncomendas            PreEncomendaCantina[]
   cardapios                CardapioCantina[]
@@ -1337,6 +1338,7 @@ model ProdutoCantina {
   categoria_id    Int?
   nome            String
   preco           Float
+  custo           Float?            // Custo de aquisicao (para calculo de margem P&L)
   imagem_url      String?
   stock           Int                @default(0)
   stock_minimo    Int                @default(0)     // Alerta quando stock <= stock_minimo
@@ -1423,6 +1425,28 @@ model PagamentoTransacao {
 
   @@index([transacao_id])
   @@map("cantina_pagamentos")
+}
+
+model DespesaCantina {
+  id              Int      @id @default(autoincrement())
+  tenant_id       Int
+  descricao       String
+  valor           Float
+  data            DateTime @default(now())
+  categoria       String?
+  fornecedor      String?
+  comprovante_url String?
+  submetido_por   Int
+  aprovado_por    Int?
+  status          String   @default("PENDENTE")
+  observacao      String?
+  criado_em       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([status])
+  @@map("cantina_despesas")
 }
 
 model TurnoCantina {
@@ -1635,6 +1659,7 @@ model FundoFinanceiro {
   restrito        Boolean                @default(false) // true = dinheiro so pode ser usado para este fim
   saldo_atual     Float                  @default(0)
   ativo           Boolean                @default(true)
+  alerta_orcamento_percentagem Int       @default(80) // Limiar % para alerta de orcamento
   criado_em       DateTime               @default(now())
 
   tenant          Tenant                 @relation(fields: [tenant_id], references: [id])

@@ -2,7 +2,10 @@ import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin as isAdminCheck } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { BarChart3, TrendingUp, CreditCard, Coffee, ShoppingCart } from 'lucide-react'
+import { BarChart3, TrendingUp, CreditCard, Coffee, ShoppingCart, DollarSign, ArrowRightLeft } from 'lucide-react'
+import SeccaoColapsavel from '@/components/acolhimento/SeccaoColapsavel'
+import FormTransferirParaFundo from '@/components/cantina/FormTransferirParaFundo'
+import { obterSaldoCantinaTransferivel } from '@/actions/cantina-relatorio-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +70,16 @@ export default async function DashboardCantinaPage() {
             },
             orderBy: { criado_em: 'desc' },
             take: 20,
+        }),
+    ])
+
+    // ── Financeiro: saldo transferivel + fundos ativos ──────────────
+    const [saldoTransferivel, fundosAtivos] = await Promise.all([
+        obterSaldoCantinaTransferivel(),
+        db.fundoFinanceiro.findMany({
+            where: { ativo: true },
+            select: { id: true, nome: true },
+            orderBy: { nome: 'asc' },
         }),
     ])
 
@@ -322,6 +335,30 @@ export default async function DashboardCantinaPage() {
                 </div>
             </section>
 
+            {/* ── FINANCEIRO ─────────────────────────────────────────── */}
+            <section className="pt-6 border-t border-soft">
+                <SeccaoColapsavel
+                    titulo="Financeiro"
+                    icon={<DollarSign size={16} className="text-figueira" />}
+                    headerExtra={
+                        <Link
+                            href="/cantina/relatorio-financeiro"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-figueira/10 text-figueira border border-figueira/20 hover:bg-figueira/20 transition-all active:scale-95"
+                        >
+                            <BarChart3 size={12} />
+                            Relatorio P&L
+                        </Link>
+                    }
+                >
+                    <FormTransferirParaFundo
+                        fundos={fundosAtivos}
+                        saldoDisponivel={saldoTransferivel.disponivel}
+                        receitaCash={saldoTransferivel.receitaCash}
+                        jaTransferido={saldoTransferivel.jaTransferido}
+                    />
+                </SeccaoColapsavel>
+            </section>
+
             {/* ── LINKS ──────────────────────────────────────────────── */}
             <section className="flex flex-wrap gap-2 pt-6 border-t border-soft">
                 <Link
@@ -341,6 +378,12 @@ export default async function DashboardCantinaPage() {
                     className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
                 >
                     <Coffee size={14} className="text-figueira" /> Produtos
+                </Link>
+                <Link
+                    href="/cantina/relatorio-financeiro"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-bg2 border border-soft rounded-2xl hover:border-figueira/50 transition-all text-[9px] font-black uppercase tracking-widest text-fg"
+                >
+                    <DollarSign size={14} className="text-figueira" /> Relatorio Financeiro
                 </Link>
             </section>
         </main>

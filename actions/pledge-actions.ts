@@ -194,6 +194,86 @@ export async function atualizarCumprimento() {
 }
 
 /**
+ * Atualiza automaticamente o status de todos os pledges ativos/atrasados.
+ * Versao simplificada que pode ser chamada no carregamento da pagina sem requireRole.
+ */
+export async function atualizarPledgesAutomatico() {
+    await requireAuth()
+    const prisma = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    try {
+        const pledgesAtivos = await prisma.pledge.findMany({
+            where: {
+                tenant_id: tenantId,
+                status: { in: ['ATIVO', 'ATRASADO'] }
+            }
+        })
+
+        const now = new Date()
+        let atualizados = 0
+
+        for (const pledge of pledgesAtivos) {
+            const inicio = new Date(pledge.data_inicio)
+            const mesesPassados = Math.max(0,
+                (now.getFullYear() - inicio.getFullYear()) * 12 +
+                (now.getMonth() - inicio.getMonth())
+            )
+
+            // Somar contribuicoes deste membro ao fundo desde data_inicio
+            const contribuicoes = await prisma.contribuicao.aggregate({
+                _sum: { valor: true },
+                _count: true,
+                where: {
+                    membro_id: pledge.membro_id,
+                    fundo_id: pledge.fundo_id,
+                    data: { gte: inicio },
+                    tenant_id: tenantId,
+                }
+            })
+
+            const valor_cumprido = contribuicoes._sum.valor || 0
+            const meses_cumpridos = pledge.valor_mensal > 0
+                ? Math.min(Math.floor(valor_cumprido / pledge.valor_mensal), pledge.duracao_meses)
+                : 0
+
+            let novoStatus = pledge.status
+
+            // Verificar se cumpriu tudo
+            if (meses_cumpridos >= pledge.duracao_meses && valor_cumprido >= pledge.valor_mensal * pledge.duracao_meses) {
+                novoStatus = 'CUMPRIDO'
+            }
+            // Verificar se esta atrasado (mais de 1 mes de atraso)
+            else if (mesesPassados > meses_cumpridos + 1) {
+                novoStatus = 'ATRASADO'
+            }
+            // Se estava atrasado mas recuperou
+            else if (pledge.status === 'ATRASADO' && mesesPassados <= meses_cumpridos + 1) {
+                novoStatus = 'ATIVO'
+            }
+
+            // Only update if something changed
+            if (novoStatus !== pledge.status || meses_cumpridos !== pledge.meses_cumpridos || valor_cumprido !== pledge.valor_cumprido) {
+                await prisma.pledge.update({
+                    where: { id: pledge.id },
+                    data: {
+                        meses_cumpridos,
+                        valor_cumprido,
+                        status: novoStatus,
+                    }
+                })
+                atualizados++
+            }
+        }
+
+        return { ok: true, atualizados }
+    } catch (error) {
+        console.error('Erro ao atualizar pledges automaticamente:', error)
+        return { ok: false, error: 'Erro ao atualizar pledges.' }
+    }
+}
+
+/**
  * Obter pledges do membro logado.
  */
 export async function obterMeusPledges() {

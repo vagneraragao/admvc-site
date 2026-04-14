@@ -57,6 +57,8 @@ export async function criarProduto(formData: FormData) {
     const stock_minimo = Number(formData.get('stock_minimo') || 0)
     const controla_stock = formData.get('controla_stock') !== 'false'
     const imagem_url = (formData.get('imagem_url') as string)?.trim() || null
+    const custoRaw = formData.get('custo')
+    const custo = custoRaw && custoRaw !== '' ? Number(custoRaw) : null
     const promocoesRaw = formData.get('promocoes') as string | null
     const promocoes = promocoesRaw ? JSON.parse(promocoesRaw) : null
 
@@ -69,6 +71,7 @@ export async function criarProduto(formData: FormData) {
                 tenant_id: tenantId,
                 nome,
                 preco,
+                custo,
                 categoria_id,
                 stock,
                 stock_minimo,
@@ -97,6 +100,8 @@ export async function atualizarProduto(produtoId: number, formData: FormData) {
     const controla_stock = formData.get('controla_stock') !== 'false'
     const disponivel = formData.get('disponivel') !== 'false'
     const imagem_url = (formData.get('imagem_url') as string)?.trim() || null
+    const custoRaw = formData.get('custo')
+    const custo = custoRaw && custoRaw !== '' ? Number(custoRaw) : null
     const promocoesRaw = formData.get('promocoes') as string | null
     const promocoes = promocoesRaw ? JSON.parse(promocoesRaw) : null
 
@@ -105,7 +110,7 @@ export async function atualizarProduto(produtoId: number, formData: FormData) {
     try {
         await db.produtoCantina.update({
             where: { id: produtoId },
-            data: { nome, preco, categoria_id, stock, stock_minimo, controla_stock, disponivel, imagem_url, promocoes },
+            data: { nome, preco, custo, categoria_id, stock, stock_minimo, controla_stock, disponivel, imagem_url, promocoes },
         })
         revalidatePath('/cantina')
         return { success: true }

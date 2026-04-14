@@ -2,6 +2,8 @@ import { getDb } from '@/lib/db'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import TabelaOrcamento from '@/components/financeiro/TabelaOrcamento'
+import AlertasOrcamento from '@/components/financeiro/AlertasOrcamento'
+import { obterAlertasOrcamento } from '@/actions/alerta-orcamento-actions'
 
 export default async function OrcamentoPage({
     searchParams,
@@ -81,8 +83,15 @@ export default async function OrcamentoPage({
         valor_previsto: o.valor_previsto,
     }))
 
+    // Fetch budget alerts
+    const alertas = await obterAlertasOrcamento(ano)
+    const alertasExcedidos = alertas.filter(a => a.excedeu)
+
     return (
         <div className="space-y-6">
+            {alertasExcedidos.length > 0 && (
+                <AlertasOrcamento alertas={alertas} />
+            )}
             <TabelaOrcamento
                 fundos={fundosData}
                 categorias={categoriasData}

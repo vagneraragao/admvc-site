@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
     Wallet, ArrowRightLeft, PlusCircle, Lock, Unlock,
-    TrendingUp, TrendingDown, Layers, Landmark
+    TrendingUp, TrendingDown, Layers, Landmark, AlertTriangle
 } from 'lucide-react'
+import { obterAlertasOrcamento } from '@/actions/alerta-orcamento-actions'
 import FormCriarFundo from '@/components/financeiro/FormCriarFundo'
 import FormTransferencia from '@/components/financeiro/FormTransferencia'
 
@@ -55,6 +56,10 @@ export default async function FundosDashboard() {
         saidasPorFundo[d.fundo_id] = (saidasPorFundo[d.fundo_id] || 0) + d.valor
     }
 
+    // Budget alerts
+    const alertas = await obterAlertasOrcamento()
+    const alertasExcedidos = alertas.filter(a => a.excedeu)
+
     const totalGeral = fundos.reduce((s, f) => s + f.saldo_atual, 0)
     const totalRestrito = fundos.filter(f => f.restrito).reduce((s, f) => s + f.saldo_atual, 0)
     const totalLivre = totalGeral - totalRestrito
@@ -95,6 +100,22 @@ export default async function FundosDashboard() {
                 <KpiCard label="Livre" value={euro(totalLivre)} />
                 <KpiCard label="Despesas Pendentes" value={despesasPendentes} />
             </section>
+
+            {/* Budget Alert Banner */}
+            {alertasExcedidos.length > 0 && (
+                <Link
+                    href="/financeiro/orcamento"
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-all group"
+                >
+                    <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+                    <p className="text-xs font-bold text-amber-500">
+                        {alertasExcedidos.length} categoria{alertasExcedidos.length !== 1 ? 's' : ''} de orcamento acima do limiar definido
+                    </p>
+                    <span className="ml-auto text-[8px] font-black uppercase tracking-widest text-amber-500 group-hover:translate-x-0.5 transition-transform">
+                        Ver detalhes &rarr;
+                    </span>
+                </Link>
+            )}
 
             {/* Fund Grid */}
             <section className="space-y-3">

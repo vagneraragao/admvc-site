@@ -108,6 +108,21 @@ export default function FormAdicionarProduto({ categorias }: Props) {
                     </select>
                 </div>
 
+                {/* Custo de aquisicao */}
+                <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-muted">
+                        Custo de Aquisicao (EUR)
+                    </label>
+                    <input
+                        type="number"
+                        name="custo"
+                        min="0"
+                        step="0.01"
+                        placeholder="Opcional"
+                        className="w-full bg-bg border border-soft rounded-2xl p-4 text-sm font-bold text-fg focus:border-figueira outline-none placeholder:text-muted2"
+                    />
+                </div>
+
                 {/* Stock */}
                 <div className="space-y-1.5">
                     <label className="text-[9px] font-black uppercase tracking-widest text-muted">

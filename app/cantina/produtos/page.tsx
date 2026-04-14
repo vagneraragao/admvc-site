@@ -47,6 +47,7 @@ export default async function ProdutosPage() {
         id: p.id,
         nome: p.nome,
         preco: p.preco,
+        custo: (p as any).custo ?? null,
         categoria_id: p.categoria_id,
         stock: p.stock,
         stock_minimo: p.stock_minimo,

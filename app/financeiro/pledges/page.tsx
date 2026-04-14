@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import BotaoAtualizarPledges from '@/components/financeiro/BotaoAtualizarPledges'
 import FormNovoPledge from '@/components/financeiro/FormNovoPledge'
+import { atualizarPledgesAutomatico } from '@/actions/pledge-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,9 @@ export default async function PledgesPage() {
     if (!session || !['FINANCE', 'ADMIN'].includes(session.role)) {
         redirect('/membros/dashboard?error=Acesso negado')
     }
+
+    // Auto-update pledge statuses before rendering
+    await atualizarPledgesAutomatico()
 
     const [pledges, fundos, membros] = await Promise.all([
         db.pledge.findMany({
