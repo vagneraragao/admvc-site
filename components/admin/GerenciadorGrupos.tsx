@@ -6,9 +6,10 @@ import { excluirGrupo, salvarGrupo } from "@/actions/admin-actions";
 import { useToast } from '@/components/ui/ConfirmDialog'
 import {
     Search, X, Shield, Users, MapPin, Clock, Trash2,
-    Edit3, Loader2, Check, AlignLeft, ArrowLeft,
-    Building2, UserX, Plus, Calendar
+    Edit3, Loader2, Check, AlignLeft,
+    Building2, UserX, Plus, Calendar, Info
 } from "lucide-react";
+import SeccaoColapsavel from '@/components/acolhimento/SeccaoColapsavel'
 
 interface GerenciadorProps {
     grupos: any[];
@@ -237,18 +238,18 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                         <button
                             type="button"
                             onClick={() => setModo('lista')}
-                            className="flex items-center gap-2 bg-bg2 border border-soft text-muted px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-soft transition-all"
+                            className="w-9 h-9 flex items-center justify-center bg-soft text-muted hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
                         >
-                            <ArrowLeft size={12} /> Voltar
+                            <X size={16} />
                         </button>
                     </div>
 
                     {/* BLOCO 1: INFORMAÇÕES */}
-                    <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2rem]">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 mb-6 pb-3 border-b border-soft">
-                            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[8px]">1</span>
-                            Informações Gerais
-                        </p>
+                    <SeccaoColapsavel
+                        titulo="Informacoes Gerais"
+                        icon={<Info size={16} className="text-emerald-500" />}
+                        defaultOpen
+                    >
 
                         <div className="grid md:grid-cols-3 gap-5">
                             <div className="md:col-span-2 space-y-1.5">
@@ -351,14 +352,14 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                 </span>
                             </label>
                         </div>
-                    </div>
+                    </SeccaoColapsavel>
 
                     {/* BLOCO 2: EQUIPA */}
-                    <div className="bg-bg2 border border-soft p-6 md:p-8 rounded-[2rem] relative z-20">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 mb-6 pb-3 border-b border-soft">
-                            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[8px]">2</span>
-                            Gestão de Equipa
-                        </p>
+                    <SeccaoColapsavel
+                        titulo="Gestao de Equipa"
+                        icon={<Users size={16} className="text-emerald-500" />}
+                        defaultOpen
+                    >
 
                         {/* BUSCADOR */}
                         <div className="relative max-w-xl mb-6 z-50">
@@ -440,7 +441,7 @@ export default function GerenciadorGrupos({ grupos, departamentos, membrosDispon
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </SeccaoColapsavel>
 
                     {/* BLOCO 3: RODAPÉ */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-bg2 border border-soft p-5 rounded-[2rem]">

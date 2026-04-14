@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import PainelGerenciarDepto from '@/components/PainelGerenciarDepto'
+import Image from 'next/image'
 import { LayoutGrid, Users, Wrench, Settings2, Trash2, Church, Globe } from 'lucide-react'
 
 export default function DeptoItem({ depto, membrosDisponiveis, congregacoes = [], onExcluir }: any) {
@@ -14,8 +15,12 @@ export default function DeptoItem({ depto, membrosDisponiveis, congregacoes = []
             <div className="bg-bg2 border border-soft rounded-2xl p-5 hover:border-figueira/20 transition-all group">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center shrink-0 text-sm font-black">
-                            {depto.nome[0]}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-black overflow-hidden bg-blue-500/10 text-blue-500">
+                            {depto.foto_url ? (
+                                <Image src={depto.foto_url} alt={depto.nome} width={40} height={40} className="w-full h-full object-cover" />
+                            ) : (
+                                depto.nome[0]
+                            )}
                         </div>
                         <div>
                             <h4 className="text-sm font-black uppercase tracking-tight text-fg leading-none">

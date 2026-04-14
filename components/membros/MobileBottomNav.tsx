@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom'
 import {
     Home, HelpCircle, Calendar, Music2, MonitorPlay, HeartHandshake, Store,
     BookOpen, ShieldCheck, X, ChevronDown, ChevronRight, MessageCircle, Clock,
-    Lightbulb, Monitor, GraduationCap, Users
+    Lightbulb, Monitor, GraduationCap, Users, Wallet
 } from 'lucide-react'
 import ModalAjuda from '@/components/membros/ModalAjuda'
 import ModalAgendaPastoral from '@/components/membros/ModalAgendaPastoral'
@@ -41,6 +41,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const [louvorAberto, setLouvorAberto] = useState(false)
     const [midiaAberto, setMidiaAberto] = useState(false)
     const [formacaoAberto, setFormacaoAberto] = useState(false)
+    const [cantinaAberto, setCantinaAberto] = useState(false)
     const [diaconiaAberto, setDiaconiaAberto] = useState(false)
     const [agendaPastoralAberta, setAgendaPastoralAberta] = useState(false)
     const [mostrarTodos, setMostrarTodos] = useState(false)
@@ -56,9 +57,10 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     if (permissoes.isLouvor) tabs.push({ key: 'louvor', icon: Music2, label: 'Louvor', action: () => setLouvorAberto(true) })
     if (permissoes.isMidia) tabs.push({ key: 'midia', icon: MonitorPlay, label: 'Midia', action: () => setMidiaAberto(true) })
     if (permissoes.isAcolhimento) tabs.push({ key: 'acolhimento', icon: HeartHandshake, label: 'Acolhimento', href: '/departamentos/acolhimento/dashboard' })
-    if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', href: '/cantina' })
+    if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', action: () => setCantinaAberto(true) })
     if (permissoes.isSocial) tabs.push({ key: 'social', icon: HeartHandshake, label: 'Social', href: '/assistencia' })
     tabs.push({ key: 'diaconia', icon: Calendar, label: 'Igreja', action: () => setDiaconiaAberto(true) })
+    if (permissoes.isFinance) tabs.push({ key: 'tesouraria', icon: Wallet, label: 'Tesouraria', href: '/financeiro/fundos' })
     if (permissoes.isAdmin) tabs.push({ key: 'formacao', icon: GraduationCap, label: 'Formacao', action: () => setFormacaoAberto(true) })
     if (permissoes.isAdmin) tabs.push({ key: 'admin', icon: ShieldCheck, label: 'Admin', href: '/admin/dashboard' })
     // Ajuda sempre no final
@@ -383,6 +385,89 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-[11px] font-black uppercase text-fg">Cursos / EBD</h4>
                                     <p className="text-[8px] text-muted font-bold mt-0.5">Criar e administrar cursos</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* MODAL CANTINA */}
+            {cantinaAberto && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => setCantinaAberto(false)}
+                >
+                    <div
+                        className="bg-bg w-full max-w-md rounded-t-[2rem] border-t border-soft shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-soft">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                    <Store size={18} />
+                                </div>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Cantina</h3>
+                            </div>
+                            <button onClick={() => setCantinaAberto(false)}
+                                className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:text-fg rounded-xl transition-all">
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            <Link href="/cantina/pos" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Store size={18} className="text-amber-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Ponto de Venda</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Registar vendas</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/cantina/dashboard" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Calendar size={18} className="text-blue-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Vendas</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Dashboard e estatisticas</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/cantina/produtos" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Store size={18} className="text-figueira shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Produtos</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Gerir catalogo e stock</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/cantina/turnos" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Clock size={18} className="text-purple-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Turnos</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Abrir e fechar caixa</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/cantina/despesas" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Wallet size={18} className="text-red-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Despesas</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Custos operacionais</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/cantina/relatorio-financeiro" onClick={() => setCantinaAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <Wallet size={18} className="text-emerald-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Relatorio Financeiro</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Lucro e prejuizo</p>
                                 </div>
                                 <ChevronRight size={14} className="text-muted" />
                             </Link>
