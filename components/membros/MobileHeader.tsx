@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { LogOut, SunMoon } from 'lucide-react'
+import { useHighContrast } from '@/hooks/useHighContrast'
 import { logoutMembro } from '@/actions/auth-actions'
 import DrawerEditarPerfil from '@/components/membros/DrawerEditarPerfil'
 import NotificacaoHeader from '@/components/membros/NotificacaoHeader'
@@ -15,6 +16,19 @@ interface Props {
     escolaridades: any[]
     avisos?: any[]
     alertasAcolhimento?: any[]
+}
+
+function HighContrastButton() {
+    const { active, toggle } = useHighContrast()
+    return (
+        <button
+            onClick={toggle}
+            className={`h-8 w-8 flex items-center justify-center rounded-lg transition-all ${active ? 'bg-figueira text-white' : 'bg-soft text-muted hover:text-fg'}`}
+            aria-label="Modo alto contraste"
+        >
+            <SunMoon size={13} strokeWidth={3} />
+        </button>
+    )
 }
 
 export default function MobileHeader({ membro, igrejaName, escolaridades, avisos = [], alertasAcolhimento = [] }: Props) {
@@ -72,9 +86,10 @@ export default function MobileHeader({ membro, igrejaName, escolaridades, avisos
                     }
                 />
 
-                {/* DIREITA: Notificações + Logout */}
+                {/* DIREITA: Notificações + Alto Contraste + Logout */}
                 <div className="flex items-center gap-2 shrink-0">
                     <NotificacaoHeader avisos={avisos} alertasAcolhimento={alertasAcolhimento} />
+                    <HighContrastButton />
                     <form action={logoutMembro}>
                         <button type="submit" className="h-8 w-8 flex items-center justify-center bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
                             <LogOut size={13} strokeWidth={3} />

@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom'
 import {
     Home, HelpCircle, Calendar, Music2, MonitorPlay, HeartHandshake, Store,
     BookOpen, ShieldCheck, X, ChevronDown, ChevronRight, MessageCircle, Clock,
-    Lightbulb, Monitor
+    Lightbulb, Monitor, GraduationCap
 } from 'lucide-react'
 import ModalAjuda from '@/components/membros/ModalAjuda'
 
@@ -39,15 +39,15 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const [agendaAberta, setAgendaAberta] = useState(false)
     const [louvorAberto, setLouvorAberto] = useState(false)
     const [midiaAberto, setMidiaAberto] = useState(false)
+    const [formacaoAberto, setFormacaoAberto] = useState(false)
     const [mostrarTodos, setMostrarTodos] = useState(false)
 
     const hideNav = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist') || pathname === '/cantina/pos'
     if (hideNav) return null
 
-    // Build dynamic tabs: Home, Ajuda, Agenda, depois departamentos
+    // Build dynamic tabs: Home, departamentos, Formacao (admin), Admin, Ajuda (sempre ultimo)
     const tabs: { key: string; icon: typeof Home; label: string; href?: string; action?: () => void; custom?: React.ReactNode }[] = [
         { key: 'home', icon: Home, label: 'Inicio', href: '/membros/dashboard' },
-        { key: 'ajuda', icon: HelpCircle, label: 'Ajuda', custom: 'ajuda' },
     ]
 
     if (permissoes.isLouvor) tabs.push({ key: 'louvor', icon: Music2, label: 'Louvor', action: () => setLouvorAberto(true) })
@@ -56,16 +56,17 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', href: '/cantina' })
     if (permissoes.isSocial) tabs.push({ key: 'social', icon: HeartHandshake, label: 'Social', href: '/assistencia' })
     if (permissoes.isDiaconia) tabs.push({ key: 'pregacao', icon: BookOpen, label: 'Pregacao', href: '/pregacao' })
+    if (permissoes.isAdmin) tabs.push({ key: 'formacao', icon: GraduationCap, label: 'Formacao', action: () => setFormacaoAberto(true) })
     if (permissoes.isAdmin) tabs.push({ key: 'admin', icon: ShieldCheck, label: 'Admin', href: '/admin/dashboard' })
-
-    const visibleTabs = tabs.slice(0, 5)
+    // Ajuda sempre no final
+    tabs.push({ key: 'ajuda', icon: HelpCircle, label: 'Ajuda', custom: 'ajuda' })
     const eventosVisiveis = mostrarTodos ? proximosEventos : proximosEventos.slice(0, 4)
 
     return (
         <>
             <nav className="fixed bottom-0 left-0 right-0 z-50 bg-bg2 border-t border-soft pb-[env(safe-area-inset-bottom)] md:hidden">
-                <div className="flex items-center justify-around px-2 py-2">
-                    {visibleTabs.map((tab) => {
+                <div className={`flex items-center px-2 py-2 ${tabs.length <= 5 ? 'justify-around' : 'overflow-x-auto scrollbar-hide gap-1'}`}>
+                    {tabs.map((tab) => {
                         const Icon = tab.icon
                         const isActive = tab.href
                             ? (tab.href === '/membros/dashboard' ? pathname === '/membros/dashboard' : pathname.startsWith(tab.href))
@@ -75,7 +76,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                         if (tab.custom === 'ajuda') {
                             return (
                                 <ModalAjuda key={tab.key} trigger={
-                                    <div className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] text-muted hover:text-fg">
+                                    <div className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] shrink-0 text-muted hover:text-fg">
                                         <HelpCircle size={20} strokeWidth={1.5} />
                                         <span className="text-[7px] font-black uppercase tracking-widest">Ajuda</span>
                                     </div>
@@ -88,7 +89,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                                 <button
                                     key={tab.key}
                                     onClick={tab.action}
-                                    className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] text-muted hover:text-fg"
+                                    className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] shrink-0 text-muted hover:text-fg"
                                 >
                                     <Icon size={20} strokeWidth={1.5} />
                                     <span className="text-[7px] font-black uppercase tracking-widest">{tab.label}</span>
@@ -100,7 +101,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                             <Link
                                 key={tab.key}
                                 href={tab.href!}
-                                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] ${
+                                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] shrink-0 ${
                                     isActive ? 'text-figueira' : 'text-muted hover:text-fg'
                                 }`}
                             >
@@ -333,6 +334,52 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-[11px] font-black uppercase text-fg">Setlist do Culto</h4>
                                     <p className="text-[8px] text-muted font-bold mt-0.5">Músicas e repertório do dia</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+            {/* MODAL FORMAÇÃO (Admin) */}
+            {formacaoAberto && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => setFormacaoAberto(false)}
+                >
+                    <div
+                        className="bg-bg w-full max-w-md rounded-t-[2rem] border-t border-soft shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-soft">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                    <GraduationCap size={18} />
+                                </div>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Formação</h3>
+                            </div>
+                            <button onClick={() => setFormacaoAberto(false)}
+                                className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:text-fg rounded-xl transition-all">
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            <Link href="/admin/formacao/pregacao" onClick={() => setFormacaoAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <BookOpen size={18} className="text-figueira shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Pregação</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Gerir pregações e pregadores</p>
+                                </div>
+                                <ChevronRight size={14} className="text-muted" />
+                            </Link>
+                            <Link href="/admin/formacao/ebd" onClick={() => setFormacaoAberto(false)}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                <GraduationCap size={18} className="text-purple-500 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Cursos / EBD</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Criar e administrar cursos</p>
                                 </div>
                                 <ChevronRight size={14} className="text-muted" />
                             </Link>

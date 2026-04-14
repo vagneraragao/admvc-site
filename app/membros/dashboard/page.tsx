@@ -207,7 +207,8 @@ export default async function DashboardMembro({
         proximosEventos, visitantesPendentesCount, ultimosAvisos,
         minhasRifas, minhasContribuicoes, carregamentosHistorico,
         meusAcompanhamentos, saldoCantina, visitantesAtualizados,
-        escolaridades, aniversariantesMes, tenantSocial
+        escolaridades, aniversariantesMes, tenantSocial,
+        cursosAtivosRaw, meusInteressesRaw
     ] = await Promise.all([
         safe('proximosEventos', () => db.evento.findMany({
             where: { data: { gte: new Date() } },
@@ -319,7 +320,23 @@ export default async function DashboardMembro({
         safe('tenantSocial', () => db.tenant.findUnique({
             where: { id: Number(tenantIdStr) },
             select: { youtube_channel_id: true, instagram_handle: true }
-        }), null)
+        }), null),
+
+        // INDEX 12 - cursos ativos
+        safe('cursosAtivos', () => db.cursoEBD.findMany({
+            where: { status: 'EM_CURSO', aprovado: true },
+            include: {
+                turmas: { include: { _count: { select: { matriculas: true } } } },
+                _count: { select: { turmas: true } },
+            },
+            orderBy: { data_inicio: 'asc' },
+        }), []),
+
+        // INDEX 13 - interesses do membro em cursos
+        safe('meusInteresses', () => db.interesseCurso.findMany({
+            where: { membro_id: membroId },
+            select: { curso_id: true },
+        }), [])
     ]);
 
     // 4b. YOUTUBE — buscar último vídeo (cache 1h)
@@ -555,6 +572,19 @@ export default async function DashboardMembro({
                     return dataEvento >= hojeInicio && dataEvento < amanha &&
                         e.departamento.nome.toLowerCase().includes('cantina')
                 })}
+                cursosAtivos={(cursosAtivosRaw || []).map((c: any) => ({
+                    id: c.id,
+                    titulo: c.titulo,
+                    descricao: c.descricao,
+                    categoria: c.categoria,
+                    status: c.status,
+                    data_inicio: c.data_inicio.toISOString(),
+                    data_fim: c.data_fim.toISOString(),
+                    vagas_maximas: c.vagas_maximas,
+                    turmas: c.turmas?.map((t: any) => ({ _count: { matriculas: t._count?.matriculas || 0 } })),
+                    _count: c._count,
+                }))}
+                meusInteresseIds={(meusInteressesRaw || []).map((i: any) => i.curso_id)}
             />
         </div>
 

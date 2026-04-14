@@ -209,3 +209,7 @@ input[type="range"].accent-emerald-500::-moz-range-thumb {
 .pos-fullscreen .pos-fullscreen-hide {
   display: none !important;
 }
+
+/* Scrollbar invisivel para nav horizontal */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

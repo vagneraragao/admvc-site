@@ -3,8 +3,8 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-    CalendarOff, Users, MessageSquare, Car, Coffee,
-    Calendar, CalendarDays, ChevronDown, ChevronUp, BookOpen, Clock, ChevronRight, MessageCircle, X
+    CalendarOff, Users, Car, Coffee,
+    Calendar, CalendarDays, ChevronDown, ChevronUp, BookOpen, Clock, ChevronRight, MessageCircle, X, GraduationCap
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
@@ -12,6 +12,7 @@ import QrCodeModal from '@/components/membros/QrCodeModal'
 import ModalIndisponibilidade from '@/components/membros/ModalIndisponibilidade'
 import BotoesEscala from '@/components/membros/BotoesEscala'
 import CardDepartamentoMembro from '@/components/membros/CardDepartamentoMembro'
+import ModalCursosMembro from '@/components/membros/ModalCursosMembro'
 
 interface EscalaItem {
     id: number
@@ -38,12 +39,15 @@ interface Props {
     role: string
     proximosEventos?: EventoItem[]
     temEscalaCantina?: boolean
+    cursosAtivos?: any[]
+    meusInteresseIds?: string[]
 }
 
-export default function MobileDashboard({ membro, escalas, departamentos, membroId, role, proximosEventos = [], temEscalaCantina = false }: Props) {
+export default function MobileDashboard({ membro, escalas, departamentos, membroId, role, proximosEventos = [], temEscalaCantina = false, cursosAtivos = [], meusInteresseIds = [] }: Props) {
     const [escalasAberto, setEscalasAberto] = useState(false)
     const [deptosAberto, setDeptosAberto] = useState(false)
     const [agendaAberta, setAgendaAberta] = useState(false)
+    const [cursosAberto, setCursosAberto] = useState(false)
     const [mostrarTodosEventos, setMostrarTodosEventos] = useState(false)
     const deptosRef = useRef<HTMLDivElement>(null)
 
@@ -148,10 +152,12 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 </button>
 
-                <Link href="/membros/mural" className={gridBtnClass}>
-                    <MessageSquare size={22} className="text-blue-500" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Mural</span>
-                </Link>
+                <button onClick={() => setCursosAberto(true)}>
+                    <div className={gridBtnClass}>
+                        <GraduationCap size={22} className="text-purple-500" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-fg text-center leading-tight px-1">Cursos</span>
+                    </div>
+                </button>
 
                 <Link href="/boleia" className={gridBtnClass}>
                     <Car size={22} className="text-emerald-500" />
@@ -278,6 +284,14 @@ export default function MobileDashboard({ membro, escalas, departamentos, membro
                     </div>
                 )}
             </div>
+            {/* ── MODAL CURSOS ────────────────────────── */}
+            <ModalCursosMembro
+                aberto={cursosAberto}
+                onClose={() => setCursosAberto(false)}
+                cursos={cursosAtivos}
+                meusInteresseIds={meusInteresseIds}
+            />
+
             {/* ── MODAL AGENDA ─────────────────────────── */}
             {agendaAberta && createPortal(
                 <div
