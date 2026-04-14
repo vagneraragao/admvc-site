@@ -350,6 +350,27 @@ export async function toggleVisibilidadeAgenda(agendaId: number) {
     }
 }
 
+// ── LISTAR AGENDAS PUBLICAS (MEMBRO) ────────────────────────────────────────
+export async function listarAgendasPublicas() {
+    try {
+        const session = await requireAuth()
+        const agendas = await prisma.agenda.findMany({
+            where: { is_publica: true },
+            include: {
+                dono: { select: { first_name: true, last_name: true, avatar_file: true } },
+            },
+            orderBy: { nome: 'asc' },
+        })
+        const membro = await prisma.membro.findUnique({
+            where: { id: session.membroId },
+            select: { id: true, first_name: true, last_name: true, phone_1: true, email: true },
+        })
+        return { ok: true, agendas, membro }
+    } catch (error: any) {
+        return { ok: false, error: error.message || 'Erro ao buscar agendas.' }
+    }
+}
+
 // ── PEDIR AGENDAMENTO (MEMBRO) ──────────────────────────────────────────────
 export async function pedirAgendamentoAction(dados: {
     agenda_id: number

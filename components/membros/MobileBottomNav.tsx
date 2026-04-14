@@ -10,6 +10,7 @@ import {
     Lightbulb, Monitor, GraduationCap, Users
 } from 'lucide-react'
 import ModalAjuda from '@/components/membros/ModalAjuda'
+import ModalAgendaPastoral from '@/components/membros/ModalAgendaPastoral'
 
 interface Permissoes {
     isAdmin: boolean
@@ -41,6 +42,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     const [midiaAberto, setMidiaAberto] = useState(false)
     const [formacaoAberto, setFormacaoAberto] = useState(false)
     const [diaconiaAberto, setDiaconiaAberto] = useState(false)
+    const [agendaPastoralAberta, setAgendaPastoralAberta] = useState(false)
     const [mostrarTodos, setMostrarTodos] = useState(false)
 
     const hideNav = pathname === '/membros/login' || pathname === '/membros/termos' || pathname === '/membros/selecionar-congregacao' || pathname.startsWith('/louvor/setlist') || pathname === '/cantina/pos'
@@ -56,7 +58,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
     if (permissoes.isAcolhimento) tabs.push({ key: 'acolhimento', icon: HeartHandshake, label: 'Acolhimento', href: '/departamentos/acolhimento/dashboard' })
     if (permissoes.isCantina) tabs.push({ key: 'cantina', icon: Store, label: 'Cantina', href: '/cantina' })
     if (permissoes.isSocial) tabs.push({ key: 'social', icon: HeartHandshake, label: 'Social', href: '/assistencia' })
-    if (permissoes.isDiaconia) tabs.push({ key: 'diaconia', icon: Users, label: 'Diaconia', action: () => setDiaconiaAberto(true) })
+    tabs.push({ key: 'diaconia', icon: Calendar, label: 'Igreja', action: () => setDiaconiaAberto(true) })
     if (permissoes.isAdmin) tabs.push({ key: 'formacao', icon: GraduationCap, label: 'Formacao', action: () => setFormacaoAberto(true) })
     if (permissoes.isAdmin) tabs.push({ key: 'admin', icon: ShieldCheck, label: 'Admin', href: '/admin/dashboard' })
     // Ajuda sempre no final
@@ -390,7 +392,7 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                 document.body
             )}
 
-            {/* MODAL DIACONIA */}
+            {/* MODAL IGREJA (Diaconia + Agenda Pastoral + Gabinete) */}
             {diaconiaAberto && createPortal(
                 <div
                     className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
@@ -403,9 +405,9 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                         <div className="flex items-center justify-between px-6 py-4 border-b border-soft">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-figueira/10 text-figueira flex items-center justify-center">
-                                    <Users size={18} />
+                                    <Calendar size={18} />
                                 </div>
-                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Diaconia</h3>
+                                <h3 className="text-sm font-black uppercase italic tracking-tighter text-fg">Igreja</h3>
                             </div>
                             <button onClick={() => setDiaconiaAberto(false)}
                                 className="w-8 h-8 flex items-center justify-center bg-soft text-muted hover:text-fg rounded-xl transition-all">
@@ -413,29 +415,68 @@ export default function MobileBottomNav({ permissoes, proximosEventos = [] }: Pr
                             </button>
                         </div>
                         <div className="p-4 space-y-2">
-                            <Link href="/pregacao" onClick={() => setDiaconiaAberto(false)}
-                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
-                                <BookOpen size={18} className="text-figueira shrink-0" />
+                            {/* Agenda Pastoral — todos os membros */}
+                            <button
+                                onClick={() => { setDiaconiaAberto(false); setAgendaPastoralAberta(true) }}
+                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all w-full text-left"
+                            >
+                                <Calendar size={18} className="text-figueira shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-[11px] font-black uppercase text-fg">Pregacao</h4>
-                                    <p className="text-[8px] text-muted font-bold mt-0.5">Sermoes e pregadores</p>
+                                    <h4 className="text-[11px] font-black uppercase text-fg">Agenda Pastoral</h4>
+                                    <p className="text-[8px] text-muted font-bold mt-0.5">Marcar reuniao com o pastor</p>
                                 </div>
                                 <ChevronRight size={14} className="text-muted" />
-                            </Link>
-                            <Link href="/departamentos/obreiros/dashboard" onClick={() => setDiaconiaAberto(false)}
-                                className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
-                                <Users size={18} className="text-blue-500 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="text-[11px] font-black uppercase text-fg">Obreiros</h4>
-                                    <p className="text-[8px] text-muted font-bold mt-0.5">Gestao de voluntarios</p>
-                                </div>
-                                <ChevronRight size={14} className="text-muted" />
-                            </Link>
+                            </button>
+
+                            {/* Pregacao — apenas diaconia */}
+                            {permissoes.isDiaconia && (
+                                <Link href="/pregacao" onClick={() => setDiaconiaAberto(false)}
+                                    className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                    <BookOpen size={18} className="text-figueira shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-[11px] font-black uppercase text-fg">Pregacao</h4>
+                                        <p className="text-[8px] text-muted font-bold mt-0.5">Sermoes e pregadores</p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-muted" />
+                                </Link>
+                            )}
+
+                            {/* Obreiros — apenas diaconia */}
+                            {permissoes.isDiaconia && (
+                                <Link href="/departamentos/obreiros/dashboard" onClick={() => setDiaconiaAberto(false)}
+                                    className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                    <Users size={18} className="text-blue-500 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-[11px] font-black uppercase text-fg">Obreiros</h4>
+                                        <p className="text-[8px] text-muted font-bold mt-0.5">Gestao de voluntarios</p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-muted" />
+                                </Link>
+                            )}
+
+                            {/* Gabinete — admin, pastor, lider */}
+                            {(permissoes.isAdmin || permissoes.isLider) && (
+                                <Link href="/gabinete" onClick={() => setDiaconiaAberto(false)}
+                                    className="flex items-center gap-3 p-4 bg-bg2 border border-soft rounded-xl hover:border-figueira/30 transition-all">
+                                    <ShieldCheck size={18} className="text-purple-500 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-[11px] font-black uppercase text-fg">Gabinete</h4>
+                                        <p className="text-[8px] text-muted font-bold mt-0.5">Gerir agenda pastoral</p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-muted" />
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>,
                 document.body
             )}
+
+            {/* MODAL AGENDA PASTORAL */}
+            <ModalAgendaPastoral
+                aberto={agendaPastoralAberta}
+                onClose={() => setAgendaPastoralAberta(false)}
+            />
         </>
     )
 }
