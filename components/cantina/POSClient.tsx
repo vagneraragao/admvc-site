@@ -277,11 +277,11 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                     membro: selectedMembro ? `${selectedMembro.first_name} ${selectedMembro.last_name}` : null,
                     saldoRestante: saldoAtual,
                 })
+                setTimeout(() => setReceipt(null), 5000)
                 setFeedback({ type: 'success', msg: 'Venda registada com sucesso!' })
                 setCart([])
-                if (selectedMembro && saldoAtual !== null) {
-                    setSaldo(saldoAtual)
-                }
+                setSelectedMembro(null)
+                setSaldo(null)
             }
         } catch { setFeedback({ type: 'error', msg: 'Erro ao registar venda.' }) }
         finally { setLoading(false); setTimeout(() => setFeedback(null), 4000) }
@@ -482,11 +482,15 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     // ── Render ──────────────────────────────────────────────────────────────
     if (!turnoId) {
         return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center space-y-4 p-6">
-                <Clock size={32} className="text-muted/30" />
-                <h2 className="text-lg font-black uppercase tracking-tighter text-fg">Turno nao aberto</h2>
-                <p className="text-xs text-muted max-w-sm">Abra um turno antes de iniciar as vendas para que todas as transacoes sejam registadas correctamente.</p>
-                <a href="/cantina/turnos" className="bg-figueira text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Abrir Turno</a>
+            <div className="fixed inset-0 bg-[#0a0a0a] z-50 flex items-center justify-center p-6">
+                <div className="text-center space-y-4 max-w-sm">
+                    <Clock size={48} className="mx-auto text-amber-500" />
+                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">Turno Nao Aberto</h2>
+                    <p className="text-sm text-white/60">Precisa abrir um turno antes de registar vendas.</p>
+                    <a href="/cantina/turnos" className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-black rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all">
+                        <Clock size={14} /> Abrir Turno
+                    </a>
+                </div>
             </div>
         )
     }
