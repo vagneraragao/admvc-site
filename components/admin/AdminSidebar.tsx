@@ -9,68 +9,75 @@ import {
     Palette, Church, CreditCard, PanelLeftClose, PanelLeftOpen,
     Menu, X, MonitorPlay, BookOpen, GraduationCap,
     Coffee, ShoppingCart, Wallet2, Clock, ChevronDown, ChevronUp, Store, Banknote,
-    FileText, PieChart, Heart, CheckSquare, Download
+    FileText, PieChart, Heart, CheckSquare, Download, Music2, Car, MapPin
 } from 'lucide-react'
 import { logoutAdmin } from '@/actions/auth-actions'
 
 // ── ESTRUTURA DO MENU ────────────────────────────────────────────────────────
 
+// 2. IGREJA
 const NAV_IGREJA = [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Membros', href: '/admin/membros', icon: Users },
-    { label: 'Familias', href: '/admin/familias', icon: Home },
-    { label: 'Congregacoes', href: '/admin/congregacoes', icon: Church },
     { label: 'Estrutura', href: '/admin/configuracoes', icon: HeartHandshake },
-]
-
-const NAV_AGENDA = [
-    { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
-    { label: 'Escalas', href: '/admin/escalas', icon: Calendar },
+    { label: 'Membros', href: '/admin/membros', icon: Users },
+    { label: 'Congregacoes', href: '/admin/congregacoes', icon: Church },
+    { label: 'Familias', href: '/admin/familias', icon: Home },
     { label: 'Inventario', href: '/admin/inventario', icon: Package },
 ]
 
-const NAV_FORMACAO = [
-    { label: 'Pregacao', href: '/admin/formacao/pregacao', icon: BookOpen },
-    { label: 'Cursos / EBD', href: '/admin/formacao/ebd', icon: GraduationCap },
+// 3. AGENDA
+const NAV_AGENDA = [
+    { label: 'Eventos', href: '/admin/eventos', icon: CalendarDays },
+    { label: 'Escalas', href: '/admin/escalas', icon: Calendar },
 ]
 
+// 4. FORMACAO
+const NAV_FORMACAO = [
+    { label: 'Pregacoes', href: '/admin/formacao/pregacao', icon: BookOpen },
+    { label: 'Cursos', href: '/admin/formacao/ebd', icon: GraduationCap },
+]
+
+// 5. CANTINA
 const NAV_CANTINA = [
     { label: 'Painel', href: '/cantina', icon: Store },
-    { label: 'Produtos', href: '/cantina/produtos', icon: Package },
-    { label: 'POS', href: '/cantina/pos', icon: CreditCard },
-    { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3 },
-    { label: 'Turnos', href: '/cantina/turnos', icon: Clock },
     { label: 'Cardapio', href: '/cantina/cardapio', icon: Coffee },
-    { label: 'Encomendas', href: '/cantina/encomendas', icon: ShoppingCart },
+    { label: 'Produtos', href: '/cantina/produtos', icon: Package },
+    { label: 'Turnos', href: '/cantina/turnos', icon: Clock },
+    { label: 'Vendas', href: '/cantina/dashboard', icon: BarChart3 },
     { label: 'Fiados', href: '/cantina/fiados', icon: CreditCard, adminOnly: true },
+    { label: 'Pre-Encomendas', href: '/cantina/encomendas', icon: ShoppingCart },
     { label: 'Recargas', href: '/cantina/recargas', icon: Wallet2, adminOnly: true },
+    { label: 'Relatorios', href: '/cantina/relatorio-financeiro', icon: PieChart },
 ]
 
+// 6. FINANCEIRO
 const NAV_FINANCEIRO = [
     { label: 'Fundos', href: '/financeiro/fundos', icon: Wallet2 },
     { label: 'Despesas', href: '/financeiro/despesas', icon: Banknote },
     { label: 'Orcamento', href: '/financeiro/orcamento', icon: BarChart3 },
-    { label: 'Recibos IRS', href: '/financeiro/recibos', icon: FileText },
-    { label: 'Relatorio', href: '/financeiro/relatorios', icon: PieChart },
+    { label: 'Recibos', href: '/financeiro/recibos', icon: FileText },
+    { label: 'Relatorios', href: '/financeiro/relatorios', icon: PieChart },
     { label: 'Donativos', href: '/financeiro/donativos', icon: Heart },
     { label: 'Pledges', href: '/financeiro/pledges', icon: HeartHandshake },
     { label: 'Reconciliacao', href: '/financeiro/reconciliacao', icon: CheckSquare },
-    { label: 'Exportacao', href: '/financeiro/exportar', icon: Download },
+    { label: 'Exportacao', href: '/financeiro/exportar', icon: Download, adminOnly: true },
 ]
 
-const NAV_RELATORIOS = [
-    { label: 'Geral', href: '/admin/relatorios', icon: BarChart3 },
-    { label: 'Escalas', href: '/admin/relatorios/escalas', icon: Calendar },
-    { label: 'Loyverse', href: '/admin/relatorios/loyverse', icon: CreditCard, adminOnly: true },
-]
-
-const NAV_SOCIAL = [
-    { label: 'Assistencia Social', href: '/assistencia', icon: HeartHandshake },
-]
-
-const NAV_SISTEMA = [
-    { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
+// 7. MINISTERIOS
+const NAV_MINISTERIOS = [
+    { label: 'Louvor', href: '/louvor/repertorio', icon: Music2 },
     { label: 'Midia', href: '/admin/midia', icon: MonitorPlay, adminOnly: true },
+    { label: 'Assistencia Social', href: '/assistencia', icon: HeartHandshake },
+    { label: 'Acolhimento', href: '/departamentos/acolhimento/dashboard', icon: Users },
+    { label: 'Diaconia', href: '/pregacao', icon: BookOpen },
+    { label: 'Obreiros', href: '/departamentos/obreiros/dashboard', icon: Users },
+    { label: 'Boleia Solidaria', href: '/boleia', icon: Car },
+    { label: 'EBD / Cursos', href: '/admin/formacao/ebd', icon: GraduationCap },
+    { label: 'Agenda Pastoral', href: '/gabinete', icon: Calendar },
+]
+
+// 8. CONFIGURACOES
+const NAV_CONFIGURACOES = [
+    { label: 'Personalizacao', href: '/admin/personalizacao', icon: Palette, adminOnly: true },
     { label: 'Auditoria', href: '/admin/auditoria', icon: Shield },
 ]
 
@@ -202,35 +209,31 @@ export default function AdminSidebar({ adminNome, igrejaName, logoUrl, congregac
 
                 {/* NAV */}
                 <nav className={`flex-1 overflow-y-auto space-y-2 ${c ? 'p-1.5' : 'p-3'}`}>
-                    {/* Igreja */}
+                    {/* 1. Dashboard */}
                     <div className="space-y-0.5">
-                        {!c && <p className="px-3 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-muted">Igreja</p>}
-                        {c && <div className="border-t border-soft my-1" />}
-                        <NavItems items={NAV_IGREJA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                        <NavItems items={[{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }]} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
                     </div>
 
-                    {/* Agenda & Escalas */}
-                    <CollapsibleGroup titulo="Agenda & Escalas" icon={CalendarDays} items={NAV_AGENDA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} defaultOpen />
+                    {/* 2. Igreja */}
+                    <CollapsibleGroup titulo="Igreja" icon={Church} items={NAV_IGREJA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} defaultOpen />
 
-                    {/* Formacao */}
+                    {/* 3. Agenda */}
+                    <CollapsibleGroup titulo="Agenda" icon={CalendarDays} items={NAV_AGENDA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+
+                    {/* 4. Formacao */}
                     <CollapsibleGroup titulo="Formacao" icon={BookOpen} items={NAV_FORMACAO} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
 
-                    {/* Cantina */}
+                    {/* 5. Cantina */}
                     <CollapsibleGroup titulo="Cantina" icon={Store} items={NAV_CANTINA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
 
-                    {/* Financeiro */}
-                    {isFullAdmin && (
-                        <CollapsibleGroup titulo="Financeiro" icon={Wallet2} items={NAV_FINANCEIRO} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
-                    )}
+                    {/* 6. Financeiro */}
+                    <CollapsibleGroup titulo="Financeiro" icon={Wallet2} items={NAV_FINANCEIRO} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
 
-                    {/* Relatorios */}
-                    <CollapsibleGroup titulo="Relatorios" icon={BarChart3} items={NAV_RELATORIOS} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                    {/* 7. Ministerios */}
+                    <CollapsibleGroup titulo="Ministerios" icon={Users} items={NAV_MINISTERIOS} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
 
-                    {/* Social */}
-                    <CollapsibleGroup titulo="Social" icon={HeartHandshake} items={NAV_SOCIAL} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
-
-                    {/* Sistema */}
-                    <CollapsibleGroup titulo="Sistema" icon={Shield} items={NAV_SISTEMA} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
+                    {/* 8. Configuracoes */}
+                    <CollapsibleGroup titulo="Configuracoes" icon={Shield} items={NAV_CONFIGURACOES} collapsed={c} pathname={pathname} isFullAdmin={isFullAdmin} onNavigate={nav} />
                 </nav>
 
                 {/* FOOTER */}

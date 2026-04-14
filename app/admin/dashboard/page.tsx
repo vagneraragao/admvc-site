@@ -11,7 +11,6 @@ import {
     HeartHandshake, UserPlus, ArrowRight, Briefcase
 } from 'lucide-react'
 import BotaoModalDocumentos from '@/components/admin/BotaoModalDocumentos'
-import HolyricsLogPanel from '@/components/admin/HolyricsLogPanel'
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const params = await searchParams
@@ -37,7 +36,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     const [
         totalMembros, pendentesCount, batizados, totalFamilias,
         proximasEscalas, todosMembros, membrosPendentesDocs,
-        escalasPendentesConfirmacao, tenantConfig,
+        escalasPendentesConfirmacao, ,
         visitantesNovos, visitantesEmContacto, visitantesReuniao, visitantesConsolidados,
         interessesPendentes,
     ] = await Promise.all([
@@ -287,8 +286,6 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
                 </section>
             )}
 
-            {/* HOLYRICS LOG */}
-            <HolyricsLogPanel holyricsUrl={tenantConfig?.holyrics_url} holyricsToken={tenantConfig?.holyrics_token} />
         </main>
     )
 }
