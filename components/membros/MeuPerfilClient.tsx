@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     membro: any
@@ -27,6 +28,7 @@ export default function MeuPerfilClient({
     onSucesso,
     isDrawer = false
 }: Props) {
+    const toast = useToast()
     const [isPending, setIsPending] = useState(false)
     const [mostrarSucesso, setMostrarSucesso] = useState(false)
     const [abaAtiva, setAbaAtiva] = useState('pessoal')
@@ -109,7 +111,7 @@ export default function MeuPerfilClient({
                 window.scrollTo({ top: 0, behavior: 'smooth' })
             }
         } else {
-            alert(res.erro || 'Erro ao atualizar.')
+            toast(res.erro || 'Erro ao atualizar.', 'erro')
         }
     }
 

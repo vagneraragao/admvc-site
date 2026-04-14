@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Search, Loader2, Check, X, Minus, Plus, Package, AlertCircle, Filter, Star, HeartHandshake } from 'lucide-react'
 // Reutilizamos a mesma action mágica que criámos para a despensa!
 import { atualizarStockLoyverseAction } from '@/actions/despensa-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function DespensaManager({ produtos, categorias }: { produtos: any[], categorias?: any[] }) {
     const [busca, setBusca] = useState('');
@@ -157,6 +158,7 @@ export default function DespensaManager({ produtos, categorias }: { produtos: an
 function AjustadorStock({ variantId, stockAtual }: { variantId: string, stockAtual: number }) {
     const [valor, setValor] = useState(Math.floor(stockAtual));
     const [isSaving, setIsSaving] = useState(false);
+    const toast = useToast()
 
     // Se o valor for alterado, mostramos os botões de Guardar/Cancelar
     const foiAlterado = valor !== Math.floor(stockAtual);
@@ -166,7 +168,7 @@ function AjustadorStock({ variantId, stockAtual }: { variantId: string, stockAtu
         // Usamos a mesma action da Despensa, pois faz exatamente a mesma coisa na API do Loyverse!
         const res = await atualizarStockLoyverseAction(variantId, valor);
         if (res.error) {
-            alert(res.error);
+            toast(res.error, 'erro');
             setValor(Math.floor(stockAtual)); // Reverte em caso de erro
         }
         setIsSaving(false);

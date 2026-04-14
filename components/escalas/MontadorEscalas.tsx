@@ -12,8 +12,10 @@ import {
     Clock, CalendarDays, User, ShieldCheck, CheckCircle2,
     ChevronDown, Loader2, Zap, AlertTriangle, X
 } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, departamentoId, departamentos }: any) {
+    const toast = useToast()
     const [deptoSelecionadoId, setDeptoSelecionadoId] = useState(departamentoId?.toString() || '')
     const [eventoId, setEventoId] = useState('')
     const [membroId, setMembroId] = useState('')
@@ -119,7 +121,7 @@ export default function MontadorEscalas({ eventos, funcoesDisponiveis, membros, 
                             setFuncaoId('')
                             setBloqueio(null)
                         } else if (res?.error) {
-                            alert(res.error)
+                            toast(res.error, 'erro')
                         }
                     }}
                     className="space-y-5"

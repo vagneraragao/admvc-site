@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import GrelhaRifa from "@/components/financeiro/GrelhaRifa";
 import { lancarPagamentoCarne, lancarContribuicaoAction } from "@/actions/financeiro-actions";
+import { useToast } from '@/components/ui/ConfirmDialog';
 
 interface Membro {
     id: number
@@ -236,6 +237,7 @@ function SeletorMembro({
 export default function ModalEntradaUnificada({ membros, carnesAtivos, rifaAtiva }: any) {
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
+    const toast = useToast()
     const [membroId, setMembroId] = useState("")
     const [tipoEntrada, setTipoEntrada] = useState("")
     const [valor, setValor] = useState("")
@@ -268,14 +270,14 @@ export default function ModalEntradaUnificada({ membros, carnesAtivos, rifaAtiva
 
     async function handleSalvarEntrada() {
         if (!tipoEntrada || !valor || Number(valor) <= 0) {
-            alert("Preencha todos os campos e certifique-se que o valor é maior que zero.")
+            toast("Preencha todos os campos e certifique-se que o valor é maior que zero.", 'erro')
             return
         }
         setIsPending(true)
         try {
             if (tipoEntrada === 'CARNE') {
                 const res = await lancarPagamentoCarne(Number(carneSelecionado), 1)
-                if (!res.ok) { alert("Erro ao gravar Carnê: " + res.error); return }
+                if (!res.ok) { toast("Erro ao gravar Carnê: " + res.error, 'erro'); return }
             } else {
                 const formData = new FormData()
                 if (membroId !== 'anonimo') formData.append('membroId', membroId)
@@ -283,11 +285,11 @@ export default function ModalEntradaUnificada({ membros, carnesAtivos, rifaAtiva
                 formData.append('tipo', tipoEntrada)
                 formData.append('data', new Date().toISOString())
                 const res = await lancarContribuicaoAction(formData)
-                if (!res.ok) { alert("Erro ao gravar: " + res.error); return }
+                if (!res.ok) { toast("Erro ao gravar: " + res.error, 'erro'); return }
             }
             fecharModal()
         } catch {
-            alert("Erro ao comunicar com o servidor.")
+            toast("Erro ao comunicar com o servidor.", 'erro')
         } finally {
             setIsPending(false)
         }

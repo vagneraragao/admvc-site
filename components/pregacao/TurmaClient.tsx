@@ -16,7 +16,7 @@ import {
     criarEBD, registarPresencasEBD, removerEBD,
     calcularAprovacao, responderAtividade
 } from '@/actions/pregacao-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 const TIPO_LABELS: Record<string, string> = {
     EXERCICIO: 'Exercicio',
@@ -108,6 +108,7 @@ interface Props {
 
 export default function TurmaClient({ turma, membros, sermoes, podeGerir = false, basePath = '/ensino', membroId }: Props) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const router = useRouter()
     const [tab, setTab] = useState<'alunos' | 'aulas' | 'atividades' | 'resultados'>('alunos')
     const [mounted, setMounted] = useState(false)
@@ -163,14 +164,14 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         const res = await matricularAlunos(turma.id, matSelecionados)
         setLoading(false)
         if (res.ok) { setModalMatricula(false); setMatSelecionados([]); setMatSearch(''); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleRemoverMatricula(membroId: number) {
         if (!await confirmar({ mensagem: 'Remover este aluno da turma?', tipo: 'perigo' })) return
         const res = await removerMatricula(turma.id, membroId)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleCriarAula(e: React.FormEvent<HTMLFormElement>) {
@@ -182,7 +183,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         const res = await criarEBD(form)
         setLoading(false)
         if (res.ok) { setModalAula(false); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     function abrirEdicaoAtividade(atv: any) {
@@ -209,7 +210,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         }
         setLoading(false)
         if (res.ok) { setModalAtividade(false); setEditandoAtividade(null); setPerguntasEditor([]); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     function abrirNotas(atividadeId: string) {
@@ -238,7 +239,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         const res = await salvarNotas(modalNotas, notas)
         setLoading(false)
         if (res.ok) { setModalNotas(null); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     function abrirPresencas(aula: Aula) {
@@ -252,7 +253,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         const res = await registarPresencasEBD(presencaAulaId, presentes)
         setPresencaLoading(false)
         if (res.ok) { setPresencaAulaId(null); setPresentes([]); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     function abrirQuestionario(atividadeId: string) {
@@ -282,10 +283,10 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         setEnviandoResposta(false)
         if (res.ok) {
             setQuestionarioAberto(null)
-            if (res.nota != null) alert(`Respostas enviadas! Nota: ${res.nota}`)
-            else alert('Respostas enviadas! A nota será atribuída pelo professor.')
+            if (res.nota != null) toast(`Respostas enviadas! Nota: ${res.nota}`, 'sucesso')
+            else toast('Respostas enviadas! A nota será atribuída pelo professor.', 'sucesso')
             router.refresh()
-        } else alert(res.error)
+        } else toast(res.error, 'erro')
     }
 
     async function handleCalcularAprovacao() {
@@ -294,7 +295,7 @@ export default function TurmaClient({ turma, membros, sermoes, podeGerir = false
         const res = await calcularAprovacao(turma.id)
         setLoading(false)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     // ── Modais ──

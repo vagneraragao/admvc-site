@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { atualizarStock } from '@/actions/cantina-local-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     produtoId: number
@@ -12,12 +13,13 @@ interface Props {
 export default function InputStock({ produtoId, stockAtual }: Props) {
     const [stock, setStock] = useState(stockAtual)
     const [loading, setLoading] = useState(false)
+    const toast = useToast()
     const changed = stock !== stockAtual
 
     async function handleSave() {
         setLoading(true)
         const res = await atualizarStock(produtoId, stock)
-        if (res?.error) alert(res.error)
+        if (res?.error) toast(res.error, 'erro')
         setLoading(false)
     }
 

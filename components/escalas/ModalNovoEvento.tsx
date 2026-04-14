@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { CalendarDays, X, Save, Loader2, Clock, Repeat, Type, Filter, CalendarPlus, Calendar, AlignLeft } from 'lucide-react'
 import { criarEventoUnificadoAction } from '@/actions/admin-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalNovoEvento({ congregacoes = [] }: { congregacoes?: { id: number; nome: string; cidade: string }[] }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
     const [tipoEvento, setTipoEvento] = useState<'UNICO' | 'CONTINUO'>('UNICO')
@@ -18,10 +20,10 @@ export default function ModalNovoEvento({ congregacoes = [] }: { congregacoes?: 
 
         if (res.ok) {
             setIsOpen(false)
-            alert(`Sucesso! ${res.totalCriado} evento(s) agendado(s).`)
+            toast(`Sucesso! ${res.totalCriado} evento(s) agendado(s).`, 'sucesso')
             // Opcional: window.location.reload() para atualizar a tabela por trás se necessário
         } else {
-            alert(res.error || "Erro ao gerar eventos.")
+            toast(res.error || "Erro ao gerar eventos.", 'erro')
         }
     }
 

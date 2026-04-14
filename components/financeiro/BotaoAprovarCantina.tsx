@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Loader2, Euro } from 'lucide-react'
 import { aprovarSaldoCantinaAction } from '@/actions/financeiro-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAprovarCantina({
     pedidoId,
@@ -18,6 +18,7 @@ export default function BotaoAprovarCantina({
 }) {
     const [loading, setLoading] = useState(false)
     const confirmar = useConfirm()
+    const toast = useToast()
 
     async function handleAprovar() {
         if (!await confirmar({ mensagem: `Aprovar o carregamento de €${valor} para ${nomeMembro}?`, tipo: 'info' })) return
@@ -30,7 +31,7 @@ export default function BotaoAprovarCantina({
         const res = await aprovarSaldoCantinaAction(pedidoId, safeLoyverseId, valor)
 
         if (!res.ok) {
-            alert(`❌ Erro ao aprovar: ${res.error}`)
+            toast(`Erro ao aprovar: ${res.error}`, 'erro')
         }
 
         setLoading(false)

@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { CalendarDays, X, Save, Loader2, Clock, Type, Edit3, Church, AlignLeft } from 'lucide-react'
 import { editarEventoAction } from '@/actions/admin-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarEvento({ evento, congregacoes = [] }: { evento: any; congregacoes?: { id: number; nome: string; cidade: string }[] }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
 
@@ -17,7 +19,7 @@ export default function ModalEditarEvento({ evento, congregacoes = [] }: { event
         const res = await editarEventoAction(formData)
         setIsPending(false)
         if (res.ok) setIsOpen(false)
-        else alert(res.error || "Erro ao atualizar o evento.")
+        else toast(res.error || "Erro ao atualizar o evento.", 'erro')
     }
 
     return (

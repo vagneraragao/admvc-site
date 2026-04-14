@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { CalendarDays, X, Save, Loader2, Clock, Type, Edit3 } from 'lucide-react'
 import { editarEventoAction } from '@/actions/admin-actions' // Ajusta o caminho se necessário
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarEvento({ evento }: { evento: any }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
 
@@ -21,7 +23,7 @@ export default function ModalEditarEvento({ evento }: { evento: any }) {
         if (res.ok) {
             setIsOpen(false)
         } else {
-            alert(res.error || "Erro ao atualizar o evento.")
+            toast(res.error || "Erro ao atualizar o evento.", 'erro')
         }
     }
 

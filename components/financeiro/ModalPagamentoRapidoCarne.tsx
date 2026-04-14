@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { Banknote, Loader2, Check, X, Plus, Minus } from 'lucide-react'
 import { lancarPagamentoCarneAction } from '@/actions/financeiro-actions' // Criar esta action
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalPagamentoRapidoCarne({ carneId, membroNome, campanhaNome, valorParcela, parcelasRestantes }: any) {
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
     const [qtd, setQtd] = useState(1);
+    const toast = useToast()
 
     const total = qtd * valorParcela;
 
@@ -18,7 +20,7 @@ export default function ModalPagamentoRapidoCarne({ carneId, membroNome, campanh
             setAberto(false);
             setQtd(1);
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
         setLoading(false);
     }

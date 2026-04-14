@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { MoreHorizontal, X, Save, Loader2, Link as LinkIcon, User, Type, Trash2, Shield, Search } from 'lucide-react'
 import { editarAgendaAction, apagarAgendaAction } from '@/actions/agenda-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, membros: any[] }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [slugPreview, setSlugPreview] = useState(agenda.slug);
@@ -39,7 +40,7 @@ export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, me
         setIsPending(false);
 
         if (res.ok) setIsOpen(false);
-        else alert(res.error);
+        else toast(res.error, 'erro');
     }
 
     async function handleDelete() {
@@ -48,7 +49,7 @@ export default function ModalEditarAgenda({ agenda, membros }: { agenda: any, me
         setIsPending(true);
         const res = await apagarAgendaAction(agenda.id);
         setIsPending(false);
-        if (!res.ok) alert(res.error);
+        if (!res.ok) toast(res.error, 'erro');
     }
 
     return (

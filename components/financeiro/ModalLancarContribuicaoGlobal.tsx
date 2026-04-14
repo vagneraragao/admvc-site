@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { HeartHandshake, X, Save, Loader2, Calendar, CreditCard, FileText, User, Search } from 'lucide-react'
 import { lancarContribuicaoAction } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalLancarContribuicaoGlobal({ membros }: { membros: any[] }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
+    const toast = useToast()
 
     // ========================================================================
     // ESTADOS PARA PESQUISA DE MEMBRO
@@ -37,7 +39,7 @@ export default function ModalLancarContribuicaoGlobal({ membros }: { membros: an
     async function handleAction(formData: FormData) {
         // Trava de segurança: impede o envio se o nome digitado não for um membro real
         if (!membroIdSelecionado) {
-            alert("Por favor, selecione um membro válido da lista.");
+            toast("Por favor, selecione um membro válido da lista.", 'erro');
             return;
         }
 
@@ -49,7 +51,7 @@ export default function ModalLancarContribuicaoGlobal({ membros }: { membros: an
             fecharModal()
             // A página atualiza sozinha via revalidatePath na Action
         } else {
-            alert(res.error || "Erro ao lançar contribuição.")
+            toast(res.error || "Erro ao lançar contribuição.", 'erro')
         }
     }
 

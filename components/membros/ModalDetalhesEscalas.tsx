@@ -9,6 +9,7 @@ import {
     Bell, AlertCircle
 } from 'lucide-react'
 import { confirmarEscala, recusarEscala } from '@/actions/escalas-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import { formatInTimeZone } from 'date-fns-tz'
 import { pt } from 'date-fns/locale'
 
@@ -36,6 +37,7 @@ interface Props {
 
 export default function ModalDetalhesEscala({ escala }: Props) {
     const router = useRouter()
+    const toast = useToast()
     const [isPending, startTransition] = useTransition()
     const [aberto, setAberto] = useState(false)
     const [modoRecusa, setModoRecusa] = useState(false)
@@ -64,13 +66,13 @@ export default function ModalDetalhesEscala({ escala }: Props) {
             if (res.sucesso) {
                 setFeedback('confirmado')
                 setTimeout(() => { setAberto(false); setFeedback(null); startTransition(() => router.refresh()) }, 1500)
-            } else { alert(res.error || 'Erro ao confirmar.') }
-        } catch { alert('Erro de ligação.') }
+            } else { toast(res.error || 'Erro ao confirmar.', 'erro') }
+        } catch { toast('Erro de ligação.', 'erro') }
         finally { setSalvando(false) }
     }
 
     const handleRecusar = async () => {
-        if (!motivo.trim()) { alert('Indica o motivo da recusa.'); return }
+        if (!motivo.trim()) { toast('Indica o motivo da recusa.', 'aviso'); return }
         setSalvando(true)
         try {
             const res = await recusarEscala(escala.ids, motivo) as { sucesso: boolean; error?: string }
@@ -81,8 +83,8 @@ export default function ModalDetalhesEscala({ escala }: Props) {
                     setModoRecusa(false); setMotivo('')
                     startTransition(() => router.refresh())
                 }, 1500)
-            } else { alert(res.error || 'Erro ao recusar.') }
-        } catch { alert('Erro de ligação.') }
+            } else { toast(res.error || 'Erro ao recusar.', 'erro') }
+        } catch { toast('Erro de ligação.', 'erro') }
         finally { setSalvando(false) }
     }
 

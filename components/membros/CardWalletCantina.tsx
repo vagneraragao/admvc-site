@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import ModalHistoricoCantina from '@/components/financeiro/ModalHistoricoCantina'
 import { solicitarSaldoCantinaAction } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function CardWalletCantina({
     membro,
@@ -18,6 +19,7 @@ export default function CardWalletCantina({
     saldoLoyverse?: number
 }) {
     const router = useRouter()
+    const toast = useToast()
     const saldo = saldoLoyverse ?? 0
 
     const [mostrar, setMostrar] = useState(false)
@@ -37,13 +39,13 @@ export default function CardWalletCantina({
     }
 
     async function handleSubmit(formData: FormData) {
-        if (!valor || Number(valor) <= 0) { alert('Valor inválido.'); return }
+        if (!valor || Number(valor) <= 0) { toast('Valor inválido.', 'erro'); return }
         setLoading(true)
         const res = await solicitarSaldoCantinaAction(formData)
         if (res.ok) {
             setSucesso(true)
             setTimeout(() => { setAberto(false); setSucesso(false); setValor(10); setCustom(false) }, 3000)
-        } else { alert(res.error) }
+        } else { toast(res.error, 'erro') }
         setLoading(false)
     }
 

@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle2, Loader2, Receipt, Euro, Search } from 'lucide-react'
 import { registrarPagamentoCampanhaAction } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function FormLancamentoOferta({ membros, objetivos }: { membros: any[], objetivos: any[] }) {
     const [loading, setLoading] = useState(false);
+    const toast = useToast()
 
     // Estados
     const [buscaMembro, setBuscaMembro] = useState(''); // O que aparece na caixa de texto
@@ -59,9 +61,9 @@ export default function FormLancamentoOferta({ membros, objetivos }: { membros: 
             setMembroId('');
             setObjetivoId('');
             setValorInput('');
-            alert("Pagamento registado com sucesso! 🎉");
+            toast("Pagamento registado com sucesso! 🎉", 'sucesso');
         } else {
-            alert(result.error);
+            toast(result.error, 'erro');
         }
         setLoading(false);
     }

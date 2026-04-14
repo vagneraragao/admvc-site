@@ -3,14 +3,16 @@
 import { useState, useMemo } from 'react'
 import { CalendarPlus, X, Save, Loader2, Clock, Users, Type, AlignLeft, CalendarDays, Search, Check } from 'lucide-react'
 import { criarCompromissoAction } from '@/actions/agenda-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 type Participante = { id: number, nome: string, tipo: 'MEMBRO' | 'VISITANTE' | 'DEPARTAMENTO' | 'GRUPO' };
 
-export default function ModalNovoCompromisso({ 
-    agendas, membros, visitantes, departamentos = [], grupos = []  
-}: { 
-    agendas: any[], membros: any[], visitantes: any[], departamentos?: any[], grupos?: any[] 
+export default function ModalNovoCompromisso({
+    agendas, membros, visitantes, departamentos = [], grupos = []
+}: {
+    agendas: any[], membros: any[], visitantes: any[], departamentos?: any[], grupos?: any[]
 }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     
@@ -49,7 +51,7 @@ export default function ModalNovoCompromisso({
         if (res.ok) {
             setIsOpen(false);
             setSelecionados([]); // Limpa após sucesso
-        } else alert(res.error);
+        } else toast(res.error, 'erro');
     }
 
     return (

@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { CalendarPlus, X, Save, Loader2, Link as LinkIcon, User, Type } from 'lucide-react'
 import { criarAgendaAction } from '@/actions/agenda-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalNovaAgenda({ membros }: { membros: any[] }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
     const [slugPreview, setSlugPreview] = useState('');
@@ -17,7 +19,7 @@ export default function ModalNovaAgenda({ membros }: { membros: any[] }) {
         if (res.ok) {
             setIsOpen(false);
         } else {
-            alert(res.error);
+            toast(res.error, 'erro');
         }
     }
 

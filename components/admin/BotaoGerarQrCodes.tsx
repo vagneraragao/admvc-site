@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { QrCode, Loader2, CheckCircle } from 'lucide-react'
 import { gerarQrCodesTodosMembros } from '@/actions/cantina-local-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoGerarQrCodes() {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<{ count: number } | null>(null)
 
@@ -18,7 +19,7 @@ export default function BotaoGerarQrCodes() {
         if ('count' in res) {
             setResultado({ count: res.count })
         } else {
-            alert(res.error || 'Erro ao gerar.')
+            toast(res.error || 'Erro ao gerar.', 'erro')
         }
         setLoading(false)
     }

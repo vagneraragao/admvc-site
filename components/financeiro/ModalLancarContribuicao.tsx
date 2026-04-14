@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { HeartHandshake, X, Save, Loader2, Calendar, CreditCard, FileText } from 'lucide-react'
 import { lancarContribuicaoAction } from '@/actions/financeiro-actions' // Confirme se este caminho está correto para si
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalLancarContribuicao({ membroId }: { membroId: number }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
+    const toast = useToast()
 
     async function handleAction(formData: FormData) {
         setIsPending(true)
@@ -19,7 +21,7 @@ export default function ModalLancarContribuicao({ membroId }: { membroId: number
             setIsOpen(false)
             // A página vai atualizar sozinha graças ao revalidatePath na Action!
         } else {
-            alert(res.error || "Erro ao lançar contribuição.")
+            toast(res.error || "Erro ao lançar contribuição.", 'erro')
         }
     }
 

@@ -10,7 +10,7 @@ import {
     X, Loader2, Check, ChevronDown
 } from 'lucide-react'
 import { criarEBD, removerEBD, registarPresencasEBD } from '@/actions/pregacao-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 const MESES = [
     'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
@@ -55,6 +55,7 @@ interface Props {
 
 export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdInicial }: Props) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -128,7 +129,7 @@ export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdI
             setModalAberto(false)
             router.refresh()
         } else {
-            alert(res.error || 'Erro ao criar aula.')
+            toast(res.error || 'Erro ao criar aula.', 'erro')
         }
     }
 
@@ -138,7 +139,7 @@ export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdI
         if (res.ok) {
             router.refresh()
         } else {
-            alert(res.error || 'Erro ao remover.')
+            toast(res.error || 'Erro ao remover.', 'erro')
         }
     }
 
@@ -164,7 +165,7 @@ export default function EBDClient({ aulas, membros, sermoes, mes, ano, sermaoIdI
             setPresentes([])
             router.refresh()
         } else {
-            alert(res.error || 'Erro ao registar presencas.')
+            toast(res.error || 'Erro ao registar presencas.', 'erro')
         }
     }
 

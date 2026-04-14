@@ -1,6 +1,6 @@
 "use client"
 
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 interface BotaoExcluirProps {
     id: number;
@@ -10,6 +10,7 @@ interface BotaoExcluirProps {
 
 export default function BotaoExcluirCargo({ id, nome, onExcluir }: BotaoExcluirProps) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const handleExcluir = async () => {
         const confirmou = await confirmar({ mensagem: `Tem certeza que deseja excluir o cargo "${nome.toUpperCase()}"?`, tipo: 'perigo' });
 
@@ -17,7 +18,7 @@ export default function BotaoExcluirCargo({ id, nome, onExcluir }: BotaoExcluirP
             try {
                 await onExcluir(id);
             } catch (error) {
-                alert("Erro ao excluir o cargo. Verifique se existem membros vinculados.");
+                toast("Erro ao excluir o cargo. Verifique se existem membros vinculados.", 'erro');
             }
         }
     };

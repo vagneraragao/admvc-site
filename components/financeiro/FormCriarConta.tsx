@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { PlusCircle, Loader2, X } from 'lucide-react'
 import { criarContaBancaria } from '@/actions/reconciliacao-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function FormCriarConta() {
     const [aberto, setAberto] = useState(false)
     const [loading, setLoading] = useState(false)
+    const toast = useToast()
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -16,7 +18,7 @@ export default function FormCriarConta() {
         if (res.ok) {
             setAberto(false)
         } else {
-            alert(res.error || 'Erro ao criar conta.')
+            toast(res.error || 'Erro ao criar conta.', 'erro')
         }
         setLoading(false)
     }

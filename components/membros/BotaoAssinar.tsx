@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { CheckCircle2, Loader2, PenLine, Check } from 'lucide-react'
 import { assinarTermosAction, assinarDocumentoAction } from '@/actions/membro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 // ============================================================================
 // 1. O BOTÃO ANTIGO (Mantemos como 'export default' para não quebrar o sistema)
 // ============================================================================
 export default function BotaoAssinar({ membroId }: { membroId: number }) {
+    const toast = useToast()
     const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
     async function handleAssinar() {
@@ -22,11 +24,11 @@ export default function BotaoAssinar({ membroId }: { membroId: number }) {
                 setTimeout(() => window.location.href = '/membros/dashboard', 1500);
             } else {
                 setStatus('idle');
-                alert("Ocorreu um erro ao assinar. Tenta novamente.");
+                toast("Ocorreu um erro ao assinar. Tenta novamente.", 'erro');
             }
         } catch (error) {
             setStatus('idle');
-            alert("Erro de ligação.");
+            toast("Erro de ligação.", 'erro');
         }
     }
 
@@ -55,6 +57,7 @@ interface Props {
 }
 
 export function BotaoAssinarDocumento({ membroId, tipo, nomeDocumento }: Props) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false);
     const [sucesso, setSucesso] = useState(false);
 
@@ -65,7 +68,7 @@ export function BotaoAssinarDocumento({ membroId, tipo, nomeDocumento }: Props) 
         if (res.ok) {
             setSucesso(true);
         } else {
-            alert(res.error || `Erro ao assinar o documento ${nomeDocumento}.`);
+            toast(res.error || `Erro ao assinar o documento ${nomeDocumento}.`, 'erro');
             setLoading(false);
         }
     }

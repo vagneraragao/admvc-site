@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { importarDoLoyverse } from '@/actions/cantina-importar-actions'
 import { Download, Loader2, CheckCircle2 } from 'lucide-react'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoImportarLoyverse() {
     const [loading, setLoading] = useState(false)
     const [resultado, setResultado] = useState<any>(null)
     const confirmar = useConfirm()
+    const toast = useToast()
 
     async function handleImportar() {
         if (!await confirmar({ mensagem: 'Isto vai importar todas as categorias e produtos do Loyverse. Produtos existentes serao atualizados. Continuar?', tipo: 'aviso' })) return
@@ -18,7 +19,7 @@ export default function BotaoImportarLoyverse() {
         const res = await importarDoLoyverse()
 
         if (res.error) {
-            alert(res.error)
+            toast(res.error, 'erro')
         } else {
             setResultado(res.resumo)
         }

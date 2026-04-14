@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Receipt, Loader2 } from 'lucide-react'
 import { submeterDespesaAction } from '@/actions/fundos-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     fundos: { id: number; nome: string }[]
@@ -12,6 +13,7 @@ interface Props {
 export default function FormDespesa({ fundos, categorias }: Props) {
     const [loading, setLoading] = useState(false)
     const [fundoId, setFundoId] = useState('')
+    const toast = useToast()
 
     const categoriasFiltradas = categorias.filter(c => c.fundo_id === Number(fundoId))
 
@@ -19,10 +21,10 @@ export default function FormDespesa({ fundos, categorias }: Props) {
         setLoading(true)
         const result = await submeterDespesaAction(formData)
         if (result.ok) {
-            alert('Despesa submetida com sucesso!')
+            toast('Despesa submetida com sucesso!', 'sucesso')
             setFundoId('')
         } else {
-            alert(result.error || 'Erro ao submeter despesa.')
+            toast(result.error || 'Erro ao submeter despesa.', 'erro')
         }
         setLoading(false)
     }

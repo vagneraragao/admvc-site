@@ -8,9 +8,11 @@ import {
     LayoutGrid, Edit3, ArrowRight, X, Phone, MessageCircle, Loader2
 } from 'lucide-react'
 import { buscarEquipaPorDepartamentoId } from '@/actions/admin-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 import ModalGestaoGrupo from '@/components/membros/ModalGestaoGrupo'
 
 export default function CardDepartamentoMembro({ depto, membroId, role, podeGerirEscalas }: any) {
+    const toast = useToast()
     const [expandido, setExpandido] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [equipa, setEquipa] = useState<any[]>([]);
@@ -69,7 +71,7 @@ export default function CardDepartamentoMembro({ depto, membroId, role, podeGeri
         setIsLoading(true);
         const res = await buscarEquipaPorDepartamentoId(depto.id);
         if (res.ok) setEquipa(res.data);
-        else alert(res.error);
+        else toast(res.error, 'erro');
         setIsLoading(false);
     }
 

@@ -3,12 +3,14 @@
 import { useRef, useTransition } from 'react'
 import { criarDepartamento } from '@/actions/admin-actions'
 import { Church } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     congregacoes: { id: number; nome: string; cidade: string }[]
 }
 
 export default function FormCriarDepartamento({ congregacoes }: Props) {
+    const toast = useToast()
     const formRef = useRef<HTMLFormElement>(null)
     const [isPending, startTransition] = useTransition()
 
@@ -16,10 +18,10 @@ export default function FormCriarDepartamento({ congregacoes }: Props) {
         startTransition(async () => {
             try {
                 await criarDepartamento(fd)
-                alert('Departamento criado com sucesso!')
+                toast('Departamento criado com sucesso!', 'sucesso')
                 formRef.current?.reset()
             } catch {
-                alert('Erro ao criar departamento.')
+                toast('Erro ao criar departamento.', 'erro')
             }
         })
     }

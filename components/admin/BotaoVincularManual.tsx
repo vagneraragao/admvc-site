@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link2, Loader2, CheckCircle2, Search, X, ChevronDown, Check } from 'lucide-react'
 import { vincularLoyverseId } from '@/actions/loyverse-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Props {
     membroId: number
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function BotaoVincularManual({ membroId, membroNome, clientesLoyverse }: Props) {
+    const toast = useToast()
     const [popupAberto, setPopupAberto] = useState(false)
     const [dropdownAberto, setDropdownAberto] = useState(false)
     const [busca, setBusca] = useState('')
@@ -82,7 +84,7 @@ export default function BotaoVincularManual({ membroId, membroNome, clientesLoyv
             setSucesso(true)
             setPopupAberto(false)
         } else {
-            alert(res.erro || 'Erro ao vincular.')
+            toast(res.erro || 'Erro ao vincular.', 'erro')
         }
         setLoading(false)
     }

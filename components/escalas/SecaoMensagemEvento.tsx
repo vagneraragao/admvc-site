@@ -11,7 +11,7 @@ import {
     salvarMensagemEventoAction,
     removerMensagemEventoAction
 } from '@/actions/escalas-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 interface Membro {
     id: number
@@ -47,6 +47,7 @@ export default function SecaoMensagemEvento({
 }: Props) {
     const router = useRouter()
     const confirmar = useConfirm()
+    const toast = useToast()
     const [isPending, startTransition] = useTransition()
 
     const [loading, setLoading] = useState(false)
@@ -137,7 +138,7 @@ export default function SecaoMensagemEvento({
             setEditando(false)
             startTransition(() => router.refresh())
         } else {
-            alert(res.error || 'Erro ao guardar.')
+            toast(res.error || 'Erro ao guardar.', 'erro')
         }
         setSalvando(false)
     }

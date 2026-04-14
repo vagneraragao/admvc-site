@@ -4,8 +4,10 @@
 import { useState } from 'react'
 import { Link2, Loader2, CheckCircle2 } from 'lucide-react'
 import { vincularLoyverseId } from '@/actions/loyverse-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoVincularLoyverse({ membroId, loyverseId, membroNome }: { membroId: number, loyverseId: string, membroNome: string }) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false);
     const [sucesso, setSucesso] = useState(false);
 
@@ -16,7 +18,7 @@ export default function BotaoVincularLoyverse({ membroId, loyverseId, membroNome
         if (res.sucesso) {
             setSucesso(true);
         } else {
-            alert(res.erro);
+            toast(res.erro, 'erro');
             setLoading(false);
         }
     }

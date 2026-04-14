@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { Heart, Send, Loader2, CheckCircle2, Church, Coffee, Globe, Play } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BoasVindasPage() {
+    const toast = useToast()
     const [nome, setNome] = useState('')
     const [telefone, setTelefone] = useState('')
     const [pedido, setPedido] = useState('')
@@ -23,12 +25,12 @@ export default function BoasVindasPage() {
             })
             const data = await res.json()
             if (!res.ok) {
-                alert(data.error || 'Erro ao enviar. Tente novamente.')
+                toast(data.error || 'Erro ao enviar. Tente novamente.', 'erro')
             } else {
                 setEnviado(true)
             }
         } catch {
-            alert('Erro de ligacao. Verifique a internet e tente novamente.')
+            toast('Erro de ligacao. Verifique a internet e tente novamente.', 'erro')
         }
         setEnviando(false)
     }

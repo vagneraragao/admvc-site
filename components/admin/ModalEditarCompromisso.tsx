@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { X, Save, Loader2, Clock, Type, AlignLeft, CalendarDays, Edit3 } from 'lucide-react'
 import { editarCompromissoAction } from '@/actions/agenda-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function ModalEditarCompromisso({ comp }: { comp: any }) {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
 
@@ -21,7 +23,7 @@ export default function ModalEditarCompromisso({ comp }: { comp: any }) {
         setIsPending(false);
 
         if (res.ok) setIsOpen(false);
-        else alert(res.error);
+        else toast(res.error, 'erro');
     }
 
     return (

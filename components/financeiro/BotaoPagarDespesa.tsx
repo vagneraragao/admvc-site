@@ -3,18 +3,19 @@
 import { useState } from 'react'
 import { Banknote, Loader2 } from 'lucide-react'
 import { pagarDespesaAction } from '@/actions/fundos-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoPagarDespesa({ despesaId }: { despesaId: number }) {
     const [loading, setLoading] = useState(false)
     const confirmar = useConfirm()
+    const toast = useToast()
 
     async function handlePagar() {
         if (!await confirmar({ mensagem: 'Marcar esta despesa como paga? O valor sera debitado do fundo.', tipo: 'aviso' })) return
         setLoading(true)
         const res = await pagarDespesaAction(despesaId)
         if (!res.ok) {
-            alert(res.error || 'Erro ao registar pagamento.')
+            toast(res.error || 'Erro ao registar pagamento.', 'erro')
         }
         setLoading(false)
     }

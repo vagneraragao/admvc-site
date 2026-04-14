@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Target, Users, Euro, CalendarDays, Hash, Loader2, Ticket, Gift, Search, UserPlus, Plus } from 'lucide-react'
 import { criarCampanhaEmLoteAction, criarRifaAction } from '@/actions/financeiro-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Membro {
     id: number;
@@ -27,6 +28,7 @@ interface Props {
 export default function ModalNovaCampanha({ membros, tipoPredefinido = 'CARNE', campanhasExistentes = [] }: Props) {
     const [aberto, setAberto] = useState(false);
     const [loading, setLoading] = useState(false);
+    const toast = useToast()
 
     // Novo Estado: Controla se estamos a criar do zero ou a adicionar a uma existente
     const [modo, setModo] = useState<'NOVA' | 'EXISTENTE'>('NOVA');
@@ -79,7 +81,7 @@ export default function ModalNovaCampanha({ membros, tipoPredefinido = 'CARNE', 
             setBusca('');
             setCampanhaSelecionadaNome('');
         } else {
-            alert(result.error);
+            toast(result.error, 'erro');
         }
         setLoading(false);
     }

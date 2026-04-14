@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react'
 import { Save, Clock, User, CalendarDays, CheckCircle2, Zap } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface FormProps {
     departamento: any;
@@ -11,6 +12,7 @@ interface FormProps {
 }
 
 export default function FormCriarEscala({ departamento, eventos, onSucesso }: FormProps) {
+    const toast = useToast()
     const [loading, setLoading] = useState(false)
     const [feedback, setFeedback] = useState(false)
 
@@ -67,10 +69,10 @@ export default function FormCriarEscala({ departamento, eventos, onSucesso }: Fo
                 if (onSucesso) onSucesso(novaEscala)
                 setTimeout(() => setFeedback(false), 3000)
             } else {
-                alert('Erro ao salvar escala.')
+                toast('Erro ao salvar escala.', 'erro')
             }
         } catch (error) {
-            alert('Erro de conexão.')
+            toast('Erro de conexão.', 'erro')
         } finally {
             setLoading(false)
         }

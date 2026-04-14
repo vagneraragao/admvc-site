@@ -10,6 +10,7 @@ import {
     CheckCircle2, Circle, Image as ImageIcon, Trash2
 } from 'lucide-react'
 import { atualizarHorarioGrupo, registarEncontro } from '@/actions/grupo-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Membro {
     id: number
@@ -51,6 +52,7 @@ type Aba = 'sobre' | 'encontros' | 'novo' | 'horario'
 
 export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
     const router = useRouter()
+    const toast = useToast()
     const [isPending, startTransition] = useTransition()
     const [aberto, setAberto] = useState(false)
     const [aba, setAba] = useState<Aba>('sobre')
@@ -94,7 +96,7 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
     const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
-        if (file.size > 5 * 1024 * 1024) { alert('A foto não pode ter mais de 5MB.'); return }
+        if (file.size > 5 * 1024 * 1024) { toast('A foto não pode ter mais de 5MB.', 'aviso'); return }
         setFotoFile(file)
         const reader = new FileReader()
         reader.onloadend = () => setFotoPreview(reader.result as string)
@@ -166,11 +168,11 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
                 setTimeout(() => { setSucesso(false); setAba('encontros'); startTransition(() => router.refresh()) }, 1500)
             } else {
                 console.error('❌ [ENCONTRO] Erro da action:', res.error)
-                alert(res.error || 'Erro ao registar encontro.')
+                toast(res.error || 'Erro ao registar encontro.', 'erro')
             }
         } catch (err: any) {
             console.error('❌ [ENCONTRO] Exceção capturada:', err)
-            alert(err.message || 'Erro inesperado.')
+            toast(err.message || 'Erro inesperado.', 'erro')
             setUploadProgress(false)
         } finally {
             setSalvando(false)
@@ -185,8 +187,8 @@ export default function ModalGestaoGrupo({ grupo, membroId, isLider }: Props) {
         try {
             const res = await atualizarHorarioGrupo(formData) as { sucesso: boolean; error?: string }
             if (res.sucesso) { setSucessoHorario(true); setTimeout(() => { setSucessoHorario(false); startTransition(() => router.refresh()) }, 1500) }
-            else alert(res.error || 'Erro ao atualizar.')
-        } catch { alert('Erro de ligação.') }
+            else toast(res.error || 'Erro ao atualizar.', 'erro')
+        } catch { toast('Erro de ligação.', 'erro') }
         finally { setSalvandoHorario(false) }
     }
 

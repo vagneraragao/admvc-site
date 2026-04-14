@@ -4,9 +4,11 @@
 import { gerarEventosLoteAction } from '@/actions/admin-actions' // Ajuste o caminho se necessário
 import { useState } from 'react'
 import { CalendarDays, X, Save, Loader2, Clock, Repeat, Type, Filter } from 'lucide-react'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 
 export default function ModalGerarEventosLote() {
+    const toast = useToast()
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, setIsPending] = useState(false)
 
@@ -17,9 +19,9 @@ export default function ModalGerarEventosLote() {
 
         if (res.ok) {
             setIsOpen(false)
-            alert(`Sucesso! Foram gerados ${res.totalCriado} eventos na sua agenda.`)
+            toast(`Sucesso! Foram gerados ${res.totalCriado} eventos na sua agenda.`, 'sucesso')
         } else {
-            alert(res.error || "Erro ao gerar eventos.")
+            toast(res.error || "Erro ao gerar eventos.", 'erro')
         }
     }
 

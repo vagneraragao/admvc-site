@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Ticket, User, CheckCircle2, Loader2, X, Euro, Edit3, Layers, Power, Search, Trophy, Medal } from 'lucide-react'
 import { atualizarCompradorRifaAction, venderNumerosRifaLoteAction, finalizarRifaAction, setVencedoresRifaAction } from '@/actions/financeiro-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 interface GrelhaRifaProps {
     rifa: any;
@@ -18,6 +18,7 @@ export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: Gr
 
     const [loading, setLoading] = useState(false);
     const confirmar = useConfirm();
+    const toast = useToast();
 
     // 🔴 LÓGICA INTELIGENTE: Se recebeu membro do modal, já define como MEMBRO
     const [tipoComprador, setTipoComprador] = useState<'MEMBRO' | 'EXTERNO'>(
@@ -93,33 +94,33 @@ export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: Gr
     };
 
     async function handleVenderLote(formData: FormData) {
-        if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return alert("Selecione um membro válido.");
+        if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return toast("Selecione um membro válido.", 'erro');
         setLoading(true);
         const result = await venderNumerosRifaLoteAction(formData);
-        if (result.ok) { 
-            setNumerosSelecionados([]); 
+        if (result.ok) {
+            setNumerosSelecionados([]);
             // Só limpa a busca se não estivermos no modal unificado
             if (!membroPreSelecionadoId) {
-                setBuscaMembro(''); 
-                setMembroIdSelecionado(''); 
+                setBuscaMembro('');
+                setMembroIdSelecionado('');
             }
         }
-        else alert(result.error);
+        else toast(result.error, 'erro');
         setLoading(false);
     }
 
     async function handleAtualizar(formData: FormData) {
-        if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return alert("Selecione um membro válido.");
+        if (tipoComprador === 'MEMBRO' && !membroIdSelecionado) return toast("Selecione um membro válido.", 'erro');
         setLoading(true);
         const result = await atualizarCompradorRifaAction(formData);
-        if (result.ok) { 
-            setIsEditing(false); 
+        if (result.ok) {
+            setIsEditing(false);
             if (!membroPreSelecionadoId) {
-                setBuscaMembro(''); 
-                setMembroIdSelecionado(''); 
+                setBuscaMembro('');
+                setMembroIdSelecionado('');
             }
         }
-        else alert(result.error);
+        else toast(result.error, 'erro');
         setLoading(false);
     }
 
@@ -127,14 +128,14 @@ export default function GrelhaRifa({ rifa, membros, membroPreSelecionadoId }: Gr
         if (await confirmar({ mensagem: 'Atenção: Deseja encerrar a Rifa sem declarar vencedores?', tipo: 'aviso' })) {
             setLoading(true);
             const result = await finalizarRifaAction(rifa.id);
-            if (!result.ok) { alert(result.error); setLoading(false); }
+            if (!result.ok) { toast(result.error, 'erro'); setLoading(false); }
         }
     }
 
     async function handleDeclararVencedoresMultiplos(formData: FormData) {
         setLoading(true);
         const result = await setVencedoresRifaAction(formData);
-        if (!result.ok) { alert(result.error); setLoading(false); }
+        if (!result.ok) { toast(result.error, 'erro'); setLoading(false); }
     }
 
     return (

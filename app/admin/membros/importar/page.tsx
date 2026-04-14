@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { analisarCSV, confirmarImportacao } from '@/actions/membro-actions'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 // ── CABEÇALHOS DO CSV (ordem exacta para exportar/importar) ──────────────────
 // Campos baseados no schema real do model Membro
@@ -53,6 +54,7 @@ type ItemAnalise = {
 }
 
 export default function ImportExportPage() {
+    const toast = useToast()
     const [loadingExport, setLoadingExport] = useState(false)
     const [loadingImport, setLoadingImport] = useState(false)
     const [file, setFile] = useState<File | null>(null)
@@ -79,10 +81,10 @@ export default function ImportExportPage() {
                 document.body.removeChild(link)
                 URL.revokeObjectURL(url)
             } else {
-                alert(res.error || 'Erro ao exportar.')
+                toast(res.error || 'Erro ao exportar.', 'erro')
             }
         } catch {
-            alert('Erro ao exportar membros.')
+            toast('Erro ao exportar membros.', 'erro')
         } finally {
             setLoadingExport(false)
         }
@@ -130,10 +132,10 @@ export default function ImportExportPage() {
             if (res.resultados) {
                 setAnalise(res.resultados)
             } else {
-                alert(res.error || 'Erro ao analisar ficheiro.')
+                toast(res.error || 'Erro ao analisar ficheiro.', 'erro')
             }
         } catch {
-            alert('Erro ao comunicar com o servidor.')
+            toast('Erro ao comunicar com o servidor.', 'erro')
         } finally {
             setLoadingImport(false)
         }
@@ -143,7 +145,7 @@ export default function ImportExportPage() {
     async function handleConfirm() {
         if (!analise) return
         const validos = analise.filter(i => i.status === 'PRONTO')
-        if (validos.length === 0) return alert('Nao ha membros validos para importar.')
+        if (validos.length === 0) { toast('Nao ha membros validos para importar.', 'aviso'); return }
 
         setLoadingImport(true)
         try {
@@ -153,10 +155,10 @@ export default function ImportExportPage() {
                 setAnalise(null)
                 setFile(null)
             } else {
-                alert(res.error || 'Erro ao gravar.')
+                toast(res.error || 'Erro ao gravar.', 'erro')
             }
         } catch {
-            alert('Erro ao comunicar com o servidor.')
+            toast('Erro ao comunicar com o servidor.', 'erro')
         } finally {
             setLoadingImport(false)
         }

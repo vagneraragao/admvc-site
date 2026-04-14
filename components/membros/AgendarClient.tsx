@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { pedirAgendamentoAction } from '@/actions/agenda-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 const CATEGORIAS = [
     { id: 'CAFE', label: 'Cafe com Pastor', icon: Coffee, cor: 'amber' },
@@ -33,6 +34,7 @@ const CORES_ACTIVE: Record<string, string> = {
 }
 
 export default function AgendarClient({ agendas, membro }: { agendas: any[]; membro: any }) {
+    const toast = useToast()
     const [agendaSelecionada, setAgendaSelecionada] = useState<number | null>(null)
     const [categoria, setCategoria] = useState('')
     const [data, setData] = useState('')
@@ -63,7 +65,7 @@ export default function AgendarClient({ agendas, membro }: { agendas: any[]; mem
         if (res.ok) {
             setEnviado(true)
         } else {
-            alert(res.error || 'Erro ao enviar pedido.')
+            toast(res.error || 'Erro ao enviar pedido.', 'erro')
         }
     }
 

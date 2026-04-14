@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { XCircle, Loader2 } from 'lucide-react'
 import { rejeitarDespesaAction } from '@/actions/fundos-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoRejeitarDespesa({ despesaId }: { despesaId: number }) {
     const [loading, setLoading] = useState(false)
+    const toast = useToast()
 
     async function handleRejeitar() {
         const motivo = prompt('Motivo da rejeicao (opcional):')
@@ -13,7 +15,7 @@ export default function BotaoRejeitarDespesa({ despesaId }: { despesaId: number 
         setLoading(true)
         const res = await rejeitarDespesaAction(despesaId, motivo || undefined)
         if (!res.ok) {
-            alert(res.error || 'Erro ao rejeitar despesa.')
+            toast(res.error || 'Erro ao rejeitar despesa.', 'erro')
         }
         setLoading(false)
     }

@@ -17,7 +17,7 @@ import {
     manifestarInteresse, cancelarInteresse,
     aprovarInteresse, rejeitarInteresse
 } from '@/actions/pregacao-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 const MESES = [
     'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
@@ -102,6 +102,7 @@ export default function EBDDashboard({
     meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ensino'
 }: Props) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -176,7 +177,7 @@ export default function EBDDashboard({
         const res = await criarCurso(form)
         setLoading(false)
         if (res.ok) { setModalCurso(false); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleEditarCurso(e: React.FormEvent<HTMLFormElement>) {
@@ -186,7 +187,7 @@ export default function EBDDashboard({
         const res = await atualizarCurso(modalEditarCurso.id, new FormData(e.currentTarget))
         setLoading(false)
         if (res.ok) { setModalEditarCurso(null); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleCriarTurma(e: React.FormEvent<HTMLFormElement>) {
@@ -197,7 +198,7 @@ export default function EBDDashboard({
         const res = await criarTurma(form)
         setLoading(false)
         if (res.ok) { setModalTurma(null); router.refresh() }
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleAprovar(id: string) {
@@ -206,7 +207,7 @@ export default function EBDDashboard({
         const res = await aprovarCurso(id)
         setLoading(false)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleInteresse(cursoId: string) {
@@ -214,7 +215,7 @@ export default function EBDDashboard({
         const res = await manifestarInteresse(cursoId)
         setLoadingInscricao(null)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleCancelarInteresse(cursoId: string) {
@@ -223,7 +224,7 @@ export default function EBDDashboard({
         const res = await cancelarInteresse(cursoId)
         setLoadingInscricao(null)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleAprovarInteresse(interesseId: number, turmaId: string) {
@@ -231,7 +232,7 @@ export default function EBDDashboard({
         const res = await aprovarInteresse(interesseId, turmaId)
         setLoading(false)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     async function handleRejeitarInteresse(interesseId: number) {
@@ -240,7 +241,7 @@ export default function EBDDashboard({
         const res = await rejeitarInteresse(interesseId)
         setLoading(false)
         if (res.ok) router.refresh()
-        else alert(res.error)
+        else toast(res.error, 'erro')
     }
 
     // Curso card (reutilizavel)

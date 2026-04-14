@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Briefcase, MapPin, X, Plus, Save, Loader2, Trash2 } from 'lucide-react'
 import { criarCargo, excluirCargo } from '@/actions/admin-actions'
-import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 import { salvarRegioesAction } from '@/actions/admin-actions'
 
 interface Props {
@@ -40,6 +40,7 @@ export default function EstruturaSubMenu({ cargos: cargosIniciais, regioesInicia
 
 function ModalCargos({ cargos, onClose }: { cargos: { id: number; nome: string }[]; onClose: () => void }) {
     const confirmar = useConfirm()
+    const toast = useToast()
     const [novoCargo, setNovoCargo] = useState('')
     const [loading, setLoading] = useState(false)
     const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -56,7 +57,7 @@ function ModalCargos({ cargos, onClose }: { cargos: { id: number; nome: string }
             // Page will refresh via revalidatePath
             window.location.reload()
         } catch {
-            alert('Erro ao criar cargo.')
+            toast('Erro ao criar cargo.', 'erro')
         }
         setLoading(false)
     }
@@ -69,7 +70,7 @@ function ModalCargos({ cargos, onClose }: { cargos: { id: number; nome: string }
             await excluirCargo(id)
             window.location.reload()
         } catch {
-            alert('Erro ao excluir. Verifique se há membros vinculados.')
+            toast('Erro ao excluir. Verifique se há membros vinculados.', 'erro')
         }
         setDeletingId(null)
     }

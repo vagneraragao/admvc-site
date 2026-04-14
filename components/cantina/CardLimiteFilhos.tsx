@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Shield, Pencil, Check, X, Loader2 } from 'lucide-react'
 import { obterLimitesFilhos, definirLimiteCantina } from '@/actions/cantina-local-actions'
+import { useToast } from '@/components/ui/ConfirmDialog'
 
 interface Familiar {
     id: number
@@ -15,6 +16,7 @@ interface Familiar {
 export default function CardLimiteFilhos() {
     const [filhos, setFilhos] = useState<Familiar[]>([])
     const [loading, setLoading] = useState(true)
+    const toast = useToast()
     const [editando, setEditando] = useState<number | null>(null)
     const [diario, setDiario] = useState('')
     const [semanal, setSemanal] = useState('')
@@ -40,7 +42,7 @@ export default function CardLimiteFilhos() {
         const ld = diario.trim() ? parseFloat(diario) : null
         const ls = semanal.trim() ? parseFloat(semanal) : null
         const res = await definirLimiteCantina(membroId, ld, ls)
-        if (res.error) alert(res.error)
+        if (res.error) toast(res.error, 'erro')
         else { setEditando(null); await carregar() }
         setSalvando(false)
     }
