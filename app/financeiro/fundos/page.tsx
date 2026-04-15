@@ -86,7 +86,7 @@ export default async function FundosDashboard() {
                     <Link
                         href="/financeiro/despesas"
                         className="h-11 px-4 bg-bg2 border border-soft text-fg rounded-xl flex items-center gap-2 hover:bg-bg transition-all active:scale-95 text-[9px] md:text-[11px] font-black uppercase tracking-widest"
-
+                    >
                         <Wallet size={14} />
                         Despesas
                     </Link>
