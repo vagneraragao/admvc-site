@@ -136,6 +136,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
                 escolaridades={escolaridades}
                 avisos={ultimosAvisos}
                 alertasAcolhimento={alertas}
+                temDepartamento={(membro.ministerios?.length || 0) > 0}
             />
 
             <PullToRefresh><div className="bg-bg min-h-screen">{children}</div></PullToRefresh>

@@ -585,6 +585,10 @@ export default async function DashboardMembro({
                     _count: c._count,
                 }))}
                 meusInteresseIds={(meusInteressesRaw || []).map((i: any) => i.curso_id)}
+                redesSociais={{
+                    instagram: tenantSocial?.instagram_handle ? `https://instagram.com/${tenantSocial.instagram_handle}` : undefined,
+                    youtube: tenantSocial?.youtube_channel_id ? `https://youtube.com/channel/${tenantSocial.youtube_channel_id}` : undefined,
+                }}
             />
         </div>
 
