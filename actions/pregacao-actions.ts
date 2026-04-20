@@ -725,6 +725,16 @@ export async function matricularAlunos(turmaId: string, membroIds: number[]) {
         const db = await getDb()
         const tenantId = Number((await headers()).get('x-tenant-id') || 0)
 
+        // Validar que a turma existe e o curso está EM_CURSO
+        const turma = await db.turmaEBD.findUnique({
+            where: { id: turmaId },
+            include: { curso: { select: { status: true } } },
+        })
+        if (!turma) return { ok: false, error: 'Turma não encontrada.' }
+        if (turma.curso.status !== 'EM_CURSO') {
+            return { ok: false, error: 'Só é possível matricular alunos em cursos aprovados (EM_CURSO).' }
+        }
+
         // Buscar matrículas existentes
         const existentes = await db.matriculaEBD.findMany({
             where: { turma_id: turmaId },
@@ -1033,7 +1043,26 @@ export async function calcularAprovacao(turmaId: string) {
             })
         }
 
+        // Verificar se TODAS as turmas do curso já foram calculadas
+        // Se sim, marcar o curso como CONCLUIDO
+        const todasTurmas = await db.turmaEBD.findMany({
+            where: { curso_id: turma.curso_id },
+            include: {
+                matriculas: { select: { status: true } },
+            },
+        })
+        const todasConcluidas = todasTurmas.every(t =>
+            t.matriculas.length > 0 && t.matriculas.every(m => m.status === 'CONCLUIDA')
+        )
+        if (todasConcluidas) {
+            await db.cursoEBD.update({
+                where: { id: turma.curso_id },
+                data: { status: 'CONCLUIDO' },
+            })
+        }
+
         revalidatePath('/ensino')
+        revalidatePath('/admin/formacao/ebd')
         return { ok: true, data: resultados }
     } catch (error: any) {
         console.error('Erro ao calcular aprovação:', error)
@@ -1048,6 +1077,19 @@ export async function aprovarCurso(cursoId: string) {
         const session = await requireAuth()
         const db = await getDb()
 
+        // Validar que o curso existe e está PLANEADO
+        const curso = await db.cursoEBD.findUnique({
+            where: { id: cursoId },
+            include: { turmas: { select: { id: true } } },
+        })
+        if (!curso) return { ok: false, error: 'Curso não encontrado.' }
+        if (curso.aprovado || curso.status !== 'PLANEADO') {
+            return { ok: false, error: 'Este curso já foi aprovado ou não está em estado PLANEADO.' }
+        }
+        if (curso.turmas.length === 0) {
+            return { ok: false, error: 'Crie pelo menos uma turma antes de aprovar o curso.' }
+        }
+
         await db.cursoEBD.update({
             where: { id: cursoId },
             data: {
@@ -1059,6 +1101,7 @@ export async function aprovarCurso(cursoId: string) {
         })
 
         revalidatePath('/ensino')
+        revalidatePath('/admin/formacao/ebd')
         return { ok: true }
     } catch (error: any) {
         console.error('Erro ao aprovar curso:', error)
@@ -1096,7 +1139,9 @@ export async function manifestarInteresse(cursoId: string, mensagem?: string) {
 
         const curso = await db.cursoEBD.findUnique({ where: { id: cursoId } })
         if (!curso) return { ok: false, error: 'Curso não encontrado.' }
-        if (!curso.aprovado) return { ok: false, error: 'Este curso ainda não está disponível.' }
+        if (!curso.aprovado || curso.status !== 'EM_CURSO') {
+            return { ok: false, error: 'Este curso ainda não está disponível para inscrições.' }
+        }
 
         if (curso.data_abertura_inscricoes && new Date() < new Date(curso.data_abertura_inscricoes)) {
             return { ok: false, error: 'As inscrições ainda não abriram.' }
@@ -1153,6 +1198,12 @@ export async function aprovarInteresse(interesseId: number, turmaId: string) {
         const interesse = await db.interesseCurso.findUnique({ where: { id: interesseId } })
         if (!interesse) return { ok: false, error: 'Interesse não encontrado.' }
         if (interesse.status !== 'PENDENTE') return { ok: false, error: 'Este interesse já foi processado.' }
+
+        // Validar que a turma pertence ao curso do interesse
+        const turma = await db.turmaEBD.findUnique({ where: { id: turmaId } })
+        if (!turma || turma.curso_id !== interesse.curso_id) {
+            return { ok: false, error: 'A turma selecionada não pertence a este curso.' }
+        }
 
         // Aprovar interesse
         await db.interesseCurso.update({
