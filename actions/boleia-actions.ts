@@ -5,6 +5,67 @@ import { requireAuth } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
 import { sendPushToMembro } from '@/lib/web-push'
 
+// ── INICIAR / PARAR TRACKING ─────────────────────────────────────────────────
+
+export async function iniciarTracking(ofertaId: number, latitude: number, longitude: number) {
+    const session = await requireAuth()
+    const db = await getDb()
+    const tenantId = await getTenantIdFromHeaders()
+
+    const oferta = await db.boleiaOferta.findUnique({
+        where: { id: ofertaId },
+        include: { reservas: { where: { status: 'CONFIRMADA' }, select: { passageiro_id: true } } },
+    })
+
+    if (!oferta || oferta.status !== 'ATIVA') return { error: 'Oferta nao encontrada.' }
+
+    const isMotorista = oferta.motorista_id === session.membroId
+    const isPassageiro = oferta.reservas.some(r => r.passageiro_id === session.membroId)
+    if (!isMotorista && !isPassageiro) return { error: 'Sem permissao para esta boleia.' }
+
+    const papel = isMotorista ? 'MOTORISTA' : 'PASSAGEIRO'
+
+    await (db as any).boleiaTracking.upsert({
+        where: { oferta_id_membro_id: { oferta_id: ofertaId, membro_id: session.membroId } },
+        update: { latitude, longitude, ativo: true, atualizado_em: new Date() },
+        create: {
+            tenant_id: tenantId,
+            oferta_id: ofertaId,
+            membro_id: session.membroId,
+            papel,
+            latitude,
+            longitude,
+            ativo: true,
+        },
+    })
+
+    // Se o motorista iniciou, notificar passageiros
+    if (isMotorista) {
+        const passageiroIds = oferta.reservas.map(r => r.passageiro_id)
+        for (const pid of passageiroIds) {
+            sendPushToMembro(pid, {
+                title: 'O motorista iniciou a viagem!',
+                body: 'Acompanhe a localização em tempo real.',
+                url: `/boleia/tracking/${ofertaId}`,
+            }).catch(() => {})
+        }
+    }
+
+    return { success: true, papel }
+}
+
+export async function pararTracking(ofertaId: number) {
+    const session = await requireAuth()
+    const db = await getDb()
+
+    await (db as any).boleiaTracking.updateMany({
+        where: { oferta_id: ofertaId, membro_id: session.membroId },
+        data: { ativo: false },
+    })
+
+    return { success: true }
+}
+
 // ── CRIAR OFERTA ─────────────────────────────────────────────────────────────
 
 export async function criarOfertaBoleia(formData: FormData) {
@@ -85,7 +146,7 @@ export async function cancelarOfertaBoleia(ofertaId: number) {
 
 // ── RESERVAR LUGAR ───────────────────────────────────────────────────────────
 
-export async function reservarBoleia(ofertaId: number) {
+export async function reservarBoleia(ofertaId: number, latitude?: number, longitude?: number) {
     const session = await requireAuth()
     const db = await getDb()
 
@@ -129,6 +190,8 @@ export async function reservarBoleia(ofertaId: number) {
                 oferta_id: ofertaId,
                 passageiro_id: session.membroId,
                 status: 'CONFIRMADA',
+                latitude: latitude || null,
+                longitude: longitude || null,
             },
         })
 

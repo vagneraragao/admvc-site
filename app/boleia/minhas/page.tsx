@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Car, Clock, MapPin, Users, Calendar, Plus } from 'lucide-react'
+import { ArrowLeft, Car, Clock, MapPin, Users, Calendar, Plus, Navigation } from 'lucide-react'
 import BotaoCancelarOferta from '@/components/boleia/BotaoCancelarOferta'
 import BotaoCancelarReserva from '@/components/boleia/BotaoCancelarReserva'
 
@@ -133,6 +133,16 @@ export default async function MinhasBoleiasPage() {
                                             ))}
                                         </div>
                                     )}
+
+                                    {/* Botão Tracking */}
+                                    {oferta.reservas.length > 0 && (
+                                        <Link
+                                            href={`/boleia/tracking/${oferta.id}`}
+                                            className="flex items-center justify-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-500 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95"
+                                        >
+                                            <Navigation size={14} /> Tracking em Tempo Real
+                                        </Link>
+                                    )}
                                 </div>
                             )
                         })}
@@ -176,7 +186,15 @@ export default async function MinhasBoleiasPage() {
                                             <p className="text-[10px] text-muted">Contacto: {oferta.motorista.phone_1}</p>
                                         )}
                                     </div>
-                                    <BotaoCancelarReserva reservaId={reserva.id} />
+                                    <div className="flex flex-col gap-2 shrink-0">
+                                        <Link
+                                            href={`/boleia/tracking/${oferta.id}`}
+                                            className="flex items-center justify-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-500 px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95"
+                                        >
+                                            <Navigation size={12} /> Tracking
+                                        </Link>
+                                        <BotaoCancelarReserva reservaId={reserva.id} />
+                                    </div>
                                 </div>
                             )
                         })}

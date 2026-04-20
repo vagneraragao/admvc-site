@@ -11,7 +11,24 @@ export default function BotaoReservar({ ofertaId }: { ofertaId: number }) {
 
     async function handleReservar() {
         setLoading(true)
-        const res = await reservarBoleia(ofertaId)
+
+        // Tentar capturar localizacao do passageiro
+        let lat: number | undefined
+        let lng: number | undefined
+
+        try {
+            if (navigator.geolocation) {
+                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+                })
+                lat = pos.coords.latitude
+                lng = pos.coords.longitude
+            }
+        } catch {
+            // Silencioso — localizacao e opcional
+        }
+
+        const res = await reservarBoleia(ofertaId, lat, lng)
         if (res.error) {
             toast(res.error, 'erro')
         }

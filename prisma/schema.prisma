@@ -111,6 +111,7 @@ model Tenant {
   interessesDepartamento   InteresseDepartamento[]
   boleiasOfertas           BoleiaOferta[]
   boleiasReservas          BoleiaReserva[]
+  boleiasTracking          BoleiaTracking[]
   produtosCantina          ProdutoCantina[]
   categoriasCantina        CategoriaCantina[]
   saldosCantina            SaldoCantina[]
@@ -271,6 +272,7 @@ model Membro {
   interessesAprovados        InteresseCurso[]            @relation("AprovadorInteresse")
   boleiasOferecidas          BoleiaOferta[]              @relation("MotoristaOferta")
   boleiasReservadas          BoleiaReserva[]             @relation("PassageiroReserva")
+  boleiasTracking            BoleiaTracking[]            @relation("TrackingBoleia")
   saldoCantina               SaldoCantina?
   transacoesCantina          TransacaoCantina[]
   fiadosCantina              FiadoCantina[]
@@ -1287,6 +1289,7 @@ model BoleiaOferta {
   motorista         Membro           @relation("MotoristaOferta", fields: [motorista_id], references: [id])
   evento            Evento?          @relation(fields: [evento_id], references: [id])
   reservas          BoleiaReserva[]
+  tracking          BoleiaTracking[]
 
   @@index([tenant_id])
   @@index([motorista_id])
@@ -1302,6 +1305,8 @@ model BoleiaReserva {
   passageiro_id   Int
   status          String         @default("CONFIRMADA") // CONFIRMADA, CANCELADA
   agradecimento   Boolean        @default(false) // Passageiro agradeceu ao motorista
+  latitude        Float?         // Localizacao do passageiro ao reservar
+  longitude       Float?
   criado_em       DateTime       @default(now())
 
   tenant          Tenant         @relation(fields: [tenant_id], references: [id])
@@ -1312,6 +1317,27 @@ model BoleiaReserva {
   @@index([tenant_id])
   @@index([passageiro_id])
   @@map("boleia_reservas")
+}
+
+model BoleiaTracking {
+  id              Int            @id @default(autoincrement())
+  tenant_id       Int
+  oferta_id       Int
+  membro_id       Int
+  papel           String         // MOTORISTA, PASSAGEIRO
+  latitude        Float
+  longitude       Float
+  ativo           Boolean        @default(true)
+  atualizado_em   DateTime       @default(now()) @updatedAt
+
+  tenant          Tenant         @relation(fields: [tenant_id], references: [id])
+  oferta          BoleiaOferta   @relation(fields: [oferta_id], references: [id], onDelete: Cascade)
+  membro          Membro         @relation("TrackingBoleia", fields: [membro_id], references: [id])
+
+  @@unique([oferta_id, membro_id])
+  @@index([tenant_id])
+  @@index([oferta_id, ativo])
+  @@map("boleia_tracking")
 }
 
 // ── SISTEMA DE VENDAS INTERNO (Cantina) ──────────────────────────────────────
