@@ -86,10 +86,11 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const [cart, setCart] = useState<CartItem[]>([])
     const [receipt, setReceipt] = useState<{itens: CartItem[], total: number, formaPagamento: string, membro: string | null, saldoRestante: number | null} | null>(null)
     const [qrOpen, setQrOpen] = useState(false)
+    const [scannerFallback, setScannerFallback] = useState(false) // fallback para modo foto se camera live falhar
     const scannerRef = useRef<any>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    // Usar scanner live em todos os dispositivos (html5-qrcode funciona em iOS Safari moderno)
-    const isIOS = false
+    // Detectar iOS/iPadOS (Safari em PWA nao suporta getUserMedia de forma fiavel)
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
     const [selectedMembro, setSelectedMembro] = useState<Membro | null>(null)
     const [membroBusca, setMembroBusca] = useState('')
     const [membroDropdownOpen, setMembroDropdownOpen] = useState(false)
@@ -155,6 +156,19 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
         try { setSaldo(await obterSaldoMembro(membro.id)) } catch { setSaldo(0) } finally { setLoadingSaldo(false) }
     }
 
+    // Processar texto do QR descodificado
+    const processarQr = async (decodedText: string) => {
+        const qrNormalizado = decodedText.trim()
+        console.log('[POS] QR lido:', qrNormalizado)
+        if (!qrNormalizado.startsWith('ADMVC-')) {
+            setFeedback({ type: 'error', msg: `QR invalido: "${qrNormalizado}". Esperado formato ADMVC-...` })
+            return
+        }
+        const membro = await buscarMembroPorQr(qrNormalizado)
+        if (membro) await selecionarMembro(membro)
+        else setFeedback({ type: 'error', msg: `Membro nao encontrado para QR: ${qrNormalizado}` })
+    }
+
     // Scanner live (Android e desktop)
     const startScanner = async () => {
         try {
@@ -162,35 +176,43 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             const scanner = new Html5Qrcode("qr-reader")
             scannerRef.current = scanner
 
+            // Tentar obter lista de cameras primeiro
+            const cameras = await Html5Qrcode.getCameras()
+            console.log('[POS] Cameras disponiveis:', cameras.length, cameras.map(c => c.label))
+
+            if (cameras.length === 0) {
+                console.log('[POS] Nenhuma camera encontrada, a usar fallback foto')
+                setScannerFallback(true)
+                setQrOpen(false)
+                fileInputRef.current?.click()
+                return
+            }
+
+            // Preferir camera traseira pelo label, senao usar facingMode
+            const cameraTraseira = cameras.find(c => /back|rear|traseira|environment/i.test(c.label))
+            const cameraConfig = cameraTraseira
+                ? { deviceId: { exact: cameraTraseira.id } }
+                : { facingMode: "environment" as const }
+
             await scanner.start(
-                { facingMode: "environment" },
+                cameraConfig,
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 async (decodedText) => {
                     await scanner.stop()
                     scannerRef.current = null
                     setQrOpen(false)
-                    const qrNormalizado = decodedText.trim()
-                    console.log('[POS] QR lido:', qrNormalizado)
-                    if (!qrNormalizado.startsWith('ADMVC-')) {
-                        setFeedback({ type: 'error', msg: `QR invalido: "${qrNormalizado}". Esperado formato ADMVC-...` })
-                        return
-                    }
-                    const membro = await buscarMembroPorQr(qrNormalizado)
-                    if (membro) await selecionarMembro(membro)
-                    else setFeedback({ type: 'error', msg: `Membro nao encontrado para QR: ${qrNormalizado}` })
+                    await processarQr(decodedText)
                 },
                 () => {}
             )
         } catch (err: any) {
             console.error('[POS] Erro ao iniciar camera:', err)
             setQrOpen(false)
-            if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission')) {
-                setFeedback({ type: 'error', msg: 'Permissao de camera negada. Verifique as definicoes do browser.' })
-            } else if (err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError') {
-                setFeedback({ type: 'error', msg: 'Nenhuma camera encontrada neste dispositivo.' })
-            } else {
-                setFeedback({ type: 'error', msg: `Erro ao abrir camera: ${err?.message || 'erro desconhecido'}` })
-            }
+
+            // Fallback automatico para modo foto se camera live nao funcionar
+            console.log('[POS] A mudar para modo foto (fallback)')
+            setScannerFallback(true)
+            fileInputRef.current?.click()
         }
     }
 
@@ -202,27 +224,19 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
         setQrOpen(false)
     }
 
-    // iOS fallback: tirar foto e descodificar QR da imagem
+    // Fallback: tirar foto e descodificar QR da imagem (iOS + fallback quando camera live falha)
     const handleQrPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
         try {
             const { Html5Qrcode } = await import('html5-qrcode')
-            const scanner = new Html5Qrcode("qr-reader-ios")
+            const scanner = new Html5Qrcode("qr-reader-foto")
             const decodedText = await scanner.scanFile(file, false)
-            const qrNormalizado = decodedText.trim()
-            console.log('[POS] QR foto lido:', qrNormalizado)
-            if (!qrNormalizado.startsWith('ADMVC-')) {
-                setFeedback({ type: 'error', msg: `QR invalido: "${qrNormalizado}". Esperado formato ADMVC-...` })
-                return
-            }
-            const membro = await buscarMembroPorQr(qrNormalizado)
-            if (membro) await selecionarMembro(membro)
-            else setFeedback({ type: 'error', msg: `Membro nao encontrado para QR: ${qrNormalizado}` })
+            console.log('[POS] QR foto lido:', decodedText)
+            await processarQr(decodedText)
         } catch {
             setFeedback({ type: 'error', msg: 'QR Code nao reconhecido. Tente novamente com melhor iluminacao.' })
         }
-        // Limpar input para permitir nova foto
         if (fileInputRef.current) fileInputRef.current.value = ''
     }
 
@@ -317,19 +331,19 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                         className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
                     />
                 </div>
-                {isIOS ? (
-                    <>
-                        <button onClick={() => fileInputRef.current?.click()} className="px-3 rounded-xl border transition-all bg-bg border-soft text-muted hover:border-figueira hover:text-figueira">
-                            <QrCode size={16} />
-                        </button>
-                        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleQrPhoto} className="hidden" />
-                        <div id="qr-reader-ios" className="hidden" />
-                    </>
+                {/* Botao QR: iOS e fallback usam foto, Android/desktop usam camera live */}
+                {(isIOS || scannerFallback) ? (
+                    <button onClick={() => fileInputRef.current?.click()} className="px-3 rounded-xl border transition-all bg-bg border-soft text-muted hover:border-figueira hover:text-figueira">
+                        <QrCode size={16} />
+                    </button>
                 ) : (
                     <button onClick={() => { if (qrOpen) { stopScanner() } else { setQrOpen(true); setTimeout(() => startScanner(), 100) } }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
                         <QrCode size={16} />
                     </button>
                 )}
+                {/* Input foto sempre disponivel (fallback + iOS) */}
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleQrPhoto} className="hidden" />
+                <div id="qr-reader-foto" className="hidden" />
                 {membroDropdownOpen && membrosFiltrados.length > 0 && (
                     <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg2 border border-soft rounded-xl shadow-xl max-h-48 overflow-y-auto">
                         {membrosFiltrados.map(m => (
