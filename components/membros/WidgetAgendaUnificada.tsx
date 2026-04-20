@@ -63,7 +63,7 @@ export default function WidgetAgendaUnificada({
             <div className="space-y-2">
                 {eventosVisiveis.length === 0 ? (
                     <div className="py-10 text-center border-2 border-dashed border-soft rounded-2xl">
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest italic">
+                        <p className="text-xs font-black text-muted uppercase tracking-widest italic">
                             Nenhum evento programado.
                         </p>
                     </div>
@@ -81,21 +81,21 @@ export default function WidgetAgendaUnificada({
                                     ${isHoje ? 'bg-figueira/5 border-figueira/20' : 'bg-bg border-soft'}`}
                             >
                                 {/* DATA PILL */}
-                                <div className={`shrink-0 w-11 text-center rounded-xl py-1.5 ${isHoje ? 'bg-figueira text-white' : 'bg-bg2 border border-soft text-fg'}`}>
-                                    <span className="block text-[7px] font-black uppercase opacity-70 leading-none">
+                                <div className={`shrink-0 w-12 text-center rounded-xl py-2 ${isHoje ? 'bg-figueira text-white' : 'bg-bg2 border border-soft text-fg'}`}>
+                                    <span className="block text-[9px] font-black uppercase opacity-70 leading-none">
                                         {formatInTimeZone(item.data, TZ, 'MMM')}
                                     </span>
-                                    <span className="block text-sm font-black italic leading-tight">
+                                    <span className="block text-base font-black italic leading-tight">
                                         {formatInTimeZone(item.data, TZ, 'dd')}
                                     </span>
                                 </div>
 
                                 {/* TÍTULO E HORA */}
                                 <div className="flex-1 min-w-0">
-                                    <p className={`text-[11px] font-black uppercase italic tracking-tight truncate leading-none ${isHoje ? 'text-figueira' : 'text-fg group-hover:text-figueira transition-colors'}`}>
+                                    <p className={`text-sm font-black uppercase italic tracking-tight truncate leading-none ${isHoje ? 'text-figueira' : 'text-fg group-hover:text-figueira transition-colors'}`}>
                                         {item.titulo}
                                     </p>
-                                    <p className="text-[9px] font-bold text-muted uppercase tracking-widest mt-1">
+                                    <p className="text-xs font-bold text-muted uppercase tracking-widest mt-1">
                                         {formatData(item.data)} · {formatInTimeZone(item.data, TZ, 'HH:mm')}
                                     </p>
                                 </div>
@@ -103,16 +103,16 @@ export default function WidgetAgendaUnificada({
                                 {/* BADGE */}
                                 <div className="shrink-0 flex items-center gap-2">
                                     {isHoje && (
-                                        <span className="text-[7px] font-black uppercase tracking-widest bg-figueira text-white px-2 py-1 rounded-lg">
+                                        <span className="text-[9px] font-black uppercase tracking-widest bg-figueira text-white px-2.5 py-1 rounded-lg">
                                             Hoje
                                         </span>
                                     )}
                                     {!isHoje && isProximo && (
-                                        <span className="text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-600 border border-orange-500/20 px-2 py-1 rounded-lg">
+                                        <span className="text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-600 border border-orange-500/20 px-2.5 py-1 rounded-lg">
                                             {dias}d
                                         </span>
                                     )}
-                                    <span className={`hidden sm:block text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${item.tipo === 'IGREJA' ? 'bg-figueira/5 text-figueira border-figueira/20' : 'bg-soft text-muted border-soft/50'}`}>
+                                    <span className={`hidden sm:block text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${item.tipo === 'IGREJA' ? 'bg-figueira/5 text-figueira border-figueira/20' : 'bg-soft text-muted border-soft/50'}`}>
                                         {item.tipo === 'IGREJA' ? 'Igreja' : 'Grupo'}
                                     </span>
                                     <ChevronRight size={12} className="text-muted/40 group-hover:text-figueira transition-colors" />
@@ -125,7 +125,7 @@ export default function WidgetAgendaUnificada({
                 {todosEventos.length > 4 && (
                     <button
                         onClick={() => setVerTodos(!verTodos)}
-                        className="w-full py-2.5 text-[9px] font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 text-xs font-black uppercase tracking-widest text-muted hover:text-figueira transition-colors flex items-center justify-center gap-1.5"
                     >
                         {verTodos ? 'Ver menos' : `Ver mais ${todosEventos.length - 4} eventos`}
                         <ChevronRight size={11} className={`transition-transform ${verTodos ? 'rotate-90' : ''}`} />
@@ -156,7 +156,7 @@ export default function WidgetAgendaUnificada({
                                     {eventoSelecionado.tipo === 'IGREJA' ? <CalendarDays size={20} /> : <Users size={20} />}
                                 </div>
                                 <div className="pr-8">
-                                    <span className={`text-[7px] font-black px-2 py-1 rounded-md uppercase tracking-widest border inline-block mb-1.5 ${eventoSelecionado.tipo === 'IGREJA' ? 'text-figueira bg-figueira/5 border-figueira/20' : 'text-muted bg-soft border-soft/50'}`}>
+                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest border inline-block mb-1.5 ${eventoSelecionado.tipo === 'IGREJA' ? 'text-figueira bg-figueira/5 border-figueira/20' : 'text-muted bg-soft border-soft/50'}`}>
                                         {eventoSelecionado.tipo === 'IGREJA' ? 'Evento da Igreja' : 'Reunião de Grupo'}
                                     </span>
                                     <h3 className="text-lg font-black uppercase italic tracking-tighter text-fg leading-tight">
@@ -169,7 +169,7 @@ export default function WidgetAgendaUnificada({
                                 <div className="flex gap-3">
                                     <Clock size={14} className="text-muted shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Data e Hora</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-muted">Data e Hora</p>
                                         <p className="text-sm font-bold text-fg mt-0.5">
                                             {formatInTimeZone(eventoSelecionado.data, TZ, "EEEE, dd 'de' MMMM 'de' yyyy")}
                                             <span className="text-figueira block">
@@ -181,14 +181,14 @@ export default function WidgetAgendaUnificada({
                                 <div className="flex gap-3">
                                     <MapPin size={14} className="text-muted shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Local</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-muted">Local</p>
                                         <p className="text-sm font-bold text-fg mt-0.5">{eventoSelecionado.local}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-3 bg-bg border border-soft p-4 rounded-2xl">
                                     <Info size={14} className="text-figueira shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-muted">Detalhes</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-muted">Detalhes</p>
                                         <p className="text-xs font-medium text-fg mt-1 leading-relaxed">{eventoSelecionado.descricao}</p>
                                     </div>
                                 </div>
@@ -205,14 +205,14 @@ export default function WidgetAgendaUnificada({
                                                 text: `${eventoSelecionado.titulo}\n${dataStr} as ${horaStr}\n${eventoSelecionado.local}`,
                                             }).catch(() => {})
                                         }}
-                                        className="px-4 py-3.5 bg-bg border border-soft text-muted rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-figueira/30 hover:text-figueira transition-all active:scale-95 flex items-center gap-2"
+                                        className="px-4 py-3.5 bg-bg border border-soft text-muted rounded-2xl text-xs font-black uppercase tracking-widest hover:border-figueira/30 hover:text-figueira transition-all active:scale-95 flex items-center gap-2"
                                     >
                                         <Share2 size={13} /> Partilhar
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setEventoSelecionado(null)}
-                                    className="flex-1 py-3.5 bg-fg text-bg rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95"
+                                    className="flex-1 py-3.5 bg-fg text-bg rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-figueira transition-all active:scale-95"
                                 >
                                     Fechar
                                 </button>

@@ -138,7 +138,7 @@ export default async function MembroLayoutWrapper({ children }: { children: Reac
                 alertasAcolhimento={alertas}
             />
 
-            <PullToRefresh>{children}</PullToRefresh>
+            <PullToRefresh><div className="bg-bg min-h-screen">{children}</div></PullToRefresh>
 
             {/* Mobile bottom nav */}
             <MobileBottomNav permissoes={permissoes} proximosEventos={proximosEventos} />
