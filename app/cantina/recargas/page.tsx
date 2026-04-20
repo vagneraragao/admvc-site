@@ -10,11 +10,27 @@ export const dynamic = 'force-dynamic'
 export default async function RecargasPage() {
     const session = await getSessionData()
     if (!session) redirect('/membros/login')
-    if (!isAdmin(session.role) && session.role !== 'FINANCE') {
-        redirect('/cantina/menu-local')
-    }
 
     const db = await getDb()
+
+    // Acesso: admin OU lider/integrante da cantina
+    if (!isAdmin(session.role)) {
+        const membroCantina = await db.integranteDepartamento.findFirst({
+            where: {
+                membro_id: session.membroId,
+                departamento: { nome: { contains: 'cantina', mode: 'insensitive' } },
+            },
+        })
+        const liderCantina = await db.departamento.findFirst({
+            where: {
+                lider_id: session.membroId,
+                nome: { contains: 'cantina', mode: 'insensitive' },
+            },
+        })
+        if (!membroCantina && !liderCantina) {
+            redirect('/cantina/menu-local')
+        }
+    }
 
     // Pedidos pendentes
     const pedidosPendentes = await db.pedidoSaldoCantina.findMany({

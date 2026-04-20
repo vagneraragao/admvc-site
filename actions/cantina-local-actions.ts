@@ -1,7 +1,7 @@
 'use server'
 
 import { getDb, getTenantIdFromHeaders } from '@/lib/db'
-import { requireAuth, requireRole } from '@/lib/auth-utils'
+import { requireAuth, requireRole, isAdmin } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -672,8 +672,27 @@ export async function solicitarRecarga(valor: number, formaPagamento: string) {
 }
 
 export async function aprovarRecarga(pedidoId: number) {
-    await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'FINANCE'])
+    const session = await requireRole(['ADMIN', 'CONGREGATION_ADMIN', 'LEADER', 'USER'])
     const db = await getDb()
+
+    // Apenas admin ou lider/integrante da cantina pode aprovar recargas
+    if (!isAdmin(session.role)) {
+        const membroCantina = await db.integranteDepartamento.findFirst({
+            where: {
+                membro_id: session.membroId,
+                departamento: { nome: { contains: 'cantina', mode: 'insensitive' } },
+            },
+        })
+        const liderCantina = await db.departamento.findFirst({
+            where: {
+                lider_id: session.membroId,
+                nome: { contains: 'cantina', mode: 'insensitive' },
+            },
+        })
+        if (!membroCantina && !liderCantina) {
+            throw new Error('Sem permissão. Apenas líderes da cantina podem aprovar recargas.')
+        }
+    }
 
     const pedido = await db.pedidoSaldoCantina.findUnique({ where: { id: pedidoId } })
     if (!pedido || pedido.status !== 'PENDENTE') return { error: 'Pedido nao encontrado ou ja processado.' }

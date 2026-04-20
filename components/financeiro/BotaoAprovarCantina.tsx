@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CheckCircle2, Loader2, Euro } from 'lucide-react'
-import { aprovarSaldoCantinaAction } from '@/actions/financeiro-actions'
+import { aprovarRecarga } from '@/actions/cantina-local-actions'
 import { useConfirm, useToast } from '@/components/ui/ConfirmDialog'
 
 export default function BotaoAprovarCantina({
@@ -25,12 +25,9 @@ export default function BotaoAprovarCantina({
 
         setLoading(true)
 
-        // 🛡️ Filtro de segurança absoluto contra a string "null"
-        const safeLoyverseId = (loyverseId && loyverseId !== 'null' && loyverseId !== 'undefined') ? loyverseId : null;
+        const res = await aprovarRecarga(pedidoId)
 
-        const res = await aprovarSaldoCantinaAction(pedidoId, safeLoyverseId, valor)
-
-        if (!res.ok) {
+        if (res && 'error' in res && res.error) {
             toast(`Erro ao aprovar: ${res.error}`, 'erro')
         }
 
