@@ -3,6 +3,7 @@
 import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { requireAuth, requireRole } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
+import { audit } from '@/lib/audit'
 
 // ══════════════════════════════════════════════════════════════════════════════
 // P&L REPORT
@@ -220,9 +221,20 @@ export async function transferirCantinaParaFundo(formData: FormData) {
         })
 
         // Increment destination fund saldo
-        await db.fundoFinanceiro.update({
+        const fundoDestino = await db.fundoFinanceiro.update({
             where: { id: fundoDestinoId },
             data: { saldo_atual: { increment: valor } },
+        })
+
+        // Registar auditoria
+        await audit({
+            tenant_id: tenantId,
+            categoria: 'CANTINA',
+            acao: 'APROVAR',
+            actor_id: session.membroId,
+            alvo_tipo: 'LANCAMENTO',
+            descricao: `Transferência de €${valor.toFixed(2)} da cantina para fundo "${fundoDestino.nome}". Motivo: ${motivo}`,
+            dados_apos: { valor, fundo_origem: 'Cantina', fundo_destino: fundoDestino.nome, fundo_destino_id: fundoDestinoId },
         })
 
         revalidatePath('/cantina')

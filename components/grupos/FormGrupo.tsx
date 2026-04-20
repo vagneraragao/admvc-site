@@ -4,8 +4,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { salvarGrupoAction } from '@/actions/admin-actions'
 import { MapPin, Loader2, CheckCircle2, Globe, EyeOff } from 'lucide-react'
+
+const MapaPreviewGrupo = dynamic(() => import('@/components/grupos/MapaPreviewGrupo'), {
+    ssr: false,
+    loading: () => <div className="w-full h-[200px] rounded-2xl bg-bg2 border border-soft animate-pulse" />,
+})
 
 const REGIOES = ['Norte', 'Centro', 'Sul', 'Lisboa', 'Online']
 
@@ -176,11 +182,17 @@ export default function FormGrupo({ grupo, membros = [], onSucesso }: Props) {
                 </div>
             </div>
 
-            {/* AVISO GEOCODIFICAÇÃO */}
-            <div className="bg-figueira/5 border border-figueira/15 rounded-2xl px-4 py-3 flex items-start gap-2">
-                <MapPin size={12} className="text-figueira shrink-0 mt-0.5" />
+            {/* MAPA DE LOCALIZAÇÃO */}
+            <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted flex items-center gap-2">
+                    <MapPin size={11} className="text-figueira" /> Localização no Mapa
+                </p>
+                <MapaPreviewGrupo
+                    latitude={grupo?.latitude || null}
+                    longitude={grupo?.longitude || null}
+                />
                 <p className="text-[9px] font-medium text-figueira/80 leading-relaxed">
-                    As coordenadas GPS sao preenchidas automaticamente com base na morada ao guardar.
+                    As coordenadas GPS são preenchidas automaticamente com base na morada ao guardar.
                     Precisa de preencher pelo menos a <strong>Cidade</strong>.
                 </p>
             </div>
