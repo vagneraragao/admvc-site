@@ -91,7 +91,7 @@ interface Props {
     departamentos: DeptGrupo[]; grupos: DeptGrupo[]
     mes: number; ano: number; sermaoIdInicial: string | null
     podeGerir?: boolean; membroId: number
-    meusCursoIds: string[]; meusInteresses?: Record<string, string>
+    meusCursoIds: string[]; minhaTurmaPorCurso?: Record<string, string>; meusInteresses?: Record<string, string>
     membroDeptIds: number[]; membroGrupoIds: number[]
     basePath?: string
 }
@@ -99,7 +99,7 @@ interface Props {
 export default function EBDDashboard({
     cursos, aulas, membros, sermoes, departamentos, grupos,
     mes, ano, sermaoIdInicial, podeGerir = false, membroId,
-    meusCursoIds, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ensino'
+    meusCursoIds, minhaTurmaPorCurso = {}, meusInteresses = {}, membroDeptIds, membroGrupoIds, basePath = '/ensino'
 }: Props) {
     const confirmar = useConfirm()
     const toast = useToast()
@@ -312,8 +312,8 @@ export default function EBDDashboard({
                                 className="flex items-center gap-1.5 px-4 py-2 bg-sky-600/10 border border-sky-600/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-sky-400 hover:bg-sky-600/20 transition-colors">
                                 <ExternalLink size={10} /> Ver Externo
                             </a>
-                        ) : modo === 'meu' && curso.turmas[0] ? (
-                            <Link href={`${basePath}/turma/${curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
+                        ) : modo === 'meu' && (minhaTurmaPorCurso[curso.id] || curso.turmas[0]) ? (
+                            <Link href={`${basePath}/turma/${minhaTurmaPorCurso[curso.id] || curso.turmas[0].id}`} className="flex items-center gap-1.5 px-4 py-2 bg-figueira/10 border border-figueira/20 rounded-2xl text-[9px] font-black uppercase tracking-widest text-figueira hover:bg-figueira/20 transition-colors">
                                 <GraduationCap size={10} /> Minha Turma
                             </Link>
                         ) : interesseStatus === 'PENDENTE' ? (

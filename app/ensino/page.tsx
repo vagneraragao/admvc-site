@@ -79,7 +79,7 @@ export default async function EBDPage({
         // Matriculas do membro actual
         db.matriculaEBD.findMany({
             where: { membro_id: session.membroId, tenant_id: tenantId },
-            select: { turma: { select: { curso_id: true } } },
+            select: { turma_id: true, turma: { select: { curso_id: true } } },
         }),
         // Interesses do membro actual
         db.interesseCurso.findMany({
@@ -89,6 +89,11 @@ export default async function EBDPage({
     ])
 
     const meusCursoIds = new Set(minhasMatriculas.map(m => m.turma.curso_id))
+    // Mapear curso_id → turma_id (a turma onde o membro esta matriculado)
+    const minhaTurmaPorCurso: Record<string, string> = {}
+    for (const mat of minhasMatriculas) {
+        minhaTurmaPorCurso[mat.turma.curso_id] = mat.turma_id
+    }
     const meusInteresses: Record<string, string> = {}
     for (const i of meusInteressesRaw) {
         meusInteresses[i.curso_id] = i.status
@@ -132,6 +137,7 @@ export default async function EBDPage({
             podeGerir={podeGerir}
             membroId={session.membroId}
             meusCursoIds={Array.from(meusCursoIds)}
+            minhaTurmaPorCurso={minhaTurmaPorCurso}
             meusInteresses={meusInteresses}
             membroDeptIds={membroDeptIds}
             membroGrupoIds={membroGrupoIds}
