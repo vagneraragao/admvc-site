@@ -173,38 +173,41 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
     const startScanner = async () => {
         try {
             const { Html5Qrcode } = await import('html5-qrcode')
-            const scanner = new Html5Qrcode("qr-reader")
-            scannerRef.current = scanner
 
-            // Tentar obter lista de cameras primeiro
-            const cameras = await Html5Qrcode.getCameras()
-            console.log('[POS] Cameras disponiveis:', cameras.length, cameras.map(c => c.label))
-
-            if (cameras.length === 0) {
-                console.log('[POS] Nenhuma camera encontrada, a usar fallback foto')
-                setScannerFallback(true)
-                setQrOpen(false)
-                fileInputRef.current?.click()
+            // Esperar que o div esteja no DOM
+            const readerEl = document.getElementById('qr-reader')
+            if (!readerEl) {
+                console.error('[POS] Div qr-reader nao encontrado no DOM')
                 return
             }
 
-            // Preferir camera traseira pelo label, senao usar facingMode
-            const cameraTraseira = cameras.find(c => /back|rear|traseira|environment/i.test(c.label))
-            const cameraConfig = cameraTraseira
-                ? { deviceId: { exact: cameraTraseira.id } }
-                : { facingMode: "environment" as const }
+            const scanner = new Html5Qrcode("qr-reader")
+            scannerRef.current = scanner
+
+            // Calcular tamanho do qrbox dinamicamente (60% do viewport width, max 250)
+            const vw = Math.min(window.innerWidth - 40, 350)
+            const qrboxSize = Math.min(Math.floor(vw * 0.6), 250)
+
+            console.log('[POS] A iniciar scanner, qrbox:', qrboxSize)
 
             await scanner.start(
-                cameraConfig,
-                { fps: 10, qrbox: { width: 250, height: 250 } },
+                { facingMode: "environment" },
+                {
+                    fps: 15,
+                    qrbox: { width: qrboxSize, height: qrboxSize },
+                    aspectRatio: 1,
+                    disableFlip: false,
+                },
                 async (decodedText) => {
                     await scanner.stop()
                     scannerRef.current = null
                     setQrOpen(false)
                     await processarQr(decodedText)
                 },
-                () => {}
+                () => {} // erro silencioso por frame
             )
+
+            console.log('[POS] Scanner iniciado com sucesso')
         } catch (err: any) {
             console.error('[POS] Erro ao iniciar camera:', err)
             setQrOpen(false)
@@ -212,7 +215,7 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             // Fallback automatico para modo foto se camera live nao funcionar
             console.log('[POS] A mudar para modo foto (fallback)')
             setScannerFallback(true)
-            fileInputRef.current?.click()
+            setTimeout(() => fileInputRef.current?.click(), 200)
         }
     }
 
@@ -331,13 +334,20 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                         className="w-full bg-bg border border-soft rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-fg outline-none focus:border-figueira transition-colors"
                     />
                 </div>
-                {/* Botao QR: iOS e fallback usam foto, Android/desktop usam camera live */}
-                {(isIOS || scannerFallback) ? (
-                    <button onClick={() => fileInputRef.current?.click()} className="px-3 rounded-xl border transition-all bg-bg border-soft text-muted hover:border-figueira hover:text-figueira">
+                {/* Botao QR: iOS usa foto, Android/desktop tentam camera live */}
+                {isIOS ? (
+                    <button onClick={() => fileInputRef.current?.click()} className="px-3 rounded-xl border transition-all bg-bg border-soft text-muted hover:border-figueira hover:text-figueira" title="Scan QR (foto)">
                         <QrCode size={16} />
                     </button>
                 ) : (
-                    <button onClick={() => { if (qrOpen) { stopScanner() } else { setQrOpen(true); setTimeout(() => startScanner(), 100) } }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`}>
+                    <button onClick={() => {
+                        if (qrOpen) { stopScanner() }
+                        else {
+                            setScannerFallback(false) // resetar fallback para tentar camera live
+                            setQrOpen(true)
+                            setTimeout(() => startScanner(), 150)
+                        }
+                    }} className={`px-3 rounded-xl border transition-all ${qrOpen ? 'bg-figueira text-bg border-figueira' : 'bg-bg border-soft text-muted hover:border-figueira hover:text-figueira'}`} title="Scan QR (camera)">
                         <QrCode size={16} />
                     </button>
                 )}
@@ -355,13 +365,20 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                     </div>
                 )}
             </div>
-            {qrOpen && !isIOS && (
+            {qrOpen && !isIOS && !scannerFallback && (
                 <div className="space-y-2">
-                    <div id="qr-reader" className="rounded-xl overflow-hidden" style={{ minHeight: 300 }} />
-                    <button onClick={stopScanner}
-                        className="w-full px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest">
-                        Fechar Camera
-                    </button>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted text-center">Aponte a camera para o QR Code do membro</p>
+                    <div id="qr-reader" className="rounded-xl overflow-hidden border border-soft" style={{ width: '100%', maxWidth: 350, margin: '0 auto' }} />
+                    <div className="flex gap-2">
+                        <button onClick={stopScanner}
+                            className="flex-1 px-3 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest">
+                            Fechar
+                        </button>
+                        <button onClick={() => { stopScanner(); setScannerFallback(true); setTimeout(() => fileInputRef.current?.click(), 200) }}
+                            className="flex-1 px-3 py-2 bg-soft border border-soft text-muted rounded-xl text-[9px] font-black uppercase tracking-widest hover:text-fg">
+                            Tirar Foto
+                        </button>
+                    </div>
                 </div>
             )}
             {selectedMembro && (
