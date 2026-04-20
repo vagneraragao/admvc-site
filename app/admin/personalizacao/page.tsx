@@ -2,6 +2,7 @@
 import { getDb, getTenantIdFromHeaders } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import PersonalizacaoClient from '@/components/admin/PersonalizacaoClient'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function PersonalizacaoPage() {
     const db = await getDb()
@@ -23,5 +24,10 @@ export default async function PersonalizacaoPage() {
 
     if (!tenant) redirect('/admin/dashboard')
 
-    return <PersonalizacaoClient tenant={tenant} />
+    return (
+        <>
+            <Breadcrumbs items={[{ label: 'Personalização' }]} />
+            <PersonalizacaoClient tenant={tenant} />
+        </>
+    )
 }

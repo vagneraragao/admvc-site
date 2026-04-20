@@ -6,6 +6,7 @@ import ModalNovoEvento from '@/components/escalas/ModalNovoEvento'
 import { CalendarDays, Users, ArrowRight } from 'lucide-react'
 import { getTipoEvento, LISTA_TIPOS } from '@/lib/evento-tipos'
 import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function EventosPage({ searchParams }: { searchParams: Promise<{ congregacao?: string; tipo?: string }> }) {
     const db = await getDb()
@@ -77,6 +78,7 @@ export default async function EventosPage({ searchParams }: { searchParams: Prom
 
     return (
         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
+            <Breadcrumbs items={[{ label: 'Eventos' }]} />
 
             {/* HEADER */}
             <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

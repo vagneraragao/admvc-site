@@ -2,8 +2,9 @@
 
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { rateLimit } from '@/lib/rate-limit'
 
 const SA_COOKIE = 'admvc_sa_session'
 
@@ -13,6 +14,14 @@ export async function loginSuperAdmin(formData: FormData) {
 
     if (!email || !password) {
         return { error: 'Preencha todos os campos.' }
+    }
+
+    // Rate limiting: max 5 tentativas por IP por minuto
+    const headersList = await headers()
+    const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    const rl = rateLimit(`sa-login:${ip}`, 5, 60000)
+    if (!rl.success) {
+        return { error: 'Demasiadas tentativas. Aguarde 1 minuto antes de tentar novamente.' }
     }
 
     const sa = await prisma.superAdmin.findUnique({ where: { email } })

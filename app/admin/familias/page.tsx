@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import NovaFamiliaModal from '@/components/familias/NovaFamiliaModal'
 import FamiliasGrid from '@/components/familias/FamiliasGrid'
 import { UserX } from 'lucide-react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export default async function AdminFamiliasPage() {
 
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
+            <Breadcrumbs items={[{ label: 'Famílias' }]} />
 
             <header className="flex items-center justify-between">
                 <div className="space-y-1">

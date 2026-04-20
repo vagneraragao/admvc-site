@@ -6,6 +6,7 @@ import MontadorEscalas from '@/components/escalas/MontadorEscalas'
 import ListaEscalados from '@/components/escalas/ListaEscalados'
 import { getTipoEvento } from '@/lib/evento-tipos'
 import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function EscalasPage({ searchParams }: { searchParams: Promise<{ congregacao?: string; evento?: string }> }) {
     const db = await getDb()
@@ -94,6 +95,7 @@ export default async function EscalasPage({ searchParams }: { searchParams: Prom
 
     return (
         <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-700 pb-20">
+            <Breadcrumbs items={[{ label: 'Escalas' }]} />
 
             <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">

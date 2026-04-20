@@ -7,6 +7,7 @@ import GerenciadorGrupos from '@/components/admin/GerenciadorGrupos'
 import StopPropagation from '@/components/ui/StopPropagation'
 import { Plus, Briefcase, LayoutGrid, Users, MapPin, Settings } from 'lucide-react'
 import EstruturaSubMenu from '@/components/admin/EstruturaSubMenu'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function EstruturaPage() {
     const headersList = await headers()
@@ -80,6 +81,7 @@ export default async function EstruturaPage() {
 
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-in fade-in duration-700 pb-20">
+            <Breadcrumbs items={[{ label: 'Configurações' }]} />
 
             <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div className="space-y-1">

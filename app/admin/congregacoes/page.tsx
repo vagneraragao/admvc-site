@@ -3,6 +3,7 @@ import { getTenantClient } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import GestaoCongregacoesClient from '@/components/igreja/GestaoCongregacoesClient'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function CongregacoesPage() {
     const headersList = await headers()
@@ -34,6 +35,7 @@ export default async function CongregacoesPage() {
 
     return (
         <div className="bg-bg min-h-screen pb-20">
+            <Breadcrumbs items={[{ label: 'Congregações' }]} />
             <GestaoCongregacoesClient
                 congregacoes={congregacoes}
                 membrosSemCongregacao={membrosSemCongregacao}

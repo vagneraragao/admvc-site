@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { getSessionData } from '@/lib/auth-utils'
 import MembrosListClient from '@/components/admin/MembrosListClient'
 import BotaoGerarQrCodes from '@/components/admin/BotaoGerarQrCodes'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function ListaMembrosAdmin({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const db = await getDb()
@@ -50,6 +51,7 @@ export default async function ListaMembrosAdmin({ searchParams }: { searchParams
 
     return (
         <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-6">
+            <Breadcrumbs items={[{ label: 'Membros' }]} />
             {semQr > 0 && (
                 <div className="bg-bg2 border border-soft rounded-2xl p-4 flex items-center justify-between">
                     <p className="text-[10px] font-bold text-muted">

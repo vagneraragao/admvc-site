@@ -1,6 +1,7 @@
 // app/admin/relatorios/page.tsx
 import { getDb } from '@/lib/db'
 import RelatoriosClient from '@/components/relatorios/RelatoriosClient'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,5 +27,10 @@ export default async function RelatoriosPage() {
         }
     });
 
-    return <RelatoriosClient membros={membros} />;
+    return (
+        <>
+            <Breadcrumbs items={[{ label: 'Relatórios' }]} />
+            <RelatoriosClient membros={membros} />
+        </>
+    );
 }

@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { getSessionData, isAdmin } from '@/lib/auth-utils'
 import InventarioClient from '@/components/inventario/InventarioClient'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default async function InventarioPage({ searchParams }: { searchParams: Promise<{ congregacao?: string }> }) {
     const db = await getDb()
@@ -76,6 +77,7 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
 
     return (
         <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 animate-in fade-in duration-500 pb-20">
+            <Breadcrumbs items={[{ label: 'Inventário' }]} />
 
             <header className="space-y-1">
                 <h1 className="text-3xl font-black italic uppercase tracking-tighter text-fg">Inventario</h1>
