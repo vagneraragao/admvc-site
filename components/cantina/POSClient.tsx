@@ -169,9 +169,15 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
                     await scanner.stop()
                     scannerRef.current = null
                     setQrOpen(false)
-                    const membro = await buscarMembroPorQr(decodedText)
+                    const qrNormalizado = decodedText.trim()
+                    console.log('[POS] QR lido:', qrNormalizado)
+                    if (!qrNormalizado.startsWith('ADMVC-')) {
+                        setFeedback({ type: 'error', msg: `QR invalido: "${qrNormalizado}". Esperado formato ADMVC-...` })
+                        return
+                    }
+                    const membro = await buscarMembroPorQr(qrNormalizado)
                     if (membro) await selecionarMembro(membro)
-                    else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
+                    else setFeedback({ type: 'error', msg: `Membro nao encontrado para QR: ${qrNormalizado}` })
                 },
                 () => {}
             )
@@ -204,9 +210,15 @@ export default function POSClient({ produtos, categorias, membros, turnoId = nul
             const { Html5Qrcode } = await import('html5-qrcode')
             const scanner = new Html5Qrcode("qr-reader-ios")
             const decodedText = await scanner.scanFile(file, false)
-            const membro = await buscarMembroPorQr(decodedText)
+            const qrNormalizado = decodedText.trim()
+            console.log('[POS] QR foto lido:', qrNormalizado)
+            if (!qrNormalizado.startsWith('ADMVC-')) {
+                setFeedback({ type: 'error', msg: `QR invalido: "${qrNormalizado}". Esperado formato ADMVC-...` })
+                return
+            }
+            const membro = await buscarMembroPorQr(qrNormalizado)
             if (membro) await selecionarMembro(membro)
-            else setFeedback({ type: 'error', msg: 'Membro nao encontrado.' })
+            else setFeedback({ type: 'error', msg: `Membro nao encontrado para QR: ${qrNormalizado}` })
         } catch {
             setFeedback({ type: 'error', msg: 'QR Code nao reconhecido. Tente novamente com melhor iluminacao.' })
         }

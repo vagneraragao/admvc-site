@@ -533,16 +533,49 @@ export async function gerarQrCodesTodosMembros() {
 
 export async function buscarMembroPorQr(qrCode: string) {
     const db = await getDb()
+    const qrNormalizado = qrCode.trim()
+
+    console.log('[SCANNER] Procurando QR:', qrNormalizado, '| Comprimento:', qrNormalizado.length)
 
     try {
-        const membro = await db.membro.findFirst({
-            where: { qr_code: qrCode },
+        // Busca exacta primeiro
+        let membro = await db.membro.findFirst({
+            where: { qr_code: qrNormalizado },
             select: { id: true, first_name: true, last_name: true },
         })
 
+        // Fallback: busca pelo membroId extraido do QR (ADMVC-{tenantId}-{membroId}-{random})
+        if (!membro && qrNormalizado.startsWith('ADMVC-')) {
+            const partes = qrNormalizado.split('-')
+            if (partes.length >= 3) {
+                const membroIdExtraido = Number(partes[2])
+                if (membroIdExtraido > 0) {
+                    console.log('[SCANNER] Busca exacta falhou, tentando por membroId:', membroIdExtraido)
+                    membro = await db.membro.findFirst({
+                        where: { id: membroIdExtraido },
+                        select: { id: true, first_name: true, last_name: true },
+                    })
+                    // Se encontrou, corrigir o QR na BD para futuras leituras
+                    if (membro) {
+                        console.log('[SCANNER] Membro encontrado por ID, a corrigir QR na BD')
+                        await db.membro.update({
+                            where: { id: membro.id },
+                            data: { qr_code: qrNormalizado },
+                        }).catch(() => {}) // silencioso se falhar (ex: unique constraint)
+                    }
+                }
+            }
+        }
+
+        if (membro) {
+            console.log('[SCANNER] Membro encontrado:', membro.id, membro.first_name)
+        } else {
+            console.log('[SCANNER] Nenhum membro encontrado para QR:', qrNormalizado)
+        }
+
         return membro || null
     } catch (error) {
-        console.error('Erro ao buscar membro por QR:', error)
+        console.error('[SCANNER] Erro ao buscar membro por QR:', error)
         return null
     }
 }
