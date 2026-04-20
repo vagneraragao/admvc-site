@@ -4,18 +4,18 @@
 
 ## Sobre o Projecto
 
-O **ADMVC Cloud** e uma plataforma SaaS completa para gestao de igrejas que cobre acolhimento de visitantes, gestao de membros, departamentos, escalas de servico, louvor com cifras, educacao (cursos e escola biblica), financas completas (fundos, despesas, orcamento, donativos online, recibos IRS), sistema de vendas com POS, assistencia social, boleia solidaria, inventario e comunicacao — tudo num unico portal com acesso baseado em roles.
+O **ADMVC Cloud** e uma plataforma SaaS completa para gestao de igrejas que cobre acolhimento de visitantes, gestao de membros, departamentos, escalas de servico, louvor com cifras, educacao (cursos e escola biblica), financas completas (fundos, despesas, orcamento, donativos online, recibos IRS), sistema de vendas com POS, assistencia social, boleia solidaria com tracking em tempo real, inventario e comunicacao — tudo num unico portal com acesso baseado em roles.
 
 ### Numeros
 
 | | Quantidade |
 |---|---|
-| Paginas | 100+ |
-| APIs REST | 20+ |
+| Paginas | 119+ |
+| APIs REST | 21+ |
 | Server Actions | 35+ ficheiros |
-| Componentes React | 270+ |
-| Modelos de Dados | 60+ |
-| Features em Producao | 70+ |
+| Componentes React | 280+ |
+| Modelos de Dados | 65+ |
+| Features em Producao | 80+ |
 
 ---
 
@@ -37,6 +37,7 @@ O **ADMVC Cloud** e uma plataforma SaaS completa para gestao de igrejas que cobr
 | PDF | @react-pdf/renderer (lazy loaded) |
 | Mapas | Leaflet + React-Leaflet (dynamic import) |
 | QR Code | react-qr-code (exibicao) + html5-qrcode (camera scanner) |
+| Push Notifications | Web Push API (VAPID) |
 | Testes | Vitest |
 | Integracoes | Loyverse (opcional), Holyrics, Mesa de Som X32, Lumikit, Spotify, YouTube |
 
@@ -47,12 +48,12 @@ O **ADMVC Cloud** e uma plataforma SaaS completa para gestao de igrejas que cobr
 ```
 admvc-site/
 ├── app/
-│   ├── admin/                  # Painel administrativo
+│   ├── admin/                  # Painel administrativo (com breadcrumbs)
 │   │   ├── dashboard/          # Dashboard admin
 │   │   ├── membros/            # CRUD membros
 │   │   ├── familias/           # Gestao de familias
 │   │   ├── congregacoes/       # Multi-congregacao
-│   │   ├── configuracoes/      # Estrutura departamental
+│   │   ├── configuracoes/      # Estrutura departamental + regioes editaveis
 │   │   ├── eventos/            # Gestao de eventos (calendario + tipos)
 │   │   ├── escalas/            # Atribuicao de voluntarios
 │   │   ├── inventario/         # Controlo de patrimonio
@@ -62,18 +63,22 @@ admvc-site/
 │   │   ├── midia/              # Holyrics, X32, Lumikit
 │   │   └── auditoria/         # Logs de auditoria
 │   ├── membros/                # Portal do membro
+│   │   └── dashboard/          # Dashboard redesign mobile (grelha icones)
 │   ├── cantina/                # Sistema de vendas completo
-│   │   ├── pos/                # Ponto de venda (POS)
+│   │   ├── pos/                # Ponto de venda (POS) com QR scanner
 │   │   ├── produtos/           # CRUD produtos e categorias
 │   │   ├── dashboard/          # Relatorios de vendas
 │   │   ├── turnos/             # Abertura/fecho de caixa
 │   │   ├── cardapio/           # Cardapio do dia por evento
 │   │   ├── encomendas/         # Pre-encomendas para eventos
 │   │   ├── carregar/           # Recarga self-service
-│   │   ├── recargas/           # Aprovacao de recargas
+│   │   ├── recargas/           # Aprovacao de recargas (cantina)
 │   │   ├── fiados/             # Gestao de dividas
 │   │   ├── visor/              # Ecra para o cliente
+│   │   ├── tv/                 # TV Wall (digital signage)
 │   │   ├── menu-local/         # Menu publico
+│   │   ├── despesas/           # Despesas da cantina (isoladas)
+│   │   ├── relatorio-financeiro/ # P&L da cantina
 │   │   └── encomendar/         # Encomenda por evento
 │   ├── financeiro/             # Gestao financeira profissional
 │   │   ├── fundos/             # Contabilidade por fundos
@@ -87,11 +92,15 @@ admvc-site/
 │   │   └── exportar/           # Exportacao fiscal SAFT-PT
 │   ├── doar/[slug]/            # Pagina publica de donativos (sem login)
 │   ├── boleia/                 # Boleia solidaria entre membros
+│   │   ├── oferecer/           # Criar oferta de boleia
+│   │   ├── minhas/             # Minhas ofertas e reservas
+│   │   └── tracking/[ofertaId]/ # Tracking GPS em tempo real
+│   ├── boasvindas/             # Formulario publico para visitantes
 │   ├── assistencia/            # Assistencia social (stock, doacoes)
-│   ├── departamentos/          # Acolhimento, Cantina, Financeiro
+│   ├── departamentos/          # Acolhimento, Cantina, Financeiro, Obreiros
 │   ├── escalas/                # Gestao de escalas por lider
 │   ├── ensino/                 # Cursos, turmas, EBD
-│   ├── grupos/                 # Pequenos grupos / celulas
+│   ├── grupos/                 # Pequenos grupos / celulas (com mapa Leaflet)
 │   ├── louvor/                 # Holyrics, setlist, cifras
 │   ├── pregacao/               # Sermoes e pregacoes
 │   ├── gabinete/               # Agenda pastoral
@@ -110,20 +119,22 @@ admvc-site/
 │   │   ├── nova-igreja/        # Criar nova igreja + admin
 │   │   └── onboarding/[id]/    # Wizard de setup
 │   └── api/                    # API routes (REST + docs)
+│       └── boleia/tracking/    # API de tracking GPS (polling)
 ├── actions/                    # Server Actions (35+ ficheiros)
-├── components/                 # Componentes React (220+ ficheiros)
+├── components/                 # Componentes React (280+ ficheiros)
 ├── lib/                        # Utilitarios
 │   ├── prisma.ts               # Cliente Prisma multi-tenant
 │   ├── db.ts                   # Helper getDb() centralizado
 │   ├── auth-utils.ts           # Autenticacao e roles
 │   ├── planos.ts               # Sistema de planos e modulos
-│   ├── evento-tipos.ts         # Tipos de evento com cores
+│   ├── audit.ts                # Sistema de auditoria centralizado
+│   ├── geocode.ts              # Geocodificacao (OpenStreetMap/Nominatim)
 │   ├── rate-limit.ts           # Rate limiting in-memory
 │   ├── image-utils.ts          # Compressao de imagens (sharp)
-│   ├── helpers.ts              # Utilitarios gerais
-│   ├── loyverse-api.ts         # Integracao Loyverse (opcional)
-│   └── web-push.ts             # Push notifications
-├── prisma/                     # Schema (60+ modelos)
+│   ├── web-push.ts             # Push notifications (VAPID)
+│   ├── cursos-permissoes.ts    # Permissoes do modulo EBD/Cursos
+│   └── loyverse-api.ts         # Integracao Loyverse (opcional)
+├── prisma/                     # Schema (65+ modelos)
 ├── tests/                      # Testes (Vitest)
 └── public/                     # Assets + PWA + service worker
 ```
@@ -136,29 +147,41 @@ admvc-site/
 - CRUD completo de membros com perfil, foto, escolaridade, cargos
 - Gestao de familias (agrupamento familiar)
 - Multi-congregacao com filtro por sede
-- Departamentos com funcoes, lideres e delegacao
+- Departamentos com funcoes, lideres, delegacao e foto de capa
 - Membro em 2 departamentos com turnos diferentes (MANHA/TARDE/NOITE)
+
+### Dashboard Mobile do Membro
+- Menu engrenagem no header (Editar Perfil, Indisponibilidades)
+- Grelha de icones 3 colunas: Onde Eu Sirvo, Agenda, Boleia, Cursos, Cantina, Contribua, Ministerios, Oracoes, Redes Sociais, Extrato Financeiro
+- Icones e texto ampliados para melhor visibilidade mobile
+- Visibilidade condicional (icones so aparecem se membro tem departamento)
+- Modal Ministerios com escalas + equipa do departamento
+- Seccao Devocional com versiculo do dia e partilha WhatsApp
+- Fundo dark consistente em todos os modulos
 
 ### Eventos e Escalas (separados)
 - **Eventos**: calendario mensal, 8 tipos com cores (Culto Regular, Especial, Rua, Convivio, Reuniao, Formacao, Missao, Outro), criacao unica ou recorrente
 - **Escalas**: atribuicao de voluntarios por evento, departamento e funcao, verificacao de disponibilidade, confirmacao pelo membro
 
-### Sistema de Vendas / Cantina (substitui Loyverse)
+### Sistema de Vendas / Cantina (isolado do financeiro)
 - POS mobile-first com bottom sheet, wake lock, modo caixa (fullscreen)
 - 5 formas de pagamento: Creditos, Dinheiro, MBWay, Transferencia, Fiado
 - Promocoes (ex: "2 por 5EUR") com calculo automatico
 - Carteira digital por membro com saldo, recargas e extrato
-- QR Code do membro (geracao + camera scanner no POS)
+- QR Code do membro (geracao + camera scanner no POS com fallback foto)
+- Scanner QR: deteccao iOS, camera traseira preferencial, qrbox dinamico, fallback automatico
 - Turnos de caixa (abertura/fecho com diferenca)
 - Cardapio do dia por evento com quantidade disponivel
 - Pre-encomendas para eventos (debita saldo, operador confirma entrega)
 - Sistema de Fiado (compra a credito, liquidacao)
 - Visor do cliente (segundo ecra com carrinho em tempo real via localStorage)
+- TV Wall (digital signage com marquee e grelha)
 - Limites parentais de consumo (diario/semanal)
-- Recarga self-service (membro solicita, admin aprova)
+- Recarga self-service (membro solicita, lider cantina aprova — isolado do financeiro)
 - Extrato com botao WhatsApp + consumo dos filhos para pais
-- Importacao de produtos do Loyverse (migracao one-time)
-- Venda para nao-membros, venda so com turno aberto
+- Despesas da cantina separadas das despesas da igreja
+- Transferencia cantina → fundo financeiro com auditoria
+- P&L independente (receita, COGS, despesas, margem)
 
 ### Gestao Financeira Profissional (4 fases)
 - **Fundos**: contabilidade por fundos (GERAL, CONSTRUCAO, MISSOES, SOCIAL, CANTINA, CUSTOM), saldo por fundo, fundos restritos, transferencias com validacao
@@ -170,14 +193,23 @@ admvc-site/
 - **Pledges**: promessas de contribuicao com acompanhamento, status (ATIVO/ATRASADO/CUMPRIDO/CANCELADO)
 - **Reconciliacao Bancaria**: importar CSV (formato PT), auto-matching por valor+data, reconciliacao manual
 - **Exportacao Fiscal**: CSV compativel com TOC (contribuicoes, despesas, donativos, lancamentos)
+- **Extrato do membro**: impressao via browser (PDF)
 
-### Boleia Solidaria
+### Boleia Solidaria (com Tracking GPS)
 - Oferecer/reservar boleias para cultos e eventos
 - Mapa Leaflet com pins dos pontos de partida
 - Recorrencia semanal automatica
 - Rating "obrigado" (coracao)
 - Push notifications ao motorista (reserva/cancelamento)
 - Privacidade: morada exacta so para quem reservou
+- **Localizacao do passageiro**: captura GPS ao reservar
+- **Tracking em tempo real**: pagina `/boleia/tracking/[ofertaId]`
+  - Mapa Leaflet com markers coloridos (azul=motorista, verde=passageiro)
+  - Actualizacao continua via `watchPosition` + polling API (7s)
+  - Distancia estimada entre motorista e passageiro (km/metros)
+  - Botao "Iniciar Viagem" (motorista) e "Partilhar Localizacao" (passageiro)
+  - Push notification aos passageiros quando motorista inicia viagem
+  - Auto-fit bounds no mapa
 
 ### Assistencia Social
 - Inventario de items (ALIMENTO, HIGIENE, VESTUARIO, OUTRO)
@@ -189,19 +221,20 @@ admvc-site/
 - Registo via formulario publico (/boasvindas)
 - Status: NOVO, EM_CONTACTO, CONSOLIDADO, NAO_RETORNOU, OUTRA_IGREJA, DESISTIU
 - Acompanhamento com historico
+- Notificacoes push e bell icon
 
 ### Portal Super-Admin (Plataforma SaaS)
 - Dashboard com KPIs globais (igrejas, membros, planos pagos, alertas de saude)
 - Gestao de igrejas: criar, editar, suspender, pesquisa e filtro por plano
 - **Configuracao de Planos**: visualizacao comparativa dos 4 tiers (FREE/BASIC/PRO/ENTERPRISE) com modulos e limites
-- **Temas Visuais por Igreja**: 6 presets de paleta (Figueira, Oceano, Vinho, Ouro, Noite, Coral), color pickers e preview em tempo real
+- **Temas Visuais por Igreja**: 6 presets de paleta, color pickers e preview em tempo real
 - Gestao de modulos por igreja (16 modulos com override custom)
 - Onboarding wizard (5 steps: branding, congregacoes, departamentos, admin, checklist)
 - Billing: receita mensal, historico de planos, datas de inicio/fim
 - Impersonar igrejas (auditado, sessao de 2h)
 - Comunicacao: avisos plataforma (INFO/ALERTA/MANUTENCAO/NOVIDADE)
 - Gestao de super-admins: criar, toggle ativo, alterar role (ADMIN/SUPPORT/VIEWER), eliminar
-- Sidebar com highlight de pagina activa e suporte mobile
+- Rate limiting no login (5 tentativas/min por IP)
 - Audit logging de todas as acoes criticas
 
 ### Louvor e Midia
@@ -209,12 +242,19 @@ admvc-site/
 - Integracao Holyrics (projeccao)
 - Mesa de Som X32 (cenas/presets)
 - Lumikit (iluminacao)
-- Cifras internas
+- Cifras internas com transposicao, auto-scroll, pinch-to-zoom
 
-### Educacao
-- Cursos / Escola Biblica Dominical (EBD)
-- Turmas, matriculas, atividades, notas
-- Pregacao (editor de sermoes)
+### Educacao (EBD / Cursos)
+- 4 categorias: EBD (escola biblica), Livre, Discipulado, Seminario
+- Workflow completo com validacoes:
+  - Criar curso (PLANEADO) → Criar turma(s) → Aprovar curso (EM_CURSO) → Inscricoes → Aulas + Presencas → Actividades + Notas → Aprovacao final (CONCLUIDO)
+- Aprovacao exige pelo menos 1 turma criada
+- Inscricoes so permitidas em cursos EM_CURSO
+- Calculo automatico de aprovacao (nota minima + presenca minima)
+- Auto-transicao para CONCLUIDO quando todas as turmas estao calculadas
+- Membro redireccionado para a turma correcta (nao mais turmas[0])
+- Questionarios com auto-correcao (multipla escolha, V/F)
+- Curso Permanecer (auto-matricula de novos membros)
 
 ---
 
@@ -241,7 +281,7 @@ Headers injectados pelo middleware:
 | `ADMIN` | + Acesso total ao painel admin |
 | `SuperAdmin` | Gestao da plataforma SaaS (auth separada) |
 
-Permissoes adicionais por departamento: Cantina (POS), Louvor (repertorio), Midia (Holyrics/X32/Lumikit), Acolhimento, Diaconia (pregacao).
+Permissoes adicionais por departamento: Cantina (POS + recargas), Louvor (repertorio), Midia (Holyrics/X32/Lumikit), Acolhimento, Diaconia (pregacao/cursos).
 
 ---
 
@@ -258,67 +298,29 @@ Verificacao em 3 camadas: Middleware (Edge) → Pages (Server) → Actions (Serv
 
 ---
 
-## Navegacao do Membro
+## Desktop UX
 
-Barra de navegacao com tabs e dropdowns (sem hamburguer):
-
-```
-[HOME] [IGREJA ▼] [DEPARTAMENTO ▼] [AJUDA ▼]
-```
-
-- **HOME**: Dashboard do membro
-- **IGREJA**: Perfil, Onde Sirvo, Relatorios, Indisponibilidade, Agendar, Boleia, Menu Cantina
-- **DEPARTAMENTO** (permissoes): Admin, Tesouraria, Cantina, Pregacao, Holyrics, Mesa de Som, Iluminacao
-- **AJUDA**: Instrucoes PWA, versao do app
-
-Barra expansivel mostra: role badge, email, n. departamentos, n. grupos, telefone.
-
----
-
-## Sidebar Admin
-
-Menu organizado em grupos colapsaveis com icones padronizados (14px):
-
-```
-IGREJA: Estrutura, Membros, Congregacoes, Familias, Inventario
-AGENDA: Eventos, Escalas
-FORMACAO: Pregacoes, Cursos
-CANTINA: Painel, Cardapio, Produtos, Turnos, Vendas, Fiados, Encomendas, Recargas, Relatorios
-FINANCEIRO: Fundos, Despesas, Orcamento, Recibos, Relatorios, Donativos, Pledges, Reconciliacao, Exportacao
-MINISTERIOS: Louvor, Midia, Assistencia Social, Acolhimento, Diaconia, Obreiros, Boleia, EBD, Agenda Pastoral
-CONFIGURACOES: Personalizacao, Auditoria
-```
-
-Auto-expande quando a rota activa esta dentro do grupo.
-
----
-
-## Experiencia Desktop
-
-Padronizacao UX para desktop (v2.6.0):
-
-- **Tipografia responsiva**: textos de 7-10px no mobile escalam para 9-12px no desktop via breakpoints `md:`
-- **Icones padronizados**: 14px para navegacao, 18px para cards, 10px para badges
-- **Containers consistentes**: `max-w-6xl` como padrao, `max-w-7xl` para tabelas densas
-- **Padding 3 breakpoints**: `px-4 sm:px-6 lg:px-8` em todas as paginas
-- **Border radius**: `rounded-2xl` unificado (141 ocorrencias corrigidas)
-- **Hover states**: `hover:border-figueira/30 hover:-translate-y-0.5` em cards navegaveis
-- **Tooltips**: adicionados a todos os botoes icon-only no desktop
-- **Botoes desktop**: `md:h-10 md:w-10` para melhor area de clique
-- **Nav tabs**: escaladas para `md:text-xs` no desktop
+- **Breadcrumbs**: navegacao consistente em todas as paginas admin
+- **Tipografia responsiva**: textos escalam via breakpoints `md:`
+- **Icones padronizados**: 14px navegacao, 18px cards, 10px badges
+- **Containers**: `max-w-6xl` padrao, `max-w-7xl` para tabelas
+- **Padding responsivo**: `px-4 sm:px-6 lg:px-8`
+- **Hover states**: `hover:border-figueira/30 hover:-translate-y-0.5`
+- **Tooltips**: em botoes icon-only
 
 ---
 
 ## Seguranca
 
 - Auth checks em ~150+ server actions (`requireAuth()` / `requireRole()`)
-- Rate limiting nas rotas publicas (5/min visitante, 30/min leitura)
+- Rate limiting: login Super Admin (5/min por IP), APIs publicas (5/min visitante, 30/min leitura)
 - Tenant isolation via Prisma extensions (PROTECTED_MODELS)
 - Super-Admin isolado (cookie, tabela e login proprios)
 - Headers: HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy
 - CORS restringido em producao
 - Error boundaries no root, /admin e /membros
-- Audit logging
+- Audit logging centralizado (lib/audit.ts) com categoria, acao, actor, alvo
+- Validacao de data passada na agenda pastoral
 - Compressao de imagens no upload (previne ficheiros grandes)
 
 ---
@@ -328,7 +330,7 @@ Padronizacao UX para desktop (v2.6.0):
 - Service Worker com cache e fallback offline
 - Pagina offline com design dark theme
 - Instalar: Android (Chrome > Menu > "Adicionar ao ecra inicial"), iPhone (Safari > Partilhar)
-- Wake Lock no POS (ecra nao desliga)
+- Wake Lock no POS e modo palco (ecra nao desliga)
 - Manifesto com cores da marca
 
 ---
@@ -341,6 +343,8 @@ Rotas publicas:
 - `GET /api/public/obra` — dados da campanha de construcao
 - `GET /api/public/grupos` — lista de grupos publicos
 - `POST /api/public/visitante` — registar visitante
+- `GET /api/boleia/tracking` — posicoes de tracking (autenticado)
+- `POST /api/boleia/tracking` — actualizar posicao (autenticado)
 - `GET /doar/[slug]` — pagina publica de donativos
 
 ---
@@ -392,7 +396,7 @@ Deploy via Vercel CLI: `vercel --prod`
 
 ## Versao
 
-**v2.6.0** — Abril 2026
+**v2.7.0** — Abril 2026
 
 ---
 

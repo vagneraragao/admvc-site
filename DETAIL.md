@@ -17,6 +17,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 ### Super-Admin (`/super-admin/login`)
 - Tabela `SuperAdmin` separada (sem tenant_id)
 - Cookie proprio `admvc_sa_session`
+- Rate limiting: 5 tentativas por IP a cada 60 segundos (in-memory)
 - Acesso a gestao de todas as igrejas e modulos
 
 ### Middleware (`middleware.ts`)
@@ -28,27 +29,42 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ## 2. PAINEL DO MEMBRO (`/membros/dashboard`)
 
-### Estrutura
-- **Header**: foto, nome, badge de role, nome da igreja + congregacao
-- **Nav bar**: barra de navegacao com separador visual, links Home, Igreja, Educacao e breadcrumb do modulo activo
-- **Menu Servico** (hamburger): Editar Perfil, Indisponibilidade, Relatorio de Escalas, Relatorio Louvor, Agendar Reuniao + atalhos de departamentos para lideres
-- **Notificacoes** (bell): alertas de acolhimento (visitantes novos) e avisos do mural, auto-refresh a cada 30 segundos
-- **Mural** (balao): acesso ao mural de avisos
-- **Tabs**: Home, Igreja (departamentos)
+### Header Mobile
+- **Avatar + nome** do membro (nao clicavel — edicao via engrenagem)
+- **Sino** (bell): notificacoes de acolhimento e mural
+- **Engrenagem** (settings): dropdown com:
+  - "Editar Perfil" → abre DrawerEditarPerfil
+  - "Indisponibilidades" → abre ModalIndisponibilidade (so se membro tem departamento)
+  - "Alto Contraste" → toggle de modo alto contraste
+- **Logout** (vermelho)
 
-### Tab Home
-- **Minhas Escalas**: cards dos proximos eventos onde o membro esta escalado, ordenados por confirmados primeiro e data mais proxima. Botoes de confirmar/recusar com motivo. Modal de detalhes com repertorio.
-- **Setlist Palco**: botao de acesso ao modo palco (fullscreen) para musicos do louvor
-- **Agenda da Igreja**: proximos eventos, colapsavel no mobile
-- **Aniversariantes do Mes**: lista com dia, colapsavel no mobile
+### Dashboard Mobile — Grelha de Icones (3 colunas)
+- **Versiculo do Dia**: rotacao de 31 versiculos + QR Code do membro
+- **Banner POS Cantina**: aparece se membro esta escalado na cantina hoje
+- **Onde Eu Sirvo** (full-width, condicional): so visivel se membro pertence a algum departamento
+- **Grelha 3x3**: Agenda, Boleia, Cursos, Cantina, Contribua, Ministerios, Oracoes, Redes Sociais, Extrato
+- **Devocional** (full-width): versiculo em destaque com botao partilhar WhatsApp
+- Icones ampliados (28px) e texto legivel (text-[10px]) para melhor visibilidade mobile
+- Ministerios desabilitado (opacity) se membro nao tem departamento
 
-### Tab Igreja
-- **Departamentos**: cards dos departamentos onde o membro serve, com funcoes e botao de gestao de equipa
-- **Grupos**: cards dos PGs/celulas com detalhes (dia, horario, local) e modal de gestao completo
+### Modais Mobile
+- **Onde Eu Sirvo**: bottom sheet com CardDepartamentoMembro (equipa, funcoes, contactos)
+- **Ministerios**: escalas do membro + departamentos com equipa
+- **Agenda**: proximos eventos com detalhe expandivel e partilha WhatsApp
+- **Redes Sociais**: links Instagram, Facebook, YouTube, Website (configurados na personalizacao)
+- **Cursos**: cursos activos com inscricao
 
-### Financas (acessivel via menu)
+### Desktop (Tab Home)
+- **Minhas Escalas**: cards dos proximos eventos com confirmacao/recusa
+- **Setlist Palco**: botao fullscreen para musicos do louvor
+- **Agenda da Igreja**: proximos eventos com fontes ampliadas
+- **Aniversariantes do Mes**
+- **YouTube e Instagram widgets** (se configurados)
+
+### Financas (acessivel via menu ou icone Extrato)
 - **Contribuicoes**: objectivos financeiros e historico
-- **Cantina**: saldo Loyverse, carregamentos e extrato
+- **Cantina**: saldo, carregamentos e extrato
+- **Extrato financeiro**: impressao via browser (PDF)
 
 ---
 
@@ -60,6 +76,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Filtro de congregacao (dropdown) para admins com multiplas sedes
 - Menu mobile com hamburger + drawer animado
 - CONGREGATION_ADMIN ve apenas a sua congregacao (dropdown bloqueado)
+- **Breadcrumbs** em todas as paginas admin (Configuracoes, Congregacoes, Escalas, Eventos, Familias, Inventario, Membros, Midia, Personalizacao, Relatorios)
 - Try/catch no layout: se DB falhar, sidebar degrada sem crash
 
 ### Dashboard (`/admin/dashboard`)
@@ -198,6 +215,14 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 - Registo de presencas por aula
 - Calculo automatico de aprovacao: nota minima + presenca minima
 - Status: Ativa, Inativa, Concluida
+- Auto-transicao do curso para CONCLUIDO quando todas as turmas estao calculadas
+
+### Workflow Validado
+- Aprovar curso exige pelo menos 1 turma criada
+- Matricular alunos so em cursos EM_CURSO
+- Manifestar interesse so em cursos EM_CURSO (nao PLANEADOS)
+- Aprovar interesse valida que a turma pertence ao curso
+- Membro e redireccionado para a turma correcta (mapeamento curso→turma via matricula)
 
 ---
 
@@ -278,22 +303,53 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 
 ---
 
-## 10. FINANCEIRO
+## 10. FINANCEIRO (isolado da cantina)
 
 ### Dashboard (`/departamentos/financeiro/dashboard`)
 - Lancamentos com categorias e responsaveis
 - Objectivos financeiros com progresso
 - Rifas com numeros vendidos
 - Contribuicoes e pagamentos MBWay
-- Pedidos de saldo cantina
+- **NAO inclui vendas/despesas da cantina** (separacao completa)
 
 ### Projecto Obra (`/departamentos/financeiro/obra`)
 - Acompanhamento de projectos de construcao
 - Etapas com progresso e orcamento
 
-### Integracao Loyverse
+### Separacao Cantina ↔ Financeiro
+- Recargas aprovadas por lideres da cantina (nao pelo financeiro)
+- Despesas da cantina (DespesaCantina) separadas das da igreja (DespesaFinanceira)
+- Transferencia cantina → fundo financeiro e o unico ponto de contacto (manual, com auditoria)
+- P&L da cantina independente em `/cantina/relatorio-financeiro`
+
+### Integracao Loyverse (opcional)
 - Sincronizacao de saldo da cantina via API Loyverse
-- Pedidos de recarga de saldo
+- Desabilitavel (sistema local como principal)
+
+---
+
+## 10b. BOLEIA SOLIDARIA — TRACKING GPS
+
+### Oferta e Reserva (`/boleia`)
+- Mapa Leaflet com pins dos pontos de partida (verde=vagas, cinzento=cheio)
+- Recorrencia semanal automatica (cron job)
+- Privacidade: morada exacta so para quem reservou
+- Push notifications ao motorista (nova reserva/cancelamento)
+- Captura GPS do passageiro ao reservar
+
+### Tracking em Tempo Real (`/boleia/tracking/[ofertaId]`)
+- **Tabela BoleiaTracking**: posicoes temporarias com papel (MOTORISTA/PASSAGEIRO)
+- **API route `/api/boleia/tracking`**: GET posicoes ativas, POST actualizar posicao
+- **Mapa Leaflet** com markers coloridos: azul (motorista), verde (passageiro), amarelo (ponto partida)
+- **watchPosition**: actualizacao continua da posicao do utilizador
+- **Polling a cada 7 segundos** para receber posicoes dos outros
+- **Auto-fit bounds**: mapa ajusta zoom para mostrar todos os participantes
+- **Distancia estimada** entre motorista e passageiro (Haversine, km/metros)
+- **Botao "Iniciar Viagem"** (motorista) → push notification a todos os passageiros
+- **Botao "Partilhar Localizacao"** (passageiro) → visivel no mapa do motorista
+- **Botao "Parar"** → desactiva tracking e remove do mapa
+- **Lista de participantes** com indicador online (verde pulsante)
+- Links de tracking em `/boleia/minhas` para motorista e passageiro
 
 ---
 
@@ -450,7 +506,7 @@ Descricao completa de cada modulo, funcionalidade e componente da plataforma.
 | Mecanismo | Implementacao |
 |-----------|---------------|
 | Auth | Cookie httpOnly + bcryptjs |
-| Rate Limiting | Upstash Redis (por email e IP), fail-open |
+| Rate Limiting | Upstash Redis (login membro) + in-memory (login SA: 5/min/IP), fail-open |
 | Tenant Isolation | Prisma extensions (getTenantClient) |
 | Role Check | requireAuth() / requireRole() em todas as actions |
 | Headers | HSTS, X-Frame-Options, nosniff, strict referrer |
@@ -480,7 +536,7 @@ Ver `.env.example` para a lista completa. Principais:
 
 ## 23. MODELOS DE DADOS (PRISMA)
 
-44 modelos organizados por area:
+65+ modelos organizados por area:
 
 **Core**: Tenant, Membro, Familia, Congregacao, SuperAdmin, Escolaridade, Cargo
 
@@ -507,5 +563,9 @@ Ver `.env.example` para a lista completa. Principais:
 **Educacao**: CursoEBD, TurmaEBD (M:N professores), MatriculaEBD, AtividadeEBD, NotaEBD, EscolaBiblica, PresencaEBD, InteresseCurso
 
 **Pregacao**: Sermao
+
+**Boleia**: BoleiaOferta, BoleiaReserva (com lat/lng passageiro), BoleiaTracking (posicoes tempo real)
+
+**Cantina**: CategoriaCantina, ProdutoCantina, SaldoCantina, TransacaoCantina, PedidoSaldoCantina, TurnoCantina, FiadoCantina, DespesaCantina, PreEncomendaCantina, CardapioCantina
 
 **Auditoria**: AuditLog
